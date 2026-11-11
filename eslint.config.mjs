@@ -12,7 +12,17 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
-    ignores: ['node_modules/**', '.next/**', 'out/**', 'build/**', 'next-env.d.ts'],
+    // build-артефакты и сгенерированный код не линтуем (как .next/**):
+    // .next-dev — артефакт e2e prod-сервера, src/generated — Prisma-клиент
+    ignores: [
+      'node_modules/**',
+      '.next/**',
+      '.next-dev/**',
+      'src/generated/**',
+      'out/**',
+      'build/**',
+      'next-env.d.ts',
+    ],
   },
 ];
 

@@ -4,12 +4,96 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * DIG-13 — дизайн-токены «Цифрового деканата» (светлая версия ResumeCraft).
+ * Сырые значения живут в :root (--du-* и shadcn-совместимые имена),
+ * @theme inline превращает их в утилиты Tailwind (bg-accent, text-success-ink,
+ * rounded-card, shadow-soft, tracking-heading, …).
+ * Контраст текстовых пар — AA (≥ 4.5:1), проверяется тестом tests/design-tokens.test.ts.
+ */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* приглушённый текст/декор (#9A9A9A) — не для текста, только декор и дизейбл */
+  --color-foreground-muted: var(--du-foreground-muted);
+
+  /* акцент и градиент бренда */
+  --color-accent-strong: var(--du-accent-strong);
+  --color-accent-soft: var(--du-accent-soft);
+  --color-accent-ink: var(--du-accent-ink);
+
+  /* статусы: цвет / мягкий фон / ink для текста на мягком фоне */
+  --color-success: var(--du-success);
+  --color-success-soft: var(--du-success-soft);
+  --color-success-ink: var(--du-success-ink);
+  --color-warning: var(--du-warning);
+  --color-warning-soft: var(--du-warning-soft);
+  --color-warning-ink: var(--du-warning-ink);
+  --color-error: var(--du-error);
+  --color-error-soft: var(--du-error-soft);
+  --color-error-ink: var(--du-error-ink);
+  --color-info: var(--du-info);
+  --color-info-soft: var(--du-info-soft);
+  --color-info-ink: var(--du-info-ink);
+
+  /* типы занятий */
+  --color-lesson-lecture: var(--du-lesson-lecture);
+  --color-lesson-lecture-soft: var(--du-lesson-lecture-soft);
+  --color-lesson-lecture-ink: var(--du-lesson-lecture-ink);
+  --color-lesson-seminar: var(--du-lesson-seminar);
+  --color-lesson-seminar-soft: var(--du-lesson-seminar-soft);
+  --color-lesson-seminar-ink: var(--du-lesson-seminar-ink);
+  --color-lesson-lab: var(--du-lesson-lab);
+  --color-lesson-lab-soft: var(--du-lesson-lab-soft);
+  --color-lesson-lab-ink: var(--du-lesson-lab-ink);
+  --color-lesson-exam: var(--du-lesson-exam);
+  --color-lesson-exam-soft: var(--du-lesson-exam-soft);
+  --color-lesson-exam-ink: var(--du-lesson-exam-ink);
+
+  /* шрифт: Onest (DIG-13), Inter из каркаса заменён */
+  --font-sans: var(--font-onest);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-heading: var(--font-sans);
+
+  /* радиусы: кнопки 8, карточки 12–16, крупные блоки 24, пилюли 999 */
+  --radius-button: var(--du-radius-button);
+  --radius-card-sm: var(--du-radius-card-sm);
+  --radius-card: var(--du-radius-card);
+  --radius-block: var(--du-radius-block);
+  --radius-pill: var(--du-radius-pill);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* тени */
+  --shadow-soft: var(--du-shadow-soft);
+  --shadow-hover: var(--du-shadow-hover);
+
+  /* заголовки: трекинг −0.02…−0.03em */
+  --tracking-heading: var(--du-tracking-heading);
+
+  /* совместимость с шаблоном shadcn (sidebar/chart) */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -23,108 +107,165 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* поверхности и текст (значения из макета, светлая тема) */
+  --background: #f7f7f7;
+  --foreground: #222222;
+  --card: #ffffff;
+  --card-foreground: #222222;
+  --popover: #ffffff;
+  --popover-foreground: #222222;
+  --border: #ebebeb;
+  --input: #ebebeb;
+  --muted: #f1f1f1;
+  --muted-foreground: #6a6a6a;
+  --secondary: #ffffff;
+  --secondary-foreground: #222222;
+
+  /* акцент */
+  --accent: #ff385c;
+  --accent-foreground: #ffffff;
+  --ring: #222222;
+  --primary: #e61e4d;
+  --primary-foreground: #ffffff;
+  --destructive: #c13515;
+
+  /* новые токены дизайн-системы (--du-*) */
+  --du-foreground-muted: #9a9a9a;
+  --du-accent-strong: #e61e4d;
+  --du-accent-soft: #fff1f3;
+  --du-accent-ink: #d70466;
+  --du-gradient-brand: linear-gradient(135deg, #e61e4d 0%, #e31c5f 50%, #d70466 100%);
+
+  --du-success: #008a05;
+  --du-success-soft: #e9f6ea;
+  --du-success-ink: #006704;
+  --du-warning: #9a6400;
+  --du-warning-soft: #fbf3e2;
+  --du-warning-ink: #9a6400;
+  --du-error: #c13515;
+  --du-error-soft: #fdecea;
+  --du-error-ink: #c13515;
+  --du-info: #1d4ed8;
+  --du-info-soft: #eaf1fe;
+  --du-info-ink: #1d4ed8;
+
+  /* типы занятий: лекция / семинар / лабораторная / экзамен */
+  --du-lesson-lecture: #ff385c;
+  --du-lesson-lecture-soft: #fff1f3;
+  --du-lesson-lecture-ink: #d70466;
+  --du-lesson-seminar: #1d4ed8;
+  --du-lesson-seminar-soft: #eaf1fe;
+  --du-lesson-seminar-ink: #1d4ed8;
+  --du-lesson-lab: #008a05;
+  --du-lesson-lab-soft: #e9f6ea;
+  --du-lesson-lab-ink: #006704;
+  --du-lesson-exam: #9a6400;
+  --du-lesson-exam-soft: #fbf3e2;
+  --du-lesson-exam-ink: #9a6400;
+
+  /* радиусы */
+  --du-radius-button: 8px;
+  --du-radius-card-sm: 12px;
+  --du-radius-card: 16px;
+  --du-radius-block: 24px;
+  --du-radius-pill: 999px;
+
+  /* тени */
+  --du-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --du-shadow-hover: 0 16px 38px rgba(0, 0, 0, 0.1);
+
+  /* типографика */
+  --du-tracking-heading: -0.025em;
+  --radius: 1rem;
+
+  /* совместимость с шаблоном shadcn (sidebar/chart) */
+  --chart-1: #ff385c;
+  --chart-2: #e61e4d;
+  --chart-3: #008a05;
+  --chart-4: #1d4ed8;
+  --chart-5: #9a6400;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #222222;
+  --sidebar-primary: #e61e4d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f1f1;
+  --sidebar-accent-foreground: #222222;
+  --sidebar-border: #ebebeb;
+  --sidebar-ring: #222222;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
+/* Тёмная тема вне скоупа DIG-13 (светлая версия по макету) — переменные не переопределяем. */
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+  }
+  html {
+    @apply font-sans;
   }
   body {
     @apply bg-background text-foreground;
   }
-  html {
-    @apply font-sans;
+  /* заголовки: 800 и отрицательный трекинг, как в макете */
+  h1,
+  h2 {
+    font-weight: 800;
+    letter-spacing: var(--du-tracking-heading);
+  }
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    letter-spacing: var(--du-tracking-heading);
+  }
+  /* видимое кольцо фокуса для клавиатурной навигации (контраст ≥ 3:1) */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* градиент кнопок и логотипа: #E61E4D → #E31C5F → #D70466 */
+  .gradient-brand {
+    background-image: var(--du-gradient-brand);
+  }
+  /* hover-подъём на 2px + тень hover (карточки, primary-кнопки) */
+  .lift-hover {
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease;
+  }
+  .lift-hover:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--du-shadow-hover);
+  }
+  /* «перенос» занятия: штриховка + пунктирная граница */
+  .hatch-rescheduled {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent 0 6px,
+      rgba(34, 34, 34, 0.05) 6px 12px
+    );
+    border-style: dashed;
+  }
+  /* Stepper: соединительная линия между шагами */
+  .stepper-step:not(:first-child)::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: calc(-50% + 26px);
+    right: calc(50% + 26px);
+    height: 2px;
+    border-radius: var(--du-radius-pill);
+    background: var(--border);
+  }
+  .stepper-done:not(:first-child)::before,
+  .stepper-current:not(:first-child)::before {
+    background: var(--du-success);
   }
 }
