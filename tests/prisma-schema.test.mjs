@@ -87,6 +87,7 @@ test('schema.prisma существует и объявляет datasource postgr
   assert.match(config, /DATABASE_URL/);
 });
 
+// ⏳ Все контракты ниже — в test.skip до задачи DIG-49 (reconcile: канон DIG-9 + enum'ы сидов DIG-10 + auth-модели)
 test.skip('объявлены все 27 моделей предметной области', () => {
   const s = schema();
   for (const m of models) {
