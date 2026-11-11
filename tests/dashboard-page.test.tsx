@@ -6,6 +6,8 @@
 // deadlines, progress panel, quick actions, deanery news — and per-block
 // error states when a section of the aggregate fails.
 import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
@@ -317,8 +319,6 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
     // Поведенческое покрытие — e2e dashboard.spec (real server, settled waits).
     // Здесь — контракт исходника: page.tsx оборачивает DashboardContent
     // в Suspense с fallback = DashboardSkeleton.
-    const { readFileSync } = require('node:fs');
-    const { resolve } = require('node:path');
     const source = readFileSync(resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'), 'utf8');
     expect(source).toContain('<Suspense fallback={<DashboardSkeleton />}>');
     expect(source).toContain('<DashboardContent />');
@@ -327,8 +327,6 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
   it('STAFF-ветка: источник содержит явную заглушку «Кабинет сотрудника»', () => {
     // В юнит-среде нет request scope (cookies) — рендер страницы недоступен;
     // поведение покрывает e2e prod-auth, здесь — контракт исходника.
-    const { readFileSync } = require('node:fs');
-    const { resolve } = require('node:path');
     const source = readFileSync(resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'), 'utf8');
     expect(source).toContain('Кабинет сотрудника');
     expect(source).toMatch(/role === 'STAFF'/);
