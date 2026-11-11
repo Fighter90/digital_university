@@ -30,7 +30,7 @@ RUN pnpm build
 # (DIG-18+), копируется только папка prisma/ — entrypoint сам это учтёт.
 # pnpm кладёт реальные пакеты в .pnpm (симлинки в node_modules) — копируем
 # с разыменованием (-L), иначе CLI в рантайме оказывается «пустым».
-RUN mkdir -p /prisma-kit/node_modules/.bin \
+RUN mkdir -p /prisma-kit/node_modules/.bin /prisma-kit/src/generated \
  && cp -rL /app/prisma /prisma-kit/prisma \
  && cp -rL /app/src/generated /prisma-kit/src/generated \
  && cp -rL /app/node_modules /prisma-kit/node_modules
