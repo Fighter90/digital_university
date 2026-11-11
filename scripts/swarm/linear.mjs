@@ -119,11 +119,11 @@ export async function failIssue(identifier, step, msg) {
 export async function lastFailureNotes(identifier) {
   const id = await issueId(identifier);
   const data = await gql(
-    `query($id: String!) { issue(id: $id) { comments(first: 20, orderBy: { createdAt: desc }) { nodes { body } } } }`,
+    `query($id: String!) { issue(id: $id) { comments(first: 100) { nodes { body } } } }`,
     { id },
   );
-  const hit = data.issue.comments.nodes.find((c) => c.body.startsWith('⚠️ Рой споткнулся'));
-  return hit ? hit.body : '';
+  const matches = data.issue.comments.nodes.filter((c) => c.body.startsWith('⚠️ Рой споткнулся'));
+  return matches.length ? matches[matches.length - 1].body : '';
 }
 
 /** Poll a Linear issue until its PR comment round-trips (used by --wait-evidence in tests). */
