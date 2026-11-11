@@ -46,8 +46,9 @@ export const planGates = ({ hasPackageJson, scripts = {}, hasTS = false }) => {
       : hasTS
         ? { name: 'typecheck', cmd: 'npx tsc --noEmit' }
         : { name: 'typecheck', skip: 'no typescript' },
-    has('test') ? { name: 'test', cmd: 'npm test' } : { name: 'test', skip: 'no test script' },
+    // build ДО test: тесты-санити (next-env.d.ts) требуют артефактов сборки на свежем checkout
     has('build') ? { name: 'build', cmd: 'npm run build' } : { name: 'build', skip: 'no build script' },
+    has('test') ? { name: 'test', cmd: 'npm test' } : { name: 'test', skip: 'no test script' },
   ];
 };
 
