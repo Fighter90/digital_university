@@ -20,6 +20,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # src/generated — gitignored (клиент Prisma): генерируем для typecheck/build
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 RUN pnpm exec prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
