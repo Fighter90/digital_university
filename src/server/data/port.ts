@@ -26,9 +26,28 @@ import type {
   ScheduleEventRow,
   ServiceRequestRow,
   StaffRow,
+  StudentNoteRow,
   StudentRow,
   StudentSettingsRow,
 } from './types';
+
+/** DIG-21 — полуинтервал периода расписания [from, to) в инстантах времени. */
+export interface SchedulePeriod {
+  from: Date;
+  to: Date;
+}
+
+/** DIG-21 — изменение пары сотрудником деканата (событие изменения). */
+export interface ScheduleChangePatch {
+  status: ScheduleEventRow['status'];
+  room?: string | null;
+  startsAt?: Date;
+  endsAt?: Date;
+  date?: Date;
+  previousRoom?: string | null;
+  previousStartsAt?: Date | null;
+  changeNote?: string | null;
+}
 
 export interface DataDb {
   // ── directory (ctx resolution) ────────────────────────────────────────────
@@ -63,16 +82,46 @@ export interface DataDb {
   listScheduleByGroup(groupName: string): Promise<ScheduleEventRow[]>;
   listExamsByGroup(groupName: string): Promise<ExamSessionRow[]>;
 
+  // ── DIG-21: schedule by period / notes / staff changes ────────────────────
+  /**
+   * Пары группы за полуинтервал [from, to) по startsAt, отсортированные по
+   * времени. PostgreSQL-адаптер обязан опираться на индекс
+   * ScheduleEvent @@index([groupId, startsAt]) / @@index([groupName, date]).
+   */
+  listScheduleByGroupRange(groupName: string, period: SchedulePeriod): Promise<ScheduleEventRow[]>;
+  /** Probe пары по id БЕЗ скоупа группы — только для аудита отказа. */
+  probeScheduleEventById(id: string): Promise<ScheduleEventRow | null>;
+  /** Патч пары сотрудником (событие изменения). null — пары нет. */
+  saveScheduleEventChange(
+    eventId: string,
+    patch: ScheduleChangePatch,
+  ): Promise<ScheduleEventRow | null>;
+  /** Студенты группы — для fan-out уведомлений об изменениях расписания. */
+  listStudentsByGroup(groupName: string): Promise<StudentRow[]>;
+
+  /** Заметка студента к паре (уникальна по паре студент+пара). */
+  findNoteByStudentAndEvent(studentId: string, eventId: string): Promise<StudentNoteRow | null>;
+  /** Probe заметки по паре БЕЗ владельца — только для аудита отказа. */
+  probeNoteByEvent(eventId: string): Promise<StudentNoteRow | null>;
+  /** Upsert заметки: создаёт или обновляет текст (createdAt сохраняется). */
+  saveNoteByStudent(
+    studentId: string,
+    eventId: string,
+    input: { text: string; createdAt: Date },
+  ): Promise<StudentNoteRow>;
+  /** Удаляет СВОЮ заметку к паре; false — заметки нет. */
+  deleteNoteByStudent(studentId: string, eventId: string): Promise<boolean>;
+
   // ── profile & settings (owner-scoped, DIG-19) ────────────────────────────
   /** Own profile read — the id comes from ctx.studentId, never from input. */
   findStudentById(id: string): Promise<StudentRow | null>;
   findSettingsByStudent(studentId: string): Promise<StudentSettingsRow | null>;
   /** Replaces the whole settings row of the student (all-or-nothing row). */
-  saveSettingsByStudent(studentId: string, settings: StudentSettingsRow): Promise<StudentSettingsRow>;
-  updateStudentContacts(
+  saveSettingsByStudent(
     studentId: string,
-    input: { email: string },
-  ): Promise<StudentRow | null>;
+    settings: StudentSettingsRow,
+  ): Promise<StudentSettingsRow>;
+  updateStudentContacts(studentId: string, input: { email: string }): Promise<StudentRow | null>;
   /**
    * Notification GENERATION entry (DIG-19): appends a row to the student's
    * feed. The suppression by channel matrix lives in profile.ts (business
@@ -80,7 +129,14 @@ export interface DataDb {
    */
   appendNotificationToStudent(
     studentId: string,
-    input: { type: NotificationType; title: string; body: string; createdAt: Date },
+    input: {
+      type: NotificationType;
+      title: string;
+      body: string;
+      createdAt: Date;
+      /** DIG-21 — путь в кабинете (например, «/schedule» для событий расписания). */
+      link?: string | null;
+    },
   ): Promise<NotificationRow>;
   /** «Нашли ошибку в данных?» — creates an OPEN appeal + first student message. */
   appendAppealByStudent(

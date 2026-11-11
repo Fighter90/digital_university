@@ -7,7 +7,7 @@
 // Swapping to PostgreSQL later is a one-line change in src/server/data/db.ts:
 // a Prisma adapter implements the very same `DataDb` signatures.
 
-import type { DataDb } from './port';
+import type { DataDb, ScheduleChangePatch, SchedulePeriod } from './port';
 import type {
   AppealMessageRow,
   AppealRow,
@@ -19,6 +19,7 @@ import type {
   ScheduleEventRow,
   ServiceRequestRow,
   StaffRow,
+  StudentNoteRow,
   StudentRow,
   StudentSettingsRow,
 } from './types';
@@ -36,6 +37,8 @@ export interface MemorySeed {
   exams?: ExamSessionRow[];
   /** DIG-19 — per-student profile settings (contacts visibility, channels, theme). */
   settings?: StudentSettingsRow[];
+  /** DIG-21 — заметки студентов к парам расписания. */
+  notes?: StudentNoteRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -59,11 +62,13 @@ export function createMemoryDataDb(): MemoryDataDb {
   let schedule: ScheduleEventRow[] = [];
   let exams: ExamSessionRow[] = [];
   let settings: StudentSettingsRow[] = [];
+  let notes: StudentNoteRow[] = [];
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
   let appealSeq = 0;
   let appealMessageSeq = 0;
+  let noteSeq = 0;
 
   const by = <T, K extends keyof T>(rows: T[], key: K, value: T[K]) =>
     rows.find((row) => row[key] === value) ?? null;
@@ -81,6 +86,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       schedule = seed.schedule ? seed.schedule.map(clone) : [];
       exams = seed.exams ? seed.exams.map(clone) : [];
       settings = seed.settings ? seed.settings.map(clone) : [];
+      notes = seed.notes ? seed.notes.map(clone) : [];
       audit = [];
     },
 
@@ -142,6 +148,7 @@ export function createMemoryDataDb(): MemoryDataDb {
         type: input.type,
         title: input.title,
         body: input.body,
+        link: input.link ?? null,
         isRead: false,
         createdAt: input.createdAt,
       };
@@ -218,6 +225,61 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
     async listExamsByGroup(groupName) {
       return exams.filter((e) => e.groupName === groupName).map(clone);
+    },
+
+    // ── DIG-21: schedule by period / notes / staff changes ────────────────
+    async listScheduleByGroupRange(groupName, period) {
+      const from = period.from.getTime();
+      const to = period.to.getTime();
+      return schedule
+        .filter(
+          (s) =>
+            s.groupName === groupName && s.startsAt.getTime() >= from && s.startsAt.getTime() < to,
+        )
+        .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+        .map(clone);
+    },
+    async probeScheduleEventById(id) {
+      return clone(by(schedule, 'id', id));
+    },
+    async saveScheduleEventChange(eventId, patch: ScheduleChangePatch) {
+      const row = schedule.find((s) => s.id === eventId);
+      if (!row) return null;
+      Object.assign(row, structuredClone(patch));
+      return clone(row);
+    },
+    async listStudentsByGroup(groupName) {
+      return students.filter((s) => s.groupName === groupName).map(clone);
+    },
+
+    async findNoteByStudentAndEvent(studentId, eventId) {
+      return clone(notes.find((n) => n.studentId === studentId && n.eventId === eventId) ?? null);
+    },
+    async probeNoteByEvent(eventId) {
+      return clone(by(notes, 'eventId', eventId));
+    },
+    async saveNoteByStudent(studentId, eventId, input) {
+      const existing = notes.find((n) => n.studentId === studentId && n.eventId === eventId);
+      if (existing) {
+        existing.text = input.text; // createdAt сохраняется (уникальная заметка к паре)
+        return clone(existing);
+      }
+      noteSeq += 1;
+      const row: StudentNoteRow = {
+        id: `note-${noteSeq}`,
+        studentId,
+        eventId,
+        text: input.text,
+        createdAt: input.createdAt,
+      };
+      notes.push(row);
+      return clone(row);
+    },
+    async deleteNoteByStudent(studentId, eventId) {
+      const index = notes.findIndex((n) => n.studentId === studentId && n.eventId === eventId);
+      if (index === -1) return false;
+      notes.splice(index, 1);
+      return true;
     },
 
     async listStudentsByFaculty(faculty) {

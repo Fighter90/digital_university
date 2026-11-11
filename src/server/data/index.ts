@@ -9,6 +9,26 @@ export { listGrades } from './grades';
 export { listNotifications, markNotificationRead } from './notifications';
 export { listAppeals, getAppeal, listAppealMessages } from './appeals';
 export { listSchedule, listExams } from './schedule';
+export {
+  applyScheduleChange,
+  deleteEventNote,
+  getDay,
+  getEventDetails,
+  getMonth,
+  getNextStudyDay,
+  getSchedule,
+  getToday,
+  getWeek,
+  MAX_NOTE_LENGTH,
+  saveEventNote,
+} from './schedule';
+export type {
+  NextStudyDayView,
+  ScheduleChangeInput,
+  ScheduleEventDetails,
+  ScheduleRangeInput,
+  StaffChangeStatus,
+} from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
 export { getDashboard } from './dashboard';
 export type {
@@ -45,7 +65,7 @@ export {
   isValidRequestNumber,
   REQUEST_NUMBER_PATTERN,
 } from './request-number';
-export type { DataDb } from './port';
+export type { DataDb, SchedulePeriod, ScheduleChangePatch } from './port';
 export {
   type DataCtx,
   type Role,
@@ -71,5 +91,6 @@ export {
   type AppealRow,
   type AppealMessageRow,
   type ScheduleEventRow,
+  type StudentNoteRow,
   type ExamSessionRow,
 } from './types';
