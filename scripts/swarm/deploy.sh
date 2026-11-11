@@ -25,6 +25,9 @@ fi
 echo "==> docker compose build + up"
 $SSH "cd $DIR && docker compose -f deploy/docker-compose.yml build && docker compose -f deploy/docker-compose.yml up -d"
 
+echo "==> db: migrate + seed (tools container)"
+$SSH "cd $DIR && docker compose -f deploy/docker-compose.yml --profile tools run --rm tools sh -c 'node_modules/.bin/prisma migrate deploy && node_modules/.bin/tsx prisma/seed.ts'" || exit 1
+
 echo "==> health check"
 for i in $(seq 1 30); do
   if $SSH "curl -fsS http://localhost:3000/api/health >/dev/null 2>&1"; then echo "OK: app healthy"; exit 0; fi
