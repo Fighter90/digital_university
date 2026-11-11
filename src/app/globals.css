@@ -245,6 +245,21 @@
   .gradient-brand {
     background-image: var(--du-gradient-brand);
   }
+  /* DIG-18: «парящие» карточки на экране входа; без анимации при reduced motion */
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes du-float {
+      0%,
+      100% {
+        transform: translateY(0) rotate(var(--du-float-rotate, 0deg));
+      }
+      50% {
+        transform: translateY(-10px) rotate(var(--du-float-rotate, 0deg));
+      }
+    }
+    .animate-float {
+      animation: du-float 6s ease-in-out infinite;
+    }
+  }
   /* hover-подъём на 2px + тень hover (карточки, primary-кнопки) */
   .lift-hover {
     transition:

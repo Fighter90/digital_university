@@ -1,53 +1,133 @@
 'use client';
 
-// DIG-11 — functional sign-in form wired to the signInAction server action.
-// The visual redesign of this screen is DIG-18 (Figma «02 · Вход»); this
-// component only has to work: labels for e2e, a11y error output, the
-// disabled «Госуслуги (демо)» button required by DIG-11, pending state.
-import { useActionState } from 'react';
+// DIG-18 — экран входа по макету Figma «02 · Вход»: форма с полями 48 px,
+// кнопкой «показать пароль», чипами тестовых аккаунтов (клик заполняет поля),
+// ссылкой «Забыли пароль?» и сохранённым контрактом DIG-11 (server action,
+// role="alert", загрузка на кнопке, неактивная «Госуслуги (демо)»).
+import { useActionState, useState } from 'react';
+import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { signInAction, type SignInFormState } from '@/server/actions/auth';
+import { cn } from 'cn';
+
+/**
+ * Публичные (вымышленные по правилам AGENTS.md) демо-данные из
+ * src/server/data/demo-seed.ts — чипы заполняют форму, чтобы жюри могло
+ * войти одним кликом. Это НЕ секреты: пароли прототипа публичны by design.
+ * Имена/группы совпадают с каноническим датасетом DIG-12 (Анна Ковалёва ·
+ * ПИ-21, Илья Смирнов · ЭК-11, сотрудник Мария Петрова), поэтому чипы
+ * реально входят в кабинет.
+ */
+export const TEST_ACCOUNTS = [
+  { label: 'Анна Ковалёва · ПИ-21', login: 'anna', password: 'demo-anna-2026', role: 'STUDENT' },
+  { label: 'Илья Смирнов · ЭК-11', login: 'ilya', password: 'demo-ilya-2026', role: 'STUDENT' },
+  { label: 'Сотрудник деканата', login: 'maria', password: 'demo-staff-2026', role: 'STAFF' },
+] as const;
+
+const FIELD_CLASS =
+  'h-12 w-full rounded-button border border-input bg-card px-4 text-[15px] text-foreground placeholder:text-foreground-muted focus:border-muted-foreground/40 focus:outline-none';
 
 export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, isPending] = useActionState<SignInFormState, FormData>(
     signInAction,
     null,
   );
+  const [login, setLogin] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <form
-      action={formAction}
-      className="w-full max-w-sm rounded-2xl border border-neutral-200 p-6 shadow-sm"
-    >
-      <h1 className="mb-1 text-xl font-bold">Вход в кабинет</h1>
-      <p className="mb-6 text-sm text-neutral-600">
+    <form action={formAction} className="w-full max-w-md">
+      <h1 className="text-2xl leading-tight sm:text-[28px]">Вход в кабинет</h1>
+      <p className="mt-2 text-sm text-muted-foreground">
         Логин и пароль выдаёт деканат. Вход защищён от подбора пароля.
       </p>
 
-      <label className="mb-1 block text-sm font-medium" htmlFor="login">
-        Логин
-      </label>
-      <input
-        id="login"
-        name="login"
-        autoComplete="username"
-        required
-        className="mb-4 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-      />
+      {/* Тестовые аккаунты: один клик — поля заполнены (сценарий для жюри). */}
+      <div className="mt-6 rounded-card border border-border bg-accent-soft/60 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-accent-ink">
+          Тестовые аккаунты
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Нажмите на чип — логин и пароль подставятся автоматически.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {TEST_ACCOUNTS.map((account) => (
+            <button
+              key={account.login}
+              type="button"
+              onClick={() => {
+                setLogin(account.login);
+                setPassword(account.password);
+              }}
+              className="inline-flex h-9 items-center rounded-pill border border-coral-200 bg-card px-3.5 text-sm font-medium text-foreground shadow-soft transition-colors hover:border-coral-400 hover:text-accent-ink"
+            >
+              {account.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      <label className="mb-1 block text-sm font-medium" htmlFor="password">
-        Пароль
-      </label>
-      <input
-        id="password"
-        name="password"
-        type="password"
-        autoComplete="current-password"
-        required
-        className="mb-2 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-      />
+      <div className="mt-5">
+        <label htmlFor="login" className="mb-1.5 block text-sm font-medium">
+          Логин
+        </label>
+        <input
+          id="login"
+          name="login"
+          value={login}
+          onChange={(event) => setLogin(event.target.value)}
+          autoComplete="username"
+          required
+          placeholder="anna"
+          className={FIELD_CLASS}
+        />
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-1.5 flex items-baseline justify-between gap-3">
+          <label htmlFor="password" className="text-sm font-medium">
+            Пароль
+          </label>
+          <a
+            href="/forgot-password"
+            className="text-sm font-medium text-accent-ink underline-offset-2 hover:underline"
+          >
+            Забыли пароль?
+          </a>
+        </div>
+        <div className="relative">
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password"
+            required
+            placeholder="••••••••"
+            className={cn(FIELD_CLASS, 'pr-12')}
+          />
+          <button
+            type="button"
+            aria-pressed={showPassword}
+            aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+            onClick={() => setShowPassword((value) => !value)}
+            className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {showPassword ? (
+              <EyeOff size={20} aria-hidden="true" />
+            ) : (
+              <Eye size={20} aria-hidden="true" />
+            )}
+          </button>
+        </div>
+      </div>
 
       {state?.error ? (
-        <p role="alert" className="mb-4 text-sm font-medium text-red-700">
+        <p
+          role="alert"
+          className="mt-4 rounded-card-sm border border-error-soft bg-error-soft px-4 py-3 text-sm font-medium text-error-ink"
+        >
           {state.error}
         </p>
       ) : null}
@@ -55,9 +135,16 @@ export function LoginForm({ next }: { next?: string }) {
       <button
         type="submit"
         disabled={isPending}
-        className="mb-3 w-full rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+        className="gradient-brand lift-hover mt-5 inline-flex h-12 w-full select-none items-center justify-center gap-2 rounded-button px-5 text-[15px] font-semibold text-white shadow-soft disabled:pointer-events-none disabled:opacity-60"
       >
-        {isPending ? 'Входим…' : 'Войти'}
+        {isPending ? (
+          <>
+            <LoaderCircle size={18} className="animate-spin" aria-hidden="true" />
+            Входим…
+          </>
+        ) : (
+          'Войти'
+        )}
       </button>
 
       {/* DIG-11: Госуслуги — только неактивная демонстрационная кнопка, интеграции нет. */}
@@ -66,12 +153,10 @@ export function LoginForm({ next }: { next?: string }) {
         disabled
         aria-disabled="true"
         title="Демонстрация: интеграция с Госуслугами не входит в прототип"
-        className="w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm font-medium text-neutral-500"
+        className="mt-3 inline-flex h-12 w-full items-center justify-center gap-2 rounded-button border border-border bg-card text-[15px] font-medium text-muted-foreground"
       >
         Войти через Госуслуги
-        <span className="ml-1 rounded bg-neutral-100 px-1.5 py-0.5 text-xs uppercase text-neutral-500">
-          демо
-        </span>
+        <span className="rounded bg-muted px-1.5 py-0.5 text-xs uppercase">демо</span>
       </button>
 
       {next ? <input type="hidden" name="next" value={next} /> : null}

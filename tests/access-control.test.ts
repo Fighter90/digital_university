@@ -17,6 +17,7 @@ describe('route guard: public vs protected paths', () => {
   it.each([
     ['/', true],
     ['/login', true],
+    ['/forgot-password', true], // DIG-18: stub screen «Забыли пароль?» остаётся публичным
     ['/login?next=%2F', true],
     ['/api/health', true],
     ['/dashboard', false],

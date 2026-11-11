@@ -11,6 +11,7 @@ export { listSchedule, listExams } from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
 export { denyAccess } from './access';
 export { uniformNotFoundResponse } from './http';
+export { ensureAppData } from './bootstrap';
 export {
   newRequestNumber,
   normalizeRequestNumber,
