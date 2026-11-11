@@ -9,8 +9,7 @@ const TEAM_ID = 'dbf2aaaf-98b0-4daa-9ad0-3a6ed3baee0f';
 export const LABEL = 'swarm';
 
 const STATES = `query($team: ID!) { workflowStates(filter: { team: { id: { eq: $team } } }) { nodes { id name type } } }`;
-const states = async () =>
-  (await gql(STATES, { team: TEAM_ID })).workflowStates.nodes;
+const states = async () => (await gql(STATES, { team: TEAM_ID })).workflowStates.nodes;
 
 const key = () => process.env.LINEAR_DIGITAL_UNIVERSITY_API_KEY;
 
@@ -51,48 +50,88 @@ export async function pickIssue({ pin = '' } = {}) {
     );
   }
   if (!candidates.length) return null;
-  candidates.sort((a, b) => (a.priority || 0) - (b.priority || 0) || a.identifier.localeCompare(b.identifier, undefined, { numeric: true }));
+  candidates.sort(
+    (a, b) =>
+      (a.priority || 0) - (b.priority || 0) ||
+      a.identifier.localeCompare(b.identifier, undefined, { numeric: true }),
+  );
   const i = candidates[0];
-  return { id: i.id, identifier: i.identifier, title: i.title, description: i.description || '', branch: i.branchName || '' };
+  return {
+    id: i.id,
+    identifier: i.identifier,
+    title: i.title,
+    description: i.description || '',
+    branch: i.branchName || '',
+  };
 }
 
 const issueId = async (identifier) =>
-  (
-    await gql(`query($id: String!) { issue(id: $id) { id } }`, { id: identifier })
-  ).issue.id;
+  (await gql(`query($id: String!) { issue(id: $id) { id } }`, { id: identifier })).issue.id;
 
 export async function claimIssue(identifier) {
   const id = await issueId(identifier);
-  const stateId = (await states()).find((s) => s.type === 'started' && s.name === 'In Progress')?.id;
+  const stateId = (await states()).find(
+    (s) => s.type === 'started' && s.name === 'In Progress',
+  )?.id;
   if (!stateId) throw new Error('In Progress state not found in team DIG');
-  await gql(`mutation($id: String!, $state: String!) { issueUpdate(id: $id, input: { stateId: $state }) { success } }`, { id, state: stateId });
-  await addComment(identifier, '🎯 Рой принял задачу: executor → гейты → ревью → security → PR. Статусы ведёт оркестратор.');
+  await gql(
+    `mutation($id: String!, $state: String!) { issueUpdate(id: $id, input: { stateId: $state }) { success } }`,
+    { id, state: stateId },
+  );
+  await addComment(
+    identifier,
+    '🎯 Рой принял задачу: executor → гейты → ревью → security → PR. Статусы ведёт оркестратор.',
+  );
 }
 
 export async function addComment(identifier, body) {
   const id = await issueId(identifier);
-  await gql(`mutation($id: String!, $body: String!) { commentCreate(input: { issueId: $id, body: $body }) { success } }`, { id, body });
+  await gql(
+    `mutation($id: String!, $body: String!) { commentCreate(input: { issueId: $id, body: $body }) { success } }`,
+    { id, body },
+  );
 }
 
 export async function doneIssue(identifier, evidence) {
   const id = await issueId(identifier);
   const stateId = (await states()).find((s) => s.type === 'completed')?.id;
   if (!stateId) throw new Error('Done state not found in team DIG');
-  await gql(`mutation($id: String!, $state: String!) { issueUpdate(id: $id, input: { stateId: $state }) { success } }`, { id, state: stateId });
+  await gql(
+    `mutation($id: String!, $state: String!) { issueUpdate(id: $id, input: { stateId: $state }) { success } }`,
+    { id, state: stateId },
+  );
   await addComment(identifier, evidence);
 }
 
 export async function failIssue(identifier, step, msg) {
   try {
-    await addComment(identifier, `⚠️ Рой споткнулся на шаге **${step}**: ${String(msg).slice(0, 400)}\n\nВетка оставлена для человека; задача остаётся в In Progress — закрыть может только человек.`);
+    await addComment(
+      identifier,
+      `⚠️ Рой споткнулся на шаге **${step}**: ${String(msg).slice(0, 3000)}\n\nВетка оставлена для человека; задача остаётся в In Progress — закрыть может только человек.`,
+    );
   } catch (e) {
     console.error(`(linear failure-report also failed: ${e.message})`);
   }
 }
 
+/** The orchestrator's last failure comment for this issue (⚠️ …) — carries review
+ *  findings across restarts so a re-queued task starts with them, not from zero. */
+export async function lastFailureNotes(identifier) {
+  const id = await issueId(identifier);
+  const data = await gql(
+    `query($id: String!) { issue(id: $id) { comments(first: 20, orderBy: { createdAt: desc }) { nodes { body } } } }`,
+    { id },
+  );
+  const hit = data.issue.comments.nodes.find((c) => c.body.startsWith('⚠️ Рой споткнулся'));
+  return hit ? hit.body : '';
+}
+
 /** Poll a Linear issue until its PR comment round-trips (used by --wait-evidence in tests). */
 export const normalizeIdentifier = (s) => {
-  const m = String(s || '').trim().toUpperCase().match(/^DIG-\d+$/);
+  const m = String(s || '')
+    .trim()
+    .toUpperCase()
+    .match(/^DIG-\d+$/);
   if (!m) throw new Error(`bad identifier: ${s}`);
   return m[0];
 };
