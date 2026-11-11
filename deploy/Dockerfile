@@ -28,12 +28,14 @@ RUN pnpm build
 # prisma-схема/миграции и CLI — в рантайм (миграции применяются при старте
 # контейнера, deploy/docker-entrypoint.sh). Пока prisma не в зависимостях
 # (DIG-18+), копируется только папка prisma/ — entrypoint сам это учтёт.
+# pnpm кладёт реальные пакеты в .pnpm (симлинки в node_modules) — копируем
+# с разыменованием (-L), иначе CLI в рантайме оказывается «пустым».
 RUN mkdir -p /prisma-kit/node_modules/.bin \
- && cp -r /app/prisma /prisma-kit/prisma \
+ && cp -rL /app/prisma /prisma-kit/prisma \
  && if [ -d /app/node_modules/prisma ]; then \
-      cp -r /app/node_modules/prisma /prisma-kit/node_modules/prisma; \
-      cp -r /app/node_modules/@prisma /prisma-kit/node_modules/@prisma; \
-      cp /app/node_modules/.bin/prisma /prisma-kit/node_modules/.bin/prisma; \
+      cp -rL /app/node_modules/prisma /prisma-kit/node_modules/prisma; \
+      cp -rL /app/node_modules/@prisma /prisma-kit/node_modules/@prisma; \
+      cp -L /app/node_modules/.bin/prisma /prisma-kit/node_modules/.bin/prisma; \
     fi
 
 FROM base AS runner
