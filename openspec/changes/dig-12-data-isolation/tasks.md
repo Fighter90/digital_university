@@ -1,20 +1,5 @@
 # DIG-12 — задачи
 
-## Раунд 2 (ревью вернуло: «тест-гейты упали»)
-
-- [x] Гейт build падал случайным ENOENT в `.next`: Next вывел workspace root
-  по чужому `package-lock.json` в домашней папке машины роя. Фикс:
-  `turbopack.root` закреплён в `next.config.ts` — гейты зелёные повторно.
-- [x] API-изоляция в dev не видела сессию: Turbopack держит отдельные
-  server-бандлы для страниц и роутов, модульный синглтон authStore давал
-  роуту пустое хранилище. Фикс: globalThis-кэш синглтонов
-  (`src/server/auth/store.ts`, `db.ts`, `bootstrap.ts`).
-- [x] `notFound()` на detail-странице в dev-режиме отвечал 200 (стриминг
-  заголовков раньше 404). Фикс: убран `loading.tsx` над `[number]` (см.
-  комментарий в странице) и e2e переведены на production-сборку
-  (`playwright.config.ts`: `pnpm build && pnpm start`) — статус 404
-  детерминированный, suite не зависит от состояния `.next`.
-
 ## Red-first (тесты до реализации)
 
 - [x] `tests/data-isolation.test.ts` — RED до реализации: для КАЖДОЙ функции
