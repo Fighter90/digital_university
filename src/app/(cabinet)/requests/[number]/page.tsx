@@ -35,7 +35,7 @@ export default async function RequestDetailPage({
   if (!events) notFound();
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
+    <section className="mx-auto max-w-3xl px-4 py-8">
       <Link
         href="/requests"
         className="mb-4 inline-block text-sm text-neutral-600 hover:text-neutral-900"
@@ -71,6 +71,6 @@ export default async function RequestDetailPage({
           </li>
         ))}
       </ol>
-    </main>
+    </section>
   );
 }

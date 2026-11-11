@@ -12,7 +12,7 @@ export default async function RequestsPage() {
   const requests = await listRequests(dataDb, ctx);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
+    <section className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="mb-1 text-xl font-bold sm:text-2xl">Мои заявки</h1>
       <p className="mb-6 text-sm text-neutral-600">
         Заявки и обращения в деканат. Видны только ваши заявки — чужие не открываются даже по
@@ -50,6 +50,6 @@ export default async function RequestsPage() {
           ))}
         </ul>
       )}
-    </main>
+    </section>
   );
 }

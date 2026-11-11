@@ -2,9 +2,37 @@
 // Пиним контракты приёмки: состав меню и таб-бара, подсветка активного раздела
 // (единая логика для меню и таб-бара) и поведение страниц (композишн внутри
 // main-региона Shell).
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createElement, type ComponentType } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { prerenderToNodeStream } from 'react-dom/static';
+
+// Страницы кабинета защищены requireUser() → cookies() (Next request scope).
+// В юнит-тесте рендера скоупа нет — мокаем сессию студентом: цель теста —
+// структура landmark'ов, а не авторизация (её покрывают auth-* и e2e).
+vi.mock('@/server/auth/session', () => ({
+  requireUser: vi.fn(async () => ({ id: 'u_test', login: 'student1', role: 'STUDENT' as const })),
+  requireStaff: vi.fn(async () => ({ id: 'u_test', login: 'staff1', role: 'STAFF' as const })),
+  getAuthSession: vi.fn(async () => null),
+}));
+vi.mock('@/server/data', () => ({
+  requireDataCtx: vi.fn(async () => ({
+    userId: 'u_test',
+    studentId: 's_test',
+    role: 'STUDENT' as const,
+    login: 'student1',
+  })),
+  listRequests: vi.fn(async () => [
+    {
+      number: 'ЗД-2026-000001',
+      type: 'SPRAVKA' as const,
+      status: 'NEW' as const,
+      title: 'Справка об обучении',
+      createdAt: new Date('2026-11-01T10:00:00Z'),
+      updatedAt: new Date('2026-11-01T10:00:00Z'),
+    },
+  ]),
+}));
+import { Readable } from 'node:stream';
 import {
   CABINET_SECTIONS,
   MORE_SECTIONS,
@@ -115,17 +143,29 @@ describe('cabinet pages render inside the shell main region', () => {
     ['/more', MorePage],
   ];
 
-  it('no cabinet page renders its own <main> landmark', () => {
+  // Страницы кабинета — асинхронные серверные компоненты (RSC): синхронный
+  // renderToStaticMarkup на них падает («component suspended»), рендерим
+  // через prerender (React 19) и собираем прелюдию в строку.
+  async function renderPage(Page: ComponentType): Promise<string> {
+    const { prelude } = await prerenderToNodeStream(createElement(Page));
+    let html = '';
+    for await (const chunk of prelude) {
+      html += String(chunk);
+    }
+    return html;
+  }
+
+  it('no cabinet page renders its own <main> landmark', async () => {
     for (const [href, Page] of PAGES) {
-      const html = renderToStaticMarkup(createElement(Page));
+      const html = await renderPage(Page);
       expect(html, `${href} must not nest <main> inside the shell main region`).not.toContain(
         '<main',
       );
     }
   });
 
-  it('dashboard keeps its content on a section wrapper', () => {
-    const html = renderToStaticMarkup(createElement(DashboardPage));
+  it('dashboard keeps its content on a section wrapper', async () => {
+    const html = await renderPage(DashboardPage);
     expect(html).toContain('<section');
     expect(html).toContain('Кабинет студента');
   });
