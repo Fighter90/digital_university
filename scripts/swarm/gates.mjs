@@ -29,10 +29,11 @@ const plan = () => {
   out.push(lint ? { ...lint, name: 'lint' } : { name: 'lint', cmd: 'npx next lint', skip: 'no lint script' });
   const type = has('typecheck') || (hasTS ? { cmd: 'npx tsc --noEmit' } : null);
   out.push(type ? { ...type, name: 'typecheck' } : { name: 'typecheck', cmd: null, skip: 'no typescript' });
-  const test = has('test');
-  out.push(test ? { ...test, name: 'test' } : { name: 'test', cmd: null, skip: 'no test script' });
+  // build ДО test: тесты-санити (next-env.d.ts) требуют артефактов сборки на свежем checkout
   const build = has('build');
   out.push(build ? { ...build, name: 'build' } : { name: 'build', cmd: null, skip: 'no build script' });
+  const test = has('test');
+  out.push(test ? { ...test, name: 'test' } : { name: 'test', cmd: null, skip: 'no test script' });
   return out;
 };
 
