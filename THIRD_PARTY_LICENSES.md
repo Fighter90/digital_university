@@ -21,6 +21,9 @@ ISC / OFL для шрифтов). Данные собраны по `license`-п�
 | @node-rs/argon2 | MIT | хэширование паролей argon2id (DIG-11, параметры OWASP) |
 | Inter | OFL 1.1 | шрифт (next/font/google, как в макетах Figma) |
 
+> DIG-13: шрифт интерфейса — **Onest** (OFL 1.1, next/font/google); Inter из
+> каркаса заменён. lucide-react (ISC) — иконки, stroke 1.8.
+
 ## Dev-зависимости
 
 | Пакет | Лицензия | Назначение |
