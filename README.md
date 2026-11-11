@@ -38,6 +38,18 @@ pnpm dev
 
 Приложение: http://localhost:3000. Требования: Node 22 LTS, pnpm 10 (`corepack enable`).
 
+### Запуск в Docker (одна команда)
+
+```bash
+cp .env.example .env
+docker compose -f deploy/docker-compose.yml up --build
+```
+
+Тот же стек, что и на проде: app (Next.js standalone) + PostgreSQL 16 +
+Caddy (авто-TLS в проде). Кабинет — http://localhost:3000, health —
+`/api/health`; миграции Prisma применяются при старте контейнера. Подробности —
+[`docs/deploy.md`](docs/deploy.md).
+
 Проверки: `pnpm lint` · `pnpm typecheck` · `pnpm test` (Vitest unit + swarm) ·
 `pnpm e2e` (Playwright: desktop-1440 и mobile-360×800). БД (Prisma/PostgreSQL) и
 вход подключаются в следующих задачах — скаффолд работает без них.

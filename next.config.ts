@@ -1,5 +1,7 @@
 import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {/* config options here */};
+// DIG-7: standalone-сборка — самодостаточный сервер для Docker-образа
+// (deploy/Dockerfile, docker compose: app + db + caddy).
+const nextConfig: NextConfig = { output: 'standalone' };
 
 export default nextConfig;

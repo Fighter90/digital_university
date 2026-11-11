@@ -10,9 +10,9 @@ MAX_ROUNDS="${SWARM_ROUNDS:-3}"
 
 while true; do
   # stale-lock cleanup is built into the orchestrator (acquireLock)
-  node scripts/swarm/orchestrator.mjs --max 1 --rounds "$MAX_ROUNDS" 2>&1 | tee -a /tmp/swarm-orch.log
+  node scripts/swarm/orchestrator.mjs --max 1 --rounds "$MAX_ROUNDS" 2>&1 | tee -a /tmp/swarm-orch-digital-university.log
   code=$?
-  if grep -q "queue empty" <(tail -3 /tmp/swarm-orch.log); then
+  if grep -q "queue empty" <(tail -3 /tmp/swarm-orch-digital-university.log); then
     echo "[supervisor] queue empty — exiting"
     break
   fi

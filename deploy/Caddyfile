@@ -1,0 +1,25 @@
+# deploy/Caddyfile — DIG-7: reverse proxy перед Next.js, автоматический HTTPS.
+# Адрес сайта приходит из .env:
+#   локально: SITE_ADDRESS=:80 (по умолчанию, TLS не нужен)
+#   прод:     SITE_ADDRESS=ostrovok.store — Caddy сам получит и продлит
+#             сертификат Let's Encrypt (HTTP-01, A-записи смотрят на сервер).
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy app:3000
+}
+
+# www → основной домен (актуально для прода; локально сайт-блок слушает :81
+# внутри контейнера и наружу не публикуется).
+{$SITE_ADDRESS_WWW::81} {
+	redir https://{$SITE_ADDRESS}{uri} permanent
+}

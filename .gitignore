@@ -30,6 +30,9 @@ dist/
 blob-report/
 playwright/.cache/
 
+# prisma client (генерируется `prisma generate`, DIG-9/DIG-10)
+src/generated/
+
 # misc
 .DS_Store
 *.pem
@@ -44,3 +47,7 @@ yarn-error.log*
 
 # openspec runtime artifacts (не коммитим черновики, changes коммитим)
 openspec/.cache/
+
+# prisma client generation output
+src/generated/
+.next-dev/

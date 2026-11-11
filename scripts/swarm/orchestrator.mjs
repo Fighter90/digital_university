@@ -25,7 +25,15 @@ import {
   appendFileSync,
 } from 'node:fs';
 import { resolve } from 'node:path';
-import { pickIssue, claimIssue, doneIssue, failIssue, addComment, LABEL } from './linear.mjs';
+import {
+  pickIssue,
+  claimIssue,
+  doneIssue,
+  failIssue,
+  addComment,
+  lastFailureNotes,
+  LABEL,
+} from './linear.mjs';
 
 const ROOT = process.cwd();
 const SWARM = resolve(ROOT, 'scripts/swarm');
@@ -257,7 +265,17 @@ async function main() {
         log('queue empty — no Todo issues labeled `swarm`.');
         break;
       }
+<<<<<<< HEAD
       log(`picked ${issue.identifier}: ${issue.title}`);
+=======
+      // carry the previous cycle's review findings into the executor's context
+      const prior = await lastFailureNotes(issue.identifier);
+      if (prior)
+        issue.description = `${issue.description}\n\n---\nПРЕДЫДУЩИЕ ЗАМЕЧАНИЯ РОЯ (исправь каждый пункт):\n${prior}`;
+      log(
+        `picked ${issue.identifier}: ${issue.title}${prior ? ' (+ предыдущие замечания ревью)' : ''}`,
+      );
+>>>>>>> origin/main
       if (DRY) {
         log('dry-run: would claim → develop → gates → review → security → document → PR → Done.');
         break;
@@ -432,7 +450,11 @@ async function main() {
           await failIssue(
             issue.identifier,
             'review',
+<<<<<<< HEAD
             `нет ACCEPT за ${MAX_ROUNDS} раунда; ветка ${branch} оставлена человеку`,
+=======
+            `нет ACCEPT за ${MAX_ROUNDS} раунда.\nЗамечания последнего ревью (исправить в первую очередь):\n${(reviewNotes || '(без деталей)').slice(0, 2500)}`,
+>>>>>>> origin/main
           );
           throw new Error('review: no ACCEPT');
         }

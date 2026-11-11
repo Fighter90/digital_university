@@ -1,0 +1,23 @@
+# DIG-7 — приёмка: в репозитории нет ни одного секрета (gitleaks в CI).
+# Реальные значения живут только в .env / .env.production (вне git) и в
+# секретах хостинга. Шаблон .env.example содержит плейсхолдеры.
+name: secrets-scan
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

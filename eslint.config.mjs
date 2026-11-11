@@ -12,15 +12,23 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
+<<<<<<< HEAD
+=======
+    // src/generated/** — код, генерируемый Prisma (DIG-9/DIG-10); не линтуем и не коммитим.
+>>>>>>> origin/main
     ignores: [
       'node_modules/**',
       '.next/**',
       'out/**',
       'build/**',
       'next-env.d.ts',
+<<<<<<< HEAD
       // prisma generated client (DIG-10) и SQL-миграции не линтятся
       'src/generated/**',
       'prisma/migrations/**',
+=======
+      'src/generated/**',
+>>>>>>> origin/main
     ],
   },
 ];
