@@ -18,6 +18,7 @@ ISC / OFL для шрифтов). Данные собраны по `license`-п�
 | lucide-react | ISC | иконки shadcn/ui |
 | tw-animate-css | MIT | анимации Tailwind v4 (шаблон shadcn) |
 | shadcn | MIT | пакет стилей shadcn (`shadcn/tailwind.css` в globals.css) |
+| @node-rs/argon2 | MIT | хэширование паролей argon2id (DIG-11, параметры OWASP) |
 | Inter | OFL 1.1 | шрифт (next/font/google, как в макетах Figma) |
 
 ## Dev-зависимости
