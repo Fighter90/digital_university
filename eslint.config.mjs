@@ -13,6 +13,9 @@ const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
     // src/generated/** — код, генерируемый Prisma (DIG-9/DIG-10); не линтуем и не коммитим.
+    // Артефакты тест-ранов (Playwright/Vitest/node --test, swarm runtime) тоже не линтуем:
+    // `eslint` без аргументов обходит весь репозиторий, и эти каталоги появляются/удаляются
+    // во время прогона тестов — иначе glob-обход ловит ENOENT на гонке (гейт DIG-23, раунд 2).
     ignores: [
       'node_modules/**',
       '.next/**',
@@ -21,6 +24,12 @@ const eslintConfig = [
       'build/**',
       'next-env.d.ts',
       'src/generated/**',
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
+      'blob-report/**',
+      'playwright/.cache/**',
+      '.task-board/**',
     ],
   },
   {

@@ -44,11 +44,9 @@ describe('dev и build не делят distDir (корень ENOENT pages-manife
 });
 
 describe('npm run build — герметичный прогон (без переиспользования состояния)', () => {
-  it('build чистит .next перед сборкой и сохраняет route-types', () => {
+  it('build — обычный webpack-прогон (прелюдия чистки .next ломала манифесты webpack)', () => {
     const build = pkg().scripts.build;
-    expect(build).toMatch(/readdirSync\('\.next'\)/);
-    expect(build).toMatch(/'types'/); // route-types не удалять: TS6053 в typecheck
-    expect(build).toContain('next build');
+    expect(build).toBe('next build');
   });
 
   it('.next-dev игнорируется git и eslint (артефакты, не исходники)', () => {

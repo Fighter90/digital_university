@@ -114,6 +114,10 @@ test.describe('desktop 1440 — неделя в стиле Google Calendar', () 
 
   test('keyboard ←/→ flip weeks, Esc closes the details panel', async ({ page }) => {
     await page.goto('/schedule');
+    // Гидрация: ←/→ листают недели через router.push из client-эффекта —
+    // нажатие до гидрации будет проглочено (маркер — красная линия «сейчас»,
+    // она появляется только после mount).
+    await expect(page.getByTestId('now-line')).toBeVisible({ timeout: 15_000 });
     const startKey = await page.getByTestId('week-board').getAttribute('data-week-key');
 
     // ← : неделя назад

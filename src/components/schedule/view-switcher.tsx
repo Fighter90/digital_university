@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // DIG-23: ViewSwitcher — переключатель День / Неделя / Месяц поверх Segmented.
@@ -21,8 +22,17 @@ export interface ViewSwitcherProps {
 export function ViewSwitcher({ view, platform }: ViewSwitcherProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Маркер гидрации: SSR-кнопки кликабельны ДО привязки обработчиков —
+  // проглоченный в этом окне клик не навигирует (урок DIG-50 о hydration-
+  // wait в e2e). data-hydrated="true" — сигнал готовности к интерактиву.
+  useEffect(() => {
+    rootRef.current?.setAttribute('data-hydrated', 'true');
+  }, []);
+
   return (
-    <div data-testid={`view-switcher-${platform}`}>
+    <div ref={rootRef} data-testid={`view-switcher-${platform}`} data-hydrated="false">
       <Segmented
         aria-label={`Вид расписания (${platform === 'desktop' ? 'основной' : 'мобильный'})`}
         value={view}

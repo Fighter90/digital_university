@@ -175,9 +175,13 @@ describe('/schedule (DIG-23) — без ?view= (auto: десктоп-недел�
     expect(html).toContain('data-testid="view-switcher-desktop"');
     expect(html).toContain('data-testid="view-switcher-mobile"');
     const desktop = html.slice(html.indexOf('view-switcher-desktop'));
-    expect(desktop).toMatch(/aria-checked="true"[^>]*>\s*Неделя|Неделя[\s\S]{0,80}aria-checked="true"/);
+    expect(desktop).toMatch(
+      /aria-checked="true"[^>]*>\s*Неделя|Неделя[\s\S]{0,80}aria-checked="true"/,
+    );
     const mobile = html.slice(html.indexOf('view-switcher-mobile'));
     expect(mobile).toMatch(/aria-checked="true"[^>]*>\s*День|День[\s\S]{0,80}aria-checked="true"/);
+    // маркер гидрации в SSR — "false"; клиент выставит "true" после mount
+    expect(html).toContain('data-hydrated="false"');
   });
 });
 

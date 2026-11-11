@@ -2,6 +2,10 @@ import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
+  // Машина под нагрузкой роя (параллельные executor'ы): тесты с build/lint
+  // внутри — тяжёлые; 5s по умолчанию нестабильно (урок 2026-11-11).
+  testTimeout: 30_000,
+  hookTimeout: 30_000,
   test: {
     environment: 'node',
     include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],

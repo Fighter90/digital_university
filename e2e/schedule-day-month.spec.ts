@@ -16,6 +16,24 @@ function todayKey(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Moscow' }).format(new Date());
 }
 
+/**
+ * Клик по радио переключателя видов после гидрации: SSR-кнопки кликабельны
+ * до привязки обработчиков, и проглоченный в этом окне клик не навигирует
+ * (урок DIG-50 — hydration + settle waits для клиентских интеракций).
+ */
+async function switchView(page: Page, platform: 'desktop' | 'mobile', label: string) {
+  const switcher = page.getByTestId(`view-switcher-${platform}`);
+  await expect(switcher).toHaveAttribute('data-hydrated', 'true', { timeout: 15_000 });
+  await switcher.getByRole('radio', { name: label }).click();
+}
+
+/** Дождаться гидрации мобильного вида (свайпы и лента живут на обработчиках). */
+async function waitMobileHydrated(page: Page) {
+  await expect(page.getByTestId('mobile-schedule')).toHaveAttribute('data-hydrated', 'true', {
+    timeout: 15_000,
+  });
+}
+
 /** Вход тестового студента через чип демо-аккаунта. */
 async function signIn(page: Page) {
   await page.goto('/login');
@@ -103,7 +121,7 @@ test.describe('desktop 1440 — виды «День» и «Месяц»', () => 
     await expect(desktopSwitcher).toBeVisible();
     await expect(desktopSwitcher.getByRole('radio', { name: 'День' })).toBeEnabled();
 
-    await desktopSwitcher.getByRole('radio', { name: 'День' }).click();
+    await switchView(page, 'desktop', 'День');
     await expect(page).toHaveURL(/view=day/);
     await expect(page.getByTestId('desktop-day')).toBeVisible();
     await expect(page.getByTestId('day-card-sch-pi21-1')).toBeVisible();
@@ -112,8 +130,7 @@ test.describe('desktop 1440 — виды «День» и «Месяц»', () => 
   test('«Месяц» открывает сетку с точками пар и выделенным «сегодня»', async ({ page }) => {
     await page.goto('/schedule');
 
-    const desktopSwitcher = page.getByTestId('view-switcher-desktop');
-    await desktopSwitcher.getByRole('radio', { name: 'Месяц' }).click();
+    await switchView(page, 'desktop', 'Месяц');
     await expect(page).toHaveURL(/\/schedule\?view=month$/);
     await expect(page.getByTestId('month-grid')).toBeVisible();
 
@@ -183,6 +200,7 @@ test.describe('mobile 360 — лента дат и свайп', () => {
 
   test('свайп влево и вправо по списку листает дни', async ({ page }) => {
     await page.goto('/schedule');
+    await waitMobileHydrated(page);
     await expect(page.getByTestId('mobile-day-title')).toBeVisible();
 
     await swipe(page, '[data-testid="mobile-day-list"]', 'left');
@@ -231,7 +249,7 @@ test.describe('mobile 360 — лента дат и свайп', () => {
 
   test('переключатель «Неделя» показывает компактный список по дням', async ({ page }) => {
     await page.goto('/schedule');
-    await page.getByTestId('view-switcher-mobile').getByRole('radio', { name: 'Неделя' }).click();
+    await switchView(page, 'mobile', 'Неделя');
 
     const weekList = page.getByTestId('mobile-week-list');
     await expect(weekList).toBeVisible();
@@ -259,6 +277,7 @@ test.describe('mobile 360 — лента дат и свайп', () => {
 
   test('пустой день: иллюстрация и ближайшие пары', async ({ page }) => {
     await page.goto('/schedule');
+    await waitMobileHydrated(page);
     await swipe(page, '[data-testid="mobile-day-list"]', 'right'); // вчера
     await expect(page.getByTestId('mobile-day-empty')).toBeVisible();
     await expect(page.getByText(/Ближайшие пары|В семестре пар больше нет/)).toBeVisible();

@@ -64,7 +64,10 @@ describe('ViewSwitcher', () => {
       expect(screen.getByRole('radio', { name })).toBeEnabled();
     }
     expect(screen.getByRole('radio', { name: 'День' })).toBeChecked();
-    expect(screen.getByTestId('view-switcher-mobile')).toBeInTheDocument();
+    const root = screen.getByTestId('view-switcher-mobile');
+    expect(root).toBeInTheDocument();
+    // после гидрации маркер готовности к интерактиву выставлен
+    expect(root).toHaveAttribute('data-hydrated', 'true');
   });
 
   it('клик по виду строит URL с переносом контекста (?date → ?week)', () => {

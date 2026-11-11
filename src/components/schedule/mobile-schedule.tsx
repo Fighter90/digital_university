@@ -51,6 +51,14 @@ const SWIPE_THRESHOLD = 48;
 export function MobileSchedule({ mode, days, initialDateKey, nextStudy }: MobileScheduleProps) {
   const [selectedKey, setSelectedKey] = useState(initialDateKey);
   const ribbonRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  // Маркер гидрации: свайп и клики ленты живут на обработчиках, которые
+  // появляются только после гидрации — e2e ждут data-hydrated="true",
+  // чтобы жест по SSR-разметке не был проглочен (урок DIG-50).
+  useEffect(() => {
+    rootRef.current?.setAttribute('data-hydrated', 'true');
+  }, []);
 
   const selectedIndex = useMemo(() => {
     const index = days.findIndex((day) => day.dateKey === selectedKey);
@@ -100,7 +108,12 @@ export function MobileSchedule({ mode, days, initialDateKey, nextStudy }: Mobile
   }
 
   return (
-    <div data-testid="mobile-schedule" className="flex flex-col gap-3">
+    <div
+      ref={rootRef}
+      data-testid="mobile-schedule"
+      data-hydrated="false"
+      className="flex flex-col gap-3"
+    >
       {/* Лента дат недели: скроллится сама, страницу не двигает */}
       <div
         ref={ribbonRef}
