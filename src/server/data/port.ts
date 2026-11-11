@@ -18,6 +18,8 @@ import type {
   AppealMessageRow,
   AppealRow,
   AuditLogRow,
+  DisciplineElementRow,
+  DisciplineRow,
   ExamSessionRow,
   GradeRow,
   NotificationRow,
@@ -81,6 +83,17 @@ export interface DataDb {
   // ── schedule / exams (group-scoped) ───────────────────────────────────────
   listScheduleByGroup(groupName: string): Promise<ScheduleEventRow[]>;
   listExamsByGroup(groupName: string): Promise<ExamSessionRow[]>;
+
+  // ── DIG-25: успеваемость (group-scoped справочники + оценки группы) ──────
+  /** Дисциплины группы с кредитами (GPA взвешен кредитами). */
+  listDisciplinesByGroup(groupName: string): Promise<DisciplineRow[]>;
+  /** Полный план контроля группы: все элементы, включая неоценённые. */
+  listDisciplineElementsByGroup(groupName: string): Promise<DisciplineElementRow[]>;
+  /**
+   * Оценки ВСЕХ студентов группы — только для агрегатов рейтинга внутри
+   * слоя данных (наружу идут места/перцентили, не чужие строки).
+   */
+  listGradesByGroup(groupName: string): Promise<GradeRow[]>;
 
   // ── DIG-21: schedule by period / notes / staff changes ────────────────────
   /**

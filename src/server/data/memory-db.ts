@@ -12,6 +12,8 @@ import type {
   AppealMessageRow,
   AppealRow,
   AuditLogRow,
+  DisciplineElementRow,
+  DisciplineRow,
   ExamSessionRow,
   GradeRow,
   NotificationRow,
@@ -39,6 +41,9 @@ export interface MemorySeed {
   settings?: StudentSettingsRow[];
   /** DIG-21 — заметки студентов к парам расписания. */
   notes?: StudentNoteRow[];
+  /** DIG-25 — справочник дисциплин группы (кредиты) и план контроля. */
+  disciplines?: DisciplineRow[];
+  elements?: DisciplineElementRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -61,6 +66,8 @@ export function createMemoryDataDb(): MemoryDataDb {
   let appealMessages: AppealMessageRow[] = [];
   let schedule: ScheduleEventRow[] = [];
   let exams: ExamSessionRow[] = [];
+  let disciplines: DisciplineRow[] = [];
+  let elements: DisciplineElementRow[] = [];
   let settings: StudentSettingsRow[] = [];
   let notes: StudentNoteRow[] = [];
   let audit: AuditLogRow[] = [];
@@ -85,6 +92,8 @@ export function createMemoryDataDb(): MemoryDataDb {
       appealMessages = seed.appealMessages ? seed.appealMessages.map(clone) : [];
       schedule = seed.schedule ? seed.schedule.map(clone) : [];
       exams = seed.exams ? seed.exams.map(clone) : [];
+      disciplines = seed.disciplines ? seed.disciplines.map(clone) : [];
+      elements = seed.elements ? seed.elements.map(clone) : [];
       settings = seed.settings ? seed.settings.map(clone) : [];
       notes = seed.notes ? seed.notes.map(clone) : [];
       audit = [];
@@ -225,6 +234,20 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
     async listExamsByGroup(groupName) {
       return exams.filter((e) => e.groupName === groupName).map(clone);
+    },
+
+    // ── DIG-25: справочники успеваемости (group-scoped) ───────────────────
+    async listDisciplinesByGroup(groupName) {
+      return disciplines.filter((row) => row.groupName === groupName).map(clone);
+    },
+    async listDisciplineElementsByGroup(groupName) {
+      return elements.filter((row) => row.groupName === groupName).map(clone);
+    },
+    async listGradesByGroup(groupName) {
+      // Оценки студентов группы — вход агрегата рейтинга; наружу из слоя
+      // данных уходят только агрегаты (место/перцентиль владельца ctx).
+      const ids = new Set(students.filter((s) => s.groupName === groupName).map((s) => s.id));
+      return grades.filter((row) => ids.has(row.studentId)).map(clone);
     },
 
     // ── DIG-21: schedule by period / notes / staff changes ────────────────
