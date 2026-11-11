@@ -22,6 +22,7 @@
 
 ### Изменения
 
+- **Прод-логин** — стор (Prisma/память+WARN) выбирается по DATABASE_URL, standalone включает generated Prisma client, реальный requireUser, e2e prod-auth.spec (вход, изоляция) — DIG-50.
 - **Reconcile схемы** — единая prisma-схема (канон DIG-9 + User/Session + сиды DIG-10), свежая миграция (FTS, sequence «ЗД-ГГГГ-NNNNNN», CHECK), сняты 11 test.skip контрактов — DIG-49.
 - **Экран входа** — форма по Figma «01 Вход + M1»: чипы тестовых аккаунтов, показать/скрыть пароль, состояния загрузки и единая generic-ошибка; вход до редиректа на /dashboard; e2e + unit — DIG-18.
 - **База данных** — Prisma-схема (студенты, учёба, заявки, уведомления, обращения) + миграция init: FTS-индексы, CHECK-констрейнты, sequence номеров заявок «ЗД-ГГГГ-NNNNNN»; DATABASE_URL только из окружения — DIG-9.
