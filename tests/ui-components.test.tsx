@@ -164,6 +164,23 @@ describe('ProgressRing', () => {
     expect(el).toHaveAttribute('aria-valuenow', '72');
     expect(el.querySelector('circle.progress-arc')).toBeTruthy();
   });
+
+  it('цвета трека и дуги заданы через inline style — var() в presentation-атрибутах SVG браузеры не подставляют', () => {
+    // дефект из ревью: stroke="var(--du-accent)" рендерился без цвета
+    // (--du-accent не определена, и var() в атрибуте не работает вовсе).
+    render(<ProgressRing value={40} label="Прогресс" />);
+    const svg = document.querySelector('svg[aria-hidden="true"]');
+    expect(svg).toBeTruthy();
+    const circles = Array.from(svg!.querySelectorAll('circle'));
+    expect(circles.length).toBe(2); // трек + дуга
+    for (const c of circles) {
+      const attr = c.getAttribute('stroke');
+      expect(attr === null || !attr.includes('var('), `presentation-атрибут с var(): ${attr}`).toBe(
+        true,
+      );
+      expect(c.getAttribute('style'), 'stroke должен быть в style').toMatch(/stroke\s*:/);
+    }
+  });
 });
 
 describe('Toggle', () => {

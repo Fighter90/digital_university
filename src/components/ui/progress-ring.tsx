@@ -35,12 +35,14 @@ export function ProgressRing({
       style={{ width: size, height: size }}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+        {/* stroke через inline style: var() в presentation-атрибутах SVG
+            браузеры не подставляют — дуга рендерилась без цвета */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="var(--border)"
+          style={{ stroke: 'var(--border)' }}
           strokeWidth={stroke}
         />
         <circle
@@ -49,7 +51,7 @@ export function ProgressRing({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="var(--du-accent)"
+          style={{ stroke: 'var(--accent)' }}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
