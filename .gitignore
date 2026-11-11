@@ -3,8 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
-# next.js
+# next.js (build → .next, dev → .next-dev: раздельные distDir, DIG-12)
 .next/
+.next-dev/
 out/
 build/
 next-env.d.ts
