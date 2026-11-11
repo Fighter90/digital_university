@@ -263,5 +263,9 @@ describe('компоненты src/components/ui', () => {
     const page = read('src/app/design/page.tsx');
     expect(page).toMatch(/NODE_ENV/);
     expect(page).toMatch(/notFound/);
+    // DIG-13: 404-гвард обязан срабатывать на этапе запроса (force-dynamic),
+    // иначе next build падает при статическом пререндере страницы:
+    // "Failed to collect page data for /design".
+    expect(page).toMatch(/force-dynamic/);
   });
 });
