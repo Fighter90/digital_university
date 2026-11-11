@@ -71,7 +71,6 @@ export interface TodayLessonView {
   id: string;
   startsAt: Date;
   endsAt: Date;
-  /** «10:00–11:30» */
   kind: ScheduleEventRow['kind'];
   /** «Лекция» / «Лабораторная» / … */
   kindLabel: string;

@@ -279,7 +279,6 @@
     );
     border-style: dashed;
   }
-  /* DIG-20: тёмный hero главной — коралловое свечение сверху (референс ResumeCraft) */
   /* Stepper: соединительная линия между шагами */
   .stepper-step:not(:first-child)::before {
     content: '';
