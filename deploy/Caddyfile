@@ -18,8 +18,11 @@
 	reverse_proxy app:3000
 }
 
-# www → основной домен (актуально для прода; локально сайт-блок слушает :81
-# внутри контейнера и наружу не публикуется).
-{$SITE_ADDRESS_WWW::81} {
-	redir https://{$SITE_ADDRESS}{uri} permanent
-}
+# www.ostrovok.store: в зоне TimeWeb есть скрытая парковочная A-запись
+# (194.87.250.170) — API её не отдаёт, из-за неё LE secondary validation
+# иногда падает. Пока запись не удалена в панели, www-блок не включаем:
+# основной адрес сдачи — https://ostrovok.store (см. docs/deploy.md).
+# Включить после удаления парковочной записи:
+# {$SITE_ADDRESS_WWW::81} {
+# 	redir https://{$SITE_ADDRESS}{uri} permanent
+# }
