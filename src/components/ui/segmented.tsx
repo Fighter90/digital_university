@@ -5,10 +5,14 @@ import { cn } from 'cn';
 
 // DIG-13: Segmented — переключатель периода (День / Неделя / Месяц).
 // role=radiogroup + role=radio, стрелки ←/→ перемещают выбор (roving tabindex).
+// DIG-23: опция может быть disabled («Неделя» на десктопе до недельной сетки
+// DIG-22) — она пропускается при навигации стрелками и помечается aria-disabled.
 
 export interface SegmentedOption<T extends string> {
   value: T;
   label: React.ReactNode;
+  /** Недоступный вид (например, «Неделя» на десктопе до merge DIG-22). */
+  disabled?: boolean;
 }
 
 export interface SegmentedProps<T extends string> {
@@ -29,7 +33,9 @@ export function Segmented<T extends string>({
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const select = (index: number) => {
-    onChange(options[index].value);
+    const option = options[index];
+    if (!option || option.disabled) return;
+    onChange(option.value);
     refs.current[index]?.focus();
   };
 
@@ -42,8 +48,11 @@ export function Segmented<T extends string>({
           : 0;
     if (delta === 0) return;
     event.preventDefault();
-    const next = Math.min(options.length - 1, Math.max(0, index + delta));
-    select(next);
+    let next = index + delta;
+    while (next >= 0 && next < options.length && options[next].disabled) {
+      next += delta;
+    }
+    if (next >= 0 && next < options.length) select(next);
   };
 
   return (
@@ -63,7 +72,9 @@ export function Segmented<T extends string>({
             type="button"
             role="radio"
             aria-checked={selected}
+            aria-disabled={option.disabled || undefined}
             tabIndex={selected ? 0 : -1}
+            disabled={option.disabled}
             onClick={() => select(i)}
             onKeyDown={(event) => handleKeyDown(event, i)}
             className={cn(
@@ -71,6 +82,7 @@ export function Segmented<T extends string>({
               selected
                 ? 'bg-foreground text-background'
                 : 'text-muted-foreground hover:text-foreground',
+              option.disabled && 'cursor-not-allowed opacity-50 hover:text-muted-foreground',
             )}
           >
             {option.label}
