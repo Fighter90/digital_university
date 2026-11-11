@@ -36,5 +36,5 @@
 - [x] 4.1 `/design` — dev-only, все компоненты и состояния, плашка «Концепт»
   (из layout).
 - [x] 4.2 `npx vitest run` зелёный; `npm run lint`, `npm run typecheck` зелёные.
-- [ ] 4.3 e2e зелёный (1440 + 360), скриншоты приложены в `docs/design/screenshots/`.
-- [ ] 4.4 Коммит conventional с `DIG-13`.
+- [x] 4.3 e2e зелёный (1440 + 360), скриншоты приложены в `docs/design/screenshots/`.
+- [x] 4.4 Коммит conventional с `DIG-13`.

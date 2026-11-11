@@ -24,8 +24,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
-      <body className={`${onest.variable} antialiased`}>
+    <html lang="ru" className={onest.variable}>
+      {/* переменная шрифта на <html>: html { font-sans } видит --font-onest */}
+      <body className="antialiased">
         <ConceptBanner />
         {children}
       </body>

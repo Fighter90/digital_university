@@ -35,8 +35,14 @@ test.describe('/design — галерея дизайн-системы', () => {
   test('скриншоты компонентов для сверки с Figma', async ({ page }, testInfo) => {
     mkdirSync(SHOTS, { recursive: true });
     await page.goto('/design');
-    // дождаться шрифта и скролла по всей странице
-    await page.evaluate(() => document.fonts.ready);
+    // DIG-13: дождаться фактической загрузки Onest. document.fonts.ready
+    // может отработать раньше, чем холодный dev-сервер отдаст шрифтовой чанк,
+    // и на скриншот попадёт засечный fallback — ломает сверку с макетом.
+    await page.waitForFunction(
+      () => document.fonts.check('400 16px Onest') && document.fonts.check('800 16px Onest'),
+      undefined,
+      { timeout: 30_000 },
+    );
     const name = testInfo.project.name; // desktop-1440 | mobile-360
     await page.screenshot({ path: `${SHOTS}/design-full-${name}.png`, fullPage: true });
     expect(true).toBe(true);
