@@ -44,3 +44,4 @@ openspec/.cache/
 
 # prisma client generation output
 src/generated/
+.next-dev/
