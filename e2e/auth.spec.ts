@@ -56,12 +56,12 @@ test.describe('DIG-18: экран входа — оба вьюпорта', () =>
     await expect(page.getByRole('note', { name: 'Концепт для конкурса' })).toBeVisible();
 
     await page.getByRole('button', { name: ANNA_CHIP }).click();
-    await expect(page.getByLabel('Логин')).toHaveValue('anna');
-    await expect(page.getByLabel('Пароль', { exact: true })).toHaveValue('demo-anna-2026');
+    await expect(page.getByLabel('Логин')).toHaveValue('anna.smirnova');
+    await expect(page.getByLabel('Пароль', { exact: true })).toHaveValue('anna-demo-2026');
 
     await page.getByRole('button', { name: STAFF_CHIP }).click();
-    await expect(page.getByLabel('Логин')).toHaveValue('maria');
-    await expect(page.getByLabel('Пароль', { exact: true })).toHaveValue('demo-staff-2026');
+    await expect(page.getByLabel('Логин')).toHaveValue('dean.kovaleva');
+    await expect(page.getByLabel('Пароль', { exact: true })).toHaveValue('dean-demo-2026');
   });
 
   test('кнопка «показать пароль» переключает видимость и aria-pressed', async ({ page }) => {
@@ -142,9 +142,10 @@ test.describe('DIG-18: реальные входы и блокировка — d
     const alert = page.locator('main').getByRole('alert');
 
     // До блокировки (если сервер свежий) — до 6 неудачных попыток; на
-    // переиспользованном сервере maria уже заблокирована — тогда сразу сообщение.
+    // переиспользованном сервере dean.kovaleva уже заблокирована — тогда сразу
+    // сообщение. (DIG-50: единые креды demo-набора и сида БД.)
     for (let attempt = 0; attempt < 6; attempt++) {
-      await page.getByLabel('Логин').fill('maria');
+      await page.getByLabel('Логин').fill('dean.kovaleva');
       await page.getByLabel('Пароль', { exact: true }).fill(`не-пароль-${attempt}`);
       await page.getByRole('button', SUBMIT).click();
       const text = (await alert.textContent()) ?? '';
@@ -154,8 +155,8 @@ test.describe('DIG-18: реальные входы и блокировка — d
     await expect(alert).toContainText('Слишком много попыток, попробуйте через 15 минут');
 
     // Верный пароль тоже не пускает: блокировка действует независимо от пароля.
-    await page.getByLabel('Логин').fill('maria');
-    await page.getByLabel('Пароль', { exact: true }).fill('demo-staff-2026');
+    await page.getByLabel('Логин').fill('dean.kovaleva');
+    await page.getByLabel('Пароль', { exact: true }).fill('dean-demo-2026');
     await page.getByRole('button', SUBMIT).click();
     await expect(alert).toContainText('Слишком много попыток, попробуйте через 15 минут');
   });

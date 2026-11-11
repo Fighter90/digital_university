@@ -13,14 +13,24 @@ import { cn } from 'cn';
  * Публичные (вымышленные по правилам AGENTS.md) демо-данные из
  * src/server/data/demo-seed.ts — чипы заполняют форму, чтобы жюри могло
  * войти одним кликом. Это НЕ секреты: пароли прототипа публичны by design.
- * Имена/группы совпадают с каноническим датасетом DIG-12 (Анна Ковалёва ·
- * ПИ-21, Илья Смирнов · ЭК-11, сотрудник Мария Петрова), поэтому чипы
- * реально входят в кабинет.
+ * DIG-50: логины/пароли едины для demo-набора DIG-12 и сида БД
+ * (prisma/seed-data.ts) — одни и те же чипы работают и на memory-store,
+ * и на prisma-проде (anna.smirnova / ilya.petrov / dean.kovaleva).
  */
 export const TEST_ACCOUNTS = [
-  { label: 'Анна Ковалёва · ПИ-21', login: 'anna', password: 'demo-anna-2026', role: 'STUDENT' },
-  { label: 'Илья Смирнов · ЭК-11', login: 'ilya', password: 'demo-ilya-2026', role: 'STUDENT' },
-  { label: 'Сотрудник деканата', login: 'maria', password: 'demo-staff-2026', role: 'STAFF' },
+  {
+    label: 'Анна Ковалёва · ПИ-21',
+    login: 'anna.smirnova',
+    password: 'anna-demo-2026',
+    role: 'STUDENT',
+  },
+  {
+    label: 'Илья Смирнов · ЭК-11',
+    login: 'ilya.petrov',
+    password: 'ilya-demo-2026',
+    role: 'STUDENT',
+  },
+  { label: 'Сотрудник деканата', login: 'dean.kovaleva', password: 'dean-demo-2026', role: 'STAFF' },
 ] as const;
 
 const FIELD_CLASS =
@@ -78,7 +88,7 @@ export function LoginForm({ next }: { next?: string }) {
           onChange={(event) => setLogin(event.target.value)}
           autoComplete="username"
           required
-          placeholder="anna"
+          placeholder="anna.smirnova"
           className={FIELD_CLASS}
         />
       </div>

@@ -14,8 +14,8 @@ import { expect, test, type Page } from '@playwright/test';
 // и параллельная гонка за один аккаунт делала бы проверки нестабильными.
 function settingsUser() {
   return test.info().project.name === 'mobile-360'
-    ? { login: 'ilya', password: 'demo-ilya-2026' }
-    : { login: 'anna', password: 'demo-anna-2026' };
+    ? { login: 'ilya.petrov', password: 'ilya-demo-2026' }
+    : { login: 'anna.smirnova', password: 'anna-demo-2026' };
 }
 
 async function signIn(page: Page, login: string, password: string, next: string) {
@@ -28,7 +28,7 @@ async function signIn(page: Page, login: string, password: string, next: string)
 test('profile: own data only, badge masked until «Показать», one error-report entry', async ({
   page,
 }) => {
-  await signIn(page, 'anna', 'demo-anna-2026', '/profile');
+  await signIn(page, 'anna.smirnova', 'anna-demo-2026', '/profile');
   await expect(page).toHaveURL(/\/profile$/, { timeout: 15000 });
   await expect(page.getByRole('heading', { level: 1, name: 'Профиль' })).toBeVisible();
 

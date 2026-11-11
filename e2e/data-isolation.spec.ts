@@ -16,7 +16,7 @@ async function signIn(page: Page, login: string, password: string, next?: string
 test('Anna gets a uniform 404 for Ilya’s request — page and API', async ({ browser }) => {
   const ilya = await browser.newContext();
   const ilyaPage = await ilya.newPage();
-  await signIn(ilyaPage, 'ilya', 'demo-ilya-2026', '/requests');
+  await signIn(ilyaPage, 'ilya.petrov', 'ilya-demo-2026', '/requests');
   await expect(ilyaPage).toHaveURL(/\/requests$/);
   await expect(ilyaPage.getByRole('heading', { level: 1, name: 'Мои заявки' })).toBeVisible();
 
@@ -28,7 +28,7 @@ test('Anna gets a uniform 404 for Ilya’s request — page and API', async ({ b
 
   const anna = await browser.newContext();
   const annaPage = await anna.newPage();
-  await signIn(annaPage, 'anna', 'demo-anna-2026', '/requests');
+  await signIn(annaPage, 'anna.smirnova', 'anna-demo-2026', '/requests');
   await expect(annaPage).toHaveURL(/\/requests$/);
 
   // Список Анны не содержит заявок Ильи.

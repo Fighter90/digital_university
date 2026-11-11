@@ -274,4 +274,14 @@ describe('next.config: standalone output for the container image', () => {
   it('enables output: standalone (required by deploy/Dockerfile)', () => {
     expect(read('next.config.ts')).toMatch(/output:\s*'standalone'/);
   });
+
+  // DIG-50: standalone-трейс не включает src/generated/prisma и @prisma/*
+  // (pnpm-симлинки) — в образ попадал сервер без клиента Prisma, и вход на
+  // prod молча падал. Контракт: конфиг обязан явно до-включать оба пути.
+  it('traces the generated Prisma client and @prisma/* into the standalone bundle', () => {
+    const config = read('next.config.ts');
+    expect(config).toMatch(/outputFileTracingIncludes/);
+    expect(config).toMatch(/generated\/prisma/);
+    expect(config).toMatch(/@prisma/);
+  });
 });

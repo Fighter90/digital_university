@@ -3,6 +3,7 @@
 // or Prisma directly (eslint no-restricted-imports pins this).
 
 export { toDataCtx, requireDataCtx } from './context';
+export { resolveShellUser } from './shell-user';
 export { listRequests, getRequestByNumber, listRequestEvents } from './requests';
 export { listGrades } from './grades';
 export { listNotifications, markNotificationRead } from './notifications';
