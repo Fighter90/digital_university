@@ -9,6 +9,18 @@ export { listNotifications, markNotificationRead } from './notifications';
 export { listAppeals, getAppeal, listAppealMessages } from './appeals';
 export { listSchedule, listExams } from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
+export {
+  defaultSettingsFor,
+  getOwnProfile,
+  getOwnSettings,
+  updateOwnContacts,
+  updateOwnNotificationChannel,
+  updateOwnTheme,
+  createNotificationForStudent,
+  createDataErrorAppeal,
+  DATA_ERROR_APPEAL_SUBJECT,
+  NOTIFICATION_SETTING_TYPES,
+} from './profile';
 export { denyAccess } from './access';
 export { uniformNotFoundResponse } from './http';
 export { ensureAppData } from './bootstrap';
@@ -25,6 +37,8 @@ export {
   type RequestType,
   type RequestStatus,
   type NotificationType,
+  type NotificationChannel,
+  type ThemePreference,
   type AppealStatus,
   type ScheduleKind,
   type ScheduleStatus,
@@ -34,6 +48,7 @@ export {
   type AuditLogRow,
   type StudentRow,
   type StaffRow,
+  type StudentSettingsRow,
   type ServiceRequestRow,
   type RequestEventRow,
   type GradeRow,

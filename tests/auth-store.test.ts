@@ -4,7 +4,7 @@
 // ever reach the persistence layer — only the argon2id hash and SHA-256.
 import { describe, expect, it } from 'vitest';
 import { createPrismaAuthStore, type PrismaAuthClient } from '@/server/auth/prisma-store';
-import { createMemoryIpRateLimiter } from '@/server/auth/memory-store';
+import { createMemoryAuthStore, createMemoryIpRateLimiter } from '@/server/auth/memory-store';
 import { hashPassword, verifyPassword } from '@/server/auth/password';
 import { hashToken } from '@/server/auth/tokens';
 import { signIn } from '@/server/auth/login';
@@ -26,6 +26,7 @@ type SessionRow = {
   expiresAt: Date;
   ip: string | null;
   userAgent: string | null;
+  createdAt?: Date | null;
 };
 
 function fakePrisma(users: UserRow[]) {
@@ -85,6 +86,12 @@ function fakePrisma(users: UserRow[]) {
           if (match(sessions[i])) sessions.splice(i, 1);
         }
         return { count: before - sessions.length };
+      },
+      async findMany(args) {
+        return sessions
+          .filter((s) => s.userId === args.where.userId)
+          .map((s) => ({ ...s }))
+          .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
       },
     },
   };
@@ -197,3 +204,75 @@ describe('prisma auth store (DIG-9 schema mapping)', () => {
 function createPrismaAuthClient_store(client: PrismaAuthClient) {
   return createPrismaAuthStore(client);
 }
+
+
+// DIG-19 — «Активные сессии»: read-only listing of a user's own sessions.
+// Devices and times for the settings screen; foreign users and expired rows
+// never leak into the answer.
+describe('listUserSessions (DIG-19)', () => {
+  it('memory store: only the owner, only live sessions, newest first', async () => {
+    const store = createMemoryAuthStore();
+    store.seedUser({ id: 'u1', login: 'anna', passwordHash: 'h1', role: 'STUDENT' });
+    store.seedUser({ id: 'u2', login: 'ilya', passwordHash: 'h2', role: 'STUDENT' });
+
+    await store.createSession({
+      userId: 'u1',
+      tokenHash: 't-old',
+      expiresAt: new Date(BASE.getTime() + 3600_000),
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0) Chrome/126.0',
+      createdAt: new Date(BASE.getTime() - 7200_000),
+    });
+    await store.createSession({
+      userId: 'u1',
+      tokenHash: 't-new',
+      expiresAt: new Date(BASE.getTime() + 7200_000),
+      userAgent: 'iPhone Safari',
+      createdAt: new Date(BASE.getTime() - 60_000),
+    });
+    await store.createSession({
+      userId: 'u2',
+      tokenHash: 't-foreign',
+      expiresAt: new Date(BASE.getTime() + 7200_000),
+    });
+    // Просроченная сессия владельца не попадает в список.
+    await store.createSession({
+      userId: 'u1',
+      tokenHash: 't-expired',
+      expiresAt: new Date(BASE.getTime() - 1000),
+      createdAt: new Date(BASE.getTime() - 60_000),
+    });
+
+    const rows = await store.listUserSessions('u1', BASE);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].tokenHash).toBe('t-new');
+    expect(rows[1].tokenHash).toBe('t-old');
+    expect(rows.every((r) => r.userId === 'u1')).toBe(true);
+    // Только SHA-256 хэши — сырых токенов в листинге быть не может.
+    expect(JSON.stringify(rows)).not.toContain('raw-token');
+  });
+
+  it('prisma store maps findMany with the same scoping contract', async () => {
+    const { client } = fakePrisma([
+      {
+        id: 'u1',
+        login: 'anna',
+        passwordHash: await hashPassword('pw'),
+        role: 'STUDENT',
+        failedLogins: 0,
+        lockedUntil: null,
+      },
+    ]);
+    const store = createPrismaAuthStore(client);
+    await store.createSession({
+      userId: 'u1',
+      tokenHash: 'hash-1',
+      expiresAt: new Date(BASE.getTime() + 3600_000),
+      userAgent: 'test-agent',
+      createdAt: BASE,
+    });
+    const rows = await store.listUserSessions('u1', BASE);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].userAgent).toBe('test-agent');
+    expect(await store.listUserSessions('u-other', BASE)).toHaveLength(0);
+  });
+});

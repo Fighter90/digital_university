@@ -18,6 +18,12 @@ export type ActorRole = 'STUDENT' | 'STAFF';
 
 export type NotificationType = 'SCHEDULE' | 'GRADE' | 'REQUEST' | 'NEWS' | 'DEADLINE' | 'SYSTEM';
 
+/** DIG-19 — delivery channel of a notification (Telegram is «скоро»: off). */
+export type NotificationChannel = 'PUSH' | 'EMAIL' | 'TELEGRAM';
+
+/** DIG-19 — theme preference (dark is reserved but disabled in the UI). */
+export type ThemePreference = 'LIGHT' | 'SYSTEM' | 'DARK';
+
 export type AppealStatus = 'OPEN' | 'ANSWERED' | 'CLOSED';
 
 export type ScheduleKind = 'LECTURE' | 'PRACTICE' | 'LAB' | 'SEMINAR' | 'CONSULTATION';
@@ -59,9 +65,28 @@ export interface StudentRow {
   groupName: string;
   course: number;
   faculty: string;
+  /** Направление подготовки: код + название ведутся деканатом по отдельности. */
   program: string;
+  programCode: string | null;
   studyForm: string;
+  /** Бюджет/контракт — бесплатных значений нет, ведёт деканат. */
+  funding: string | null;
   gradebookNumber: string;
+}
+
+/**
+ * DIG-19 — editable side of the profile: contacts (phone + visibility for
+ * teachers), notification channel matrix and the theme preference.
+ * One row per student; created lazily from `defaultSettingsFor` on first read.
+ */
+export interface StudentSettingsRow {
+  studentId: string;
+  phone: string | null;
+  emailVisibleToStaff: boolean;
+  phoneVisibleToStaff: boolean;
+  notificationChannels: Record<NotificationType, Record<NotificationChannel, boolean>>;
+  theme: ThemePreference;
+  updatedAt: Date;
 }
 
 export interface StaffRow {

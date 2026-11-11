@@ -11,7 +11,7 @@ import {
   buildClearedSessionCookie,
 } from './cookies';
 import { resolveSession, type ResolvedSession } from './session-policy';
-import type { AuthUser } from './types';
+import type { AuthSessionRow, AuthUser } from './types';
 
 /**
  * Reads the `__Host-session` cookie and resolves it to a live session
@@ -58,4 +58,12 @@ export async function signOutAllDevices(): Promise<number> {
   jar.set(buildClearedSessionCookie());
   jar.set(buildClearedRoleHintCookie());
   return revoked;
+}
+
+/**
+ * DIG-19: live sessions of the user for the «Активные сессии» screen.
+ * Read-only projection — token hashes only, newest first.
+ */
+export async function listActiveUserSessions(userId: string): Promise<AuthSessionRow[]> {
+  return authStore.listUserSessions(userId, new Date());
 }

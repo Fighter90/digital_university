@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { signInWithDefaults } from '@/server/auth/store';
 import { signOutAllDevices, signOutCurrentSession } from '@/server/auth/session';
+import { ensureAppData } from '@/server/data/bootstrap';
 import {
   buildRoleHintCookie,
   buildSessionCookie,
@@ -44,6 +45,12 @@ export async function signInAction(
   // which would let an attacker rotate IPs and bypass the rate limiter.
   const ip = clientIpFromHeaders((name) => requestHeaders.get(name));
   const userAgent = requestHeaders.get('user-agent');
+
+  // DIG-19 (cold-boot fix): the demo accounts live in the seeded store, which
+  // used to be filled only AFTER a successful sign-in (requireDataCtx) — a
+  // chicken-and-egg that made the very first login on a fresh server always
+  // fail. Seeding is memoized and idempotent, so every sign-in can await it.
+  await ensureAppData();
 
   const result = await signInWithDefaults({
     login: parsed.data.login,

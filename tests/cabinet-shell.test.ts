@@ -9,10 +9,13 @@ import { prerenderToNodeStream } from 'react-dom/static';
 // Страницы кабинета защищены requireUser() → cookies() (Next request scope).
 // В юнит-тесте рендера скоупа нет — мокаем сессию студентом: цель теста —
 // структура landmark'ов, а не авторизация (её покрывают auth-* и e2e).
+// DIG-19: профиль/настройки читают getOwnProfile/getOwnSettings и список
+// сессий — даём минимальные фикстуры, чтобы все страницы отрисовались.
 vi.mock('@/server/auth/session', () => ({
   requireUser: vi.fn(async () => ({ id: 'u_test', login: 'student1', role: 'STUDENT' as const })),
   requireStaff: vi.fn(async () => ({ id: 'u_test', login: 'staff1', role: 'STAFF' as const })),
   getAuthSession: vi.fn(async () => null),
+  listActiveUserSessions: vi.fn(async () => []),
 }));
 vi.mock('@/server/data', () => ({
   requireDataCtx: vi.fn(async () => ({
@@ -21,8 +24,42 @@ vi.mock('@/server/data', () => ({
     role: 'STUDENT' as const,
     login: 'student1',
   })),
+  getOwnProfile: vi.fn(async () => ({
+    id: 's_test',
+    login: 'student1',
+    fullName: 'Анна Ковалёва',
+    email: 'anna@example.edu',
+    groupName: 'ПИ-21',
+    course: 2,
+    faculty: 'ИТ',
+    program: 'Прикладная информатика',
+    programCode: '09.03.04',
+    studyForm: 'очная',
+    funding: 'бюджет',
+    gradebookNumber: '20231234',
+  })),
+  getOwnSettings: vi.fn(async () => ({
+    studentId: 's_test',
+    phone: null,
+    emailVisibleToStaff: true,
+    phoneVisibleToStaff: true,
+    notificationChannels: {
+      SCHEDULE: { PUSH: true, EMAIL: true, TELEGRAM: false },
+      GRADE: { PUSH: true, EMAIL: true, TELEGRAM: false },
+      REQUEST: { PUSH: true, EMAIL: true, TELEGRAM: false },
+      NEWS: { PUSH: true, EMAIL: true, TELEGRAM: false },
+      DEADLINE: { PUSH: true, EMAIL: true, TELEGRAM: false },
+      SYSTEM: { PUSH: true, EMAIL: true, TELEGRAM: false },
+    },
+    theme: 'SYSTEM' as const,
+    updatedAt: new Date('2026-11-11T10:00:00Z'),
+  })),
   listRequests: vi.fn(async () => [
     {
+      // id обязателен: RequestsPage строит <li key={request.id}> — без него
+      // React роняет предупреждение «Each child in a list should have a
+      // unique "key" prop» в рендер-тестах каркаса (замечание ревью DIG-19).
+      id: 'req-1',
       number: 'ЗД-2026-000001',
       type: 'SPRAVKA' as const,
       status: 'NEW' as const,

@@ -11,6 +11,7 @@
 import { hashPassword } from '@/server/auth/password';
 import type { AuthStore } from '@/server/auth/types';
 import type { MemoryDataDb } from './memory-db';
+import { defaultSettingsFor } from './profile';
 import { newRequestNumber } from './request-number';
 import type {
   AppealMessageRow,
@@ -23,6 +24,7 @@ import type {
   ServiceRequestRow,
   StaffRow,
   StudentRow,
+  StudentSettingsRow,
 } from './types';
 
 export const DEMO_PASSWORDS = {
@@ -60,7 +62,9 @@ const students: StudentRow[] = [
     course: 2,
     faculty: 'ИТ',
     program: 'Прикладная информатика',
+    programCode: '09.03.04',
     studyForm: 'очная',
+    funding: 'бюджет',
     gradebookNumber: '20231234',
   },
   {
@@ -72,8 +76,38 @@ const students: StudentRow[] = [
     course: 1,
     faculty: 'ЭК',
     program: 'Экономика',
+    programCode: '38.03.01',
     studyForm: 'очная',
+    funding: 'контракт',
     gradebookNumber: '20254567',
+  },
+];
+
+// DIG-19 — editable profile settings (fictional): phone + visibility flags,
+// notification channel matrix (Telegram stays off — «скоро») and the theme.
+// Одна осознанная не-дефолтная ячейка у Анны (дедлайны без email) — чтобы
+// матрица настроек в демо не выглядела «всё включено».
+const settings: StudentSettingsRow[] = [
+  {
+    studentId: 'st-anna',
+    phone: '+7 900 010-20-30',
+    emailVisibleToStaff: true,
+    phoneVisibleToStaff: true,
+    notificationChannels: {
+      ...defaultSettingsFor('st-anna').notificationChannels,
+      DEADLINE: { PUSH: true, EMAIL: false, TELEGRAM: false },
+    },
+    theme: 'SYSTEM',
+    updatedAt: new Date(),
+  },
+  {
+    studentId: 'st-ilya',
+    phone: '+7 900 040-50-60',
+    emailVisibleToStaff: true,
+    phoneVisibleToStaff: false,
+    notificationChannels: defaultSettingsFor('st-ilya').notificationChannels,
+    theme: 'SYSTEM',
+    updatedAt: new Date(),
   },
 ];
 
@@ -524,6 +558,7 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     appealMessages,
     schedule,
     exams,
+    settings,
   });
 
   // DIG-11 memory auth store: seed the demo logins (guarded — when the Prisma

@@ -22,6 +22,8 @@ export interface AuthSessionRow {
   expiresAt: Date;
   ip: string | null;
   userAgent: string | null;
+  /** DIG-19: when the device signed in — shown in «Активные сессии». */
+  createdAt?: Date | null;
 }
 
 /** Safe projection of a user — safe to return to the UI layer. */
@@ -70,6 +72,8 @@ export interface AuthStore {
     expiresAt: Date;
     ip?: string | null;
     userAgent?: string | null;
+    /** DIG-19: sign-in time for the «Активные сессии» screen (defaults to now). */
+    createdAt?: Date | null;
   }): Promise<AuthSessionRow>;
   /** Returns the session+user only when the token hash matches and `expiresAt > now`. */
   findSessionByTokenHash(
@@ -82,6 +86,11 @@ export interface AuthStore {
   deleteSession(tokenHash: string, now?: Date): Promise<number>;
   /** «Выйти со всех устройств». */
   deleteAllUserSessions(userId: string, now?: Date): Promise<number>;
+  /**
+   * DIG-19: live (non-expired) sessions of ONE user, newest first — the
+   * «Активные сессии» screen. Read-only; contains only token hashes.
+   */
+  listUserSessions(userId: string, now: Date): Promise<AuthSessionRow[]>;
 }
 
 /** Sliding-window rate limiter keyed by IP. */

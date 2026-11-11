@@ -20,6 +20,7 @@ import type {
   ServiceRequestRow,
   StaffRow,
   StudentRow,
+  StudentSettingsRow,
 } from './types';
 
 export interface MemorySeed {
@@ -33,6 +34,8 @@ export interface MemorySeed {
   appealMessages?: AppealMessageRow[];
   schedule?: ScheduleEventRow[];
   exams?: ExamSessionRow[];
+  /** DIG-19 — per-student profile settings (contacts visibility, channels, theme). */
+  settings?: StudentSettingsRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -55,8 +58,12 @@ export function createMemoryDataDb(): MemoryDataDb {
   let appealMessages: AppealMessageRow[] = [];
   let schedule: ScheduleEventRow[] = [];
   let exams: ExamSessionRow[] = [];
+  let settings: StudentSettingsRow[] = [];
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
+  let notificationSeq = 0;
+  let appealSeq = 0;
+  let appealMessageSeq = 0;
 
   const by = <T, K extends keyof T>(rows: T[], key: K, value: T[K]) =>
     rows.find((row) => row[key] === value) ?? null;
@@ -73,6 +80,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       appealMessages = seed.appealMessages ? seed.appealMessages.map(clone) : [];
       schedule = seed.schedule ? seed.schedule.map(clone) : [];
       exams = seed.exams ? seed.exams.map(clone) : [];
+      settings = seed.settings ? seed.settings.map(clone) : [];
       audit = [];
     },
 
@@ -101,6 +109,65 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
     async probeStudentById(id) {
       return clone(by(students, 'id', id));
+    },
+
+    // ── DIG-19: profile & settings (owner-scoped) ──────────────────────────
+    async findStudentById(id) {
+      return clone(by(students, 'id', id));
+    },
+    async findSettingsByStudent(studentId) {
+      return clone(by(settings, 'studentId', studentId));
+    },
+    async saveSettingsByStudent(studentId, next) {
+      const row: StudentSettingsRow = { ...clone(next), studentId };
+      const index = settings.findIndex((s) => s.studentId === studentId);
+      if (index === -1) {
+        settings.push(row);
+      } else {
+        settings[index] = row;
+      }
+      return clone(row);
+    },
+    async updateStudentContacts(studentId, input) {
+      const row = students.find((s) => s.id === studentId);
+      if (!row) return null;
+      row.email = input.email;
+      return clone(row);
+    },
+    async appendNotificationToStudent(studentId, input) {
+      notificationSeq += 1;
+      const row: NotificationRow = {
+        id: `ntf-gen-${notificationSeq}`,
+        studentId,
+        type: input.type,
+        title: input.title,
+        body: input.body,
+        isRead: false,
+        createdAt: input.createdAt,
+      };
+      notifications.push(row);
+      return clone(row);
+    },
+    async appendAppealByStudent(studentId, input) {
+      appealSeq += 1;
+      const row: AppealRow = {
+        id: `apl-new-${appealSeq}`,
+        studentId,
+        subject: input.subject,
+        status: 'OPEN',
+        createdAt: input.createdAt,
+      };
+      appeals.push(row);
+      appealMessageSeq += 1;
+      appealMessages.push({
+        id: `msg-new-${appealMessageSeq}`,
+        appealId: row.id,
+        authorRole: 'STUDENT',
+        authorName: input.authorName,
+        body: input.message,
+        createdAt: input.createdAt,
+      });
+      return clone(row);
     },
 
     async listRequestsByStudent(studentId) {

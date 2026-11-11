@@ -30,6 +30,7 @@ export interface PrismaAuthClient {
         expiresAt: Date;
         ip?: string | null;
         userAgent?: string | null;
+        createdAt?: Date | null;
       };
     }): Promise<AuthSessionRow>;
     findUnique(args: {
@@ -39,6 +40,8 @@ export interface PrismaAuthClient {
     deleteMany(args: {
       where: { tokenHash?: string; userId?: string };
     }): Promise<{ count: number }>;
+    /** DIG-19: own-session listing for the «Активные сессии» screen. */
+    findMany(args: { where: { userId: string } }): Promise<AuthSessionRow[]>;
   };
 }
 
@@ -78,6 +81,7 @@ export function createPrismaAuthStore(client: PrismaAuthClient): AuthStore {
           expiresAt: data.expiresAt,
           ip: data.ip ?? null,
           userAgent: data.userAgent ?? null,
+          createdAt: data.createdAt ?? new Date(),
         },
       });
     },
@@ -105,6 +109,13 @@ export function createPrismaAuthStore(client: PrismaAuthClient): AuthStore {
     async deleteAllUserSessions(userId) {
       const { count } = await client.session.deleteMany({ where: { userId } });
       return count;
+    },
+
+    async listUserSessions(userId, now) {
+      const rows = await client.session.findMany({ where: { userId } });
+      return rows
+        .filter((row) => row.expiresAt > now)
+        .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
     },
   };
 }

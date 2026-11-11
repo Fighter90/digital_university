@@ -85,6 +85,7 @@ export function createMemoryAuthStore(): MemoryAuthStore {
         expiresAt: data.expiresAt,
         ip: data.ip ?? null,
         userAgent: data.userAgent ?? null,
+        createdAt: data.createdAt ?? new Date(),
       };
       sessions.set(row.tokenHash, row);
       return { ...row };
@@ -120,6 +121,13 @@ export function createMemoryAuthStore(): MemoryAuthStore {
         }
       }
       return count;
+    },
+
+    async listUserSessions(userId, now) {
+      return [...sessions.values()]
+        .filter((s) => s.userId === userId && s.expiresAt > now)
+        .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0))
+        .map((s) => ({ ...s }));
     },
   };
 }

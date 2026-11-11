@@ -21,11 +21,13 @@ import type {
   ExamSessionRow,
   GradeRow,
   NotificationRow,
+  NotificationType,
   RequestEventRow,
   ScheduleEventRow,
   ServiceRequestRow,
   StaffRow,
   StudentRow,
+  StudentSettingsRow,
 } from './types';
 
 export interface DataDb {
@@ -60,6 +62,31 @@ export interface DataDb {
   // ── schedule / exams (group-scoped) ───────────────────────────────────────
   listScheduleByGroup(groupName: string): Promise<ScheduleEventRow[]>;
   listExamsByGroup(groupName: string): Promise<ExamSessionRow[]>;
+
+  // ── profile & settings (owner-scoped, DIG-19) ────────────────────────────
+  /** Own profile read — the id comes from ctx.studentId, never from input. */
+  findStudentById(id: string): Promise<StudentRow | null>;
+  findSettingsByStudent(studentId: string): Promise<StudentSettingsRow | null>;
+  /** Replaces the whole settings row of the student (all-or-nothing row). */
+  saveSettingsByStudent(studentId: string, settings: StudentSettingsRow): Promise<StudentSettingsRow>;
+  updateStudentContacts(
+    studentId: string,
+    input: { email: string },
+  ): Promise<StudentRow | null>;
+  /**
+   * Notification GENERATION entry (DIG-19): appends a row to the student's
+   * feed. The suppression by channel matrix lives in profile.ts (business
+   * rule), the storage itself stays dumb.
+   */
+  appendNotificationToStudent(
+    studentId: string,
+    input: { type: NotificationType; title: string; body: string; createdAt: Date },
+  ): Promise<NotificationRow>;
+  /** «Нашли ошибку в данных?» — creates an OPEN appeal + first student message. */
+  appendAppealByStudent(
+    studentId: string,
+    input: { subject: string; message: string; authorName: string; createdAt: Date },
+  ): Promise<AppealRow>;
 
   // ── staff scope ───────────────────────────────────────────────────────────
   listStudentsByFaculty(faculty: string): Promise<StudentRow[]>;
