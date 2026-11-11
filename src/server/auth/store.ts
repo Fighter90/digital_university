@@ -16,8 +16,21 @@ import { createMemoryAuthStore, createMemoryIpRateLimiter } from './memory-store
 import { signIn, type SignInInput, type SignInResult } from './login';
 import type { AuthStore, IpRateLimiter } from './types';
 
-export const authStore: AuthStore = createMemoryAuthStore();
-export const ipRateLimiter: IpRateLimiter = createMemoryIpRateLimiter();
+// DIG-12: the singleton must survive separate dev-mode server bundles (pages
+// vs route handlers) — Next.js/Turbopack instantiates module graphs per entry,
+// so a bare module singleton is NOT shared (session resolved on a page but
+// invisible in an API route; caught by e2e/data-isolation.spec.ts). The
+// globalThis cache is the standard Next.js fix (same reason PrismaClient
+// recommends it). In production (single standalone bundle) the cache is
+// harmless — one process, one realm.
+const globals = globalThis as unknown as {
+  __authStore?: AuthStore;
+  __ipRateLimiter?: IpRateLimiter;
+};
+
+export const authStore: AuthStore = (globals.__authStore ??= createMemoryAuthStore());
+export const ipRateLimiter: IpRateLimiter = (globals.__ipRateLimiter ??=
+  createMemoryIpRateLimiter());
 
 /** Sign-in through the app-wide store (production wiring of the pure flow). */
 export function signInWithDefaults(input: Omit<SignInInput, 'now'>): Promise<SignInResult> {
