@@ -9,8 +9,15 @@ if [ -f prisma/schema.prisma ] && [ -d prisma/migrations ]; then
     echo '==> prisma migrate deploy'
     node_modules/.bin/prisma migrate deploy
   else
-    echo 'WARN: prisma CLI не найден в образе — миграции пропущены (см. DIG-18)' >&2
+    echo 'WARN: prisma CLI не найден в образе — миграции пропущены' >&2
   fi
+fi
+
+# SEED_ON_BOOT=1 — идемпотентный сид (wipe & rebuild, вымышленные данные).
+# Данные студентов пересоздаются при каждом старте с этим флагом.
+if [ "$SEED_ON_BOOT" = "1" ] && [ -f prisma/seed.ts ] && [ -x node_modules/.bin/tsx ]; then
+  echo '==> prisma db seed (SEED_ON_BOOT=1)'
+  node_modules/.bin/tsx prisma/seed.ts
 fi
 
 exec node server.js

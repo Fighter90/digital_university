@@ -32,11 +32,8 @@ RUN pnpm build
 # с разыменованием (-L), иначе CLI в рантайме оказывается «пустым».
 RUN mkdir -p /prisma-kit/node_modules/.bin \
  && cp -rL /app/prisma /prisma-kit/prisma \
- && if [ -d /app/node_modules/prisma ]; then \
-      cp -rL /app/node_modules/prisma /prisma-kit/node_modules/prisma; \
-      cp -rL /app/node_modules/@prisma /prisma-kit/node_modules/@prisma; \
-      cp -L /app/node_modules/.bin/prisma /prisma-kit/node_modules/.bin/prisma; \
-    fi
+ && cp -rL /app/src/generated /prisma-kit/src/generated \
+ && cp -rL /app/node_modules /prisma-kit/node_modules
 
 FROM base AS runner
 WORKDIR /app
