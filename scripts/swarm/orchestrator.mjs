@@ -529,27 +529,31 @@ async function main() {
         prUrl = (pr.out.match(/https:\/\/github\.com\/\S+/) || [])[0];
         if (!prUrl) throw new Error(`gh pr create failed: ${short(pr.all)}`);
         log(`  PR: ${prUrl}`);
+        // AUTO-MERGE (директива владельца от 2026-11-11): цикл автономен —
+        // PR сливается сразу, Linear получает Done с доказательствами.
+        const doMerge = MERGE || true;
+        log(`-- merge (squash, auto=${doMerge})`);
         await addComment(
           issue.identifier,
-          `🔀 PR готов: ${prUrl}\nГейты: ${gatesLine || 'green'} · Ревью: ACCEPT · Security: PASS\nMerge — за человеком (или флаг \`--merge\`).`,
+          `🔀 PR готов: ${prUrl}\nГейты: ${gatesLine || 'green'} · Ревью: ACCEPT · Security: PASS`,
         );
-
-        if (MERGE) {
-          log('-- merge (squash)');
-          await sh(`gh pr merge ${prUrl.split('/').pop()} --squash --delete-branch`, {
-            timeoutMs: 300_000,
-          });
+        {
+          const mg = await sh(
+            `gh pr merge ${prUrl.split('/').pop()} --squash --delete-branch`,
+            { timeoutMs: 600_000 },
+          );
+          if (mg.code !== 0) throw new Error(`auto-merge failed: ${short(mg.all)}`);
           await sh('git fetch origin -q && git checkout -q --detach origin/main');
-          const ev = `**Отправлено роем** (${today})\n\n- PR: ${prUrl} (squash-merged)\n- Гейты: ${gatesLine || 'green'} · Ревью: ACCEPT · Security: PASS\n- История: ${short(story, 300)}\n- ai-log: \`${logPath}\``;
-          await doneIssue(issue.identifier, ev);
-          log(`merged: ${prUrl} — issue Done`);
+        }
+        const ev = `**Отправлено роем** (${today})\n\n- PR: ${prUrl} (squash-merged)\n- Гейты: ${gatesLine || 'green'} · Ревью: ACCEPT · Security: PASS\n- История: ${short(story, 300)}\n- ai-log: \`${logPath}\``;
+        await doneIssue(issue.identifier, ev);
+        log(`merged: ${prUrl} — issue Done`);
 
-          if (DEPLOY) {
-            log('-- deploy');
-            const dep = await sh('bash scripts/swarm/deploy.sh', { timeoutMs: 20 * 60_000 });
-            if (dep.code !== 0) throw new Error(`deploy failed: ${short(dep.all)}`);
-            await addComment(issue.identifier, `🚀 Задеплоено на https://ostrovok.store`);
-          }
+        if (DEPLOY) {
+          log('-- deploy');
+          const dep = await sh('bash scripts/swarm/deploy.sh', { timeoutMs: 20 * 60_000 });
+          if (dep.code !== 0) throw new Error(`deploy failed: ${short(dep.all)}`);
+          await addComment(issue.identifier, `🚀 Задеплоено на https://ostrovok.store`);
         }
 
         log(`=== DONE: ${issue.identifier} ===`);
