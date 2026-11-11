@@ -384,7 +384,7 @@ async function main() {
             [
               `ЗАДАЧА: ${issue.identifier} — ${issue.title}`,
               `ОПИСАНИЕ (кратко):\n${short(issue.description, 1200)}`,
-              `Дифф относительно origin/main:\n<DIFF>\n${diff.all.slice(0, 150_000)}\n</DIFF>`,
+              `Дифф относительно origin/main:\n<DIFF>\n${diff.all.slice(0, 60_000)}\n</DIFF>`,
             ].join('\n'),
             { timeoutMs: 15 * 60_000 },
           );
@@ -403,7 +403,7 @@ async function main() {
               'security',
               [
                 `ЗАДАЧА: ${issue.identifier} — ${issue.title}`,
-                `Дифф:\n<DIFF>\n${diff2.all.slice(0, 150_000)}\n</DIFF>`,
+                `Дифф:\n<DIFF>\n${diff2.all.slice(0, 60_000)}\n</DIFF>`,
               ].join('\n'),
               { timeoutMs: 15 * 60_000 },
             );
