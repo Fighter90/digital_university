@@ -11,6 +11,8 @@ WORKDIR /app
 # в deps-стадии БД не нужна — генерим с плейсхолдером (соединения нет)
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 COPY package.json pnpm-lock.yaml ./
+# prisma generate (postinstall) читает схему — копируем её до install
+COPY prisma/schema.prisma prisma/schema.prisma
 RUN pnpm install --frozen-lockfile
 
 FROM base AS build
