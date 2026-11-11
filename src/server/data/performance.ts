@@ -68,6 +68,12 @@ export interface DisciplinePerformance {
   isComplete: boolean;
   /** Итог ≥ порога зачтения кредита (docs/grading.md). */
   creditEarned: boolean;
+  /** Преподаватель из справочника группы (null — дисциплина синтезирована из оценок). */
+  teacherName: string | null;
+  /** В плане контроля есть экзаменационный элемент (DIG-26, бейдж допуска). */
+  hasExamElement: boolean;
+  /** Экзаменационный элемент уже оценён. */
+  examGraded: boolean;
 }
 
 export interface GpaView {

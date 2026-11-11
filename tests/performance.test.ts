@@ -30,6 +30,7 @@ import {
   semesterKeyOf,
   semesterSortNumber,
   weightedAverage,
+  type SemesterKey,
 } from '@/lib/performance-math';
 import { getPerformance, needForTarget } from '@/server/data/performance';
 import { createMemoryDataDb, type MemoryDataDb } from '@/server/data/memory-db';
@@ -959,5 +960,63 @@ describe('getPerformance: изоляция данных', () => {
     expect(ilyaData.disciplines.map((dd) => dd.disciplineCode)).toEqual(['EK11-MATH', 'EK11-ECON']);
     expect(ilyaData.credits.earned).toBe(0); // дисциплины осени не завершены
     expect(ilyaData.debts).toEqual([]); // пересдачи только у ПИ-21
+  });
+});
+
+// ── DIG-26 — view-поля экрана «Успеваемость» ────────────────────────────────
+
+describe('DIG-26: view для экрана — преподаватель, экзамен, семестровый GPA', () => {
+  it('каждая дисциплина несёт преподавателя из справочника и флаги экзаменационного элемента', async () => {
+    const data = await getPerformance(seedPerformanceDb(), annaCtx, NOW);
+    const byCode = new Map(data.disciplines.map((d) => [d.disciplineCode, d]));
+
+    // Завершённая весенняя: преподаватель известен, экзамен есть и сдан
+    const alg = byCode.get('PI21-ALG')!;
+    expect(alg.teacherName).toBe('Иванова Ирина Игоревна');
+    expect(alg.hasExamElement).toBe(true);
+    expect(alg.examGraded).toBe(true);
+
+    // Идущая осенняя: экзамен в плане есть, но ещё не оценён
+    const info = byCode.get('PI21-INFO')!;
+    expect(info.teacherName).toBe('Петров Пётр Петрович');
+    expect(info.hasExamElement).toBe(true);
+    expect(info.examGraded).toBe(false);
+
+    // В плане «Истории» экзамена нет вообще (один семинар)
+    const hist = byCode.get('PI21-HIST')!;
+    expect(hist.hasExamElement).toBe(false);
+    expect(hist.examGraded).toBe(false);
+  });
+
+  it('семестровый GPA, собранный из view (итог ?? накопленная × кредиты), совпадает с агрегатом', async () => {
+    const data = await getPerformance(seedPerformanceDb(), annaCtx, NOW);
+    const valueOf = (d: (typeof data.disciplines)[number]): number | null =>
+      d.finalGrade ?? d.accumulated;
+
+    // GpaView не отдаёт ключ предыдущего семестра — восстанавливаем его
+    // чистой функцией из performance-math (та же монотонная арифметика).
+    const currentKey = data.gpa!.currentSemesterKey;
+    const prevKey = previousSemesterKey(currentKey);
+    const keys: Array<{ key: SemesterKey; expected: number | null }> = [
+      { key: currentKey, expected: data.gpa!.semester },
+      { key: prevKey, expected: data.gpa!.previousSemesterGpa },
+    ];
+    for (const { key, expected } of keys) {
+      const inSemester = data.disciplines.filter(
+        (d) =>
+          d.semester &&
+          d.semester.startYear === key.startYear &&
+          d.semester.term === key.term &&
+          valueOf(d) !== null,
+      );
+      const gpa = weightedAverage(
+        inSemester.map((d) => ({ value: valueOf(d) as number, weight: d.credits })),
+      );
+      expect(gpa).toBe(expected);
+    }
+    // Осень 2026/27 (идёт): предварительный GPA по накопленным есть
+    expect(data.gpa!.semester).not.toBeNull();
+    // Весна 2025/26 (завершена): (87·5 + 74·4) / 9
+    expect(data.gpa!.previousSemesterGpa).toBeCloseTo((87 * 5 + 74 * 4) / 9, 2);
   });
 });
