@@ -68,6 +68,28 @@ vi.mock('@/server/data', () => ({
       updatedAt: new Date('2026-11-01T10:00:00Z'),
     },
   ]),
+  // DIG-20: главная кабинета читает агрегат getDashboard и новости деканата.
+  getDashboard: vi.fn(async () => ({
+    firstName: 'Анна',
+    greeting: 'Добрый день',
+    headingDate: 'среда, 11 ноября',
+    summary: 'Сегодня 2 пары.',
+    today: { ok: true, value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null } },
+    deadlines: { ok: true, value: [] },
+    progress: {
+      ok: true,
+      value: {
+        average: 88.7,
+        averageDelta: null,
+        credits: 120,
+        creditsTotal: 240,
+        debts: [],
+        disciplines: [],
+      },
+    },
+    requests: { ok: true, value: { inWork: 1, total: 1 } },
+  })),
+  listDeaneryNews: vi.fn(() => []),
 }));
 import { Readable } from 'node:stream';
 import {
@@ -201,9 +223,9 @@ describe('cabinet pages render inside the shell main region', () => {
     }
   });
 
-  it('dashboard keeps its content on a section wrapper', async () => {
+  it('dashboard keeps its content on a section wrapper (DIG-20 «Ваша неделя»)', async () => {
     const html = await renderPage(DashboardPage);
     expect(html).toContain('<section');
-    expect(html).toContain('Кабинет студента');
+    expect(html).toContain('Ваша неделя');
   });
 });
