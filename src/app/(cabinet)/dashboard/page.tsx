@@ -1,13 +1,55 @@
+// DIG-20 — «Ваша неделя», главная кабинета (Figma «03 · Главная»).
+//
+// Данные приходит ОДНИМ серверным агрегатом getDashboard(dataDb, ctx):
+// все источники читаются параллельно внутри него (Promise.all), водопада
+// запросов нет. Контекст строится из живой сессии (requireDataCtx) — id
+// никогда не берётся из URL, чужие данные недостижимы по построению.
+// Пока агрегат грузится, Suspense показывает скелетон; блок с упавшим
+// источником рисует собственное состояние ошибки (см. sections.tsx),
+// остальные блоки продолжают работать.
+import { Suspense } from 'react';
+import { DashboardSkeleton } from '@/components/dashboard/dashboard-skeleton';
+import {
+  DeadlinesSection,
+  Hero,
+  NewsSection,
+  ProgressSection,
+  QuickActionsSection,
+  TodaySection,
+} from '@/components/dashboard/sections';
+import { dataDb } from '@/server/data/db';
+import { getDashboard, listDeaneryNews, requireDataCtx } from '@/server/data';
+
+export const metadata = { title: 'Главная — Цифровой деканат' };
+
+async function DashboardContent() {
+  const ctx = await requireDataCtx('/dashboard');
+  const data = await getDashboard(dataDb, ctx);
+  const news = listDeaneryNews();
+
+  return (
+    <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
+      <Hero
+        firstName={data.firstName}
+        greeting={data.greeting}
+        headingDate={data.headingDate}
+        summary={data.summary}
+        progress={data.progress}
+        requests={data.requests}
+      />
+      <TodaySection today={data.today} />
+      <DeadlinesSection deadlines={data.deadlines} />
+      <ProgressSection progress={data.progress} />
+      <QuickActionsSection />
+      <NewsSection news={news} />
+    </section>
+  );
+}
+
 export default function DashboardPage() {
   return (
-    // Единственный <main> кабинета принадлежит Shell (#main-content) — здесь
-    // используем <section>, чтобы не создавать вложенный main-landmark.
-    <section className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-2 text-xl font-bold sm:text-2xl">Кабинет студента</h1>
-      <p className="text-sm text-neutral-600">
-        Защищённые экраны (расписание, успеваемость, заявки, уведомления) подключаются в задачах
-        DIG-21…DIG-36. Здесь — общий каркас маршрута (cabinet) с будущим Shell-лэйаутом.
-      </p>
-    </section>
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

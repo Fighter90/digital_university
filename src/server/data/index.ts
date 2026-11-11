@@ -10,6 +10,20 @@ export { listNotifications, markNotificationRead } from './notifications';
 export { listAppeals, getAppeal, listAppealMessages } from './appeals';
 export { listSchedule, listExams } from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
+export { getDashboard } from './dashboard';
+export type {
+  DashboardData,
+  DashboardSection,
+  DeadlineView,
+  DisciplineBarView,
+  DebtView,
+  ProgressView,
+  RequestsView,
+  TodayLessonView,
+  TodayView,
+} from './dashboard';
+export { listDeaneryNews } from './news';
+export type { DeaneryNewsItem } from './news';
 export {
   defaultSettingsFor,
   getOwnProfile,
