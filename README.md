@@ -28,16 +28,19 @@ Next.js 15 (App Router, TypeScript) · Prisma + PostgreSQL · Tailwind CSS
 (дизайн-токены, Inter) · NextAuth (bcrypt-хэши) · Vitest + Playwright ·
 Docker Compose + Caddy (авто-TLS) · Linear + GitHub + OpenCode.
 
-## Быстрый старт
+## Быстрый старт (3 команды)
 
 ```bash
-npm install
-cp .env.example .env          # DATABASE_URL и AUTH_SECRET
-npx prisma migrate dev && npx prisma db seed
-npm run dev                   # http://localhost:3000
+pnpm install
+cp .env.example .env
+pnpm dev
 ```
 
-Тесты: `npm test` (unit) · `npx playwright test` (e2e, mobile 360×800).
+Приложение: http://localhost:3000. Требования: Node 22 LTS, pnpm 10 (`corepack enable`).
+
+Проверки: `pnpm lint` · `pnpm typecheck` · `pnpm test` (Vitest unit + swarm) ·
+`pnpm e2e` (Playwright: desktop-1440 и mobile-360×800). БД (Prisma/PostgreSQL) и
+вход подключаются в следующих задачах — скаффолд работает без них.
 
 ## Тестовые аккаунты (вымышленные)
 
