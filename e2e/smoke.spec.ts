@@ -14,8 +14,8 @@ test('login placeholder renders the form', async ({ page }) => {
   await expect(page.getByLabel('Пароль', { exact: true })).toBeVisible();
 });
 
-test('health API responds ok', async ({ request }) => {
+test('health API responds ok (DIG-50: публикует активный auth-store)', async ({ request }) => {
   const res = await request.get('/api/health');
   expect(res.ok()).toBeTruthy();
-  expect(await res.json()).toEqual({ ok: true });
+  expect(await res.json()).toEqual({ ok: true, authStore: expect.any(String) });
 });

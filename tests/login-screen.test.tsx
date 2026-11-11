@@ -1,6 +1,7 @@
 // DIG-18 — contract of the login screen (Figma «02 · Вход»):
 // - chips «Тестовые аккаунты» prefill the form with the canonical demo
-//   credentials (anna / ilya / maria from src/server/data/demo-seed.ts);
+//   credentials (DIG-50: единые логины/пароли demo-набора и сида БД —
+//   anna.smirnova / ilya.petrov / dean.kovaleva);
 // - the password field has a «показать/скрыть» toggle;
 // - «Забыли пароль?» leads to the public /forgot-password stub that explains
 //   the deanery-based recovery of the concept;
@@ -50,22 +51,34 @@ describe('LoginForm — test account chips (DIG-18)', () => {
   it('clicking a student chip prefills login and password', () => {
     render(<LoginForm />);
     fireEvent.click(screen.getByRole('button', { name: TEST_ACCOUNTS[0]!.label }));
-    expect(loginInput().value).toBe('anna');
-    expect(passwordInput().value).toBe('demo-anna-2026');
+    expect(loginInput().value).toBe('anna.smirnova');
+    expect(passwordInput().value).toBe('anna-demo-2026');
   });
 
   it('the staff chip prefills the staff account', () => {
     render(<LoginForm />);
     fireEvent.click(screen.getByRole('button', { name: /Сотрудник деканата/ }));
-    expect(loginInput().value).toBe('maria');
-    expect(passwordInput().value).toBe('demo-staff-2026');
+    expect(loginInput().value).toBe('dean.kovaleva');
+    expect(passwordInput().value).toBe('dean-demo-2026');
   });
 
-  it('chip logins match the seeded demo credentials by role', () => {
+  it('chip logins match the seeded demo credentials by role (DIG-50: unified with the DB seed)', () => {
     const [anna, ilya, maria] = TEST_ACCOUNTS;
-    expect(anna).toMatchObject({ login: 'anna', password: 'demo-anna-2026', role: 'STUDENT' });
-    expect(ilya).toMatchObject({ login: 'ilya', password: 'demo-ilya-2026', role: 'STUDENT' });
-    expect(maria).toMatchObject({ login: 'maria', password: 'demo-staff-2026', role: 'STAFF' });
+    expect(anna).toMatchObject({
+      login: 'anna.smirnova',
+      password: 'anna-demo-2026',
+      role: 'STUDENT',
+    });
+    expect(ilya).toMatchObject({
+      login: 'ilya.petrov',
+      password: 'ilya-demo-2026',
+      role: 'STUDENT',
+    });
+    expect(maria).toMatchObject({
+      login: 'dean.kovaleva',
+      password: 'dean-demo-2026',
+      role: 'STAFF',
+    });
   });
 });
 

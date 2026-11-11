@@ -28,9 +28,9 @@ import type {
 } from './types';
 
 export const DEMO_PASSWORDS = {
-  anna: 'demo-anna-2026',
-  ilya: 'demo-ilya-2026',
-  maria: 'demo-staff-2026',
+  'anna.smirnova': 'anna-demo-2026',
+  'ilya.petrov': 'ilya-demo-2026',
+  'dean.kovaleva': 'dean-demo-2026',
 } as const;
 
 const day = (offsetDays: number, hour: number, minute = 0): Date => {
@@ -55,7 +55,9 @@ function prng(seed: number): () => number {
 const students: StudentRow[] = [
   {
     id: 'st-anna',
-    login: 'anna',
+    // DIG-50: логины demo-набора совпадают с сидом БД (prisma/seed-data.ts),
+    // чтобы вход работал одинаково на memory-store и на prisma-store.
+    login: 'anna.smirnova',
     fullName: 'Анна Ковалёва',
     email: 'anna.kovaleva@example.edu',
     groupName: 'ПИ-21',
@@ -69,7 +71,7 @@ const students: StudentRow[] = [
   },
   {
     id: 'st-ilya',
-    login: 'ilya',
+    login: 'ilya.petrov',
     fullName: 'Илья Смирнов',
     email: 'ilya.smirnov@example.edu',
     groupName: 'ЭК-11',
@@ -114,7 +116,7 @@ const settings: StudentSettingsRow[] = [
 const staffRows: StaffRow[] = [
   {
     id: 'stf-maria',
-    login: 'maria',
+    login: 'dean.kovaleva',
     fullName: 'Мария Петрова',
     position: 'Специалист деканата',
     email: 'maria.petrova@example.edu',
@@ -583,7 +585,7 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
       role,
     });
   };
-  await mk('anna', 'auth-anna', 'STUDENT');
-  await mk('ilya', 'auth-ilya', 'STUDENT');
-  await mk('maria', 'auth-maria', 'STAFF');
+  await mk('anna.smirnova', 'auth-anna', 'STUDENT');
+  await mk('ilya.petrov', 'auth-ilya', 'STUDENT');
+  await mk('dean.kovaleva', 'auth-dean', 'STAFF');
 }
