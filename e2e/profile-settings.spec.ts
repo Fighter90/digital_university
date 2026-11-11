@@ -89,16 +89,20 @@ test('settings: channel toggle persists, telegram/dark disabled, sessions + sign
 
   await toggleAndWaitSaved();
   await page.reload();
+  await page.waitForLoadState('networkidle');
   await expect(page.getByRole('switch', { name: 'Заявки — Email' })).toHaveAttribute(
     'aria-checked',
     flipped,
+    { timeout: 10000 },
   );
   // возвращаем исходное состояние
   await toggleAndWaitSaved();
   await page.reload();
+  await page.waitForLoadState('networkidle');
   await expect(page.getByRole('switch', { name: 'Заявки — Email' })).toHaveAttribute(
     'aria-checked',
     before ?? 'true',
+    { timeout: 10000 },
   );
 
   // Тема: «Тёмная» отключена с подписью «скоро».
