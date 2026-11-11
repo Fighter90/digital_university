@@ -14,6 +14,13 @@ export const resolveDistDir = (nodeEnv: string | undefined): string =>
 const nextConfig: NextConfig = {
   // DIG-7: standalone — самодостаточный сервер для Docker-образа (deploy/)
   output: 'standalone',
+  // DIG-50: node-file-trace не видит сгенерированный клиент Prisma
+  // (src/generated — вне package.json) и @prisma/* за pnpm-симлинками, поэтому
+  // в standalone-образ попадал сервер без клиента: подключение к БД падало.
+  // Явно до-включаем оба пути во все маршруты.
+  outputFileTracingIncludes: {
+    '/**': ['./src/generated/prisma/**', './node_modules/@prisma/**'],
+  },
   distDir: resolveDistDir(process.env.NODE_ENV),
   // DIG-50: node-file-trace не видит сгенерированный клиент Prisma
   // (src/generated — вне package.json) и @prisma/* за pnpm-симлинками, поэтому
