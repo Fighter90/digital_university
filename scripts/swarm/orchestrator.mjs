@@ -232,8 +232,14 @@ async function preflight() {
   if (oc.code !== 0) throw new Error('opencode CLI not found');
   const clean = await sh('git status --porcelain');
   if (clean.out.trim()) throw new Error('working tree is not clean — commit or stash first');
+  // Self-heal: a previous cycle may have left the checkout on a task branch
+  // (lesson of DIG-10: the supervisor retried forever on a leftover branch).
   const br = await sh('git rev-parse --abbrev-ref HEAD');
-  if (br.out.trim() !== 'main') throw new Error(`must run on main (now: ${br.out.trim()})`);
+  const current = br.out.trim();
+  if (current !== 'main') {
+    await sh('git checkout -q main && git pull --ff-only -q origin main');
+    log(`  preflight self-heal: ${current} → main`);
+  }
 }
 
 async function metaVerdict(revAll) {
@@ -559,6 +565,10 @@ async function main() {
       }
     }
   } finally {
+    // leave the checkout on main for the next supervisor invocation
+    try {
+      await sh('git checkout -q main');
+    } catch {}
     try {
       unlinkSync(resolve(STATE, 'lock'));
     } catch {}
