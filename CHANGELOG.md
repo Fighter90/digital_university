@@ -7,6 +7,7 @@
 
 ### Изменения
 
+- **Деплой-стек** — docker-compose (PostgreSQL 16 c healthcheck, Next standalone с миграциями при старте, Caddy с авто-TLS и security-заголовками), multi-stage Dockerfile, gitleaks в CI, compose-тест-контракт — DIG-7.
 - **Инфраструктура** — рой ИИ-агентов OpenCode: оркестратор (детерминированный
   автомат), Linear-клерк на GraphQL, адаптивные тест-гейты, роли
   executor/reviewer/security/documenter, команды `/swarm`, `/next-task`,
