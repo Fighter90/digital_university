@@ -1,0 +1,263 @@
+// Digital deanery demo schema — extended by later tasks (DIG-18+: auth).
+// All data is fictional; no real personal data is ever stored (AGENTS.md).
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ScheduleKind {
+  LECTURE
+  PRACTICE
+  LAB
+  SEMINAR
+  CONSULTATION
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  ROOM_CHANGED
+  TIME_CHANGED
+  CANCELLED
+}
+
+enum ElementKind {
+  HOMEWORK
+  LAB
+  TEST
+  PROJECT
+  EXAM
+}
+
+enum ExamKind {
+  CREDIT
+  EXAM
+  RETAKE
+}
+
+enum RequestType {
+  CERTIFICATE
+  STATEMENT
+  PRACTICE
+  DORMITORY
+  OTHER
+}
+
+enum RequestStatus {
+  SUBMITTED
+  IN_PROGRESS
+  NEEDS_REVISION
+  COMPLETED
+  REJECTED
+}
+
+enum ActorRole {
+  STUDENT
+  STAFF
+}
+
+enum NotificationType {
+  SCHEDULE
+  GRADE
+  REQUEST
+  NEWS
+  DEADLINE
+  SYSTEM
+}
+
+enum AppealStatus {
+  OPEN
+  ANSWERED
+  CLOSED
+}
+
+model Student {
+  id              String   @id @default(cuid())
+  login           String   @unique
+  passwordHash    String
+  fullName        String
+  email           String   @unique
+  groupName       String
+  course          Int
+  faculty         String
+  program         String
+  studyForm       String
+  gradebookNumber String   @unique
+  createdAt       DateTime @default(now())
+
+  grades        Grade[]
+  requests      ServiceRequest[]
+  notifications Notification[]
+  appeals       Appeal[]
+}
+
+model Staff {
+  id           String   @id @default(cuid())
+  login        String   @unique
+  passwordHash String
+  fullName     String
+  position     String
+  email        String   @unique
+  createdAt    DateTime @default(now())
+}
+
+model Discipline {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  name        String
+  groupName   String
+  teacherName String
+  credits     Int
+  room        String
+
+  elements AssessmentElement[]
+}
+
+model AssessmentElement {
+  id           String      @id @default(cuid())
+  disciplineId String
+  code         String      @unique
+  name         String
+  kind         ElementKind
+  weight       Float
+  maxScore     Int
+  order        Int
+
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  grades     Grade[]
+}
+
+model Grade {
+  id         String   @id @default(cuid())
+  studentId  String
+  elementId  String
+  score      Int
+  gradedAt   DateTime
+  comment    String?
+
+  student Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  element AssessmentElement @relation(fields: [elementId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, elementId])
+}
+
+model ScheduleEvent {
+  id               String         @id @default(cuid())
+  groupName        String
+  disciplineCode   String
+  date             DateTime       @db.Date
+  startsAt         DateTime
+  endsAt           DateTime
+  kind             ScheduleKind
+  room             String
+  teacherName      String
+  status           ScheduleStatus @default(SCHEDULED)
+  note             String?
+  previousRoom     String?
+  previousStartsAt DateTime?
+
+  @@index([groupName, date])
+}
+
+model ExamSession {
+  id             String   @id @default(cuid())
+  groupName      String
+  disciplineCode String
+  kind           ExamKind
+  date           DateTime @db.Date
+  startsAt       DateTime
+  room           String
+  note           String?
+
+  @@unique([groupName, disciplineCode, kind, date])
+}
+
+model ServiceRequest {
+  id          String        @id @default(cuid())
+  studentId   String
+  type        RequestType
+  title       String
+  status      RequestStatus
+  assignee    String?
+  resultNote  String?
+  createdAt   DateTime
+  updatedAt   DateTime
+
+  student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  events  RequestEvent[]
+}
+
+model RequestEvent {
+  id         String         @id @default(cuid())
+  requestId  String
+  actorRole  ActorRole
+  actorName  String
+  statusFrom RequestStatus?
+  statusTo   RequestStatus
+  message    String
+  createdAt  DateTime
+
+  request ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  studentId String
+  type      NotificationType
+  title     String
+  body      String
+  isRead    Boolean          @default(false)
+  createdAt DateTime
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+}
+
+model NewsPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  body        String
+  authorName  String
+  isPinned    Boolean  @default(false)
+  publishedAt DateTime
+}
+
+model FaqArticle {
+  id        String @id @default(cuid())
+  slug      String @unique
+  category  String
+  question  String
+  answer    String
+  sortOrder Int
+}
+
+model Appeal {
+  id        String       @id @default(cuid())
+  studentId String
+  subject   String
+  status    AppealStatus
+  createdAt DateTime
+
+  student  Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  messages AppealMessage[]
+}
+
+model AppealMessage {
+  id         String    @id @default(cuid())
+  appealId   String
+  authorRole ActorRole
+  authorName String
+  body       String
+  createdAt  DateTime
+
+  appeal Appeal @relation(fields: [appealId], references: [id], onDelete: Cascade)
+
+  @@index([appealId, createdAt])
+}
