@@ -41,3 +41,6 @@ yarn-error.log*
 
 # openspec runtime artifacts (не коммитим черновики, changes коммитим)
 openspec/.cache/
+
+# prisma client generation output
+src/generated/
