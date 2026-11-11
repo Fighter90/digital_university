@@ -1,0 +1,13 @@
+# deploy/Dockerfile.tools — разовые задачи БД (migrate deploy + seed).
+# Запуск: docker compose --profile tools run --rm tools sh -c 'migrate+seed'
+FROM node:22-slim
+ENV PNPM_HOME=/pnpm \
+    PATH="/pnpm:$PATH" \
+    DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+RUN corepack enable
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+COPY prisma/schema.prisma prisma/schema.prisma
+RUN pnpm install --frozen-lockfile && pnpm exec prisma generate
+COPY . .
+CMD ["sleep", "infinity"]

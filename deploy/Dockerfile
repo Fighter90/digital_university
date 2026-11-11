@@ -25,16 +25,6 @@ RUN pnpm exec prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
-# prisma-схема/миграции и CLI — в рантайм (миграции применяются при старте
-# контейнера, deploy/docker-entrypoint.sh). Пока prisma не в зависимостях
-# (DIG-18+), копируется только папка prisma/ — entrypoint сам это учтёт.
-# pnpm кладёт реальные пакеты в .pnpm (симлинки в node_modules) — копируем
-# с разыменованием (-L), иначе CLI в рантайме оказывается «пустым».
-RUN mkdir -p /prisma-kit/node_modules/.bin /prisma-kit/src/generated \
- && cp -rL /app/prisma /prisma-kit/prisma \
- && cp -rL /app/src/generated /prisma-kit/src/generated \
- && cp -rL /app/node_modules /prisma-kit/node_modules
-
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
@@ -45,7 +35,6 @@ ENV NODE_ENV=production \
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
-COPY --from=build --chown=node:node /prisma-kit ./
 COPY --chmod=755 deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 USER node
