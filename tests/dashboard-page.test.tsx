@@ -313,12 +313,24 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
     expect(html).toContain('Средний балл');
   });
 
-  it('skeleton fallback is wired for the loading state', async () => {
-    // Отложенный ответ: пререндер должен дождаться данных и показать контент,
-    // а фолбэк Suspense — скелетон (проверяем его присутствие в модуле страницы).
-    const source = (await import('@/app/(cabinet)/dashboard/page')).default;
-    expect(source).toBeTypeOf('function');
-    const mod = await import('@/components/dashboard/dashboard-skeleton');
-    expect(mod.DashboardSkeleton).toBeTypeOf('function');
+  it('skeleton fallback is wired: страница оборачивает агрегат в Suspense со скелетоном', () => {
+    // Поведенческое покрытие — e2e dashboard.spec (real server, settled waits).
+    // Здесь — контракт исходника: page.tsx оборачивает DashboardContent
+    // в Suspense с fallback = DashboardSkeleton.
+    const { readFileSync } = require('node:fs');
+    const { resolve } = require('node:path');
+    const source = readFileSync(resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'), 'utf8');
+    expect(source).toContain('<Suspense fallback={<DashboardSkeleton />}>');
+    expect(source).toContain('<DashboardContent />');
+  });
+
+  it('STAFF-ветка: источник содержит явную заглушку «Кабинет сотрудника»', () => {
+    // В юнит-среде нет request scope (cookies) — рендер страницы недоступен;
+    // поведение покрывает e2e prod-auth, здесь — контракт исходника.
+    const { readFileSync } = require('node:fs');
+    const { resolve } = require('node:path');
+    const source = readFileSync(resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'), 'utf8');
+    expect(source).toContain('Кабинет сотрудника');
+    expect(source).toMatch(/role === 'STAFF'/);
   });
 });
