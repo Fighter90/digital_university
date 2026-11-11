@@ -1,10 +1,10 @@
 // DIG-14 — каркас кабинета: верхняя панель, боковое меню, мобильная навигация.
 // Пиним контракты приёмки: состав меню и таб-бара, подсветка активного раздела
-// (единая логика для меню и таб-бара), серверная проверка сессии в layout,
-// skip-link, safe-area таб-бара и обновление счётчика уведомлений без перезагрузки.
+// (единая логика для меню и таб-бара) и поведение страниц (композишн внутри
+// main-региона Shell).
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { createElement, type ComponentType } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import {
   CABINET_SECTIONS,
   MORE_SECTIONS,
@@ -12,9 +12,16 @@ import {
   resolveActiveSection,
   resolveActiveTab,
 } from '@/components/shell/nav-items';
-
-const ROOT = resolve(__dirname, '..');
-const read = (p: string) => readFileSync(resolve(ROOT, p), 'utf8');
+import DashboardPage from '@/app/(cabinet)/dashboard/page';
+import SchedulePage from '@/app/(cabinet)/schedule/page';
+import GradesPage from '@/app/(cabinet)/grades/page';
+import RequestsPage from '@/app/(cabinet)/requests/page';
+import NotificationsPage from '@/app/(cabinet)/notifications/page';
+import DeaneryPage from '@/app/(cabinet)/deanery/page';
+import AiAssistantPage from '@/app/(cabinet)/ai-assistant/page';
+import ProfilePage from '@/app/(cabinet)/profile/page';
+import SettingsPage from '@/app/(cabinet)/settings/page';
+import MorePage from '@/app/(cabinet)/more/page';
 
 describe('nav config (cabinet shell)', () => {
   it('exposes the 8 mandated cabinet sections with unique hrefs', () => {
@@ -91,29 +98,35 @@ describe('resolveActiveTab (menu and tab bar stay in sync)', () => {
   });
 });
 
-describe('source invariants (acceptance criteria pinned in code)', () => {
-  it('cabinet layout guards the session server-side before rendering the shell', () => {
-    const layout = read('src/app/(cabinet)/layout.tsx');
-    expect(layout).toMatch(/requireUser/);
-    expect(layout).toMatch(/<Shell/);
-    expect(layout).toMatch(/await/);
+// Поведенческий рендер всех страниц (cabinet): единственный main-регион
+// принадлежит Shell (#main-content), страницы не должны заводить свой <main>,
+// иначе получится невалидный вложенный landmark (ревью DIG-14, раунд 1).
+describe('cabinet pages render inside the shell main region', () => {
+  const PAGES: Array<[string, ComponentType]> = [
+    ['/dashboard', DashboardPage],
+    ['/schedule', SchedulePage],
+    ['/grades', GradesPage],
+    ['/requests', RequestsPage],
+    ['/notifications', NotificationsPage],
+    ['/deanery', DeaneryPage],
+    ['/ai-assistant', AiAssistantPage],
+    ['/profile', ProfilePage],
+    ['/settings', SettingsPage],
+    ['/more', MorePage],
+  ];
+
+  it('no cabinet page renders its own <main> landmark', () => {
+    for (const [href, Page] of PAGES) {
+      const html = renderToStaticMarkup(createElement(Page));
+      expect(html, `${href} must not nest <main> inside the shell main region`).not.toContain(
+        '<main',
+      );
+    }
   });
 
-  it('tab bar respects the iPhone safe area', () => {
-    const tabBar = read('src/components/shell/tab-bar.tsx');
-    expect(tabBar).toContain('env(safe-area-inset-bottom)');
-  });
-
-  it('shell renders a skip link «К содержимому» targeting the main region', () => {
-    const shell = read('src/components/shell/shell.tsx');
-    expect(shell).toContain('К содержимому');
-    expect(shell).toContain('#main-content');
-    expect(shell).toMatch(/id="main-content"/);
-  });
-
-  it('unread counter refreshes without reload (interval ≤ 60 s)', () => {
-    const badge = read('src/components/shell/unread-badge.tsx');
-    expect(badge).toMatch(/60_000|60000|POLL_MS/);
-    expect(badge).toMatch(/setInterval|setTimeout/);
+  it('dashboard keeps its content on a section wrapper', () => {
+    const html = renderToStaticMarkup(createElement(DashboardPage));
+    expect(html).toContain('<section');
+    expect(html).toContain('Кабинет студента');
   });
 });

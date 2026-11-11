@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 // DIG-14 — каркас кабинета: e2e для приёмки.
-// desktop-1440: верхняя панель, боковое меню, skip-link, ⌘K-поиск, меню аватара.
+// desktop-1440: верхняя панель, боковое меню, skip-link, ⌘K-поиск (фокус
+// возвращается на триггер), меню аватара, ровно один main-landmark.
 // mobile-360: без бокового меню, нижний таб-бар, без горизонтального скролла,
 // плавающая AI-кнопка, счётчик уведомлений обновляется без перезагрузки.
 
@@ -72,6 +73,7 @@ test.describe('desktop 1440 — shell chrome', () => {
 
   test('search button and Ctrl/⌘+K open the search palette', async ({ page }) => {
     await page.goto('/dashboard');
+    const trigger = page.getByRole('button', { name: 'Поиск по кабинету (Command+K)' });
     await page.keyboard.press('ControlOrMeta+KeyK');
     const dialog = page.getByRole('dialog', { name: 'Поиск по кабинету' });
     await expect(dialog).toBeVisible();
@@ -79,8 +81,41 @@ test.describe('desktop 1440 — shell chrome', () => {
       'placeholder',
       'Найти пару, преподавателя, справку…',
     );
+    // Видимый интерактивный оверлей не должен нести aria-hidden вообще.
+    const overlay = page.getByTestId('search-overlay');
+    await expect(overlay).toHaveCount(1);
+    expect(await overlay.getAttribute('aria-hidden')).toBeNull();
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+  });
+
+  test('search palette returns focus to the search trigger on close', async ({ page }) => {
+    await page.goto('/dashboard');
+    const trigger = page.getByRole('button', { name: 'Поиск по кабинету (Command+K)' });
+    await trigger.focus();
+    await trigger.click();
+
+    const dialog = page.getByRole('dialog', { name: 'Поиск по кабинету' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('textbox')).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+
+    // Цикл ⌘K (открыть/закрыть) тоже возвращает фокус на кнопку поиска.
+    await page.keyboard.press('ControlOrMeta+KeyK');
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('ControlOrMeta+KeyK');
+    await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+  });
+
+  test('the page has exactly one main landmark (the shell owns it)', async ({ page }) => {
+    await page.goto('/dashboard');
+    await expect(page.locator('#main-content')).toBeVisible();
+    await expect(page.locator('main')).toHaveCount(1);
   });
 
   test('unread badge is shown next to the bell', async ({ page }) => {

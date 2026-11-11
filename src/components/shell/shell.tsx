@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShellUser } from '@/lib/user';
 import { TopBar } from './top-bar';
 import { SideNav } from './side-nav';
@@ -20,6 +20,9 @@ type ShellProps = {
 // skip-link «К содержимому» (доступность с клавиатуры).
 export function Shell({ user, unreadCount, children }: ShellProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  // Кнопка поиска: ссылка нужна палитре, чтобы вернуть фокус при закрытии.
+  const searchTriggerRef = useRef<HTMLButtonElement>(null);
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
 
   // Глобальный хоткей ⌘K / Ctrl+K — открыть/закрыть поиск.
   useEffect(() => {
@@ -42,7 +45,12 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
         К содержимому
       </a>
 
-      <TopBar user={user} unreadCount={unreadCount} onOpenSearch={() => setSearchOpen(true)} />
+      <TopBar
+        user={user}
+        unreadCount={unreadCount}
+        onOpenSearch={() => setSearchOpen(true)}
+        searchTriggerRef={searchTriggerRef}
+      />
 
       <div className="mx-auto flex w-full max-w-[1440px]">
         <SideNav unreadCount={unreadCount} />
@@ -57,7 +65,7 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
 
       <TabBar />
       <AiFab />
-      <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <SearchPalette open={searchOpen} onClose={closeSearch} returnFocusRef={searchTriggerRef} />
     </div>
   );
 }

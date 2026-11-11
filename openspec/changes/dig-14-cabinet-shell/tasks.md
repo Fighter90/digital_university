@@ -12,3 +12,12 @@
 - [x] 10. Каркасные маршруты-заглушки (8 разделов + more) через общий PagePlaceholder.
 - [x] 11. Коралловые токены в globals.css (рабочие, до DIG-13); sticky-баннер концепта на мобильном.
 - [x] 12. Зелёные: pnpm lint / typecheck / test / e2e / build; node scripts/swarm/gates.mjs.
+
+### Раунд 2 — замечания ревью
+
+- [x] 13. Red-first: render-тест страниц (unit) — ни одна страница (cabinet) не рендерит свой `<main>`; падает до фикса /dashboard.
+- [x] 14. Red-first: e2e — ровно один main-landmark, возврат фокуса палитрой поиска, отсутствие aria-hidden на оверлее; падают до фиксов.
+- [x] 15. `/dashboard`: `<main>` → `<section>` (единственный main-landmark — у Shell).
+- [x] 16. `SearchPalette`: возврат фокуса на кнопку поиска при закрытии (returnFocusRef), фокус в поле при открытии через effect; убрать `aria-hidden="false"`.
+- [x] 17. Заменить 4 тавтологических source-invariant теста на поведенческие (render-тесты + e2e); vitest esbuild jsx:automatic.
+- [x] 18. Зелёные: vitest / node --test / e2e (18 passed) / gates green.

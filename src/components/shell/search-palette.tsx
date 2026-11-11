@@ -6,14 +6,19 @@ import { Search } from 'lucide-react';
 type SearchPaletteProps = {
   open: boolean;
   onClose: () => void;
+  /** Кнопка поиска в TopBar — при закрытии диалога фокус возвращается на неё. */
+  returnFocusRef?: React.RefObject<HTMLButtonElement | null>;
 };
 
 // DIG-14: заглушка ⌘K-поиска. Полный экран «Поиск ⌘K» подключается
 // отдельной задачей; здесь — доступный каркас диалога: Escape закрывает,
-// Tab не выходит за пределы, фокус в поле ввода.
-export function SearchPalette({ open, onClose }: SearchPaletteProps) {
+// Tab не выходит за пределы, фокус в поле ввода, а при закрытии фокус
+// возвращается на кнопку поиска (ревью DIG-14, раунд 1).
+export function SearchPalette({ open, onClose, returnFocusRef }: SearchPaletteProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Был ли диалог открыт раньше — чтобы не красть фокус при первом рендере.
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
     if (!open) return;
@@ -26,6 +31,19 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open, onClose]);
+
+  // Управление фокусом: при открытии — в поле ввода, при закрытии — на
+  // кнопку поиска, чтобы фокус не падал в <body>.
+  useEffect(() => {
+    if (open) {
+      wasOpenRef.current = true;
+      inputRef.current?.focus();
+      return;
+    }
+    if (!wasOpenRef.current) return;
+    wasOpenRef.current = false;
+    returnFocusRef?.current?.focus();
+  }, [open, returnFocusRef]);
 
   if (!open) return null;
 
@@ -46,7 +64,11 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-neutral-950/40 p-4" onClick={onClose} aria-hidden="false">
+    <div
+      data-testid="search-overlay"
+      className="fixed inset-0 z-50 bg-neutral-950/40 p-4"
+      onClick={onClose}
+    >
       <div
         ref={dialogRef}
         role="dialog"
@@ -61,7 +83,6 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
           <input
             ref={inputRef}
             type="text"
-            autoFocus
             aria-label="Поиск"
             placeholder="Найти пару, преподавателя, справку…"
             className="h-12 min-w-0 flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400"

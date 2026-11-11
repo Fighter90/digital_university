@@ -11,11 +11,13 @@ type TopBarProps = {
   user: ShellUser;
   unreadCount: number;
   onOpenSearch: () => void;
+  /** Ref кнопки поиска — Shell передаёт его палитре для возврата фокуса. */
+  searchTriggerRef?: React.Ref<HTMLButtonElement>;
 };
 
 // DIG-14: верхняя панель 72 px (56 px на мобильном): вымышленный логотип,
 // поиск (⌘K), AI, колокольчик с непрочитанными, аватар с меню и плашка концепта.
-export function TopBar({ user, unreadCount, onOpenSearch }: TopBarProps) {
+export function TopBar({ user, unreadCount, onOpenSearch, searchTriggerRef }: TopBarProps) {
   return (
     <header className="z-40 border-b border-neutral-200/80 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/75 md:sticky md:top-0">
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-1.5 px-3 md:h-18 md:gap-3 md:px-6">
@@ -46,6 +48,7 @@ export function TopBar({ user, unreadCount, onOpenSearch }: TopBarProps) {
         <div className="ml-auto flex items-center gap-1 md:gap-2">
           {/* Поиск: широкая кнопка на ≥768, иконка на мобильном */}
           <button
+            ref={searchTriggerRef}
             type="button"
             onClick={onOpenSearch}
             aria-label="Поиск по кабинету (Command+K)"
