@@ -126,7 +126,33 @@ export const buildAiLog = ({ identifier, title, today, rounds, verdicts, securit
   return lines.join('\n');
 };
 
-// ---------- pipeline ----------
+// Security runs INSIDE the develop loop: a FAIL returns the issue to the
+// executor with findings (same budget of rounds), it must never skip a task.
+export const securityFailureFeedback = (round, maxRounds, findings) => {
+  if (round + 1 < maxRounds) {
+    return { action: 'retry', notes: `SECURITY-GATE ВЕРНУЛ ИЗМЕНЕНИЕ — исправь:\n${findings}` };
+  }
+  return { action: 'fail', notes: findings };
+};
+
+/** Acquire the single-instance lock; stale locks from SIGKILLed orchestrators
+ *  (OOM pressure — lesson of the DIG-7 cycle) are reclaimed when their PID is dead. */
+export function acquireLock(lockPath, currentPid) {
+  let fd;
+  try {
+    fd = openSync(lockPath, 'wx');
+  } catch {
+    let ownerPid = 0;
+    try { ownerPid = parseInt(readFileSync(lockPath, 'utf8').trim(), 10) || 0; } catch {}
+    let alive = false;
+    try { if (ownerPid) { process.kill(ownerPid, 0); alive = true; } } catch (e) { alive = e.code === 'EPERM'; }
+    if (alive) throw new Error(`another swarm instance holds the lock (pid ${ownerPid})`);
+    try { unlinkSync(lockPath); } catch {}
+    fd = openSync(lockPath, 'wx');
+  }
+  writeSync(fd, String(currentPid));
+  closeSync(fd);
+}
 
 async function preflight() {
   if (!existsSync(resolve(ROOT, 'scripts/swarm/orchestrator.mjs'))) throw new Error('run from the repo root');
@@ -149,13 +175,7 @@ async function main() {
   mkdirSync(LOGS, { recursive: true });
   await preflight();
   const lock = resolve(STATE, 'lock');
-  try {
-    const fd = openSync(lock, 'wx');
-    writeSync(fd, String(process.pid));
-    closeSync(fd);
-  } catch {
-    throw new Error('another swarm instance holds the lock (.task-board/lock)');
-  }
+  acquireLock(lock, process.pid);
 
   try {
     for (let n = 0; n < MAX_TASKS; n++) {
@@ -250,7 +270,30 @@ async function main() {
             v = await metaVerdict(rev.all || rev.tail);
           }
           verdicts.push(v.verdict);
-          if (v.verdict === 'ACCEPT') { log('  verdict: ACCEPT'); break; }
+          if (v.verdict === 'ACCEPT') {
+            log('  verdict: ACCEPT');
+
+            log('-- security gate (fresh context, inside the round loop)');
+            const diff2 = await sh(`git diff origin/main...HEAD`);
+            const sec = await worker('security', [
+              `ЗАДАЧА: ${issue.identifier} — ${issue.title}`,
+              `Дифф:\n<DIFF>\n${diff2.all.slice(0, 60_000)}\n</DIFF>`,
+            ].join('\n'), { timeoutMs: 15 * 60_000 });
+            const sv = extractSecurity(sec.all || sec.tail);
+            securityPassed = sv.verdict === 'PASS';
+            if (!securityPassed) {
+              const fb = securityFailureFeedback(round, MAX_ROUNDS, sv.findings);
+              if (fb.action === 'retry') {
+                reviewNotes = fb.notes;
+                log(`  security: FAIL — feeding findings back to the executor`);
+                continue;
+              }
+              await failIssue(issue.identifier, 'security', sv.findings.slice(0, 300));
+              throw new Error('security gate: FAIL');
+            }
+            log('  security: PASS');
+            break;
+          }
           reviewNotes = v.notes;
           log(`  verdict: RETURN — ${short(v.notes, 160)}`);
         }
@@ -268,26 +311,10 @@ async function main() {
           await failIssue(issue.identifier, 'review', `нет ACCEPT за ${MAX_ROUNDS} раунда; ветка ${branch} оставлена человеку`);
           throw new Error('review: no ACCEPT');
         }
-
-        log('-- security gate (fresh context)');
-        const diff2 = await sh(`git diff origin/main...HEAD`);
-        const sec = await worker('security', [
-          `ЗАДАЧА: ${issue.identifier} — ${issue.title}`,
-          `Дифф:\n<DIFF>\n${diff2.all.slice(0, 60_000)}\n</DIFF>`,
-        ].join('\n'), { timeoutMs: 15 * 60_000 });
-        const sv = extractSecurity(sec.all || sec.tail);
-        securityPassed = sv.verdict === 'PASS';
         if (!securityPassed) {
-          if (round + 1 < MAX_ROUNDS) {
-            // continue the loop with security findings as review notes
-            round--; reviewNotes = `SECURITY-GATE ВЕРНУЛ ИЗМЕНЕНИЕ — исправь:\n${sv.findings}`;
-            log(`  security: FAIL — feeding findings back`);
-            continue;
-          }
-          await failIssue(issue.identifier, 'security', sv.findings.slice(0, 300));
+          await failIssue(issue.identifier, 'security', 'security не прошёл — ветка оставлена человеку');
           throw new Error('security gate: FAIL');
         }
-        log('  security: PASS');
 
         // ---- document (тексты рой пишет сам, файл — детерминированно)
         log('-- documenter');
