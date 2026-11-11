@@ -1,15 +1,12 @@
 import type { Metadata } from 'next';
-import { Onest } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import { ConceptBanner } from '@/components/concept-banner';
 import './globals.css';
 
-// DIG-13: интерфейсный шрифт Onest (лицензия OFL), веса 400–800,
-// латиница + кириллица. Airbnb Cereal из референса не используется — лицензия
-// не позволяет (см. AGENTS.md / THIRD_PARTY_LICENSES.md).
-const onest = Onest({
-  variable: '--font-onest',
+// Правило проекта: шрифт Inter, как в макетах Figma (латиница + кириллица).
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500', '600', '700', '800'],
 });
 
 export const metadata: Metadata = {
@@ -24,8 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={onest.variable}>
-      {/* переменная шрифта на <html>: html { font-sans } видит --font-onest */}
+    <html lang="ru" className={inter.variable}>
       <body className="antialiased">
         <ConceptBanner />
         {children}

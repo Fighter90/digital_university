@@ -109,6 +109,17 @@
   --color-chart-1: var(--chart-1);
 }
 
+/* DIG-14: рабочие коралловые токены каркаса (финализируются в дизайн-системе DIG-13). */
+@theme {
+  --color-coral-50: oklch(0.955 0.02 30);
+  --color-coral-100: oklch(0.915 0.045 30);
+  --color-coral-200: oklch(0.86 0.075 30);
+  --color-coral-400: oklch(0.72 0.14 28);
+  --color-coral-500: oklch(0.665 0.165 27);
+  --color-coral-600: oklch(0.6 0.165 27);
+  --color-coral-700: oklch(0.52 0.15 27);
+}
+
 :root {
   /* поверхности и текст (значения из макета, светлая тема) */
   --background: #f7f7f7;

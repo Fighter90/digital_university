@@ -7,9 +7,12 @@ export default defineConfig({
     include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
     exclude: ['e2e/**', 'node_modules/**'],
   },
-  // JSX-компоненты не импортируют React (автоматический рантайм Next.js 15),
-  // поэтому тесты тоже собираются с jsx: automatic.
-  esbuild: { jsx: 'automatic' },
+  esbuild: {
+    // Страницы Next.js пишутся с автоматическим JSX-рантаймом (tsconfig jsx:
+    // preserve), а vitest по умолчанию применяет классический — без этого
+    // поведенческие render-тесты падают с «React is not defined».
+    jsx: 'automatic',
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

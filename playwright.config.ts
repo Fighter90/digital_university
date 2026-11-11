@@ -22,9 +22,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm dev',
+    // DIG-12 (round 2): e2e must verify the PRODUCTION contract. In
+    // `next dev` (Turbopack) a notFound() page streams the not-found UI with
+    // an HTTP 200 (dev-only artifact, flaky between runs), while the built
+    // server answers the real, deterministic 404. Building here also
+    // guarantees the suite never depends on a stale/mixed .next state.
+    command: 'pnpm build && pnpm start',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 240_000,
   },
 });
