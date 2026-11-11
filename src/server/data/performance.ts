@@ -179,6 +179,12 @@ interface DisciplineComputation {
   totalElements: number;
   isComplete: boolean;
   semester: SemesterKey | null;
+  /** Преподаватель из справочника группы (null — дисциплина синтезирована). */
+  teacherName: string | null;
+  /** В плане контроля есть экзаменационный элемент (DIG-26, бейдж допуска). */
+  hasExamElement: boolean;
+  /** Экзаменационный элемент уже оценён (пересдача — по последней оценке). */
+  examGraded: boolean;
 }
 
 /**
@@ -236,6 +242,11 @@ function computeDisciplines(
         : gradedCodes.size;
     const isComplete = totalElements > 0 && gradedCount >= totalElements;
 
+    // Экзаменационный элемент плана: бейдж допуска экрана «Успеваемость»
+    // (DIG-26). Оценён — по тем же строкам GradeRow (пересдача даёт
+    // последнюю по дате, для флага достаточно самого факта оценки).
+    const examElement = plan.find((el) => el.kind === 'EXAM') ?? null;
+
     return {
       code,
       name: knownRow?.disciplineName ?? gradedRows[0]?.disciplineName ?? code,
@@ -245,6 +256,9 @@ function computeDisciplines(
       totalElements,
       isComplete,
       semester: disciplineSemesterOf(graded),
+      teacherName: knownRow?.teacherName ?? null,
+      hasExamElement: examElement !== null,
+      examGraded: examElement !== null && gradedCodes.has(examElement.elementCode),
     };
   });
 }
@@ -311,6 +325,9 @@ function buildDisciplineViews(
         totalElements: item.totalElements,
         isComplete: item.isComplete,
         creditEarned: item.isComplete && finalGrade !== null && finalGrade >= CREDIT_PASS_PERCENT,
+        teacherName: item.teacherName,
+        hasExamElement: item.hasExamElement,
+        examGraded: item.examGraded,
       };
     })
     .sort((a, b) => {
