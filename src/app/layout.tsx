@@ -21,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
-      <body className={`${inter.variable} antialiased`}>
+    <html lang="ru" className={inter.variable}>
+      <body className="antialiased">
         <ConceptBanner />
         {children}
       </body>
