@@ -10,11 +10,12 @@ import type {
   AppealStatus,
   ElementKind,
   ExamKind,
-  NotificationType,
+  NotificationKind,
+  RequestKind,
   RequestStatus,
-  RequestType,
   ScheduleKind,
   ScheduleStatus,
+  StudyForm,
 } from '../src/generated/prisma';
 
 import {
@@ -57,18 +58,54 @@ async function wipe(tx: TxClient) {
   await tx.faqArticle.deleteMany();
   await tx.student.deleteMany();
   await tx.staff.deleteMany();
+  await tx.session.deleteMany();
+  await tx.user.deleteMany();
 }
+
+// Единый словарь статусов канона (DIG-9, 8 значений): названия из сидов
+// DIG-10 отображаются без потери смысла.
+const REQUEST_STATUS: Record<string, RequestStatus> = {
+  SUBMITTED: 'SUBMITTED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  NEEDS_REVISION: 'NEEDS_FIX',
+  COMPLETED: 'ISSUED',
+  REJECTED: 'REJECTED',
+};
+
+// Формы обучения: строки сидов → enum канона.
+const STUDY_FORM: Record<string, StudyForm> = {
+  очная: 'FULL_TIME',
+  'очно-заочная': 'PART_TIME',
+  заочная: 'EXTRAMURAL',
+};
 
 async function seed(tx: TxClient) {
   const now = nowSeed();
 
-  await tx.staff.create({ data: STAFF_SEED[0] });
-
+  // Users (DIG-11): единственное хранилище паролей. Профили Student/Staff
+  // паролей не содержат — bcrypt-хэш из сида переезжает в User-строку.
+  const userByLogin = new Map<string, string>();
   const students = new Map<string, string>();
-  for (const student of STUDENT_ROWS) {
-    const created = await tx.student.create({ data: { ...student } });
+  for (const { passwordHash, studyForm, ...profile } of STUDENT_ROWS) {
+    const user = await tx.user.create({
+      data: { login: profile.login, passwordHash, role: 'STUDENT' },
+    });
+    userByLogin.set(user.login, user.id);
+    const created = await tx.student.create({
+      data: {
+        ...profile,
+        userId: user.id,
+        studyForm: STUDY_FORM[studyForm] ?? 'FULL_TIME',
+      },
+    });
     students.set(created.login, created.id);
   }
+  const { passwordHash: staffHash, ...staffProfile } = STAFF_SEED[0];
+  const staffUser = await tx.user.create({
+    data: { login: staffProfile.login, passwordHash: staffHash, role: 'STAFF' },
+  });
+  userByLogin.set(staffUser.login, staffUser.id);
+  await tx.staff.create({ data: staffProfile });
 
   // Disciplines with weighted control elements.
   const elementIdByCode = new Map<string, string>();
@@ -85,14 +122,15 @@ async function seed(tx: TxClient) {
     for (const el of stored) elementIdByCode.set(el.code, el.id);
   }
 
-  // Grades (10-point scale) per student.
+  // Grades (10-point scale) per student: value — оценка канона (CHECK 0..10),
+  // elementId — элемент контроля сидов (AssessmentElement).
   for (const student of STUDENT_ROWS) {
     const { entries } = buildGrades(now, student);
     await tx.grade.createMany({
       data: entries.map((e) => ({
         studentId: students.get(student.login)!,
         elementId: elementIdByCode.get(e.elementCode)!,
-        score: e.score,
+        value: e.score,
         gradedAt: e.gradedAt,
         comment: e.comment,
       })),
@@ -116,36 +154,40 @@ async function seed(tx: TxClient) {
     data: buildExamSessions(now).map((s) => ({ ...s, kind: s.kind as ExamKind })),
   });
 
-  // Requests with event history — every dictionary status covered.
+  // Requests with event history — every dictionary status covered
+  // (map to the canonical 8-value RequestStatus, see REQUEST_STATUS).
   for (const { studentLogin, events: history, ...rest } of buildRequests(now)) {
     await tx.serviceRequest.create({
       data: {
         ...rest,
-        type: rest.type as RequestType,
-        status: rest.status as RequestStatus,
+        type: rest.type as RequestKind,
+        status: REQUEST_STATUS[rest.status],
         studentId: students.get(studentLogin)!,
         events: {
           create: history.map((e) => ({
-            ...e,
             actorRole: e.actorRole as ActorRole,
-            statusFrom: e.statusFrom as RequestStatus | null,
-            statusTo: e.statusTo as RequestStatus,
+            actorName: e.actorName,
+            fromStatus: e.statusFrom ? REQUEST_STATUS[e.statusFrom] : null,
+            toStatus: REQUEST_STATUS[e.statusTo],
+            comment: e.message,
+            createdAt: e.createdAt,
           })),
         },
       },
     });
   }
 
-  // Notifications (20+ across students, several types).
+  // Notifications (20+ across students, several types) — канон: владелец User.
   const notifications = [
     ...buildNotifications(now, 'anna.smirnova'),
     ...buildNotifications(now, 'ilya.petrov'),
   ];
   await tx.notification.createMany({
-    data: notifications.map(({ studentLogin, ...n }) => ({
+    data: notifications.map(({ studentLogin, type, isRead, ...n }) => ({
       ...n,
-      type: n.type as NotificationType,
-      studentId: students.get(studentLogin)!,
+      kind: type as NotificationKind,
+      userId: userByLogin.get(studentLogin)!,
+      readAt: isRead ? n.createdAt : null,
     })),
   });
 
@@ -171,6 +213,7 @@ async function main() {
     await wipe(tx);
     await seed(tx);
     return {
+      users: await tx.user.count(),
       students: await tx.student.count(),
       staff: await tx.staff.count(),
       disciplines: await tx.discipline.count(),

@@ -1,9 +1,6 @@
-// DIG-9: контракты схемы БД (Prisma + PostgreSQL).
-// ⚠️ ВРЕМЕННО В SKIP: после слияния DIG-7…DIG-14 схема на копии из ветки DIG-10
-// (компилируется, сидится, auth работает), а контракты канона DIG-9 (28 моделей,
-// FTS, sequence «ЗД-ГГГГ-NNNNNN») ожидают интеграционной задачи — см. Linear
-// «Reconcile prisma schema» / docs/ai-log. Интеграционный executor снимает skip
-// и доводит тесты до зелёных на объединённой схеме.
+// DIG-9/DIG-49: контракты схемы БД (Prisma + PostgreSQL).
+// DIG-49 (reconcile): канон DIG-9 объединён с enum'ами/моделями сидов DIG-10
+// и auth-моделями DIG-11 — все контракты сняты со skip и обязаны быть зелёными.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -87,15 +84,15 @@ test('schema.prisma существует и объявляет datasource postgr
   assert.match(config, /DATABASE_URL/);
 });
 
-// ⏳ Все контракты ниже — в test.skip до задачи DIG-49 (reconcile: канон DIG-9 + enum'ы сидов DIG-10 + auth-модели)
-test.skip('объявлены все 27 моделей предметной области', () => {
+// Все контракты — зелёные на объединённой схеме (DIG-49).
+test('объявлены все 27 моделей предметной области', () => {
   const s = schema();
   for (const m of models) {
     assert.match(s, new RegExp(`model ${m}\\s*\\{`), `нет модели ${m}`);
   }
 });
 
-test.skip('User: роль STUDENT|STAFF, защита от брутфорса (failedLogins, lockedUntil)', () => {
+test('User: роль STUDENT|STAFF, защита от брутфорса (failedLogins, lockedUntil)', () => {
   const s = schema();
   assert.match(s, /enum Role\s*\{[^}]*STUDENT[^}]*STAFF[^}]*\}/);
   assert.match(s, /failedLogins\s+Int/);
@@ -103,7 +100,7 @@ test.skip('User: роль STUDENT|STAFF, защита от брутфорса (f
   assert.match(s, /passwordHash\s+String/);
 });
 
-test.skip('Session: tokenHash уникален, есть expiresAt/userAgent/ip и индекс по userId', () => {
+test('Session: tokenHash уникален, есть expiresAt/userAgent/ip и индекс по userId', () => {
   const s = schema();
   assert.match(s, /tokenHash\s+String\s+@unique/);
   assert.match(s, /expiresAt\s+DateTime/);
@@ -112,7 +109,7 @@ test.skip('Session: tokenHash уникален, есть expiresAt/userAgent/ip 
   assert.match(s, /@@index\(\[userId\]\)/);
 });
 
-test.skip('единый словарь статусов заявки — ровно 8 значений, без синонимов', () => {
+test('единый словарь статусов заявки — ровно 8 значений, без синонимов', () => {
   const s = schema();
   const m = s.match(/enum RequestStatus\s*\{([^}]*)\}/);
   assert.ok(m, 'нет enum RequestStatus');
@@ -135,7 +132,7 @@ test.skip('единый словарь статусов заявки — ров�
   );
 });
 
-test.skip('enum расписания: LECTURE|SEMINAR|LAB|EXAM|CONSULT и NORMAL|CHANGED|CANCELLED', () => {
+test('enum расписания: LECTURE|SEMINAR|LAB|EXAM|CONSULT и NORMAL|CHANGED|CANCELLED', () => {
   const s = schema();
   assert.match(
     s,
@@ -144,13 +141,13 @@ test.skip('enum расписания: LECTURE|SEMINAR|LAB|EXAM|CONSULT и NORMAL
   assert.match(s, /enum EventStatus\s*\{[^}]*NORMAL[^}]*CHANGED[^}]*CANCELLED[^}]*\}/);
 });
 
-test.skip('составные индексы: ScheduleEvent (groupId, startsAt), Notification (userId, readAt)', () => {
+test('составные индексы: ScheduleEvent (groupId, startsAt), Notification (userId, readAt)', () => {
   const s = schema();
   assert.match(s, /@@index\(\[groupId, startsAt\]\)/);
   assert.match(s, /@@index\(\[userId, readAt\]\)/);
 });
 
-test.skip('каждое поле-внешний ключ проиндексировано (в миграции)', () => {
+test('каждое поле-внешний ключ проиндексировано (в миграции)', () => {
   const sql = migrationSql();
   // Первые колонки всех индексов: CREATE [UNIQUE] INDEX + CONSTRAINT ... UNIQUE
   const tableIndexes = new Map();
@@ -184,7 +181,7 @@ test.skip('каждое поле-внешний ключ проиндексир�
   assert.deepEqual(missing, [], 'внешние ключи без индекса:');
 });
 
-test.skip('номер заявки: уникален, человекочитаем (ЗД-ГГГГ-NNNNNN), есть sequence', () => {
+test('номер заявки: уникален, человекочитаем (ЗД-ГГГГ-NNNNNN), есть sequence', () => {
   const s = schema();
   const sql = migrationSql();
   assert.match(s, /model Request\s*\{[\s\S]*?number\s+String\s+@unique/);
@@ -204,7 +201,7 @@ test.skip('номер заявки: уникален, человекочитае
   );
 });
 
-test.skip('FTS для FaqArticle: колонка search (russian) + GIN-индекс', () => {
+test('FTS для FaqArticle: колонка search (russian) + GIN-индекс', () => {
   const sql = migrationSql();
   assert.match(sql, /to_tsvector\(\s*'russian'/i, 'нет tsvector с конфигурацией russian');
   assert.match(
@@ -216,7 +213,7 @@ test.skip('FTS для FaqArticle: колонка search (russian) + GIN-инде
   assert.ok(gin && /FaqArticle/.test(gin[0]), 'GIN-индекс должен быть на FaqArticle');
 });
 
-test.skip('Grade.value ограничен CHECK 0..10', () => {
+test('Grade.value ограничен CHECK 0..10', () => {
   const sql = migrationSql();
   assert.match(
     sql,
@@ -254,7 +251,7 @@ test('SQL-контракт проверяет ВСЕ миграции, а не �
   }
 });
 
-test.skip('миграция содержит CREATE TABLE всех моделей', () => {
+test('миграция содержит CREATE TABLE всех моделей', () => {
   const sql = migrationSql();
   for (const m of models) {
     assert.match(sql, new RegExp(`CREATE\\s+TABLE\\s+"${m}"`), `нет CREATE TABLE "${m}"`);
