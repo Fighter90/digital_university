@@ -19,7 +19,6 @@ import {
   formatDateBadge,
   formatLongDate,
   formatTime,
-  formatTimeRange,
   greetingFor,
   headingDateLabel,
   nearestStudyDayLabel,
@@ -73,7 +72,6 @@ export interface TodayLessonView {
   startsAt: Date;
   endsAt: Date;
   /** «10:00–11:30» */
-  timeLabel: string;
   kind: ScheduleEventRow['kind'];
   /** «Лекция» / «Лабораторная» / … */
   kindLabel: string;
@@ -231,7 +229,6 @@ export function toTodayView(events: ScheduleEventRow[], now: Date): TodayView {
       id: e.id,
       startsAt: e.startsAt,
       endsAt: e.endsAt,
-      timeLabel: formatTimeRange(e.startsAt, e.endsAt),
       kind: e.kind,
       kindLabel: LESSON_KIND_LABELS[e.kind],
       disciplineName: e.disciplineName,

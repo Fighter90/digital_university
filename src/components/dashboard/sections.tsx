@@ -97,7 +97,7 @@ export function Hero({
       hint: <>{`из ${creditsTotal}`}</>,
     },
     {
-      href: '/grades',
+      href: '/schedule',
       label: 'Долги',
       value: debts === null ? '—' : debts,
       hint: debts === null ? null : debts > 0 ? <>требуется пересдача</> : <>всё сдано</>,

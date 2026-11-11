@@ -26,13 +26,17 @@
   источников, settle-изоляция ошибок, детерминированная сводка);
   `src/server/data/news.ts` — вымышленный фид из 5 новостей; экспорт через
   barrel `@/server/data`.
-- [x] 7. Компоненты `src/components/dashboard/*`: week-hero (тёмный блок,
-  коралловое свечение, плитки 2×2→4), today-timeline, deadline-list,
-  progress-panel, quick-actions, news-strip, dashboard-skeleton;
-  `.hero-glow` в globals.css.
+- [x] 7. Компоненты `src/components/dashboard/sections.tsx` — Hero (тёмный
+  блок с коралловым свечением из blur-слоёв, плитки 2×2→4), TodaySection,
+  DeadlinesSection, ProgressSection, QuickActionsSection, NewsSection;
+  `src/components/dashboard/dashboard-skeleton.tsx` — фолбэк Suspense.
+  (Раунд разрабатывался двумя исполнителями параллельно; после сверки
+  оставлена одна компонентная реализация — sections, дубли удалены.)
 - [x] 8. `src/app/(cabinet)/dashboard/page.tsx` — Suspense + один агрегат;
-  сотруднику — EmptyState (главная студенческая, DIG-48 вне скоупа).
+  сотруднику — явная заглушка «Кабинет сотрудника» (главная студенческая,
+  DIG-48 вне скоупа).
 - [x] 9. `demo-seed.ts` — «сегодня» ПИ-21: 4 пары (перенесённая 214→305,
-  отменённая, онлайн) + пересдача через 7 дней (exm-pi21-3).
+  отменённая, онлайн) + срочный зачёт через 2 дня (exm-pi21-3, красное
+  «осталось N дн.») и пересдача через 7 дней (exm-pi21-4, бейдж долга).
 - [x] 10. Зелёные гейты: vitest 347/347 (+node --test 24 pass),
   `npm run lint` — 0 ошибок, `npm run typecheck` — чисто.

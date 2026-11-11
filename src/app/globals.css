@@ -280,11 +280,6 @@
     border-style: dashed;
   }
   /* DIG-20: тёмный hero главной — коралловое свечение сверху (референс ResumeCraft) */
-  .hero-glow {
-    background-image:
-      radial-gradient(640px 320px at 18% -10%, rgba(230, 30, 77, 0.38), transparent 62%),
-      radial-gradient(420px 260px at 92% 0%, rgba(215, 4, 102, 0.22), transparent 65%);
-  }
   /* Stepper: соединительная линия между шагами */
   .stepper-step:not(:first-child)::before {
     content: '';
