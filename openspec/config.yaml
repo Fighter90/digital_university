@@ -1,0 +1,21 @@
+schema: spec-driven
+
+# Контекст проекта для агентов при создании артефактов
+context: |
+  Продукт: «Цифровой деканат будущего» — прототип личного кабинета студента
+  (конкурсный концепт, не официальный сервис; данные только вымышленные).
+  Стек: Next.js 15 App Router + TypeScript, Prisma + PostgreSQL, Tailwind CSS
+  (шрифт Inter, дизайн-токены), NextAuth (bcrypt-хэши), Vitest + Playwright
+  (мобайл 360×800), Docker Compose + Caddy (ostrovok.store).
+  Правила и запреты — AGENTS.md (реальные ПДн, секреты в коде, бренд вуза запрещены).
+  Экраны — Figma dP2lFEahhw1gBbMRKX7BD2, карта экранов — docs/figma-screens.md.
+  Коммиты: conventional commits с идентификатором задачи (DIG-XX).
+  Язык: код и идентификаторы — английский; комментарии Linear/changelog — русский.
+
+rules:
+  proposal:
+    - Кратко: зачем, что, non-goals. Не больше 400 слов.
+  tasks:
+    - Каждый шаг <= 2 часов и проверяем.
+  specs:
+    - Каждый Requirement имеет хотя бы один Scenario WHEN/THEN.
