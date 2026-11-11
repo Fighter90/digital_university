@@ -18,12 +18,13 @@ import {
   formatAverage,
   formatDelta,
   formatLongDate,
+  formatTime,
   pluralRu,
+  type DisciplineLevel,
 } from '@/lib/dashboard-format';
 import type {
   DashboardSection,
   DeadlineView,
-  DisciplineLevel,
   ProgressView,
   RequestsView,
   TodayView,
@@ -93,7 +94,7 @@ export function Hero({
       href: '/profile',
       label: 'Кредиты',
       value: credits === null ? '—' : credits,
-      hint: <>из {creditsTotal}</>,
+      hint: <>{`из ${creditsTotal}`}</>,
     },
     {
       href: '/grades',
@@ -105,7 +106,7 @@ export function Hero({
       href: '/requests',
       label: 'Заявки в работе',
       value: inWork === null ? '—' : inWork,
-      hint: <>всего заявок: {requests.ok ? requests.value.total : '—'}</>,
+      hint: <>{`всего заявок: ${requests.ok ? requests.value.total : '—'}`}</>,
     },
   ];
 
@@ -123,11 +124,10 @@ export function Hero({
 
       <div className="relative">
         <h1 className="text-xl font-extrabold tracking-heading text-white md:text-2xl">
-          Ваша неделя · {headingDate}
+          {`Ваша неделя · ${headingDate}`}
         </h1>
         <p className="mt-1 text-sm text-neutral-300">
-          {greeting}
-          {firstName ? `, ${firstName}` : ''}!
+          {`${greeting}${firstName ? `, ${firstName}` : ''}!`}
         </p>
         {summary ? (
           <p data-testid="dashboard-summary" className="mt-2 text-sm leading-relaxed text-neutral-100 md:text-base">
@@ -188,8 +188,14 @@ export function TodaySection({ today }: { today: DashboardSection<TodayView> }) 
               )}
             >
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="font-mono text-sm font-semibold text-neutral-900">
-                  {lesson.timeLabel}
+                {/* Начало пары — жирным, конец — мелкой строкой под ним */}
+                <span className="flex w-14 shrink-0 flex-col">
+                  <span className="font-mono text-sm font-bold text-neutral-900">
+                    {formatTime(lesson.startsAt)}
+                  </span>
+                  <span className="font-mono text-[11px] text-neutral-500">
+                    до {formatTime(lesson.endsAt)}
+                  </span>
                 </span>
                 <span
                   className={cn(

@@ -449,51 +449,9 @@ const schedule: ScheduleEventRow[] = [
     status: 'SCHEDULED',
     note: null,
   },
-  // DIG-20 — насыщенный «сегодня» для главной: 4 пары, одна перенесена,
-  // одна отменена, одна онлайн + пересдача через 7 дней (строка-резюме героя).
-  {
-    id: 'sch-pi21-4',
-    groupName: 'ПИ-21',
-    disciplineCode: 'PI21-PROG',
-    disciplineName: 'Программирование',
-    date: day(0, 12, 0),
-    startsAt: day(0, 12, 0),
-    endsAt: day(0, 13, 30),
-    kind: 'LAB',
-    room: '305',
-    teacherName: 'Иванова Ирина Игоревна',
-    status: 'ROOM_CHANGED',
-    note: 'Пара перенесена в ауд. 305',
-    previousRoom: '214',
-  },
-  {
-    id: 'sch-pi21-5',
-    groupName: 'ПИ-21',
-    disciplineCode: 'PI21-PHYS',
-    disciplineName: 'Физика',
-    date: day(0, 14, 0),
-    startsAt: day(0, 14, 0),
-    endsAt: day(0, 15, 30),
-    kind: 'LAB',
-    room: '212',
-    teacherName: 'Соколов Сергей Сергеевич',
-    status: 'CANCELLED',
-    note: 'Лаборатория закрыта',
-  },
-  {
-    id: 'sch-pi21-6',
-    groupName: 'ПИ-21',
-    disciplineCode: 'PI21-HIST',
-    disciplineName: 'История',
-    date: day(0, 15, 40),
-    startsAt: day(0, 15, 40),
-    endsAt: day(0, 17, 10),
-    kind: 'SEMINAR',
-    room: 'Онлайн',
-    teacherName: 'Орлов Олег Олегович',
-    status: 'SCHEDULED',
-    note: null,
-  },
+  // DIG-20 — насыщенный «сегодня» для главной: 4 пары, одна перенесена
+  // (214 → 305), одна отменена, одна онлайн (строка-резюме героя).
+  // Сами пары — ниже в общем блоке «сегодня» ПИ-21 (sch-pi21-4/5/6).
   {
     id: 'sch-pi21-2',
     groupName: 'ПИ-21',
@@ -576,19 +534,34 @@ const exams: ExamSessionRow[] = [
     room: '405',
     note: 'Допуск: все лабораторные сданы',
   },
-  // DIG-20 — академический долг Анны: пересдача теста через 7 дней
-  // (бейдж риска «Как у меня дела» + «До пересдачи N дней» в сводке героя).
+  // DIG-20 — дедлайны главной: красный «≤3 дней» и академический долг
+  // (пересдача — она же ближайший срок из hero-сводки).
   {
     id: 'exm-pi21-3',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-DB',
+    disciplineName: 'Базы данных',
+    kind: 'CREDIT',
+    date: day(2, 10, 40),
+    startsAt: day(2, 10, 40),
+    room: '212',
+    note: 'Защита проекта — дедлайн сдачи работы',
+  },
+  {
+    id: 'exm-pi21-4',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-INFO',
     disciplineName: 'Информатика',
     kind: 'RETAKE',
-    date: day(7, 9, 0),
-    startsAt: day(7, 9, 0),
+    date: day(6, 9, 0),
+    startsAt: day(6, 9, 0),
     room: '305',
-    note: 'Пересдача теста 1',
+    note: 'Пересдача коллоквиума',
   },
+  // DIG-20 — академический долг Анны: пересдача информатики через 6 дней
+  // (exm-pi21-4, бейдж риска «Как у меня дела» + «До пересдачи N дней» в
+  // сводке героя); exm-pi21-3 — срочный CREDIT +2 дня для красного состояния
+  // в «Ближайших дедлайнах».
   {
     id: 'exm-ek11-1',
     groupName: 'ЭК-11',
