@@ -3,11 +3,15 @@ node_modules/
 .pnp
 .pnp.js
 
-# next.js
+# next.js (build → .next, dev → .next-dev: раздельные distDir, DIG-12)
 .next/
+.next-dev/
 out/
 build/
 next-env.d.ts
+
+# prisma generated client
+src/generated/
 
 # production
 dist/
@@ -26,6 +30,9 @@ dist/
 /test-results/
 blob-report/
 playwright/.cache/
+
+# prisma client (генерируется `prisma generate`, DIG-9/DIG-10)
+src/generated/
 
 # misc
 .DS_Store

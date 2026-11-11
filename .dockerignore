@@ -1,0 +1,26 @@
+# DIG-7 — секреты и мусор не должны попадать в контекст сборки образа.
+# Секреты: .env остаётся только на хосте, в образ не копируется.
+.env
+.env.*
+!.env.example
+
+# локальное окружение и артефакты сборки
+node_modules
+.next
+.git
+.task-board
+test-results
+playwright-report
+coverage
+blob-report
+tsconfig.tsbuildinfo
+
+# в образе не нужны: тесты, документация, инфраструктура роя и CI
+tests
+e2e
+docs
+scripts
+.github
+openspec
+*.md
+LICENSE
