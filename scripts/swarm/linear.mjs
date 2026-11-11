@@ -5,7 +5,12 @@
 
 const API = 'https://api.linear.app/graphql';
 const TEAM_KEY = 'DIG';
+const TEAM_ID = 'dbf2aaaf-98b0-4daa-9ad0-3a6ed3baee0f';
 export const LABEL = 'swarm';
+
+const STATES = `query($team: ID!) { workflowStates(filter: { team: { id: { eq: $team } } }) { nodes { id name type } } }`;
+const states = async () =>
+  (await gql(STATES, { team: TEAM_ID })).workflowStates.nodes;
 
 const key = () => process.env.LINEAR_DIGITAL_UNIVERSITY_API_KEY;
 
