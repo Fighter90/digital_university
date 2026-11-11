@@ -1,15 +1,32 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 // DIG-14 — каркас кабинета: e2e для приёмки.
 // desktop-1440: верхняя панель, боковое меню, skip-link, ⌘K-поиск (фокус
 // возвращается на триггер), меню аватара, ровно один main-landmark.
 // mobile-360: без бокового меню, нижний таб-бар, без горизонтального скролла,
 // плавающая AI-кнопка, счётчик уведомлений обновляется без перезагрузки.
+//
+// DIG-50: /dashboard защищён middleware (DIG-11) — каркас проверяется под
+// сессией. Единые демо-креды (demo-набор = сид БД) работают и на memory-store,
+// и на prisma-проде, поэтому вход общий для обоих режимов.
 
 const MENU_LABEL = 'Разделы кабинета';
 
+/** Вход тестового студента через форму (после DIG-50 — единые креды). */
+async function signIn(page: Page) {
+  await page.goto('/login');
+  await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+  await expect(page.getByLabel('Логин')).toHaveValue('anna.smirnova');
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
+}
+
 test.describe('desktop 1440 — shell chrome', () => {
   test.skip(({ viewport }) => viewport?.width !== 1440, 'desktop-1440 only');
+
+  test.beforeEach(async ({ page }) => {
+    await signIn(page);
+  });
 
   test('renders top bar, side menu and the nearest-deadline card', async ({ page }) => {
     await page.goto('/dashboard');
@@ -58,6 +75,7 @@ test.describe('desktop 1440 — shell chrome', () => {
 
   test('user menu opens with the keyboard and closes on Escape', async ({ page }) => {
     await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
     const trigger = page.getByRole('button', { name: /Меню пользователя/ });
     await trigger.focus();
     await page.keyboard.press('Enter');
@@ -73,6 +91,8 @@ test.describe('desktop 1440 — shell chrome', () => {
 
   test('search button and Ctrl/⌘+K open the search palette', async ({ page }) => {
     await page.goto('/dashboard');
+    // Ждём гидрацию: хоткей и оверлей живут в клиентском компоненте Shell.
+    await page.waitForLoadState('networkidle');
     const trigger = page.getByRole('button', { name: 'Поиск по кабинету (Command+K)' });
     await page.keyboard.press('ControlOrMeta+KeyK');
     const dialog = page.getByRole('dialog', { name: 'Поиск по кабинету' });
@@ -92,6 +112,7 @@ test.describe('desktop 1440 — shell chrome', () => {
 
   test('search palette returns focus to the search trigger on close', async ({ page }) => {
     await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
     const trigger = page.getByRole('button', { name: 'Поиск по кабинету (Command+K)' });
     await trigger.focus();
     await trigger.click();
@@ -128,6 +149,10 @@ test.describe('desktop 1440 — shell chrome', () => {
 
 test.describe('mobile 360 — tab bar and safe area', () => {
   test.skip(({ viewport }) => viewport?.width !== 360, 'mobile-360 only');
+
+  test.beforeEach(async ({ page }) => {
+    await signIn(page);
+  });
 
   test('no horizontal scroll, side menu hidden, tab bar visible and in sync', async ({ page }) => {
     await page.goto('/dashboard');

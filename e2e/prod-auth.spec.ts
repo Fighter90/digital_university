@@ -59,9 +59,16 @@ test.describe('DIG-50: prod build on the prisma store — desktop-1440', () => {
     // Реальный пользователь вместо стаба «Анна Студентова»: меню аватара
     // раскрывает личность сессии (профиль владельца логина из слоя данных).
     await expect(page.getByText('Студентова')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Меню пользователя' }).click();
+    // После редиректа приложение ещё гидрируется: активируем меню клавиатурой
+    // (паттерн cabinet-shell спеки) — toPass повторяет, пока React не навесит
+    // обработчик на кнопку.
+    const menuButton = page.getByRole('button', { name: 'Меню пользователя' });
     const menu = page.getByRole('menu', { name: 'Меню пользователя' });
-    await expect(menu).toBeVisible();
+    await expect(async () => {
+      await menuButton.focus();
+      await page.keyboard.press('Enter');
+      await expect(menu).toBeVisible();
+    }).toPass({ timeout: 15000 });
     await expect(menu).toContainText('Анна Ковалёва');
   });
 

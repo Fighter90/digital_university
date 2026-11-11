@@ -21,7 +21,7 @@ function settingsUser() {
 async function signIn(page: Page, login: string, password: string, next: string) {
   await page.goto(`/login?next=${encodeURIComponent(next)}`);
   await page.getByLabel('Логин').fill(login);
-  await page.getByLabel('Пароль').fill(password);
+  await page.getByLabel('Пароль', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
 }
 
@@ -60,6 +60,8 @@ test('settings: channel toggle persists, telegram/dark disabled, sessions + sign
   await signIn(page, login, password, '/settings');
   await expect(page).toHaveURL(/\/settings$/, { timeout: 15000 });
   await expect(page.getByRole('heading', { level: 1, name: 'Настройки' })).toBeVisible();
+  // Тумблеры — клиентские: ждём гидрацию до первого клика.
+  await page.waitForLoadState('networkidle');
 
   // Матрица: пять типов, Telegram во всех строках disabled.
   for (const type of ['Расписание', 'Дедлайны', 'Заявки', 'Оценки', 'Объявления']) {

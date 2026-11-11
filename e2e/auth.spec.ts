@@ -128,6 +128,7 @@ test.describe('DIG-18: реальные входы и блокировка — d
     for (const chip of [ANNA_CHIP, ILYA_CHIP, STAFF_CHIP]) {
       await page.context().clearCookies();
       await page.goto('/login');
+      await page.waitForLoadState('networkidle');
       await page.getByRole('button', { name: chip }).click();
       await page.getByLabel('Пароль', { exact: true }).press('Enter');
       await expect(page).toHaveURL(/\/dashboard$/);

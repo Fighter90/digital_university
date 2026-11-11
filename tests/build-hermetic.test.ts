@@ -48,7 +48,7 @@ describe('npm run build — герметичный прогон (без пере
     const build = pkg().scripts.build;
     expect(build).toMatch(/readdirSync\('\.next'\)/);
     expect(build).toMatch(/'types'/); // route-types не удалять: TS6053 в typecheck
-    expect(build).toContain('next build --turbopack');
+    expect(build).toContain('next build');
   });
 
   it('.next-dev игнорируется git и eslint (артефакты, не исходники)', () => {

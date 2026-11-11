@@ -33,8 +33,14 @@ export interface PrismaAuthClient {
         createdAt?: Date | null;
       };
     }): Promise<AuthSessionRow>;
+    /**
+     * DIG-50: the session row MUST come with its owner (`include: { user }`) —
+     * the real generated client returns relations only when asked, unlike the
+     * in-test fake. A session without its user must never leave this layer.
+     */
     findUnique(args: {
       where: { tokenHash: string };
+      include?: { user: true };
     }): Promise<(AuthSessionRow & { user: AuthUserRow | null }) | null>;
     update(args: { where: { id: string }; data: { expiresAt: Date } }): Promise<AuthSessionRow>;
     deleteMany(args: {
@@ -87,7 +93,14 @@ export function createPrismaAuthStore(client: PrismaAuthClient): AuthStore {
     },
 
     async findSessionByTokenHash(tokenHash, now) {
-      const row = await client.session.findUnique({ where: { tokenHash } });
+      // DIG-50: `include: { user: true }` обязателен — реальный клиент Prisma
+      // не отдаёт связь, пока её не запросишь (фейк в тестах всегда вкладывал
+      // user, поэтому расхождение всплыло только на живой БД: сессии
+      // создаются, но requireUser() их не находит → редирект на /login).
+      const row = await client.session.findUnique({
+        where: { tokenHash },
+        include: { user: true },
+      });
       if (!row || !row.user) return null;
       if (row.expiresAt <= now) {
         await client.session.deleteMany({ where: { tokenHash } });

@@ -66,6 +66,12 @@ function fakePrisma(users: UserRow[]) {
         return row;
       },
       async findUnique(args) {
+        // DIG-50 regression: the adapter MUST ask for the relation. The real
+        // generated client returns `user` only when `include: { user: true }`
+        // is passed — this fake now models that contract.
+        expect(args.include, 'findSessionByTokenHash must include the user relation').toEqual({
+          user: true,
+        });
         const row = sessions.find((s) => s.tokenHash === args.where.tokenHash);
         if (!row) return null;
         return { ...row, user: users.find((u) => u.id === row.userId) ?? null };
@@ -204,7 +210,6 @@ describe('prisma auth store (DIG-9 schema mapping)', () => {
 function createPrismaAuthClient_store(client: PrismaAuthClient) {
   return createPrismaAuthStore(client);
 }
-
 
 // DIG-19 — «Активные сессии»: read-only listing of a user's own sessions.
 // Devices and times for the settings screen; foreign users and expired rows

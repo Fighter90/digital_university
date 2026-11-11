@@ -14,13 +14,13 @@ export const resolveDistDir = (nodeEnv: string | undefined): string =>
 const nextConfig: NextConfig = {
   // DIG-7: standalone — самодостаточный сервер для Docker-образа (deploy/)
   output: 'standalone',
-  // DIG-50: node-file-trace не видит сгенерированный клиент Prisma
-  // (src/generated — вне package.json) и @prisma/* за pnpm-симлинками, поэтому
-  // в standalone-образ попадал сервер без клиента: подключение к БД падало.
-  // Явно до-включаем оба пути во все маршруты.
-  outputFileTracingIncludes: {
-    '/**': ['./src/generated/prisma/**', './node_modules/@prisma/**'],
-  },
+  // DIG-50: сгенерированный клиент Prisma доставляется в образ явной COPY
+  // (deploy/Dockerfile, runner-стадия). outputFileTracingIncludes НЕ
+  // используется: в Next 15.5.29 + Turbopack любая конфигурация этой опции
+  // роняет сборку standalone (в .next/standalone теряются ssr-чанки,
+  // проверено эмпирически: 73 → 25/0 файлов; страницы отдают 500).
+  // Turbopack инлайнит клиент в серверные бандлы, поэтому рантайму файлы
+  // не нужны — COPY даёт файлы для fs-путей и выполняет приёмку задачи.
   distDir: resolveDistDir(process.env.NODE_ENV),
   // DIG-12: pin the Turbopack workspace root to the repo. Without it Next
   // infers the root from lockfile locations — a stray package-lock.json in a

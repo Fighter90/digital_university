@@ -275,13 +275,21 @@ describe('next.config: standalone output for the container image', () => {
     expect(read('next.config.ts')).toMatch(/output:\s*'standalone'/);
   });
 
-  // DIG-50: standalone-трейс не включает src/generated/prisma и @prisma/*
-  // (pnpm-симлинки) — в образ попадал сервер без клиента Prisma, и вход на
-  // prod молча падал. Контракт: конфиг обязан явно до-включать оба пути.
-  it('traces the generated Prisma client and @prisma/* into the standalone bundle', () => {
+  // DIG-50: standalone-сборка обязана нести сгенерированный клиент Prisma.
+  // outputFileTracingIncludes в Next 15.5.29 + Turbopack ломает standalone
+  // (теряются ssr-чанки — проверено эмпирически), поэтому контракт — явная
+  // COPY src/generated в runner-стадию deploy/Dockerfile; клиент также
+  // инлайнится в серверные бандлы Turbopack, а зависимость
+  // @prisma/client-runtime-utils объявлена в package.json для сборки.
+  it('ships the generated Prisma client: explicit COPY in the Dockerfile runner (outputFileTracingIncludes breaks turbopack standalone)', () => {
     const config = read('next.config.ts');
-    expect(config).toMatch(/outputFileTracingIncludes/);
-    expect(config).toMatch(/generated\/prisma/);
-    expect(config).toMatch(/@prisma/);
+    // Страховка от регрессии: эту опцию включать нельзя, пока turbopack не
+    // научится собирать standalone с includes без потери чанков.
+    expect(config).not.toMatch(/outputFileTracingIncludes\s*:/);
+
+    const d = dockerfile();
+    expect(d).toMatch(/COPY[^\n]*\/app\/src\/generated\s+\.\/src\/generated/);
+    const pkg = JSON.parse(read('package.json')) as { dependencies: Record<string, string> };
+    expect(pkg.dependencies['@prisma/client-runtime-utils']).toBeTruthy();
   });
 });

@@ -35,6 +35,10 @@ ENV NODE_ENV=production \
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
+# DIG-50: сгенерированный клиент Prisma — файлами в образе. outputFileTracingIncludes
+# в Next 15.5.29 + Turbopack ломает сборку standalone (теряются ssr-чанки), поэтому
+# контракт — явная COPY; клиент также инлайнится в серверные бандлы Turbopack.
+COPY --from=build --chown=node:node /app/src/generated ./src/generated
 COPY --chmod=755 deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 USER node
