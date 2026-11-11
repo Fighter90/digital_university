@@ -12,6 +12,8 @@ export const resolveDistDir = (nodeEnv: string | undefined): string =>
   nodeEnv === 'development' ? '.next-dev' : '.next';
 
 const nextConfig: NextConfig = {
+  // DIG-7: standalone — самодостаточный сервер для Docker-образа (deploy/)
+  output: 'standalone',
   distDir: resolveDistDir(process.env.NODE_ENV),
   // DIG-12: pin the Turbopack workspace root to the repo. Without it Next
   // infers the root from lockfile locations — a stray package-lock.json in a
