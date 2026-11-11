@@ -1,6 +1,6 @@
 // DIG-10 — invariants of the fictional demo seed data.
 // The tests import PURE builders from prisma/seed-data.ts (no Prisma/DB needed)
-// and pin the acceptance criteria: example.edu emails, bcrypt-only passwords,
+// and pin the acceptance criteria: example.edu emails, argon2id hashes (same algorithm as auth verify),
 // current-week-relative schedule, full request-status coverage, demo volumes.
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -75,9 +75,9 @@ describe('accounts (jury demo, fictional)', () => {
     expect(STAFF_SEED[0].email.endsWith('@example.edu')).toBe(true);
   });
 
-  it('stores only bcrypt hashes in seed files, plaintext only in README', () => {
+  it('stores only argon2id hashes in seed files (matches auth verify), plaintext only in README', () => {
     const seedSource = read('prisma/seed-data.ts') + read('prisma/seed.ts');
-    expect(seedSource.match(/\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}/g)?.length).toBeGreaterThanOrEqual(
+    expect(seedSource.match(/\$argon2id\$v=\d+\$[\w.,/+=]+\$[./A-Za-z0-9]+/g)?.length).toBeGreaterThanOrEqual(
       3,
     );
     for (const plain of ['anna-demo-2026', 'ilya-demo-2026', 'dean-demo-2026']) {

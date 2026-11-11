@@ -42,12 +42,13 @@ export const TEACHER_NAMES = [
   'Романова Екатерина Ильинична',
 ] as const;
 
-// bcrypt hashes of the jury passwords (plaintext mapping — see README.md,
-// section «Тестовые аккаунты»; never inline plaintext here).
+// argon2id-хэши паролей демо-аккаунтов (плейнтекст — только в README,
+// раздел «Тестовые аккаунты»). Алгоритм совпадает с verify при входе (DIG-11):
+// bcrypt-хэши из ранней версии сида были несовместимы с argon2id-верификатором.
 export const STUDENT_SEED: StudentSeed[] = [
   {
     login: 'anna.smirnova',
-    passwordHash: '$2b$10$QiM/6TBKAMrZAWPZy3Q4duOuTmauY2ZWEDieNkmMTPWCPwROA39Ie',
+    passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$3Rjss8EcsWbLn9OAV3gy2g$JbRrvYohL0SW04Cq2OFY9sdpLyBoLNHdCRn3BFBZ/W4',
     fullName: 'Анна Смирнова',
     email: 'anna.smirnova@example.edu',
     groupName: 'ИВТ-21',
@@ -59,7 +60,7 @@ export const STUDENT_SEED: StudentSeed[] = [
   },
   {
     login: 'ilya.petrov',
-    passwordHash: '$2b$10$5eahV2RIC3PjNAnqXYzgxuM/YDz2wIseVhKCuUjr8yRZgB2Dp0Ayy',
+    passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$dE4a7w4YBFD8OENOy0WBWg$cvHfUePfnTWppDgAQ5FSEBbxtOWiSmV/zrr80rHwGmk',
     fullName: 'Илья Петров',
     email: 'ilya.petrov@example.edu',
     groupName: 'ЭК-23',
@@ -74,7 +75,7 @@ export const STUDENT_SEED: StudentSeed[] = [
 export const STAFF_SEED: StaffSeed[] = [
   {
     login: 'dean.kovaleva',
-    passwordHash: '$2b$10$B3mURxOMPfXk0JEHfBeVcepWhItA/0reBuJxhHTsGziH.1qsKAEBS',
+    passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$PoKF0lLB58r1qjGsMGYnmA$8sMol1AoIV3h0wvT9g8/cPq0PzFYgQB8yjsYMnXfSwk',
     fullName: 'Мария Ковалёва',
     position: 'менеджер курса',
     email: 'm.kovaleva@example.edu',
