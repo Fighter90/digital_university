@@ -19,6 +19,8 @@ FROM base AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# src/generated — gitignored (клиент Prisma): генерируем для typecheck/build
+RUN pnpm exec prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
