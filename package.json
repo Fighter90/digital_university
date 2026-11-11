@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "node -e \"const fs=require('fs');if(fs.existsSync('.next'))for(const e of fs.readdirSync('.next'))if(e!=='types')fs.rmSync('.next/'+e,{recursive:true,force:true})\" && next build --turbopack",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

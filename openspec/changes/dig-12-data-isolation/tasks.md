@@ -63,13 +63,34 @@
 - [x] `CHANGELOG.md` — объединены дублированные секции Unreleased,
   дописан раунд 2; `docs/ai-log/2026-11-11-dig-12.md` — журнал раунда 2.
 
+## Раунд 3 (замечания ревью: гейт build — ENOENT pages-manifest.json)
+
+- [x] `tests/build-hermetic.test.ts` — RED до реализации: инварианты
+  «dev и build не делят distDir», «build чистит .next, сохраняя
+  route-types», «.next-dev в gitignore/eslint», санити-проверка ссылки
+  next-env.d.ts (иначе TS6053).
+- [x] `next.config.ts` — `resolveDistDir(NODE_ENV)`: dev → `.next-dev`,
+  всё остальное (build/start/CI) → `.next`. Корень ENOENT: `next dev`
+  (тоже Turbopack) перезаписывал манифесты в общем `.next` под живой
+  сборкой — «Collecting page data» читала `pages-manifest.json`, которого
+  dev уже не оставил. Теперь пересечения физически нет.
+- [x] `package.json` — `build` герметичный: чистит `.next` (кроме
+  `types/` — сгенерированные route-types нужны `next-env.d.ts` и
+  typecheck) и запускает `next build --turbopack` с нуля; переиспользование
+  смешанного состояния исключено.
+- [x] `tsconfig.json` (include обоих типов-каталогов), `.gitignore`
+  (`.next-dev/`), `eslint.config.mjs` (ignore `.next-dev/**`).
+
 ## Проверка
 
-- [x] `npx vitest run` — 125 тестов (8 файлов) зелёные.
+- [x] `npx vitest run` — 131 тест (9 файлов) зелёные.
 - [x] `npm run lint` / `npm run typecheck` / `npm run build` — зелёные.
 - [x] `node scripts/swarm/gates.mjs` — GATES_SUMMARY: green.
 - [x] `pnpm e2e` — 16/16 зелёные (desktop-1440 и mobile-360, production-сервер),
   включая IDOR-сценарий Анна/Илья (страница 404 + API 404 + отсутствие оракула).
+- [x] Раунд 3: воспроизведена последовательность «next dev → typecheck →
+  next build» (падавшая на гейтах) — typecheck зелёный, build зелёный,
+  `pages-manifest.json` на месте; полный gates.mjs — green.
 
 ## Документация
 
