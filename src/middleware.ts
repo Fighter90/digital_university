@@ -5,8 +5,12 @@
 // - mutating API calls must be same-origin (Origin check, CSRF defence).
 // The pure decision logic lives in src/lib/route-guard.ts and is unit-tested.
 import { NextResponse, type NextRequest } from 'next/server';
-import { decideAccess } from '@/lib/route-guard';
-import { SESSION_COOKIE_NAME } from '@/server/auth/cookies';
+import { decideAccess, shouldSlideAuthCookies } from '@/lib/route-guard';
+import {
+  SESSION_COOKIE_NAME,
+  buildRoleHintCookie,
+  buildSessionCookie,
+} from '@/server/auth/cookies';
 import { ROLE_COOKIE_NAME, verifyRoleHint } from '@/server/auth/role-cookie';
 
 export async function middleware(request: NextRequest) {
@@ -30,7 +34,25 @@ export async function middleware(request: NextRequest) {
     roleHint,
   });
 
-  if (decision.kind === 'allow') return NextResponse.next();
+  if (decision.kind === 'allow') {
+    const response = NextResponse.next();
+
+    // Review round 3: sliding renewal must reach the browser. While the user
+    // stays active, both cookies are re-issued on every allowed request with
+    // the SAME values and a fresh full Max-Age; the store-side half of the
+    // sliding policy lives in resolveSession (session-policy.ts). Without
+    // this, the browser deleted the cookies 7 days after sign-in no matter
+    // how active the user was — and staff lost the /staff gate with them.
+    // The values are never changed here (no new tokens, no new authority):
+    // a cookie that just failed verification is never extended.
+    if (sessionToken && shouldSlideAuthCookies(decision, true)) {
+      response.cookies.set(buildSessionCookie(sessionToken));
+      const hintValue = request.cookies.get(ROLE_COOKIE_NAME)?.value;
+      if (roleHint && hintValue) response.cookies.set(buildRoleHintCookie(hintValue));
+    }
+
+    return response;
+  }
   if (decision.kind === 'forbidden') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

@@ -65,3 +65,24 @@
 - [x] `role-cookie.ts`: тип-хак `as unknown as ArrayBuffer` заменён на
   точный тип `Uint8Array<ArrayBuffer>`; «Как устроен вход» сжат до
   6 предложений (замечание 5).
+
+## Раунд 3 — замечания ревью (блокеры)
+
+- [x] Блокер 1: «скользящее продление» фактически не работало —
+  `resolveSession` продлевал только строку в хранилище, а cookie
+  `__Host-session` жила фиксированные 7 дней от входа: активного
+  пользователя браузер разлогинивал ровно через 7 дней. Теперь middleware
+  на каждом разрешённом запросе пере-выдаёт cookie с тем же токеном и
+  полным Max-Age (red-first: `tests/middleware.test.ts` — сам middleware,
+  форма и Max-Age Set-Cookie; `tests/access-control.test.ts` — чистое
+  решение `shouldSlideAuthCookies`).
+- [x] Блокер 2 (тот же класс, найден аудитом): hint `__Host-role` тоже
+  жил 7 дней от входа — активный сотрудник терял middleware-пропуск в
+  `/staff` (redirect на `/dashboard`) до повторного входа. Hint
+  пере-выдаётся вместе с сессией только при проверенной подписи;
+  redirect/CSRF-отказ и непроверяемая подпись cookie не продлевают
+  (тесты в том же `tests/middleware.test.ts`).
+- [x] Спека (`specs/auth/spec.md`) и `docs/security.md` обновлены:
+  продление описано по обе стороны (хранилище + cookie), добавлен
+  сценарий «Активный сотрудник не теряет /staff».
+- [x] Гейты: vitest / lint / typecheck / build — зелёные.

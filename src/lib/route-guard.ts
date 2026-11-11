@@ -30,6 +30,25 @@ export function safeNextPath(value: string | null | undefined): string | null {
   return value;
 }
 
+/**
+ * Review round 3: should the middleware re-issue the auth cookies (same
+ * values, fresh full Max-Age)? Sliding renewal previously extended only the
+ * store row (resolveSession → touchSession), while the cookies expired a
+ * fixed 7 days after sign-in — an active user was still hard-logged-out,
+ * and an active STAFF member lost the /staff middleware gate when the role
+ * hint expired. True sliding therefore needs BOTH sides: the store row
+ * (session-policy.ts) and the browser cookies (middleware re-issue).
+ * Only a plain `allow` for a cookie-bearing browser qualifies: redirects
+ * and CSRF rejections end the exchange, and without a session cookie there
+ * is nothing to renew.
+ */
+export function shouldSlideAuthCookies(
+  decision: AccessDecision,
+  hasSessionCookie: boolean,
+): boolean {
+  return decision.kind === 'allow' && hasSessionCookie;
+}
+
 export interface AccessInput {
   pathname: string;
   search?: string;

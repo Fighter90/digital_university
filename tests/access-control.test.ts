@@ -2,7 +2,12 @@
 // open-redirect-safe `next`, signed role hint cookie, and the pure
 // middleware decision (cabinet gate, /staff role gate, API Origin check).
 import { describe, expect, it } from 'vitest';
-import { decideAccess, isPublicPath, safeNextPath } from '@/lib/route-guard';
+import {
+  decideAccess,
+  isPublicPath,
+  safeNextPath,
+  shouldSlideAuthCookies,
+} from '@/lib/route-guard';
 import { ROLE_COOKIE_NAME, signRoleHint, verifyRoleHint } from '@/server/auth/role-cookie';
 
 const SECRET = 'test-secret-for-hmac';
@@ -144,5 +149,34 @@ describe('middleware decision (decideAccess)', () => {
       location: `/login?next=${encodeURIComponent('/schedule?week=next')}`,
     });
     expect(safeNextPath('/schedule?week=next')).toBe('/schedule?week=next');
+  });
+});
+
+// Review round 3: «скользящее продление» must reach the browser. The DB row
+// was renewed by resolveSession, but the cookies were issued once at login
+// with a fixed 7-day Max-Age, so an active user was still hard-logged-out
+// after 7 days — and an active STAFF member lost the /staff middleware gate
+// when the role hint expired. The middleware now re-issues both cookies on
+// every allowed request of a cookie-bearing browser; this pure helper pins
+// WHEN that happens.
+describe('sliding cookie renewal decision (review round 3)', () => {
+  it('slides on an allowed request that carries the session cookie', () => {
+    expect(shouldSlideAuthCookies({ kind: 'allow' }, true)).toBe(true);
+  });
+
+  it.each([
+    [
+      'anonymous redirect',
+      { kind: 'redirect', location: '/login?next=%2Fdashboard' } as const,
+      false,
+    ],
+    ['student bounced off /staff', { kind: 'redirect', location: '/dashboard' } as const, true],
+    ['CSRF-forbidden API mutation', { kind: 'forbidden' } as const, true],
+  ])('does not slide on %s', (_name, decision, hasSessionCookie) => {
+    expect(shouldSlideAuthCookies(decision, hasSessionCookie)).toBe(false);
+  });
+
+  it('does not slide without a session cookie (nothing to renew)', () => {
+    expect(shouldSlideAuthCookies({ kind: 'allow' }, false)).toBe(false);
   });
 });
