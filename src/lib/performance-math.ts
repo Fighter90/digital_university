@@ -6,7 +6,8 @@
 //    (половина — вверх, Math.round); блокирующих элементов в прототипе нет;
 //  - веса элементов нормируются на сумму весов плана контроля дисциплины;
 //  - GPA — средневзвешенное кредитами; семестр — по московскому календарю
-//    (осень 9.01–25.01... как semesterBounds из src/lib/schedule-time.ts),
+//    (осень 1.09–25.01, весна 9.02–30.06, июль/август — будущая осень,
+//    январь — хвост осени; как semesterBounds из src/lib/schedule-time.ts),
 //    дисциплина относится к семестру по дате последней оценки.
 //
 // Модуль используется слоем данных (src/server/data/performance.ts) и
@@ -277,8 +278,12 @@ export function needForTargetPure(input: {
     };
   }
 
-  // Экзамен ещё не сдан: round(acc + wNorm·x/maxScore·100) ≥ target
-  // ⇔ acc + wNorm·x/maxScore·100 ≥ target − 0.5 (монотонность округления).
+  // Экзамен ещё не сдан: round(acc + wNorm·x/maxScore·100) ≥ target.
+  // Результат округления — целое число, поэтому «итог ≥ target» равносильно
+  // «итог ≥ ceil(target)», а по монотонности округления
+  // «round(y) ≥ ceil(target)» ⇔ «y ≥ ceil(target) − 0.5».
+  // Для целого target (штатный случай калькулятора) порог = target − 0.5;
+  // дробная цель трактуется как «следующий целый итог» (70.5 → нужен итог 71).
   const wNorm = normalizeWeight(exam.weight);
   if (wNorm <= 0) {
     return finalPercent >= target
@@ -289,7 +294,7 @@ export function needForTargetPure(input: {
     return { status: 'ALREADY_SECURED', finalPercent };
   }
 
-  const raw = ((target - 0.5 - accumulated) * exam.maxScore) / (100 * wNorm);
+  const raw = ((Math.ceil(target) - 0.5 - accumulated) * exam.maxScore) / (100 * wNorm);
   const neededScore = Math.ceil(raw - EPS);
 
   if (neededScore <= 0) {

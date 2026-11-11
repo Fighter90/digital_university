@@ -211,15 +211,31 @@ function computeDisciplines(
           }))
         : graded.map((row) => ({ elementCode: row.elementCode, weight: row.weight }));
     const acc = accumulatedGrade(graded, planForCalc);
-    const totalElements = plan.length > 0 ? plan.length : gradedRows.length;
-    const isComplete = totalElements > 0 && gradedRows.length >= totalElements;
+
+    // Завершённость — по РАЗЛИЧНЫМ элементам плана с оценкой (тот же
+    // latest-дедуп, что в accumulatedGrade), а не по числу строк GradeRow:
+    // пересдача даёт две строки на один элемент (ложная завершённость при
+    // несданном другом), а оценка по элементу вне плана счётчик раздувает.
+    // Элементы с maxScore ≤ 0 неоцениваемы и в счёт не идут — как и в
+    // расчёте накопленной.
+    const gradeablePlanCodes = new Set(
+      plan.filter((el) => el.maxScore > 0).map((el) => el.elementCode),
+    );
+    const gradedCodes = new Set(gradedRows.map((row) => row.elementCode));
+    // Старые сиды без плана контроля: план синтезируется из сданных элементов.
+    const totalElements = plan.length > 0 ? gradeablePlanCodes.size : gradedCodes.size;
+    const gradedCount =
+      plan.length > 0
+        ? [...gradedCodes].filter((code) => gradeablePlanCodes.has(code)).length
+        : gradedCodes.size;
+    const isComplete = totalElements > 0 && gradedCount >= totalElements;
 
     return {
       code,
       name: knownRow?.disciplineName ?? gradedRows[0]?.disciplineName ?? code,
       credits: knownRow?.credits ?? 1,
       acc,
-      gradedCount: gradedRows.length,
+      gradedCount,
       totalElements,
       isComplete,
       semester: disciplineSemesterOf(graded),
@@ -338,7 +354,13 @@ const sameSemester = (a: SemesterKey, b: SemesterKey) =>
 
 function buildCredits(computed: DisciplineComputation[]): CreditsView {
   const earned = computed
-    .filter((item) => item.isComplete && (item.acc.accumulated ?? 0) >= CREDIT_PASS_PERCENT)
+    .filter((item) => {
+      if (!item.isComplete || item.acc.accumulated === null) return false;
+      // Порог зачтения — по ИТОГУ (округлённой накопленной), ровно как
+      // creditEarned в view: иначе агрегат противоречит сам себе при
+      // накопленной 59.x ≥ 59.5 (итог 60, кредит не зачтён).
+      return roundGrade(item.acc.accumulated) >= CREDIT_PASS_PERCENT;
+    })
     .reduce((sum, item) => sum + item.credits, 0);
   return { earned, required: PROGRAM_TOTAL_CREDITS };
 }

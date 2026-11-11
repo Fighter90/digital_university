@@ -35,3 +35,32 @@
   полный `npm test`; lint; typecheck; `node scripts/swarm/gates.mjs`.
 - [x] 8. Change-папка openspec/changes/dig-25-performance-server
   (proposal, tasks, delta-спека performance).
+
+## Раунд 2 — правки по ревью
+
+- [x] 9. `isComplete`/`gradedElements` — по различным элементам ПЛАНА с
+  оценкой (latest-дедуп, как в accumulatedGrade), а не по числу строк
+  GradeRow: оценённая пересдача по одному элементу больше не даёт ложную
+  завершённость при несданном другом; оценка по элементу вне плана счётчик
+  не раздувает; элементы с maxScore ≤ 0 не считаются. Тесты: «пересдача
+  одного элемента + несданный второй → isComplete=false», «элемент вне
+  плана не раздувает завершённость» (падали до правки).
+- [x] 10. `buildCredits` — порог кредита по ОКРУГЛЁННОМУ итогу
+  (`roundGrade ≥ 60`), тот же признак, что у `creditEarned` в view:
+  при накопленной 59.58 (итог 60) кредит зачитывается и в view, и в
+  credits.earned; при 59.3 (итог 59) — нигде. Граничные тесты 59.58/59.3
+  (красный был на 59.58).
+- [x] 11. `needForTargetPure` — порог `ceil(target) − 0.5` вместо
+  `target − 0.5`: контракт «итог ≥ target» выполняется и для дробных
+  целей (round возвращает целое ⇒ «итог ≥ target» ⇔ «итог ≥ ceil(target)»).
+  Ложный `ALREADY_SECURED` при `round(acc) < target` исключён. Тесты:
+  цель 70.5 → OK neededScore 90 / guaranteedFinal 71; acc 70.2, target 70.5
+  → OK, а не ALREADY_SECURED (падали до правки). Формула зафиксирована в
+  `docs/grading.md`, сценарий «дробная цель» добавлен в delta-спеку.
+- [x] 12. Спека, сценарий «граница округления»: «при 87 итог 69.5 → 69»
+  исправлено на «при 87 итог 69.0 → 69 < 70, при 88 итог 69.5 → 70»
+  (нужный балл 88 не менялся — исправлено только обоснование).
+- [x] 13. Комментарий-шапка `performance-math.ts`: границы семестров
+  приведены к `docs/grading.md` (осень 1.09–25.01, весна 9.02–30.06).
+- [x] 14. Гейты: `npx vitest run tests/performance.test.ts` 46/46;
+  `node scripts/swarm/gates.mjs` — lint/typecheck/test/build зелёные.

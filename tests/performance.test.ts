@@ -528,6 +528,37 @@ describe('performance-math: needForTarget (чистая часть)', () => {
       guaranteedFinal: 70,
     });
   });
+
+  it('дробная цель 70.5: порог по ceil(target) — 0.5, гарантированный итог ≥ цели', () => {
+    // round(25.5 + 0.5x) — целое ⇒ «итог ≥ 70.5» ⇔ «итог ≥ 71» ⇔ x ≥ 90
+    // (при 89 итог 70 < 70.5, при 90 итог 70.5 округляется вверх в 71)
+    const r = needForTargetPure({ graded: p1Graded, plan: dbPlan, exam: dbExam, target: 70.5 });
+    expect(r).toEqual({
+      status: 'OK',
+      neededScore: 90,
+      neededPercent: 90,
+      maxScore: 100,
+      guaranteedFinal: 71,
+    });
+  });
+
+  it('дробная цель: ALREADY_SECURED не возвращается, пока round(acc) < target', () => {
+    const plan = [
+      { elementCode: 'A', weight: 0.9 },
+      { elementCode: 'EX', weight: 0.1 },
+    ];
+    const exam = { elementCode: 'EX', weight: 0.1, maxScore: 100 };
+    const graded = [{ elementCode: 'A', score: 78, maxScore: 100, weight: 0.9, gradedAt: day(-3) }];
+    // накопленная 70.2 → итог 70 < 70.5: цель ещё НЕ гарантирована
+    const r = needForTargetPure({ graded, plan, exam, target: 70.5 });
+    expect(r).toEqual({
+      status: 'OK',
+      neededScore: 3, // 70.2 + 0.1·3 = 70.5 → округляется вверх в 71 ≥ 70.5
+      neededPercent: 3,
+      maxScore: 100,
+      guaranteedFinal: 71,
+    });
+  });
 });
 
 describe('performance-math: рейтинг и перцентиль', () => {
@@ -591,6 +622,60 @@ describe('getPerformance: накопленные оценки по дисцип�
     expect(disc.creditEarned).toBe(true);
   });
 
+  it('пересдача одного элемента + несданный второй: isComplete не наступает от числа строк', async () => {
+    // Две строки GradeRow по PI21-INFO-T1 (пересдача) + коллоквиум —
+    // строк 3 = числу элементов плана, но экзамен так и не сдан.
+    const db = createMemoryDataDb();
+    db.seed({
+      students: [students[0]!],
+      disciplines: [disciplines[0]!], // PI21-INFO: Т1 0.3, Коллоквиум 0.3, Экзамен 0.4
+      elements: elements.filter((el) => el.disciplineCode === 'PI21-INFO'),
+      grades: [
+        g('st-anna', 'PI21-INFO-T1', 88, day(-14)),
+        {
+          ...g('st-anna', 'PI21-INFO-T1', 72, day(-2)),
+          id: 'grd-st-anna-PI21-INFO-T1-retake',
+        },
+        g('st-anna', 'PI21-INFO-K', 80, day(-1)),
+        // PI21-INFO-EX не сдан
+      ],
+    });
+    const data = await getPerformance(db, annaCtx, NOW);
+    const info = data.disciplines.find((dd) => dd.disciplineCode === 'PI21-INFO')!;
+    expect(info.gradedElements).toBe(2); // различных элементов плана, не строк
+    expect(info.totalElements).toBe(3);
+    expect(info.isComplete).toBe(false);
+    expect(info.finalGrade).toBeNull();
+    expect(info.creditEarned).toBe(false);
+    // накопленная по последним оценкам: 0.3·72 + 0.3·80 = 45.6
+    expect(info.accumulated).toBeCloseTo(45.6, 2);
+  });
+
+  it('оценка по элементу вне плана не раздувает завершённость', async () => {
+    const db = createMemoryDataDb();
+    const ghost: GradeRow = {
+      ...g('st-anna', 'PI21-INFO-K', 80, day(-1)),
+      id: 'grd-st-anna-PI21-INFO-ZZ',
+      elementCode: 'PI21-INFO-ZZ',
+      elementName: 'Архивный элемент',
+    };
+    db.seed({
+      students: [students[0]!],
+      disciplines: [disciplines[0]!],
+      elements: elements.filter((el) => el.disciplineCode === 'PI21-INFO'),
+      grades: [
+        g('st-anna', 'PI21-INFO-T1', 88, day(-14)),
+        ghost, // строк снова 3 = числу элементов плана, но в плане сдан только Т1
+      ],
+    });
+    const data = await getPerformance(db, annaCtx, NOW);
+    const info = data.disciplines.find((dd) => dd.disciplineCode === 'PI21-INFO')!;
+    expect(info.gradedElements).toBe(1);
+    expect(info.isComplete).toBe(false);
+    expect(info.finalGrade).toBeNull();
+    expect(info.accumulated).toBeCloseTo(26.4, 2); // вклад только Т1 (88×0.3)
+  });
+
   it('дисциплины без оценок: накопленная null, граница 0–100; семестр не определён', async () => {
     const data = await getPerformance(seedPerformanceDb(), annaCtx, NOW);
     const hist = data.disciplines.find((dd) => dd.disciplineCode === 'PI21-HIST')!;
@@ -648,6 +733,45 @@ describe('getPerformance: GPA, кредиты', () => {
     expect(PROGRAM_TOTAL_CREDITS).toBe(240);
     const data = await getPerformance(seedPerformanceDb(), annaCtx, NOW);
     expect(data.credits).toEqual({ earned: 9, required: 240 }); // ALG 5 + DISC 4
+  });
+
+  it('граница кредита: накопленная 59.58 → итог 60 — кредит и в view, и в credits.earned', async () => {
+    const db = createMemoryDataDb();
+    db.seed({
+      students: [students[0]!],
+      disciplines: [disciplines[5]!], // PI21-ALG, 5 кредитов
+      elements: elements.filter((el) => el.disciplineCode === 'PI21-ALG'),
+      grades: [
+        g('st-anna', 'PI21-ALG-T', 60, spring(2, 20)),
+        g('st-anna', 'PI21-ALG-EX', 59.4, spring(4, 15)),
+      ],
+    });
+    const data = await getPerformance(db, annaCtx, NOW);
+    const alg = data.disciplines.find((dd) => dd.disciplineCode === 'PI21-ALG')!;
+    // 0.3·60 + 0.7·59.4 = 59.58 → итог арифметическим округлением 60 ≥ 60
+    expect(alg.accumulated).toBeCloseTo(59.58, 2);
+    expect(alg.finalGrade).toBe(60);
+    expect(alg.creditEarned).toBe(true);
+    expect(data.credits.earned).toBe(5); // тот же признак, что у creditEarned
+  });
+
+  it('чуть ниже границы: накопленная 59.3 → итог 59 — кредит не зачтён нигде', async () => {
+    const db = createMemoryDataDb();
+    db.seed({
+      students: [students[0]!],
+      disciplines: [disciplines[5]!],
+      elements: elements.filter((el) => el.disciplineCode === 'PI21-ALG'),
+      grades: [
+        g('st-anna', 'PI21-ALG-T', 60, spring(2, 20)),
+        g('st-anna', 'PI21-ALG-EX', 59, spring(4, 15)),
+      ],
+    });
+    const data = await getPerformance(db, annaCtx, NOW);
+    const alg = data.disciplines.find((dd) => dd.disciplineCode === 'PI21-ALG')!;
+    expect(alg.accumulated).toBeCloseTo(59.3, 2);
+    expect(alg.finalGrade).toBe(59);
+    expect(alg.creditEarned).toBe(false);
+    expect(data.credits.earned).toBe(0);
   });
 });
 
