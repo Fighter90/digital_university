@@ -15,6 +15,8 @@ import { prerenderToNodeStream } from 'react-dom/static';
 import {
   fromMoscowWallClock,
   moscowDateKey,
+  pageMoscowWeek,
+  semesterBounds,
   shiftMoscowDays,
   startOfMoscowWeek,
 } from '@/lib/schedule-time';
@@ -162,6 +164,18 @@ describe('/schedule (DIG-22) — неделя в стиле Google Calendar', ()
       /aria-checked="true"[^>]*>\s*Неделя|Неделя[\s\S]{0,80}aria-checked="true"/,
     );
     expect(html).toMatch(/aria-disabled="true"/);
+    // «Сегодня» — ссылка со стилями кнопки, без вложенного <button>
+    // (button внутри <a> — невалидная вложенность интерактива, ревью раунд 2)
+    const todayLink = html.match(
+      /<a\b[^>]*aria-label="Перейти к текущей неделе"[\s\S]*?<\/a>/,
+    )?.[0];
+    expect(todayLink, 'anchor «Сегодня» not found').toBeTruthy();
+    expect(todayLink).not.toContain('<button');
+    expect(todayLink).toMatch(/btn-secondary/);
+    // ...и вообще на странице нет <a>, содержащего <button> (нет др. мест)
+    for (const anchor of html.match(/<a\b[\s\S]*?<\/a>/g) ?? []) {
+      expect(anchor).not.toContain('<button');
+    }
   });
 
   it('сетка: часы 08:00–19:00, сегодня тонирован, красная линия по mount (client-only)', async () => {
@@ -185,13 +199,17 @@ describe('/schedule (DIG-22) — неделя в стиле Google Calendar', ()
     expect(html).toContain('aria-label="Лабораторная, Физика, 14:00–15:30, ауд. 305, отменена"');
   });
 
-  it('перенос: штриховка, пунктирная рамка, бейдж «Перенос», «было: ауд. 214»', async () => {
+  it('перенос: штриховка, пунктирная рамка, бейдж «Перенос», «было: ауд. 214 / 12:00» (один префикс)', async () => {
     const html = await renderPage();
     expect(html).toMatch(/repeating-linear-gradient/); // серая штриховка
     expect(html).toMatch(/data-status="moved"/);
     expect(html).toMatch(/border-dashed/);
     expect(html).toContain('Перенос');
     expect(html).toContain('было: ауд. 214');
+    // один префикс на обе части: «было: ауд. 214 / 12:00»
+    // (не «было: ауд. 214 / было: 12:00») — ревью раунд 2
+    expect(html).toContain('было: ауд. 214 / 12:00');
+    expect(html).not.toContain('было: ауд. 214 / было:');
     expect(html).toContain('Оснащение аудитории');
   });
 
@@ -235,10 +253,30 @@ describe('/schedule (DIG-22) — неделя в стиле Google Calendar', ()
     expect(html).toContain('aria-label="Лекция, Информатика, 10:00–11:30, ауд. 305"');
   });
 
-  it('неделя за пределами семестра (?week=2027-W30) — фолбэк на текущую неделю', async () => {
+  it('неделя за пределами семестра (?week=2027-W30) — фолбэк: рендерится неделя «сейчас» (без редиректа)', async () => {
     const html = await renderPage({ week: '2027-W30' });
     expect(html).toContain('data-testid="week-grid"');
+    // именно неделя «сейчас», а не кламп к границе семестра (спека, ревью раунд 2)
+    expect(html).toContain(`data-week-key="${thisWeekKey}"`);
     expect(html).toContain('aria-label="Лекция, Информатика, 10:00–11:30, ауд. 305"');
+  });
+
+  it('первая неделя семестра: страница клампится к дате начала семестра, стрелка ‹ отключена', async () => {
+    const bounds = semesterBounds(new Date());
+    const firstPage = pageMoscowWeek(startOfMoscowWeek(bounds.start), 0, bounds);
+    // «сейчас» может оказаться вне семестра (июль/август) — сценарий вне-семестровой заглушки
+    if (!firstPage) return;
+    const key = isoWeekKeyOf(firstPage.from);
+    const html = await renderPage({ week: key });
+    // кламп: страница начинается с даты начала семестра (тот же ключ недели)
+    expect(html).toContain(`data-week-key="${key}"`);
+    // предыдущей недели нет — «Предыдущая неделя» отключена
+    expect(html).toMatch(/<button[^>]*aria-label="Предыдущая неделя"[^>]*aria-disabled="true"/);
+    // а следующая доступна
+    const next = pageMoscowWeek(firstPage.from, 1, bounds);
+    expect(next).not.toBeNull();
+    expect(html).toContain(`week=${isoWeekKeyOf(next!.from)}`);
+    expect(html).not.toMatch(/<button[^>]*aria-label="Следующая неделя"[^>]*aria-disabled="true"/);
   });
 
   it('клик по паре открывает боковую панель деталей (контракт клиента — исходник WeekView)', () => {

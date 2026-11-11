@@ -19,8 +19,10 @@
 //    aria-label («Семинар, Математический анализ, 11:10–12:30, ауд. 305,
 //    перенос» / «…, отменена»);
 //  - lessonKindMeta: подпись и цвета дизайн-токенов типов занятий
-//    (лекция — коралловый, семинар — синий, лаб. — зелёный, экзамен —
-//    янтарный);
+//    (лекция — коралловый, семинар — синий, лаб. — зелёный, консультация —
+//    янтарный; вида занятия «экзамен» в данных DIG-21 нет — янтарные
+//    токены lesson-exam закреплены за консультацией, отклонение от текста
+//    задачи зафиксировано в спеке change-папки);
 //  - miniCalendarCells: месяц отображаемой недели целыми строками Пн–Вс;
 //  - resolveWeekPage: страница недели для /schedule — парсинг ?week=,
 //    кламп по границам семестра (pageMoscowWeek), соседние недели для
@@ -188,6 +190,8 @@ export const LESSON_KIND_META: Record<ScheduleKind, LessonKindMeta> = {
     checkbox: 'accent-accent',
     swatch: 'bg-accent',
   },
+  // Вид «экзамен» (янтарный в тексте задачи DIG-22) в данных DIG-21 не
+  // существует — янтарные токены lesson-exam отданы консультации.
   CONSULTATION: {
     label: LESSON_KIND_LABELS.CONSULTATION,
     block: 'bg-lesson-exam-soft text-lesson-exam-ink border-l-lesson-exam',
@@ -234,6 +238,8 @@ export interface ScheduleEventView {
   previousRoomLabel: string | null;
   /** «было: 11:10». */
   previousTimeLabel: string | null;
+  /** Обе части с одним префиксом: «было: ауд. 214 / 11:10» (для блока и панели). */
+  previousLabel: string | null;
   changeNote: string | null;
   note: string | null;
   /** Понятная подпись для скринридера (блок — кнопка). */
@@ -257,6 +263,10 @@ export function toScheduleEventViews(rows: readonly ScheduleEventRow[]): Schedul
     const isMoved = row.status === 'ROOM_CHANGED' || row.status === 'TIME_CHANGED';
     const isCancelled = row.status === 'CANCELLED';
     const suffix = isMoved ? ', перенос' : isCancelled ? ', отменена' : '';
+    const previousParts = [
+      row.previousRoom ? `ауд. ${row.previousRoom}` : null,
+      row.previousStartsAt ? formatMoscowTime(row.previousStartsAt) : null,
+    ].filter(Boolean);
     return {
       id: row.id,
       dateKey: moscowDateKey(row.startsAt),
@@ -275,6 +285,8 @@ export function toScheduleEventViews(rows: readonly ScheduleEventRow[]): Schedul
       previousTimeLabel: row.previousStartsAt
         ? `было: ${formatMoscowTime(row.previousStartsAt)}`
         : null,
+      // «было: ауд. 214 / 11:10» — один префикс на обе части (блок и панель)
+      previousLabel: previousParts.length > 0 ? `было: ${previousParts.join(' / ')}` : null,
       changeNote: row.changeNote ?? null,
       note: row.note ?? null,
       ariaLabel: `${kindLabel}, ${row.disciplineName}, ${timeLabel}, ${roomLabel}${suffix}`,

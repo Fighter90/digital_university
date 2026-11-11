@@ -1,7 +1,9 @@
 'use client';
 
 // DIG-22 — недельный вид расписания в стиле Google Calendar (Figma
-// «03 · Расписание — неделя», референс — календарь ResumeCraft).
+// «03 · Расписание — неделя», референс — календарь ResumeCraft; каноничное
+// соответствие «экран ↔ задача» — docs/figma-screens.md, где 03 → DIG-22:
+// в тексте задачи фрейм по ошибке назван «04» — это «Детали пары», DIG-24).
 //
 // Клиентский оркестратор экрана: панель инструментов («Сегодня», стрелки
 // ‹ ›, подпись недели, День / Неделя / Месяц, «Синхронизировать»), левая
@@ -35,7 +37,7 @@ import {
 } from '@/lib/schedule-view';
 import type { ScheduleKind } from '@/server/data/types';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/ui/icon';
 import { Segmented } from '@/components/ui/segmented';
@@ -169,10 +171,14 @@ export function WeekView({
         {/* ── Панель инструментов ─────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={weekHref(todayWeekKey)} aria-label="Перейти к текущей неделе">
-              <Button variant="secondary" size="sm">
-                Сегодня
-              </Button>
+            {/* «Сегодня» — ссылка со стилями кнопки: button внутри <a> —
+                невалидная вложенность интерактива (ревью раунд 2) */}
+            <Link
+              href={weekHref(todayWeekKey)}
+              aria-label="Перейти к текущей неделе"
+              className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+            >
+              Сегодня
             </Link>
             {prevWeekKey ? (
               <Link
@@ -471,7 +477,7 @@ function LessonBlock({
   const height = Math.max(0, ((Math.min(event.end, 1200) - Math.max(event.start, 480)) / 60) * 64);
   if (height <= 0) return null; // пара целиком вне сетки 08:00–20:00
   const widthPercent = 100 / columns;
-  const previous = [event.previousRoomLabel, event.previousTimeLabel].filter(Boolean).join(' / ');
+  const previous = event.previousLabel;
   return (
     <button
       type="button"
@@ -528,7 +534,7 @@ function LessonBlock({
 // ── Детали пары в боковой панели ─────────────────────────────────────────────
 
 function LessonDetails({ event }: { event: ScheduleEventView }) {
-  const previous = [event.previousRoomLabel, event.previousTimeLabel].filter(Boolean).join(' / ');
+  const previous = event.previousLabel;
   const rows: Array<[string, React.ReactNode]> = [
     ['Тип', lessonKindMeta(event.kind).label],
     ['Время', event.timeLabel],

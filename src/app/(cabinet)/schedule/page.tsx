@@ -66,7 +66,9 @@ async function ScheduleContent({ week }: { week?: string }) {
   let rows;
   try {
     rows = await getSchedule(dataDb, ctx, { from: page.from, to: page.to });
-  } catch {
+  } catch (error) {
+    // не глотаем: без лога «Расписание не загрузилось» недиагностируемо (ревью раунд 2)
+    console.error('[schedule] getSchedule failed', error);
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col py-6 md:py-8">
         <ErrorState

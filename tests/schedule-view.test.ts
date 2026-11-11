@@ -11,7 +11,9 @@
 //  - блоки пар — кнопки с понятным aria-label
 //    («Семинар, Математический анализ, 11:10–12:30, ауд. 305, перенос»);
 //  - перенос: previousRoom/previousStartsAt превращаются в «было: ауд. 214»
-//    и «было: 11:10»; отмена: пометка «отменена» в aria-label;
+//    и «было: 11:10» плюс общий previousLabel «было: ауд. 214 / 11:10»
+//    (один префикс на обе части — замечание ревью раунда 2);
+//    отмена: пометка «отменена» в aria-label;
 //  - мини-календарь месяца: строки целыми неделями (Пн–Вс), месяц по
 //    четвергу отображаемой недели, «Ноябрь 2026».
 import { describe, expect, it } from 'vitest';
@@ -226,6 +228,9 @@ describe('toScheduleEventViews: модель блока и aria-label', () => {
     expect(view?.timeLabel).toBe('11:10–12:30');
     expect(view?.previousRoomLabel).toBe('было: ауд. 214');
     expect(view?.previousTimeLabel).toBe('было: 11:10');
+    // общий лейбл для блока/панели: один префикс «было:» на обе части
+    // («было: ауд. 214 / 11:10», а не «было: ауд. 214 / было: 11:10»)
+    expect(view?.previousLabel).toBe('было: ауд. 214 / 11:10');
     expect(view?.isMoved).toBe(true);
     expect(view?.isCancelled).toBe(false);
   });
@@ -240,6 +245,7 @@ describe('toScheduleEventViews: модель блока и aria-label', () => {
     expect(view?.dateKey).toBe('2026-11-14');
     expect(view?.previousTimeLabel).toBe('было: 09:00');
     expect(view?.previousRoomLabel).toBeNull();
+    expect(view?.previousLabel).toBe('было: 09:00');
   });
 
   it('отменённая пара: «отменена» в aria-label, isCancelled', () => {
