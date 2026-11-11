@@ -41,7 +41,9 @@ Prisma → PostgreSQL (docker)
 
 Источник правды — `prisma/schema.prisma` (Prisma 7: URL подключения в
 `prisma.config.ts`, из окружения `DATABASE_URL`). Одна базовая миграция
-`prisma/migrations/20261111000000_init/`, дальше только дополнения.
+`prisma/migrations/20261111135255_init/` (регенерирована в DIG-49 после
+reconcile канона DIG-9 с сидами DIG-10 и auth DIG-11), дальше только
+дополнения.
 
 ### ER-диаграмма
 
@@ -145,7 +147,7 @@ erDiagram
 
 ### Ручные фрагменты SQL в миграции
 
-`20261111000000_init` содержит и то, что Prisma-схема не выражает:
+`20261111135255_init` содержит и то, что Prisma-схема не выражает:
 
 1. **sequence `request_number_seq`** — нумерация заявок; приложение собирает
    `ЗД-<год>-<6 цифр>` (формат гарантирует CHECK, уникальность — UNIQUE).
