@@ -36,5 +36,8 @@ yarn-error.log*
 .vercel
 *.tsbuildinfo
 
+# husky runtime (шаблоны хуков регенерируются pnpm install → prepare)
+.husky/_/
+
 # openspec runtime artifacts (не коммитим черновики, changes коммитим)
 openspec/.cache/
