@@ -209,6 +209,33 @@ export interface ExamSessionRow {
   note: string | null;
 }
 
+/** DIG-25 — дисциплина группы (кредиты для GPA и прогресса кредитов). */
+export interface DisciplineRow {
+  groupName: string;
+  disciplineCode: string;
+  disciplineName: string;
+  /** Кредиты (ECTS) дисциплины. */
+  credits: number;
+  teacherName: string;
+}
+
+/**
+ * DIG-25 — элемент плана контроля дисциплины: ПОЛНЫЙ план семестра,
+ * включая ещё не оценённые элементы — на нём стоят «максимально возможная»
+ * и «минимально гарантированная» оценки и needForTarget.
+ */
+export interface DisciplineElementRow {
+  groupName: string;
+  disciplineCode: string;
+  disciplineName: string;
+  elementCode: string;
+  elementName: string;
+  kind: ElementKind;
+  /** Доля в итоговой оценке дисциплины (0..1). */
+  weight: number;
+  maxScore: number;
+}
+
 /**
  * Why access was denied. `OWNERSHIP_DENIED` / `OUTSIDE_FACULTY` mean the row
  * exists but belongs to someone else; `NOT_FOUND` — no such row. The HTTP

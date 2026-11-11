@@ -16,6 +16,8 @@ import { newRequestNumber } from './request-number';
 import type {
   AppealMessageRow,
   AppealRow,
+  DisciplineElementRow,
+  DisciplineRow,
   ExamSessionRow,
   GradeRow,
   NotificationRow,
@@ -359,6 +361,163 @@ const grades: GradeRow[] = [
   },
 ];
 
+// DIG-25 — справочник дисциплин с кредитами (GPA взвешен кредитами,
+// «Кредиты: набрано / требуется»). Все данные вымышленные.
+const disciplineRows: DisciplineRow[] = [
+  d('ПИ-21', 'PI21-INFO', 'Информатика', 4, 'Петров Пётр Петрович'),
+  d('ПИ-21', 'PI21-PROG', 'Программирование', 6, 'Иванова Ирина Игоревна'),
+  d('ПИ-21', 'PI21-DB', 'Базы данных', 5, 'Соколов Сергей Сергеевич'),
+  d('ПИ-21', 'PI21-PHYS', 'Физика', 4, 'Соколов Сергей Сергеевич'),
+  d('ПИ-21', 'PI21-HIST', 'История', 3, 'Орлов Олег Олегович'),
+  d('ПИ-21', 'PI21-ALG', 'Алгоритмы и структуры данных', 5, 'Иванова Ирина Игоревна'),
+  d('ПИ-21', 'PI21-DISC', 'Дискретная математика', 4, 'Кузнецова Ксения Кирилловна'),
+  d('ЭК-11', 'EK11-MATH', 'Математический анализ', 5, 'Кузнецова Ксения Кирилловна'),
+  d('ЭК-11', 'EK11-ECON', 'Экономическая теория', 4, 'Орлов Олег Олегович'),
+];
+
+function d(
+  groupName: string,
+  disciplineCode: string,
+  disciplineName: string,
+  credits: number,
+  teacherName: string,
+): DisciplineRow {
+  return { groupName, disciplineCode, disciplineName, credits, teacherName };
+}
+
+// DIG-25 — план контроля: ВСЕ элементы семестра, включая ещё не оценённые
+// (на них стоят «максимально возможная»/«минимально гарантированная» и
+// needForTarget). Веса согласованы с оценками выше.
+const elementRows: DisciplineElementRow[] = [
+  el('ПИ-21', 'PI21-INFO', 'Информатика', 'PI21-INFO-T1', 'Тест 1', 'TEST', 0.3, 100),
+  el('ПИ-21', 'PI21-INFO', 'Информатика', 'PI21-INFO-K', 'Коллоквиум', 'TEST', 0.3, 100),
+  el('ПИ-21', 'PI21-INFO', 'Информатика', 'PI21-INFO-EX', 'Экзамен', 'EXAM', 0.4, 100),
+  el('ПИ-21', 'PI21-PROG', 'Программирование', 'PI21-PROG-L2', 'Лабораторная 2', 'LAB', 0.4, 100),
+  el('ПИ-21', 'PI21-PROG', 'Программирование', 'PI21-PROG-L3', 'Лабораторная 3', 'LAB', 0.2, 100),
+  el('ПИ-21', 'PI21-PROG', 'Программирование', 'PI21-PROG-CR', 'Зачёт', 'TEST', 0.4, 100),
+  el('ПИ-21', 'PI21-DB', 'Базы данных', 'PI21-DB-P1', 'Проект', 'PROJECT', 0.3, 100),
+  el('ПИ-21', 'PI21-DB', 'Базы данных', 'PI21-DB-T2', 'Тест 2', 'TEST', 0.2, 100),
+  el('ПИ-21', 'PI21-DB', 'Базы данных', 'PI21-DB-EX', 'Экзамен', 'EXAM', 0.5, 100),
+  el('ПИ-21', 'PI21-PHYS', 'Физика', 'PI21-PHYS-T', 'Тест 1', 'TEST', 0.4, 100),
+  el('ПИ-21', 'PI21-PHYS', 'Физика', 'PI21-PHYS-EX', 'Экзамен', 'EXAM', 0.6, 100),
+  el('ПИ-21', 'PI21-HIST', 'История', 'PI21-HIST-S', 'Семинар', 'TEST', 1, 100),
+  el('ПИ-21', 'PI21-ALG', 'Алгоритмы и структуры данных', 'PI21-ALG-T', 'Тест 1', 'TEST', 0.3, 100),
+  el(
+    'ПИ-21',
+    'PI21-ALG',
+    'Алгоритмы и структуры данных',
+    'PI21-ALG-EX',
+    'Экзамен',
+    'EXAM',
+    0.7,
+    100,
+  ),
+  el('ПИ-21', 'PI21-DISC', 'Дискретная математика', 'PI21-DISC-T', 'Тест 1', 'TEST', 0.4, 100),
+  el('ПИ-21', 'PI21-DISC', 'Дискретная математика', 'PI21-DISC-EX', 'Экзамен', 'EXAM', 0.6, 100),
+  el('ЭК-11', 'EK11-MATH', 'Математический анализ', 'EK11-MATH-T1', 'Тест 1', 'TEST', 0.4, 100),
+  el('ЭК-11', 'EK11-MATH', 'Математический анализ', 'EK11-MATH-EX', 'Экзамен', 'EXAM', 0.6, 100),
+  el('ЭК-11', 'EK11-ECON', 'Экономическая теория', 'EK11-ECON-T1', 'Тест 1', 'TEST', 0.4, 100),
+  el('ЭК-11', 'EK11-ECON', 'Экономическая теория', 'EK11-ECON-EX', 'Экзамен', 'EXAM', 0.6, 100),
+];
+
+function el(
+  groupName: string,
+  disciplineCode: string,
+  disciplineName: string,
+  elementCode: string,
+  elementName: string,
+  kind: DisciplineElementRow['kind'],
+  weight: number,
+  maxScore: number,
+): DisciplineElementRow {
+  return {
+    groupName,
+    disciplineCode,
+    disciplineName,
+    elementCode,
+    elementName,
+    kind,
+    weight,
+    maxScore,
+  };
+}
+
+// DIG-25 — сокурсники Анны (только для рейтинга в группе; без входа в
+// кабинет — авторизованных пользователей для них нет). Итоги весны
+// 2025/26: Дмитрий 87.11 > Анна 49.37 > Артём 48.00 > Полина 46.67 >
+// София 42.78 — Анна вторая из пяти («входите в 40% лучших»).
+const groupMates: StudentRow[] = [
+  mate('st-mate-dmitry', 'dmitry.volkov', 'Дмитрий Волков', '20231235'),
+  mate('st-mate-polina', 'polina.egorova', 'Полина Егорова', '20231236'),
+  mate('st-mate-artem', 'artem.fedorov', 'Артём Фёдоров', '20231237'),
+  mate('st-mate-sofia', 'sofia.guseva', 'София Гусева', '20231238'),
+];
+
+function mate(id: string, login: string, fullName: string, gradebookNumber: string): StudentRow {
+  return {
+    id,
+    login,
+    fullName,
+    email: `${login}@example.edu`,
+    groupName: 'ПИ-21',
+    course: 2,
+    faculty: 'ИТ',
+    program: 'Прикладная информатика',
+    programCode: '09.03.04',
+    studyForm: 'очная',
+    funding: 'бюджет',
+    gradebookNumber,
+  };
+}
+
+// Завершённый весенний семестр 2025/26 (итоги): у Анны ALG 87 / DISC 74.
+const mateGrades: GradeRow[] = [
+  grd('st-anna', 'PI21-ALG-T', 90, -270),
+  grd('st-anna', 'PI21-ALG-EX', 85, -180),
+  grd('st-anna', 'PI21-DISC-T', 70, -265),
+  grd('st-anna', 'PI21-DISC-EX', 77, -175),
+  // Дмитрий Волков: ALG 92, DISC 81
+  grd('st-mate-dmitry', 'PI21-ALG-T', 95, -270),
+  grd('st-mate-dmitry', 'PI21-ALG-EX', 90, -180),
+  grd('st-mate-dmitry', 'PI21-DISC-T', 84, -265),
+  grd('st-mate-dmitry', 'PI21-DISC-EX', 79, -175),
+  // Полина Егорова: ALG 48, DISC 45
+  grd('st-mate-polina', 'PI21-ALG-T', 55, -270),
+  grd('st-mate-polina', 'PI21-ALG-EX', 45, -180),
+  grd('st-mate-polina', 'PI21-DISC-T', 45, -265),
+  grd('st-mate-polina', 'PI21-DISC-EX', 45, -175),
+  // Артём Фёдоров: ALG 52, DISC 43
+  grd('st-mate-artem', 'PI21-ALG-T', 50, -270),
+  grd('st-mate-artem', 'PI21-ALG-EX', 53, -180),
+  grd('st-mate-artem', 'PI21-DISC-T', 40, -265),
+  grd('st-mate-artem', 'PI21-DISC-EX', 45, -175),
+  // София Гусева: ALG 45, DISC 40
+  grd('st-mate-sofia', 'PI21-ALG-T', 55, -270),
+  grd('st-mate-sofia', 'PI21-ALG-EX', 40, -180),
+  grd('st-mate-sofia', 'PI21-DISC-T', 40, -265),
+  grd('st-mate-sofia', 'PI21-DISC-EX', 40, -175),
+];
+
+/** Оценка по элементу плана (демо-сид): дисциплина/вес/макс берутся из плана. */
+function grd(studentId: string, elementCode: string, score: number, offsetDays: number): GradeRow {
+  const plan = elementRows.find((row) => row.elementCode === elementCode);
+  if (!plan) throw new Error(`seed: unknown element ${elementCode}`);
+  return {
+    id: `grd-${studentId}-${elementCode}`,
+    studentId,
+    elementCode,
+    elementName: plan.elementName,
+    disciplineCode: plan.disciplineCode,
+    disciplineName: plan.disciplineName,
+    score,
+    maxScore: plan.maxScore,
+    weight: plan.weight,
+    kind: plan.kind,
+    gradedAt: day(offsetDays, 12, 0),
+    comment: null,
+  };
+}
+
 const notifications: NotificationRow[] = [
   {
     id: 'ntf-anna-1',
@@ -614,6 +773,30 @@ const exams: ExamSessionRow[] = [
     room: '12',
     note: null,
   },
+  // DIG-25 — долги Анны: прошедшая пересдача с незакрытым долгом (OVERDUE)
+  // и закрытый долг по завершённой весенней дисциплине (CLOSED, итог 74).
+  {
+    id: 'exm-pi21-5',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-PROG',
+    disciplineName: 'Программирование',
+    kind: 'RETAKE',
+    date: day(-3, 9, 0),
+    startsAt: day(-3, 9, 0),
+    room: '405',
+    note: 'Пересдача лабораторных',
+  },
+  {
+    id: 'exm-pi21-6',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-DISC',
+    disciplineName: 'Дискретная математика',
+    kind: 'RETAKE',
+    date: day(-5, 9, 0),
+    startsAt: day(-5, 9, 0),
+    room: '212',
+    note: 'Пересдача экзамена (закрыто)',
+  },
 ];
 
 /**
@@ -622,17 +805,20 @@ const exams: ExamSessionRow[] = [
  */
 export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Promise<void> {
   db.seed({
-    students,
+    students: [...students, ...groupMates],
     staff: staffRows,
     requests,
     requestEvents,
-    grades,
+    grades: [...grades, ...mateGrades],
     notifications,
     appeals,
     appealMessages,
     schedule,
     exams,
     settings,
+    // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.
+    disciplines: disciplineRows,
+    elements: elementRows,
   });
 
   // DIG-11 memory auth store: seed the demo logins (guarded — when the Prisma

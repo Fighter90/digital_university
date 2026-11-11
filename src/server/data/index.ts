@@ -6,6 +6,16 @@ export { toDataCtx, requireDataCtx } from './context';
 export { resolveShellUser } from './shell-user';
 export { listRequests, getRequestByNumber, listRequestEvents } from './requests';
 export { listGrades } from './grades';
+export { getPerformance, needForTarget } from './performance';
+export type {
+  CreditsView,
+  DebtItem,
+  DebtStatus,
+  DisciplinePerformance,
+  GpaView,
+  PerformanceData,
+  RatingView,
+} from './performance';
 export { listNotifications, markNotificationRead } from './notifications';
 export { listAppeals, getAppeal, listAppealMessages } from './appeals';
 export { listSchedule, listExams } from './schedule';
@@ -93,4 +103,6 @@ export {
   type ScheduleEventRow,
   type StudentNoteRow,
   type ExamSessionRow,
+  type DisciplineRow,
+  type DisciplineElementRow,
 } from './types';
