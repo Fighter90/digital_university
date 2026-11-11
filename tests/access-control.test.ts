@@ -112,7 +112,10 @@ describe('middleware decision (decideAccess)', () => {
       });
 
     expect(post('https://ostrovok.store')).toEqual(OK);
-    expect(post()).toEqual(OK); // curl / server-to-server without Origin
+    // Fail closed (review round 2): a mutating API call without Origin (curl,
+    // server-to-server) is rejected — browsers always send Origin on POSTs,
+    // so legit usage is unaffected and spoofing the absence is impossible.
+    expect(post()).toEqual({ kind: 'forbidden' });
     expect(post('https://evil.example')).toEqual({ kind: 'forbidden' });
     expect(post('http://ostrovok.store')).toEqual({ kind: 'forbidden' }); // scheme downgrade
 

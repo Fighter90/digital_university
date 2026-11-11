@@ -22,7 +22,7 @@ function toBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-function fromBase64Url(value: string): Uint8Array {
+function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
   const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
   const binary = atob(padded);
@@ -70,7 +70,7 @@ export async function verifyRoleHint(
     const valid = await crypto.subtle.verify(
       'HMAC',
       await hmacKey(secret, ['verify']),
-      fromBase64Url(signature) as unknown as ArrayBuffer,
+      fromBase64Url(signature),
       encoder.encode(`${role}.${userId}`),
     );
     return valid ? { role: role as HintRole, userId } : null;

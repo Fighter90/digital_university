@@ -17,6 +17,7 @@ import {
 import { signRoleHint } from '@/server/auth/role-cookie';
 import { ERROR_MESSAGES } from '@/server/auth/login';
 import { safeNextPath } from '@/lib/route-guard';
+import { clientIpFromHeaders } from '@/lib/request-ip';
 
 const credentialsSchema = z.object({
   login: z.string().min(1).max(100),
@@ -38,7 +39,10 @@ export async function signInAction(
   }
 
   const requestHeaders = await headers();
-  const ip = requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim() || null;
+  // Review round 2: the proxy-stamped x-real-ip (Caddy contract), falling back
+  // to the last x-forwarded-for hop — never the client-controlled first entry,
+  // which would let an attacker rotate IPs and bypass the rate limiter.
+  const ip = clientIpFromHeaders((name) => requestHeaders.get(name));
   const userAgent = requestHeaders.get('user-agent');
 
   const result = await signInWithDefaults({

@@ -43,7 +43,25 @@
 
 ## Проверка
 
-- [x] `npx vitest run tests/auth-*.test.ts tests/access-control.test.ts` — 46 зелёных.
+- [x] `npx vitest run tests/auth-*.test.ts tests/access-control.test.ts` — зелёные.
 - [x] `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` — зелёные.
-- [ ] e2e (`pnpm e2e`) — запуск в среде с dev-сервером (без БД smoke проходит:
-  redirects middleware + форма входа; сценарии входа — после смержа DIG-10).
+- [x] e2e (`pnpm e2e`) — 12/12 зелёных в раунде 2 (desktop-1440 + mobile-360,
+  auth + smoke, dev-сервер на in-memory store; раунд 1 не запускался —
+  замечание ревью устранено, запуск приложен в журнале).
+
+## Раунд 2 — замечания ревью
+
+- [x] e2e `pnpm e2e` прогнан до мерджа: 12/12 зелёных (замечание 1).
+- [x] IP для rate limit больше не берётся из первого (клиентского) элемента
+  `X-Forwarded-For`: `src/lib/request-ip.ts` — `X-Real-IP` от прокси
+  (контракт Caddy `header_up X-Real-IP {remote_host}`) с фолбэком на последний
+  hop; тесты `tests/request-ip.test.ts`; контракт описан в `docs/security.md`
+  (замечание 2).
+- [x] Origin-проверка мутационных API — fail-closed: запрос без Origin
+  отклоняется 403; тест в `tests/access-control.test.ts` перевернут,
+  поведение зафиксировано в спеке и `docs/security.md` (замечание 3).
+- [x] Компромисс `ACCOUNT_LOCKED` (раскрывает существование логина) отмечен
+  в `docs/security.md` (замечание 4).
+- [x] `role-cookie.ts`: тип-хак `as unknown as ArrayBuffer` заменён на
+  точный тип `Uint8Array<ArrayBuffer>`; «Как устроен вход» сжат до
+  6 предложений (замечание 5).

@@ -51,13 +51,15 @@ export interface AccessInput {
 export function decideAccess(input: AccessInput): AccessDecision {
   const { pathname, search = '' } = input;
 
-  // 1) CSRF for API routes: any non-GET API call must carry a same-origin header.
+  // 1) CSRF for API routes: any non-GET API call must be same-origin — the
+  //    Origin header is required and must match Host (fail closed: a mutating
+  //    API request without Origin is rejected, browsers always send it on
+  //    cross-origin and fetch/form POSTs; see docs/security.md).
   const method = input.method ?? 'GET';
   if (pathname.startsWith('/api/') && method !== 'GET' && method !== 'HEAD') {
     const origin = input.originHeader;
-    if (origin) {
-      const trusted = isTrustedOrigin(origin, input.hostHeader ?? null);
-      if (!trusted) return { kind: 'forbidden' };
+    if (!origin || !isTrustedOrigin(origin, input.hostHeader ?? null)) {
+      return { kind: 'forbidden' };
     }
   }
 
