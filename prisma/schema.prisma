@@ -1,0 +1,558 @@
+// «Цифровой деканат будущего» — схема БД (DIG-9).
+// Все данные вымышленные. Каждая сущность студента привязана к Student/User —
+// все запросы обязаны фильтроваться по этим ключам (защита от IDOR).
+// Ручные фрагменты SQL (sequence, CHECK, FTS) живут в единственной миграции
+// prisma/migrations/20261111000000_init/migration.sql.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Доступ и безопасность ────────────────────────────────────────────────────
+
+/// Пользователь кабинета: студент или сотрудник деканата.
+model User {
+  id           String    @id @default(cuid())
+  login        String    @unique
+  passwordHash String
+  role         Role      @default(STUDENT)
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions       Session[]
+  student        Student?
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+  notificationPref NotificationPref?
+  ticketMessages TicketMessage[]
+  ticketAssignee Ticket[]        @relation("TicketAssignee")
+  requestEvents  RequestEvent[]
+  newsPosts      News[]
+  aiChats        AiChat[]
+}
+
+/// Серверная сессия: в cookie живёт токен, в БД — только его хэш.
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  userAgent String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum Role {
+  STUDENT
+  STAFF
+}
+
+// ── Структура вуза (вымышленная) ────────────────────────────────────────────
+
+model Faculty {
+  id        String @id @default(cuid())
+  name      String @unique
+  shortName String
+
+  programs Program[]
+}
+
+/// Направление подготовки.
+model Program {
+  id        String @id @default(cuid())
+  facultyId String
+  name      String
+  code      String
+
+  faculty     Faculty     @relation(fields: [facultyId], references: [id])
+  groups      Group[]
+  disciplines Discipline[]
+
+  @@index([facultyId])
+}
+
+model Group {
+  id        String @id @default(cuid())
+  programId String
+  name      String @unique
+
+  program        Program         @relation(fields: [programId], references: [id])
+  students       Student[]
+  scheduleEvents ScheduleEvent[]
+
+  @@index([programId])
+}
+
+/// Профиль студента: 1:1 к User. Точка скоупа всех учебных данных.
+model Student {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  fullName         String
+  groupId          String
+  course           Int
+  studyForm        StudyForm @default(FULL_TIME)
+  studentCardNumber String   @unique
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group           @relation(fields: [groupId], references: [id])
+  enrollments Enrollment[]
+  grades    Grade[]
+  exams     Exam[]
+  requests  Request[]
+  tickets   Ticket[]
+  notes     StudentNote[]
+  certificates CertificateIssue[]
+
+  @@index([groupId])
+}
+
+enum StudyForm {
+  FULL_TIME
+  PART_TIME
+  EXTRAMURAL
+}
+
+/// Преподаватель (вымышленный): не является User.
+model Teacher {
+  id        String @id @default(cuid())
+  fullName  String
+  email     String @unique
+  department String
+
+  disciplines    DisciplineTeachers[]
+  scheduleEvents ScheduleEvent[]
+}
+
+// ── Учёба ───────────────────────────────────────────────────────────────────
+
+model Discipline {
+  id        String  @id @default(cuid())
+  programId String
+  name      String
+  code      String?
+
+  program       Program              @relation(fields: [programId], references: [id])
+  teachers      DisciplineTeachers[]
+  enrollments   Enrollment[]
+  scheduleEvents ScheduleEvent[]
+  exams         Exam[]
+
+  @@index([programId])
+}
+
+/// Связь m:n «дисциплина — преподаватель» (ведёт и читает лекции).
+model DisciplineTeachers {
+  id          String @id @default(cuid())
+  disciplineId String
+  teacherId   String
+
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  teacher    Teacher    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([disciplineId, teacherId])
+  @@index([teacherId])
+}
+
+/// Запись студента на дисциплину в семестре.
+model Enrollment {
+  id            String  @id @default(cuid())
+  studentId     String
+  disciplineId  String
+  academicYear  String // «2026/2027»
+  semester      Int // 1..8
+  credits       Int
+  /// Формула итоговой оценки: JSON с весами элементов контроля.
+  gradeFormula  Json?
+
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  discipline Discipline @relation(fields: [disciplineId], references: [id])
+  assessments Assessment[]
+
+  @@unique([studentId, disciplineId, academicYear, semester])
+  @@index([disciplineId])
+}
+
+/// Элемент контроля (реферат, тест, коллоквиум) в рамках записи на дисциплину.
+model Assessment {
+  id           String  @id @default(cuid())
+  enrollmentId String
+  name         String
+  weight       Float // доля в итоговой оценке, 0..1
+  sortOrder    Int     @default(0)
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  grades     Grade[]
+
+  @@index([enrollmentId])
+}
+
+/// Оценка за элемент контроля: целое 0..10 (CHECK в миграции).
+model Grade {
+  id           String   @id @default(cuid())
+  studentId    String // денормализовано для скоупа запросов по студенту
+  assessmentId String
+  value        Int
+  gradedAt     DateTime @default(now())
+
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, studentId])
+  @@index([studentId])
+}
+
+/// Экзамен/зачёт сессии: допуск, итог, пересдача.
+model Exam {
+  id           String   @id @default(cuid())
+  studentId    String
+  disciplineId String
+  kind         ExamKind @default(EXAM)
+  examDate     DateTime
+  room         String?
+  building     String?
+  admitted     Boolean  @default(false)
+  result       Int?
+  retake       Boolean  @default(false)
+  retakeDate   DateTime?
+  retakeResult Int?
+
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  discipline Discipline @relation(fields: [disciplineId], references: [id])
+
+  @@unique([studentId, disciplineId, examDate])
+  @@index([studentId])
+  @@index([disciplineId])
+  @@index([examDate])
+}
+
+enum ExamKind {
+  EXAM // экзамен
+  CREDIT // зачёт
+}
+
+/// Пара в расписании группы; изменения пары — в тех же полях (status + changeNote).
+model ScheduleEvent {
+  id           String            @id @default(cuid())
+  groupId      String
+  disciplineId String
+  teacherId    String
+  type         ScheduleEventType @default(LECTURE)
+  startsAt     DateTime
+  endsAt       DateTime
+  room         String?
+  building     String?
+  onlineUrl    String?
+  status       EventStatus       @default(NORMAL)
+  changeNote   String?
+  previousRoom String?
+  previousStartsAt DateTime?
+
+  group      Group       @relation(fields: [groupId], references: [id])
+  discipline Discipline  @relation(fields: [disciplineId], references: [id])
+  teacher    Teacher     @relation(fields: [teacherId], references: [id])
+  notes      StudentNote[]
+
+  @@index([groupId, startsAt])
+  @@index([teacherId, startsAt])
+  @@index([disciplineId])
+}
+
+/// Заметка студента к конкретной паре.
+model StudentNote {
+  id        String   @id @default(cuid())
+  studentId String
+  eventId   String
+  text      String
+  createdAt DateTime @default(now())
+
+  student Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  event   ScheduleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, eventId])
+  @@index([eventId])
+}
+
+enum ScheduleEventType {
+  LECTURE
+  SEMINAR
+  LAB
+  EXAM
+  CONSULT
+}
+
+enum EventStatus {
+  NORMAL
+  CHANGED
+  CANCELLED
+}
+
+// ── Заявки ──────────────────────────────────────────────────────────────────
+
+/// Тип заявки: справка, выписка, дубликат и т.п.
+model RequestType {
+  id         String        @id @default(cuid())
+  code       String        @unique // «CERT_ENROLLMENT», «DIPLOMA_COPY»…
+  name       String
+  etaDays    Int? // срок готовности в рабочих днях
+  format     RequestFormat @default(ELECTRONIC)
+  isInstant  Boolean       @default(false)
+  /// JSON-схема полей формы.
+  formSchema Json?
+
+  requests Request[]
+}
+
+/// Заявка студента. Номер генерирует БД: «ЗД-2026-000123» (sequence + CHECK в миграции).
+model Request {
+  id        String        @id @default(cuid())
+  number    String        @unique
+  studentId String
+  typeId    String
+  params    Json?
+  status    RequestStatus @default(SUBMITTED)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  student    Student        @relation(fields: [studentId], references: [id])
+  type       RequestType    @relation(fields: [typeId], references: [id])
+  events     RequestEvent[]
+  certificates CertificateIssue[]
+
+  @@index([studentId])
+  @@index([typeId])
+  @@index([status])
+}
+
+/// Событие истории заявки: переход статуса с комментарием.
+model RequestEvent {
+  id          String        @id @default(cuid())
+  requestId   String
+  actorUserId String? // null = автоматика
+  fromStatus  RequestStatus?
+  toStatus    RequestStatus
+  comment     String?
+  createdAt   DateTime      @default(now())
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor   User?   @relation(fields: [actorUserId], references: [id])
+
+  @@index([requestId])
+  @@index([actorUserId])
+}
+
+enum RequestStatus {
+  SUBMITTED // Подана
+  ACCEPTED // Принята
+  IN_PROGRESS // В работе
+  READY // Готова
+  ISSUED // Выдана
+  NEEDS_FIX // Нужна доработка
+  REJECTED // Отклонена
+  CANCELLED // Отменена студентом
+}
+
+enum RequestFormat {
+  ELECTRONIC
+  PAPER
+  HYBRID
+}
+
+// ── Уведомления ─────────────────────────────────────────────────────────────
+
+model Notification {
+  id         String             @id @default(cuid())
+  userId     String
+  kind       NotificationKind   @default(SYSTEM)
+  title      String
+  body       String
+  link       String?
+  importance Importance         @default(NORMAL)
+  readAt     DateTime?
+  createdAt  DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+enum NotificationKind {
+  SCHEDULE
+  GRADE
+  REQUEST
+  TICKET
+  NEWS
+  SYSTEM
+}
+
+enum Importance {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+/// Настройки доставки уведомлений по типам.
+model NotificationPref {
+  id          String @id @default(cuid())
+  userId      String @unique
+  schedule    Boolean @default(true)
+  grades      Boolean @default(true)
+  requests    Boolean @default(true)
+  tickets     Boolean @default(true)
+  news        Boolean @default(true)
+  emailDigest Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Обращения в деканат ─────────────────────────────────────────────────────
+
+model Ticket {
+  id             String       @id @default(cuid())
+  studentId      String
+  assigneeUserId String? // сотрудник, взявший обращение
+  subject        String
+  status         TicketStatus @default(OPEN)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  closedAt       DateTime?
+
+  student   Student         @relation(fields: [studentId], references: [id])
+  assignee  User?           @relation("TicketAssignee", fields: [assigneeUserId], references: [id])
+  messages  TicketMessage[]
+
+  @@index([studentId])
+  @@index([assigneeUserId])
+  @@index([status])
+}
+
+model TicketMessage {
+  id           String   @id @default(cuid())
+  ticketId     String
+  authorUserId String
+  authorRole   Role
+  body         String
+  createdAt    DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation(fields: [authorUserId], references: [id])
+
+  @@index([ticketId])
+  @@index([authorUserId])
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  ANSWERED
+  RESOLVED
+  CLOSED
+}
+
+// ── Контент ─────────────────────────────────────────────────────────────────
+
+model News {
+  id           String   @id @default(cuid())
+  title        String
+  body         String
+  pinned       Boolean  @default(false)
+  publishedAt  DateTime @default(now())
+  authorUserId String
+
+  author User @relation(fields: [authorUserId], references: [id])
+
+  @@index([authorUserId])
+  @@index([publishedAt])
+}
+
+/// Статья FAQ. Колонка search (tsvector, russian) и GIN-индекс — в миграции SQL,
+// в схеме Prisma не описываются (используется через $queryRaw).
+model FaqArticle {
+  id        String @id @default(cuid())
+  title     String
+  body      String
+  category  String
+  sortOrder Int    @default(0)
+
+  @@index([category])
+}
+
+// ── AI-ассистент ────────────────────────────────────────────────────────────
+
+model AiChat {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+
+  @@index([userId])
+}
+
+model AiMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  role      AiRole
+  content   String
+  createdAt DateTime @default(now())
+
+  chat AiChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+}
+
+enum AiRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// ── Журнал и справки ────────────────────────────────────────────────────────
+
+/// Кто, что и когда сделал: действия сотрудников и входы в систему.
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String? // null = система
+  action       String // «LOGIN», «REQUEST_STATUS_CHANGE», …
+  entityType   String?
+  entityId     String?
+  ip           String?
+  createdAt    DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+
+  @@index([actorUserId])
+  @@index([entityType, entityId])
+}
+
+/// Выданная справка: проверка подлинности по хэшу и QR-токену.
+model CertificateIssue {
+  id             String   @id @default(cuid())
+  studentId      String
+  requestId      String?
+  certificateType String
+  hash           String   @unique
+  qrToken        String   @unique
+  issuedAt       DateTime @default(now())
+  expiresAt      DateTime
+
+  student  Student  @relation(fields: [studentId], references: [id])
+  request  Request? @relation(fields: [requestId], references: [id])
+
+  @@index([studentId])
+  @@index([requestId])
+}
