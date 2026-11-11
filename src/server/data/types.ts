@@ -147,6 +147,8 @@ export interface NotificationRow {
   body: string;
   isRead: boolean;
   createdAt: Date;
+  /** Куда ведёт уведомление в кабинете (например, «/schedule»); опционально. */
+  link?: string | null;
 }
 
 export interface AppealRow {
@@ -182,6 +184,17 @@ export interface ScheduleEventRow {
   /** DIG-9 schema: the room/time before a ROOM_CHANGED / TIME_CHANGED event. */
   previousRoom?: string | null;
   previousStartsAt?: Date | null;
+  /** DIG-21 — причина изменения, оставленная сотрудником деканата. */
+  changeNote?: string | null;
+}
+
+/** DIG-21 — заметка студента к конкретной паре (уникальна по паре студент+пара). */
+export interface StudentNoteRow {
+  id: string;
+  studentId: string;
+  eventId: string;
+  text: string;
+  createdAt: Date;
 }
 
 export interface ExamSessionRow {
