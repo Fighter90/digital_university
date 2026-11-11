@@ -96,9 +96,9 @@ test('acquireLock: fresh file, stale pid reclaimed, live pid refused', () => {
 
 test('planGates: adaptive per package.json', () => {
   const full = planGates({ hasPackageJson: true, scripts: { lint: 'next lint', test: 'vitest', build: 'next build' }, hasTS: true });
-  assert.deepEqual(full.map((s) => `${s.name}:${s.cmd ? 'run' : 'skip'}`), ['lint:run', 'typecheck:run', 'test:run', 'build:run']);
+  assert.deepEqual(full.map((s) => `${s.name}:${s.cmd ? 'run' : 'skip'}`), ['lint:run', 'typecheck:run', 'build:run', 'test:run']);
   const noTest = planGates({ hasPackageJson: true, scripts: { lint: 'x' }, hasTS: false });
-  assert.deepEqual(noTest.map((s) => `${s.name}:${s.cmd ? 'run' : 'skip'}`), ['lint:run', 'typecheck:skip', 'test:skip', 'build:skip']);
+  assert.deepEqual(noTest.map((s) => `${s.name}:${s.cmd ? 'run' : 'skip'}`), ['lint:run', 'typecheck:skip', 'build:skip', 'test:skip']);
   const bootstrap = planGates({ hasPackageJson: false });
   assert.equal(bootstrap.length, 1);
   assert.equal(bootstrap[0].name, 'bootstrap');
