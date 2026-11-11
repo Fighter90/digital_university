@@ -16,7 +16,21 @@ services:
     ports:
       # только loopback: БД наружу не торчит; нужен для psql/Prisma Studio с хоста
       - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
-    volumes:
+      # Разовые задачи БД (миграции/сид): docker compose --profile tools run --rm tools sh -c '...'
+  tools:
+    profiles: ['tools']
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.tools
+    env_file:
+      - path: ../.env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ['sleep', 'infinity']
+
+volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
       test:
@@ -74,18 +88,4 @@ volumes:
   db-data:
   caddy-data:
   caddy-config:
-
-  # Разовые задачи БД (миграции/сид): docker compose --profile tools run --rm tools sh -c '...'
-  tools:
-    profiles: ['tools']
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.tools
-    env_file:
-      - path: ../.env
-        required: false
-    depends_on:
-      db:
-        condition: service_healthy
-    command: ['sleep', 'infinity']
 
