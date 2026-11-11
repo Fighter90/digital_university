@@ -5,15 +5,16 @@
 // соответствие «экран ↔ задача» — docs/figma-screens.md, где 03 → DIG-22:
 // в тексте задачи фрейм по ошибке назван «04» — это «Детали пары», DIG-24).
 //
-// Клиентский оркестратор экрана: панель инструментов («Сегодня», стрелки
-// ‹ ›, подпись недели, День / Неделя / Месяц, «Синхронизировать»), левая
+// Клиентский оркестратор недельной сетки: панель инструментов («Сегодня»,
+// стрелки ‹ ›, подпись недели, День / Неделя / Месяц (живой переключатель
+// с DIG-23), «Синхронизировать»), левая
 // колонка (мини-календарь месяца, фильтры по типу занятия со счётчиками
 // и по преподавателю), сетка 08:00–20:00 (64 px на час, колонка сегодняшнего
 // дня тонирована, красная линия текущего времени — обновление раз в минуту),
 // блоки пар по цветам дизайн-токенов типов занятий, перенос (штриховка,
 // пунктир, бейдж «Перенос», «было: ауд. 214 / 11:10»), отмена (зачёркнутый
 // заголовок, бледный блок, бейдж «Отменена»), пересекающиеся пары делят
-// ширину колонки.
+// ширину колонки. Мобильный вид (< 768 px) рендерит страница (DIG-23).
 //
 // Клавиатура: ←/→ листают недели (router.push — URL ?week=2026-W46 меняется
 // без перезагрузки страницы), Esc закрывает панель деталей. Клик по паре —
@@ -21,9 +22,9 @@
 // Листание данных — сервером (resolveWeekPage + getSchedule на странице),
 // фильтры — локальные (клиентские), поэтому не перезапрашивают сеть.
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarOff, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { cn } from 'cn';
 
@@ -40,8 +41,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/ui/icon';
-import { Segmented } from '@/components/ui/segmented';
 import { Sheet } from '@/components/ui/sheet';
+import { ViewSwitcher } from '@/components/schedule/view-switcher';
 
 export interface WeekDayColumnData {
   dateKey: string;
@@ -69,7 +70,7 @@ export interface WeekViewProps {
   teachers: string[];
 }
 
-const weekHref = (weekKey: string) => `/schedule?week=${weekKey}`;
+const weekHrefDefault = (weekKey: string) => `/schedule?week=${weekKey}`;
 
 /** Штриховка блока переноса (серая, как в макете). */
 const HATCH =
@@ -89,6 +90,17 @@ export function WeekView({
   teachers,
 }: WeekViewProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // DIG-23: страница может быть открыта с явным ?view=week — листание недель
+  // сохраняет параметр вида, чтобы вид не сбрасывался на авто.
+  const viewParam = searchParams.get('view');
+  const weekHref = useCallback(
+    (weekKey: string) =>
+      viewParam === 'week'
+        ? `/schedule?view=week&week=${encodeURIComponent(weekKey)}`
+        : weekHrefDefault(weekKey),
+    [viewParam],
+  );
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<ScheduleEventView | null>(null);
   const [visibleKinds, setVisibleKinds] = useState<Record<ScheduleKind, boolean>>({
@@ -143,7 +155,7 @@ export function WeekView({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [router, selected, prevWeekKey, nextWeekKey]);
+  }, [router, selected, prevWeekKey, nextWeekKey, weekHref]);
 
   // Фильтры: по типу занятия и по преподавателю — локально, без сети.
   const filteredDays = useMemo(
@@ -227,18 +239,9 @@ export function WeekView({
             <span className="text-xs text-muted-foreground">{semesterLabel}</span>
           </div>
           <div className="flex items-center gap-3">
-            <Segmented
-              aria-label="Вид расписания"
-              value="week"
-              onChange={() => {
-                /* День/Месяц отключены: десктопный день — DIG-23, месяц вне скоупа */
-              }}
-              options={[
-                { value: 'day', label: 'День', disabled: true },
-                { value: 'week', label: 'Неделя' },
-                { value: 'month', label: 'Месяц', disabled: true },
-              ]}
-            />
+            {/* DIG-23: переключатель видов живой — «День» и «Месяц» ведут
+                в соответствующие виды (URL ?view=… с переносом контекста) */}
+            <ViewSwitcher view="week" platform="desktop" />
             <Button
               variant="secondary"
               size="sm"
@@ -422,14 +425,8 @@ export function WeekView({
         </div>
       </div>
 
-      {/* ── Мобильная замена (< 768 px): отдельная задача (мобильный день) ── */}
-      <div className="md:hidden">
-        <EmptyState
-          icon={CalendarOff}
-          title="Мобильная версия расписания"
-          description="Сегодняшние пары — на главной. Мобильный вид недели появится следом."
-        />
-      </div>
+      {/* Мобильный вид (< 768 px) рендерит страница: лента дат + пары дня
+          (MobileSchedule) — см. src/app/(cabinet)/schedule/page.tsx (DIG-23) */}
 
       {/* ── Боковая панель деталей пары (полная карточка — DIG-24) ────────── */}
       <Sheet

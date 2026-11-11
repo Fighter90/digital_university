@@ -55,8 +55,9 @@ test.describe('desktop 1440 — неделя в стиле Google Calendar', () 
     await expect(page.getByRole('link', { name: 'Следующая неделя' })).toBeVisible();
     await expect(page.getByTestId('week-label')).toContainText(/ноября|декабря/);
     await expect(page.getByRole('radio', { name: 'Неделя' })).toBeChecked();
-    await expect(page.getByRole('radio', { name: 'День' })).toBeDisabled();
-    await expect(page.getByRole('radio', { name: 'Месяц' })).toBeDisabled();
+    // DIG-23: «День» и «Месяц» включены — переключение видов работает
+    await expect(page.getByRole('radio', { name: 'День' })).toBeEnabled();
+    await expect(page.getByRole('radio', { name: 'Месяц' })).toBeEnabled();
     await expect(page.getByRole('button', { name: 'Синхронизировать' })).toBeVisible();
 
     await expect(page.getByTestId('mini-calendar')).toBeVisible();
@@ -171,20 +172,22 @@ test.describe('desktop 1440 — неделя в стиле Google Calendar', () 
   });
 });
 
-test.describe('mobile 360 — недельный вид заменён мобильным', () => {
+test.describe('mobile 360 — лента дат мобильного вида (DIG-23)', () => {
   test.skip(({ viewport }) => viewport?.width !== 360, 'mobile-360 only');
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
   });
 
-  test('week grid is hidden, the mobile placeholder is shown, no horizontal scroll', async ({
+  test('week grid is hidden, the mobile day view (date ribbon) is shown, no horizontal scroll', async ({
     page,
   }) => {
     await page.goto('/schedule');
 
     await expect(page.getByTestId('week-grid')).not.toBeVisible();
-    await expect(page.getByText('Мобильная версия расписания')).toBeVisible();
+    // DIG-23: мобильный вид — лента дат и пары выбранного дня
+    await expect(page.getByTestId('date-ribbon')).toBeVisible();
+    await expect(page.getByTestId('mobile-day-title')).toBeVisible();
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

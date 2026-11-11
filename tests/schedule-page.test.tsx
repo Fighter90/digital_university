@@ -100,6 +100,19 @@ vi.mock('@/server/auth/session', () => ({
   requireStaff: vi.fn(async () => ({ id: 'x', login: 'x', role: 'STAFF' as const })),
 }));
 
+vi.mock('@/server/data', async () => {
+  const actualTypes = await import('@/server/data/types');
+  return {
+    requireDataCtx: vi.fn(async () => studentCtx),
+    getSchedule: vi.fn(async () => weekRows),
+    // DIG-23: страница «дня» при пустом выбранном дне спрашивает ближайший
+    // учебный день — в тестах недели он не нужен, отдаём null.
+    getNextStudyDay: vi.fn(async () => null),
+    // schedule/page.tsx импортирует только эти имена из barrel
+    __types: actualTypes,
+  };
+});
+
 vi.mock('@/server/data/db', () => ({ dataDb: {} }));
 
 // В юнит-прендере нет App Router — отдаём стаб роутера (поведение листания
@@ -115,16 +128,6 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => '/schedule',
 }));
-
-vi.mock('@/server/data', async () => {
-  const actualTypes = await import('@/server/data/types');
-  return {
-    requireDataCtx: vi.fn(async () => studentCtx),
-    getSchedule: vi.fn(async () => weekRows),
-    // schedule/page.tsx импортирует только эти имена из barrel
-    __types: actualTypes,
-  };
-});
 
 import SchedulePage from '@/app/(cabinet)/schedule/page';
 
@@ -159,11 +162,15 @@ describe('/schedule (DIG-22) — неделя в стиле Google Calendar', ()
     expect(html).toContain('День');
     expect(html).toContain('Неделя');
     expect(html).toContain('Месяц');
-    // Неделя выбрана, День и Месяц пока недоступны (десктоп-день/месяц вне DIG-22)
+    // Неделя выбрана по умолчанию (десктоп без ?view= — авто-неделя)
     expect(html).toMatch(
       /aria-checked="true"[^>]*>\s*Неделя|Неделя[\s\S]{0,80}aria-checked="true"/,
     );
-    expect(html).toMatch(/aria-disabled="true"/);
+    // DIG-23: «День» и «Месяц» включены — в переключателе вида нет недоступных опций
+    const switcher = html.match(/role="radiogroup"[\s\S]*?<\/div>/)?.[0] ?? '';
+    expect(switcher).toContain('День');
+    expect(switcher).toContain('Месяц');
+    expect(switcher).not.toContain('aria-disabled');
     // «Сегодня» — ссылка со стилями кнопки, без вложенного <button>
     // (button внутри <a> — невалидная вложенность интерактива, ревью раунд 2)
     const todayLink = html.match(
@@ -300,11 +307,14 @@ describe('/schedule (DIG-22) — неделя в стиле Google Calendar', ()
     expect(html).toContain('Расписание доступно студентам');
   });
 
-  it('мобильная замена (< 768 px) присутствует в DOM, десктопный вид скрыт классом', async () => {
+  it('мобильный блок (< 768 px): лента дат расписания в DOM, десктопный вид скрыт классом', async () => {
     const html = await renderPage();
     expect(html).toMatch(/md:hidden/);
     expect(html).toMatch(/hidden md:block/);
-    expect(html).toContain('Мобильная версия расписания');
+    // DIG-23: вместо заглушки — реальный мобильный вид (лента дат недели)
+    expect(html).toContain('data-testid="date-ribbon"');
+    expect(html).toContain(`data-testid="ribbon-item-${moscowDateKey(new Date())}"`);
+    expect(html).not.toContain('Мобильная версия расписания');
   });
 
   it('loading.tsx: скелетон расписания подключён', () => {
