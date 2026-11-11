@@ -23,7 +23,9 @@ if [ -f .env.production ]; then
 fi
 
 echo "==> docker compose build + up"
-$SSH "cd $DIR && docker compose -f deploy/docker-compose.yml build && docker compose -f deploy/docker-compose.yml up -d"
+# --profile tools обязателен: без него tools-образ не пересобирается,
+# и migrate/seed гоняются по устаревшему образу (урок DIG-49)
+$SSH "cd $DIR && docker compose -f deploy/docker-compose.yml --profile tools build && docker compose -f deploy/docker-compose.yml up -d"
 
 echo "==> db: migrate + seed (tools container)"
 $SSH "cd $DIR && docker compose -f deploy/docker-compose.yml --profile tools run --rm tools sh -c 'node_modules/.bin/prisma migrate deploy && node_modules/.bin/tsx prisma/seed.ts'" || exit 1
