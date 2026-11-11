@@ -265,9 +265,6 @@ async function main() {
         log('queue empty — no Todo issues labeled `swarm`.');
         break;
       }
-<<<<<<< HEAD
-      log(`picked ${issue.identifier}: ${issue.title}`);
-=======
       // carry the previous cycle's review findings into the executor's context
       const prior = await lastFailureNotes(issue.identifier);
       if (prior)
@@ -275,7 +272,6 @@ async function main() {
       log(
         `picked ${issue.identifier}: ${issue.title}${prior ? ' (+ предыдущие замечания ревью)' : ''}`,
       );
->>>>>>> origin/main
       if (DRY) {
         log('dry-run: would claim → develop → gates → review → security → document → PR → Done.');
         break;
@@ -450,11 +446,7 @@ async function main() {
           await failIssue(
             issue.identifier,
             'review',
-<<<<<<< HEAD
-            `нет ACCEPT за ${MAX_ROUNDS} раунда; ветка ${branch} оставлена человеку`,
-=======
             `нет ACCEPT за ${MAX_ROUNDS} раунда.\nЗамечания последнего ревью (исправить в первую очередь):\n${(reviewNotes || '(без деталей)').slice(0, 2500)}`,
->>>>>>> origin/main
           );
           throw new Error('review: no ACCEPT');
         }
