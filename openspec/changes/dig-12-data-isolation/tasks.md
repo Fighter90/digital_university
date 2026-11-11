@@ -64,13 +64,27 @@
   globalThis-синглтоны (dev-бандлы страниц и API-роутов); `next.config.ts` —
   `turbopack.root` (стабильный build, гейты зелёные).
 
+## Раунд 2 (замечания ревью: упали тест-гейты)
+
+- [x] `next.config.ts` — `turbopack.root = __dirname`: посторонний lockfile в
+  домашнем каталоге сбивал определение корня workspace (чанки
+  `Projects_digital_university_edge-wrapper_…` → ENOENT на edge-чанках в
+  `next build`). Предупреждение исчезло, три чистые сборки подряд зелёные.
+- [x] `playwright.config.ts` — e2e против production-сервера
+  (`pnpm build && pnpm start`): в `next dev` (Turbopack) not-found страница
+  отдаётся со статусом 200 (гонка dev-режима, нестабильно между запусками),
+  продовый контракт — детерминированный 404. IDOR-сценарий Анна/Илья
+  зелёный: страница 404 + API 404 + отсутствие оракула существования.
+- [x] `CHANGELOG.md` — объединены дублированные секции Unreleased,
+  дописан раунд 2; `docs/ai-log/2026-11-11-dig-12.md` — журнал раунда 2.
+
 ## Проверка
 
 - [x] `npx vitest run` — 125 тестов (8 файлов) зелёные.
 - [x] `npm run lint` / `npm run typecheck` / `npm run build` — зелёные.
 - [x] `node scripts/swarm/gates.mjs` — GATES_SUMMARY: green.
-- [x] `pnpm e2e` — 16/16 зелёные (desktop-1440 и mobile-360), включая
-  IDOR-сценарий Анна/Илья (страница + API + отсутствие оракула).
+- [x] `pnpm e2e` — 16/16 зелёные (desktop-1440 и mobile-360, production-сервер),
+  включая IDOR-сценарий Анна/Илья (страница 404 + API 404 + отсутствие оракула).
 
 ## Документация
 
