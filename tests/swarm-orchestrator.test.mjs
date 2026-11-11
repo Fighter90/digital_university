@@ -4,7 +4,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extractDev, extractVerdict, extractSecurity, buildAiLog } from '../scripts/swarm/orchestrator.mjs';
+import fsMod from 'node:fs';
+import cpMod from 'node:child_process';
+import { extractDev, extractVerdict, extractSecurity, buildAiLog, securityFailureFeedback, acquireLock } from '../scripts/swarm/orchestrator.mjs';
 import { planGates } from '../scripts/swarm/gates.mjs';
 
 test('extractDev: full summary line', () => {
@@ -57,6 +59,39 @@ test('buildAiLog: contains key fields', () => {
   assert.match(md, /RETURN → ACCEPT/);
   assert.match(md, /https:\/\/github\.com\/x\/y\/pull\/1/);
   assert.match(md, /История:/);
+});
+
+test('securityFailureFeedback: retries within round budget, fails at the end', () => {
+  // round 1 of 3 → retry with findings as notes (never skips a task)
+  const retry = securityFailureFeedback(0, 3, '1) a.ts:12 — creds in code');
+  assert.equal(retry.action, 'retry');
+  assert.match(retry.notes, /SECURITY-GATE/);
+  assert.match(retry.notes, /creds in code/);
+  assert.equal(securityFailureFeedback(1, 3, 'x').action, 'retry');
+  // last round → fail with the findings (failIssue happens in the pipeline)
+  const fin = securityFailureFeedback(2, 3, '1) hard failure');
+  assert.equal(fin.action, 'fail');
+  assert.match(fin.notes, /hard failure/);
+});
+
+test('acquireLock: fresh file, stale pid reclaimed, live pid refused', () => {
+  const { mkdtempSync, writeFileSync, readFileSync, rmSync } = fsMod;
+  const { spawnSync } = cpMod;
+  const dir = mkdtempSync('/tmp/swarm-lock-');
+  const lockPath = `${dir}/lock`;
+  // fresh lock
+  acquireLock(lockPath, process.pid);
+  assert.equal(readFileSync(lockPath, 'utf8'), String(process.pid));
+  // stale owner (dead pid) → reclaimed
+  writeFileSync(lockPath, '999999');
+  acquireLock(lockPath, process.pid);
+  assert.equal(readFileSync(lockPath, 'utf8'), String(process.pid));
+  // live owner → refused
+  const live = cpMod.spawn('sleep', ['5']);
+  writeFileSync(lockPath, String(live.pid));
+  assert.throws(() => acquireLock(lockPath, process.pid), /holds the lock/);
+  try { process.kill(live.pid, 'SIGKILL'); } catch {}
+  rmSync(dir, { recursive: true, force: true });
 });
 
 test('planGates: adaptive per package.json', () => {

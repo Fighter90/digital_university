@@ -1,5 +1,14 @@
 # Changelog
 
+
+### Unreleased
+
+#### Изменения
+- **Добавлен** вход по логину и паролю: серверные сессии на httpOnly-куках, хэширование паролей, защита от перебора по IP, route-guard через middleware и форма логина; покрыто unit-тестами и e2e-сценарием входа.
+- **Деплой-стек** — docker-compose (PostgreSQL 16 c healthcheck, Next standalone с миграциями при старте, Caddy с авто-TLS и security-заголовками), multi-stage Dockerfile, gitleaks в CI, compose-тест-контракт — DIG-7.
+
+#### Заметки
+- Специально не делали: восстановление пароля по email и 2FA — это отдельная задача, в этот раз ограничились базовым входом и сессиями.
 Все значимые изменения проекта документируются в этом файле.
 Формат — [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/).
 
@@ -7,7 +16,7 @@
 
 ### Изменения
 
-- **Деплой-стек** — docker-compose (PostgreSQL 16 c healthcheck, Next standalone с миграциями при старте, Caddy с авто-TLS и security-заголовками), multi-stage Dockerfile, gitleaks в CI, compose-тест-контракт — DIG-7.
+- **База данных** — Prisma-схема (студенты, учёба, заявки, уведомления, обращения) + миграция init: FTS-индексы, CHECK-констрейнты, sequence номеров заявок «ЗД-ГГГГ-NNNNNN»; DATABASE_URL только из окружения — DIG-9.
 - **Инфраструктура** — рой ИИ-агентов OpenCode: оркестратор (детерминированный
   автомат), Linear-клерк на GraphQL, адаптивные тест-гейты, роли
   executor/reviewer/security/documenter, команды `/swarm`, `/next-task`,
