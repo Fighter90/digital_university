@@ -1,12 +1,11 @@
-# DIG-7 — локальный и продовый запуск «Цифрового деканата» одной командой:
-#   cp .env.example .env
-#   docker compose -f deploy/docker-compose.yml up --build
-# Кабинет: http://localhost:3000 (health: /api/health), наружу — Caddy (80/443).
-# Секреты читаются только из .env (в git не попадает) или секретов хостинга.
+# deploy/docker-compose.yml — DIG-7: app + PostgreSQL + Caddy (+ tools для миграций/сида).
+# Локально: cp .env.example .env && docker compose -f deploy/docker-compose.yml up --build
+# Прод: SITE_ADDRESS=ostrovok.store в .env — Caddy сам получит HTTPS (HTTP-01).
+# Разовые задачи БД: docker compose --profile tools run --rm tools sh -c \
+#   'node_modules/.bin/prisma migrate deploy && node_modules/.bin/tsx prisma/seed.ts'
 name: digital-university
 
 services:
-  # PostgreSQL 16 с постоянным volume; наружу не торчит (только loopback по желанию).
   db:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -14,23 +13,8 @@ services:
       - path: ../.env
         required: false
     ports:
-      # только loopback: БД наружу не торчит; нужен для psql/Prisma Studio с хоста
       - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
-      # Разовые задачи БД (миграции/сид): docker compose --profile tools run --rm tools sh -c '...'
-  tools:
-    profiles: ['tools']
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.tools
-    env_file:
-      - path: ../.env
-        required: false
-    depends_on:
-      db:
-        condition: service_healthy
-    command: ['sleep', 'infinity']
-
-volumes:
+    volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
       test:
@@ -43,7 +27,6 @@ volumes:
       retries: 6
       start_period: 10s
 
-  # Next.js standalone (deploy/Dockerfile); миграции Prisma — при старте контейнера.
   app:
     build:
       context: ..
@@ -58,14 +41,11 @@ volumes:
       PORT: '3000'
       HOSTNAME: 0.0.0.0
     ports:
-      # публикуем только loopback: деплой проверяет http://localhost:3000/api/health,
-      # публичный трафик идёт через caddy (внутренняя сеть compose)
       - '127.0.0.1:${APP_PORT:-3000}:3000'
     depends_on:
       db:
         condition: service_healthy
 
-  # Reverse proxy: локально :80, в проде автоматический HTTPS (Let's Encrypt).
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -84,8 +64,20 @@ volumes:
       app:
         condition: service_healthy
 
+  tools:
+    profiles: ['tools']
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.tools
+    env_file:
+      - path: ../.env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ['sleep', 'infinity']
+
 volumes:
   db-data:
   caddy-data:
   caddy-config:
-
