@@ -16,6 +16,8 @@ const read = (p: string) => readFileSync(resolve(ROOT, p), 'utf8');
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((name) => {
     const p = join(dir, name);
+    // сгенерированный Prisma-клиент — мегабайты генерата, не исходники (DIG-50)
+    if (name === 'generated') return [];
     if (statSync(p).isDirectory()) return walk(p);
     return p.endsWith('.ts') || p.endsWith('.tsx') ? [p] : [];
   });

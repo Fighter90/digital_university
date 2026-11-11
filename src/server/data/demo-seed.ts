@@ -28,9 +28,9 @@ import type {
 } from './types';
 
 export const DEMO_PASSWORDS = {
-  anna: 'anna-demo-2026',
-  ilya: 'ilya-demo-2026',
-  dean: 'dean-demo-2026',
+  'anna.smirnova': 'anna-demo-2026',
+  'ilya.petrov': 'ilya-demo-2026',
+  'dean.kovaleva': 'dean-demo-2026',
 } as const;
 
 const day = (offsetDays: number, hour: number, minute = 0): Date => {
@@ -585,7 +585,7 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
       role,
     });
   };
-  await mk('anna', 'auth-anna', 'STUDENT');
-  await mk('ilya', 'auth-ilya', 'STUDENT');
-  await mk('dean', 'auth-dean', 'STAFF');
+  await mk('anna.smirnova', 'auth-anna', 'STUDENT');
+  await mk('ilya.petrov', 'auth-ilya', 'STUDENT');
+  await mk('dean.kovaleva', 'auth-dean', 'STAFF');
 }
