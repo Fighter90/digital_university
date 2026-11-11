@@ -26,18 +26,14 @@ export async function gql(query, variables = {}) {
 export async function pickIssue({ pin = '' } = {}) {
   const data = await gql(
     `query($team: String!) {
-      workflowStates(filter: { team: { key: { eq: $team } } }) { nodes { id name type } }
-      team(key: $team) {
-        issues(filter: { state: { type: { eq: "unstarted" } } }, first: 100) {
-          nodes { id identifier title description gitBranchName priority
-            state { name } labels { nodes { name } } }
-        }
+      issues(filter: { team: { key: { eq: $team } }, state: { type: { eq: "unstarted" } } }, first: 100) {
+        nodes { id identifier title description branchName priority
+          state { name } labels { nodes { name } } }
       }
     }`,
     { team: TEAM_KEY },
   );
-  const todo = data.team.issues.nodes;
-  const states = data.workflowStates.nodes;
+  const todo = data.issues.nodes;
   const withLabel = todo.filter((i) => i.labels.nodes.some((l) => l.name === LABEL));
   const candidates = pin ? withLabel.filter((i) => i.identifier === pin) : withLabel;
   if (pin && !candidates.length) {
@@ -52,7 +48,7 @@ export async function pickIssue({ pin = '' } = {}) {
   if (!candidates.length) return null;
   candidates.sort((a, b) => (a.priority || 0) - (b.priority || 0) || a.identifier.localeCompare(b.identifier, undefined, { numeric: true }));
   const i = candidates[0];
-  return { id: i.id, identifier: i.identifier, title: i.title, description: i.description || '', branch: i.gitBranchName || '' };
+  return { id: i.id, identifier: i.identifier, title: i.title, description: i.description || '', branch: i.branchName || '' };
 }
 
 const issueId = async (identifier) =>
@@ -62,12 +58,7 @@ const issueId = async (identifier) =>
 
 export async function claimIssue(identifier) {
   const id = await issueId(identifier);
-  const stateId = (
-    await gql(
-      `query($team: String!) { workflowStates(filter: { team: { key: { eq: $team } } }) { nodes { id name type } } }`,
-      { team: TEAM_KEY },
-    )
-  ).workflowStates.nodes.find((s) => s.type === 'started' && s.name === 'In Progress')?.id;
+  const stateId = (await states()).find((s) => s.type === 'started' && s.name === 'In Progress')?.id;
   if (!stateId) throw new Error('In Progress state not found in team DIG');
   await gql(`mutation($id: String!, $state: String!) { issueUpdate(id: $id, input: { stateId: $state }) { success } }`, { id, state: stateId });
   await addComment(identifier, '🎯 Рой принял задачу: executor → гейты → ревью → security → PR. Статусы ведёт оркестратор.');
@@ -80,12 +71,7 @@ export async function addComment(identifier, body) {
 
 export async function doneIssue(identifier, evidence) {
   const id = await issueId(identifier);
-  const stateId = (
-    await gql(
-      `query($team: String!) { workflowStates(filter: { team: { key: { eq: $team } } }) { nodes { id name type } } }`,
-      { team: TEAM_KEY },
-    )
-  ).workflowStates.nodes.find((s) => s.type === 'completed')?.id;
+  const stateId = (await states()).find((s) => s.type === 'completed')?.id;
   if (!stateId) throw new Error('Done state not found in team DIG');
   await gql(`mutation($id: String!, $state: String!) { issueUpdate(id: $id, input: { stateId: $state }) { success } }`, { id, state: stateId });
   await addComment(identifier, evidence);
