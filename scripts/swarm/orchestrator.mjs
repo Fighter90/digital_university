@@ -327,8 +327,7 @@ async function main() {
             const found = await sh(`git log --all --grep="${issue.identifier}" --pretty=%H -5`, {
               timeoutMs: 60_000,
             });
-            let sha = '',
-              mergedSha = '';
+            let sha = '';
             for (const cand of found.out.trim().split('\n')) {
               if (!/^[0-9a-f]{7,40}$/.test(cand)) continue;
               const anc = await sh(
@@ -338,14 +337,9 @@ async function main() {
                 sha = cand;
                 break;
               }
-              if (!mergedSha) mergedSha = cand;
-            }
-            if (!sha && mergedSha) {
-              const ev = `**Уже в main** — работа присутствует коммитом ${mergedSha.slice(0, 9)}. Закрыто как Done.`;
-              await doneIssue(issue.identifier, ev);
-              log(`already merged: ${mergedSha.slice(0, 9)} — issue closed as Done`);
-              devStatus = 'already-merged';
-              break;
+              // DIG-49 lesson: «already merged → Done» по совпадению ID в сообщении —
+              // ложное срабатывание (комментарии-ссылки на задачу тоже матчатся).
+              // Авто-Done убран: смерженные совпадения просто пропускаются.
             }
             if (sha) {
               log(`  reflog rescue: found lost work ${sha.slice(0, 9)} — cherry-picking`);
