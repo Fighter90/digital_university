@@ -313,7 +313,9 @@ model RequestType {
   requests Request[]
 }
 
-/// Заявка студента. Номер генерирует БД: «ЗД-2026-000123» (sequence + CHECK в миграции).
+/// Заявка студента. Номер «ЗД-ГГГГ-NNNNNN» собирает приложение из
+/// nextval('request_number_seq'); формат гарантирует CHECK, уникальность —
+/// UNIQUE в миграции (см. docs/architecture.md).
 model Request {
   id        String        @id @default(cuid())
   number    String        @unique

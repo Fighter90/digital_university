@@ -12,3 +12,18 @@
       sequence выдаёт 1, 2.
 - [x] ER-диаграмма (mermaid) и правила будущих миграций — в `docs/architecture.md`.
 - [x] `node --test tests/prisma-schema.test.mjs` — 13/13 зелёные.
+
+### Раунд 2 (по ревью)
+
+- [x] `tests/prisma-schema.test.mjs`: хелпер `migrationSql()` больше не фиксирует
+      «ровно одну миграцию» — `collectMigrationSql(dir)` конкатенирует все
+      `migration.sql` по алфавиту каталогов (порядок `prisma migrate deploy`),
+      ассерт на количество убран; SQL будущих дополнений попадает в проверки
+      FK/CHECK/FTS. Добавлен тест на контракт с раскладкой из двух миграций
+      (red был подтверждён: старый хелпер падал на второй миграции).
+- [x] `prisma/schema.prisma`: комментарий к `Request.number` приведён к истине —
+      номер собирает приложение из `nextval('request_number_seq')`, БД даёт
+      только sequence + CHECK + UNIQUE (синхронизировано с миграцией и
+      docs/architecture.md).
+- [x] `node --test tests/prisma-schema.test.mjs` — 14/14 зелёные (в том числе
+      с фиктивной второй миграцией в рабочем дереве).

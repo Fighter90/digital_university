@@ -4,8 +4,9 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { readFileSync, readdirSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { resolve, dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -22,13 +23,25 @@ const models = [
   'AiChat', 'AiMessage', 'AuditLog', 'CertificateIssue',
 ];
 
+// Собирает SQL всех миграций каталога, склеенный в алфавитном порядке
+// каталогов — ровно в том порядке, в котором их применяет `prisma migrate
+// deploy`. Стратегия эволюции схемы: одна init-миграция, дальше только
+// дополнения, поэтому количество миграций не фиксируется — контраст проверяет
+// весь SQL, включая будущие дополнения (FK-индексы, CHECK, FTS).
+export function collectMigrationSql(migrationsDir) {
+  assert.ok(existsSync(migrationsDir), `каталог ${migrationsDir} отсутствует`);
+  const dirs = readdirSync(migrationsDir)
+    .filter((d) => existsSync(resolve(migrationsDir, d, 'migration.sql')))
+    .sort();
+  assert.ok(dirs.length >= 1, 'нет ни одной миграции с migration.sql');
+  return dirs
+    .map((d) => readFileSync(resolve(migrationsDir, d, 'migration.sql'), 'utf8'))
+    .join('\n');
+}
+
 let cachedSql;
 function migrationSql() {
-  if (cachedSql !== undefined) return cachedSql;
-  assert.ok(existsSync(MIGRATIONS), 'каталог prisma/migrations отсутствует');
-  const dirs = readdirSync(MIGRATIONS).filter((d) => existsSync(resolve(MIGRATIONS, d, 'migration.sql')));
-  assert.equal(dirs.length, 1, `ожидается ровно одна миграция, найдено: ${dirs.join(', ')}`);
-  cachedSql = readFileSync(resolve(MIGRATIONS, dirs[0], 'migration.sql'), 'utf8');
+  if (cachedSql === undefined) cachedSql = collectMigrationSql(MIGRATIONS);
   return cachedSql;
 }
 
@@ -147,6 +160,29 @@ test('Grade.value ограничен CHECK 0..10', () => {
     sql,
     /ALTER\s+TABLE\s+"Grade"\s+ADD\s+CONSTRAINT\s+"[^"]+"\s+CHECK\s*\("value"\s*>=\s*0\s*AND\s*"value"\s*<=\s*10\)/,
   );
+});
+
+test('SQL-контракт проверяет ВСЕ миграции, а не только первую (стратегия «дальше только дополнения»)', () => {
+  // Фиктивная раскладка из двух миграций: init + будущее дополнение с CHECK.
+  // Старый хелпер («ровно одна миграция», чтение только dirs[0]) на такой
+  // раскладке падал, а SQL второй миграции вообще не попадал в проверки.
+  const tmp = mkdtempSync(join(tmpdir(), 'dig9-migrations-'));
+  try {
+    mkdirSync(join(tmp, '20260101000000_init'), { recursive: true });
+    mkdirSync(join(tmp, '20260102000000_add_check'), { recursive: true });
+    writeFileSync(join(tmp, '20260101000000_init', 'migration.sql'), 'CREATE TABLE "InitProbe" ("id" text);');
+    writeFileSync(
+      join(tmp, '20260102000000_add_check', 'migration.sql'),
+      'ALTER TABLE "InitProbe" ADD CONSTRAINT "InitProbe_future_check" CHECK (length("id") > 0);',
+    );
+    const sql = collectMigrationSql(tmp);
+    assert.match(sql, /CREATE TABLE "InitProbe"/, 'SQL первой миграции должен проверяться');
+    assert.match(sql, /InitProbe_future_check/, 'SQL последующей миграции должен попадать в проверки');
+    // Порядок конкатенации — алфавитный по каталогам, как у `prisma migrate deploy`.
+    assert.ok(sql.indexOf('CREATE TABLE "InitProbe"') < sql.indexOf('InitProbe_future_check'));
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('миграция содержит CREATE TABLE всех моделей', () => {
