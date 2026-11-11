@@ -11,7 +11,7 @@ test('home page shows the contest concept banner', async ({ page }) => {
 test('login placeholder renders the form', async ({ page }) => {
   await page.goto('/login');
   await expect(page.getByLabel('Логин')).toBeVisible();
-  await expect(page.getByLabel('Пароль')).toBeVisible();
+  await expect(page.getByLabel('Пароль', { exact: true })).toBeVisible();
 });
 
 test('health API responds ok', async ({ request }) => {

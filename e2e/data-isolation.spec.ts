@@ -9,7 +9,7 @@ import { expect, test, type Page } from '@playwright/test';
 async function signIn(page: Page, login: string, password: string, next?: string) {
   await page.goto(next ? `/login?next=${encodeURIComponent(next)}` : '/login');
   await page.getByLabel('Логин').fill(login);
-  await page.getByLabel('Пароль').fill(password);
+  await page.getByLabel('Пароль', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
 }
 

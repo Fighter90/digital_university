@@ -7,8 +7,14 @@ export type Role = 'STUDENT' | 'STAFF';
 export type AccessDecision =
   { kind: 'allow' } | { kind: 'redirect'; location: string } | { kind: 'forbidden' };
 
-/** Landing and login are open; health API must stay reachable for monitoring. */
-const PUBLIC_EXACT_PATHS = new Set(['/', '/login', '/api/health', '/favicon.ico']);
+/** Landing and login (+ its «Забыли пароль?» stub) are open; health API must stay reachable for monitoring. */
+const PUBLIC_EXACT_PATHS = new Set([
+  '/',
+  '/login',
+  '/forgot-password',
+  '/api/health',
+  '/favicon.ico',
+]);
 const PUBLIC_PREFIXES = ['/_next/', '/assets/'];
 
 export function isPublicPath(pathname: string): boolean {

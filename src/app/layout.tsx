@@ -1,12 +1,16 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Onest } from 'next/font/google';
 import { ConceptBanner } from '@/components/concept-banner';
 import './globals.css';
 
-// Правило проекта: шрифт Inter, как в макетах Figma (латиница + кириллица).
-const inter = Inter({
-  variable: '--font-inter',
+// DIG-13: шрифт дизайн-системы — Onest (OFL), веса 400–800, латиница +
+// кириллица. Переменная --font-onest маппится в --font-sans в globals.css.
+// (Завершение DIG-13: тест design-tokens требовал подключение, а layout
+// ещё держал Inter — цепочка --font-sans была разорвана на всех экранах.)
+const onest = Onest({
+  variable: '--font-onest',
   subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700', '800'],
 });
 
 export const metadata: Metadata = {
@@ -21,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={inter.variable}>
+    <html lang="ru" className={onest.variable}>
       <body className="antialiased">
         <ConceptBanner />
         {children}
