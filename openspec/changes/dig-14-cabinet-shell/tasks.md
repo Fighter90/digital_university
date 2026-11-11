@@ -20,4 +20,10 @@
 - [x] 15. `/dashboard`: `<main>` → `<section>` (единственный main-landmark — у Shell).
 - [x] 16. `SearchPalette`: возврат фокуса на кнопку поиска при закрытии (returnFocusRef), фокус в поле при открытии через effect; убрать `aria-hidden="false"`.
 - [x] 17. Заменить 4 тавтологических source-invariant теста на поведенческие (render-тесты + e2e); vitest esbuild jsx:automatic.
-- [x] 18. Зелёные: vitest / node --test / e2e (18 passed) / gates green.
+- [x] 18. Зелёные: vitest (29 passed) / node --test (10 passed) / e2e / gates green.
+
+### Раунд 3 — замечания ревью
+
+- [x] 19. Уточнить запись п. 18: e2e — это 15 тестов (12 cabinet-shell + 3 smoke) × 2 профиля
+  (desktop-1440, mobile-360) = 30 прогонов: 18 passed, 12 skipped (тесты другого вьюпорта).
+  Прогон подтверждён на свежем playwright chromium-headless-shell 158 (v1254).
