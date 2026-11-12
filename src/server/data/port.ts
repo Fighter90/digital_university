@@ -64,6 +64,8 @@ export interface DataDb {
   probeStudentById(id: string): Promise<StudentRow | null>;
   /** DIG-27 — probe дисциплины по коду БЕЗ скоупа группы (только аудит отказа). */
   probeDisciplineByCode(disciplineCode: string): Promise<DisciplineRow | null>;
+  /** DIG-28 — probe контрольной сессии по id БЕЗ скоупа группы (только аудит). */
+  probeExamById(id: string): Promise<ExamSessionRow | null>;
 
   // ── requests (owner-scoped) ───────────────────────────────────────────────
   listRequestsByStudent(studentId: string): Promise<ServiceRequestRow[]>;
@@ -73,6 +75,22 @@ export interface DataDb {
   ): Promise<ServiceRequestRow | null>;
   findRequestByStudentAndId(studentId: string, id: string): Promise<ServiceRequestRow | null>;
   listRequestEvents(requestId: string): Promise<RequestEventRow[]>;
+  /**
+   * DIG-28 — заявка, созданная студентом через кабинет (первое событие
+   * SUBMITTED пишется тем же вызовом, атомарно с заявкой). Публичный номер
+   * генерирует слой данных и передаёт готовым.
+   */
+  appendRequestByStudent(
+    studentId: string,
+    input: {
+      type: ServiceRequestRow['type'];
+      title: string;
+      number: string;
+      createdAt: Date;
+      eventMessage: string;
+      actorName: string;
+    },
+  ): Promise<ServiceRequestRow>;
 
   // ── grades / notifications / appeals (owner-scoped) ───────────────────────
   listGradesByStudent(studentId: string): Promise<GradeRow[]>;

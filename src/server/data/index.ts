@@ -30,6 +30,13 @@ export type {
 export { listNotifications, markNotificationRead } from './notifications';
 export { listAppeals, getAppeal, listAppealMessages } from './appeals';
 export { listSchedule, listExams } from './schedule';
+export { getSession, createRetakeRequest } from './session';
+export type {
+  SessionConsultationItem,
+  SessionData,
+  SessionExamItem,
+  SessionRetakeItem,
+} from './session';
 export {
   applyScheduleChange,
   deleteEventNote,
