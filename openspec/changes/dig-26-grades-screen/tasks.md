@@ -28,8 +28,26 @@
   (aria-busy, зеркалит структуру экрана).
 - [x] 6. Change-папка openspec/changes/dig-26-grades-screen (proposal,
   tasks, delta-спека performance).
-- [ ] 7. Гейты: lint, typecheck, build, `node scripts/swarm/gates.mjs` →
-  GATES green; WIP-коммиты по ходу, финальный коммит на ветке.
+- [x] 7. Гейты: lint, typecheck, build, `node scripts/swarm/gates.mjs` →
+  GATES green (lint=pass typecheck=pass build=pass test=pass); юниты
+  633/633 (36 файлов), render-контракт экрана 15/15.
+
+## Раунд 3 — восстановление экрана и гейты
+
+Чужой смешанный коммит 4d94d7a (батч DIG-27 «rc visual smoke spec»)
+случайно вернул `src/app/(cabinet)/grades/page.tsx` на заглушку,
+затерев экран из bba3302. Сделано:
+
+- [x] Экран восстановлен из bba3302 (commit 8d0c792) и дополнен:
+  дельта GPA семестра показывается только у ИДУЩЕГО семестра — у
+  завершённого «предыдущий» ещё не закрыт, сравнение обманчиво
+  (рендер-контракт: у весны 25/26 `data-testid="gpa-delta"` нет).
+- [x] Чистка слоя данных: удалён мёртвый дубликат
+  `DisciplineComputationInternal` (остаток прерванного раунда 2);
+  остался один экспортируемый `DisciplineComputation`
+  (его импортирует gradebook.ts DIG-27).
+- [x] Попутные type-фиксы (transcript Blob wrap) ушли в wip-коммит
+  8cf16e9 параллельным процессом — конфликтов нет.
 
 ## Раунд 2 — замечания ревью/security
 
