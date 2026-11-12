@@ -9,10 +9,16 @@ import { expect, test, type Page } from '@playwright/test';
 //    таблица видима.
 
 async function signIn(page: Page, login: string, password: string, next?: string) {
-  await page.goto(next ? `/login?next=${encodeURIComponent(next)}` : '/login');
+  const target = next ?? '/dashboard';
+  await page.goto(`/login?next=${encodeURIComponent(target)}`);
   await page.getByLabel('Логин').fill(login);
   await page.getByLabel('Пароль', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  // Вход — server action: кука __Host-session приходит асинхронно; без
+  // ожидания редиректа следующие запросы уходят анонимом (флейки на проде).
+  await page.waitForURL((u) => u.pathname === new URL(target, page.url()).pathname, {
+    timeout: 15_000,
+  });
 }
 
 test.describe('DIG-27: зачётная книжка', () => {
@@ -92,7 +98,7 @@ test.describe('DIG-27: зачётная книжка', () => {
 
 test.describe('DIG-27: адаптивность зачётки', () => {
   test('1440 px: таблица семестра видима', async ({ page }) => {
-    test.skip(({ viewport }) => viewport?.width !== 1440, 'desktop-1440 only');
+    test.skip(test.info().project.name !== 'desktop-1440', 'desktop-1440 only');
     await signIn(page, 'anna.smirnova', 'anna-demo-2026', '/grades/gradebook');
     await expect(page.getByTestId('semester-accordion-2026-fall')).toBeVisible();
     const table = page.getByTestId('gradebook-table-2026-fall');
@@ -100,7 +106,7 @@ test.describe('DIG-27: адаптивность зачётки', () => {
   });
 
   test('360 px: таблица превращается в карточки', async ({ page }) => {
-    test.skip(({ viewport }) => viewport?.width !== 360, 'mobile-360 only');
+    test.skip(test.info().project.name !== 'mobile-360', 'mobile-360 only');
     await signIn(page, 'anna.smirnova', 'anna-demo-2026', '/grades/gradebook');
     await expect(page.getByTestId('semester-accordion-2026-fall')).toBeVisible();
     const cards = page.getByTestId('gradebook-cards-2026-fall');

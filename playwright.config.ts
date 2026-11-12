@@ -8,7 +8,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
   },
   projects: [
@@ -21,15 +21,19 @@ export default defineConfig({
       use: { ...devices['Pixel 5'], viewport: { width: 360, height: 800 }, isMobile: true },
     },
   ],
-  webServer: {
-    // DIG-12 (round 2): e2e must verify the PRODUCTION contract. In
-    // `next dev` (Turbopack) a notFound() page streams the not-found UI with
-    // an HTTP 200 (dev-only artifact, flaky between runs), while the built
-    // server answers the real, deterministic 404. Building here also
-    // guarantees the suite never depends on a stale/mixed .next state.
-    command: 'pnpm build && pnpm start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 240_000,
-  },
+  // PLAYWRIGHT_BASE_URL → тестируем внешний стенд (прод-туннель), свой
+  // сервер не поднимаем; иначе — локальная прод-сборка, как раньше.
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        // DIG-12 (round 2): e2e must verify the PRODUCTION contract. In
+        // `next dev` (Turbopack) a notFound() page streams the not-found UI with
+        // an HTTP 200 (dev-only artifact, flaky between runs), while the built
+        // server answers the real, deterministic 404. Building here also
+        // guarantees the suite never depends on a stale/mixed .next state.
+        command: 'pnpm build && pnpm start',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 240_000,
+      },
 });
