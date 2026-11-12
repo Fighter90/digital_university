@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { CalendarOff, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // DIG-23: DayView — десктопный вид «День» (Figma «04 · Расписание — день»).
@@ -42,9 +41,9 @@ export function DayView({
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="flex items-center gap-2">
           {prevHref ? (
-            <Link href={prevHref} aria-label="Предыдущий день" className={arrowClasses}>
+            <a href={prevHref} aria-label="Предыдущий день" className={arrowClasses}>
               <ChevronLeft size={18} aria-hidden="true" />
-            </Link>
+            </a>
           ) : (
             <span
               aria-label="Предыдущий день"
@@ -55,9 +54,9 @@ export function DayView({
             </span>
           )}
           {nextHref ? (
-            <Link href={nextHref} aria-label="Следующий день" className={arrowClasses}>
+            <a href={nextHref} aria-label="Следующий день" className={arrowClasses}>
               <ChevronRight size={18} aria-hidden="true" />
-            </Link>
+            </a>
           ) : (
             <span
               aria-label="Следующий день"
@@ -80,12 +79,12 @@ export function DayView({
           </h2>
         </div>
         {!isToday ? (
-          <Link
+          <a
             href={todayHref}
             className="rounded-button border border-border bg-card px-3 py-1.5 text-sm font-semibold shadow-soft transition-colors hover:bg-muted"
           >
             Сегодня
-          </Link>
+          </a>
         ) : null}
       </div>
 

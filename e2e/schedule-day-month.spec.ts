@@ -20,11 +20,18 @@ function todayKey(): string {
  * Клик по радио переключателя видов после гидрации: SSR-кнопки кликабельны
  * до привязки обработчиков, и проглоченный в этом окне клик не навигирует
  * (урок DIG-50 — hydration + settle waits для клиентских интеракций).
+ * Клик и «радио стало отмеченным (после коммита навигации)» повторяются
+ * через toPass: на нагруженной машине первый клик может попасть в окно
+ * перехода вида и быть проглоченным.
  */
 async function switchView(page: Page, platform: 'desktop' | 'mobile', label: string) {
   const switcher = page.getByTestId(`view-switcher-${platform}`);
   await expect(switcher).toHaveAttribute('data-hydrated', 'true', { timeout: 15_000 });
-  await switcher.getByRole('radio', { name: label }).click();
+  const radio = switcher.getByRole('radio', { name: label });
+  await expect(async () => {
+    await radio.click();
+    await expect(radio).toBeChecked({ timeout: 8_000 });
+  }).toPass({ timeout: 45_000 });
 }
 
 /** Дождаться гидрации мобильного вида (свайпы и лента живут на обработчиках). */
@@ -34,12 +41,17 @@ async function waitMobileHydrated(page: Page) {
   });
 }
 
-/** Вход тестового студента через чип демо-аккаунта. */
+/** Вход тестового студента через чип демо-аккаунта.
+ *  Клик «Войти» + редирект повторяются через toPass: на нагруженной машине
+ *  серверный экшен входа может подвиснуть в pending («Входим…») дольше
+ *  15 с — повторный заход на /login пересоздаёт попытку (урок DIG-50). */
 async function signIn(page: Page) {
-  await page.goto('/login');
-  await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
-  await page.getByRole('button', { name: 'Войти', exact: true }).click();
-  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
+  await expect(async () => {
+    await page.goto('/login');
+    await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+    await page.getByRole('button', { name: 'Войти', exact: true }).click();
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 10_000 });
+  }).toPass({ timeout: 60_000 });
 }
 
 /** Свайп по элементу (синтетический TouchEvent, слева направо или обратно). */
@@ -124,14 +136,17 @@ test.describe('desktop 1440 — виды «День» и «Месяц»', () => 
     await switchView(page, 'desktop', 'День');
     await expect(page).toHaveURL(/view=day/);
     await expect(page.getByTestId('desktop-day')).toBeVisible();
-    await expect(page.getByTestId('day-card-sch-pi21-1')).toBeVisible();
+    // Скоуп обязателен: карточки дня есть и в скрытой мобильной разметке,
+    // нескоупленный локатор ловит обе и падает по strict mode.
+    await expect(page.getByTestId('desktop-day').getByTestId('day-card-sch-pi21-1')).toBeVisible();
   });
 
   test('«Месяц» открывает сетку с точками пар и выделенным «сегодня»', async ({ page }) => {
     await page.goto('/schedule');
 
     await switchView(page, 'desktop', 'Месяц');
-    await expect(page).toHaveURL(/\/schedule\?view=month$/);
+    // Канонический URL вида «Месяц» всегда несёт явный месяц (buildViewHref)
+    await expect(page).toHaveURL(/\/schedule\?view=month&month=\d{4}-\d{2}$/);
     await expect(page.getByTestId('month-grid')).toBeVisible();
 
     const todayCell = page.getByTestId(`month-cell-${todayKey()}`);
@@ -161,7 +176,11 @@ test.describe('desktop 1440 — виды «День» и «Месяц»', () => 
     await page.goto('/schedule?view=day');
     await page.getByLabel('Предыдущий день').click(); // вчера — пар нет
     await expect(page.getByTestId('day-empty')).toBeVisible();
-    await expect(page.getByText(/Ближайшие пары|В семестре пар больше нет/)).toBeVisible();
+    // Скоуп обязателен: пары рендерятся в DOM обоих брейкпоинтов, мобильный
+    // дубль «Ближайших пар» ловится нескоупленным локатором (strict mode).
+    await expect(
+      page.getByTestId('day-empty').getByText(/Ближайшие пары|В семестре пар больше нет/),
+    ).toBeVisible();
   });
 });
 

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from 'cn';
 
@@ -33,9 +32,9 @@ export function MonthView({
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="flex items-center gap-2">
           {prevHref ? (
-            <Link href={prevHref} aria-label="Предыдущий месяц" className={arrowClasses}>
+            <a href={prevHref} aria-label="Предыдущий месяц" className={arrowClasses}>
               <Icon icon={ChevronLeft} size={18} />
-            </Link>
+            </a>
           ) : (
             <span
               aria-label="Предыдущий месяц"
@@ -46,9 +45,9 @@ export function MonthView({
             </span>
           )}
           {nextHref ? (
-            <Link href={nextHref} aria-label="Следующий месяц" className={arrowClasses}>
+            <a href={nextHref} aria-label="Следующий месяц" className={arrowClasses}>
               <Icon icon={ChevronRight} size={18} />
-            </Link>
+            </a>
           ) : (
             <span
               aria-label="Следующий месяц"
@@ -83,7 +82,7 @@ export function MonthView({
           <div data-testid="month-grid" className="grid grid-cols-7 gap-1">
             {cells.map((cell) =>
               cell.inMonth ? (
-                <Link
+                <a
                   key={cell.dateKey}
                   href={cell.href}
                   data-testid={`month-cell-${cell.dateKey}`}
@@ -117,7 +116,7 @@ export function MonthView({
                       </span>
                     ) : null}
                   </span>
-                </Link>
+                </a>
               ) : (
                 <span key={cell.dateKey} className="text-sm text-foreground-muted/60">
                   {cell.dayNumber}

@@ -381,15 +381,21 @@ describe('buildViewHref', () => {
     );
   });
 
-  it('без параметров переключение не добавляет лишнего (дефолты считает страница)', () => {
-    expect(buildViewHref(new URLSearchParams(), 'day', NOW)).toBe('/schedule?view=day');
-    expect(buildViewHref(new URLSearchParams(), 'week', NOW)).toBe('/schedule?view=week');
-    expect(buildViewHref(new URLSearchParams(), 'month', NOW)).toBe('/schedule?view=month');
+  it('без параметров переключение явно фиксирует дефолтный контекст (сегодня / текущая неделя / текущий месяц)', () => {
+    expect(buildViewHref(new URLSearchParams(), 'day', NOW)).toBe(
+      '/schedule?view=day&date=2026-11-11',
+    );
+    expect(buildViewHref(new URLSearchParams(), 'week', NOW)).toBe(
+      '/schedule?view=week&week=2026-W46',
+    );
+    expect(buildViewHref(new URLSearchParams(), 'month', NOW)).toBe(
+      '/schedule?view=month&month=2026-11',
+    );
   });
 
-  it('мусорные параметры не верятся на слово', () => {
-    expect(
-      buildViewHref(new URLSearchParams('view=week&week=junk&date=banana'), 'day', NOW),
-    ).toBe('/schedule?view=day');
+  it('мусорные параметры не верятся на слово (фолбэк — явный дефолт «сегодня»)', () => {
+    expect(buildViewHref(new URLSearchParams('view=week&week=junk&date=banana'), 'day', NOW)).toBe(
+      '/schedule?view=day&date=2026-11-11',
+    );
   });
 });

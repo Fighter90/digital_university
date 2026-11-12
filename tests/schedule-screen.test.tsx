@@ -59,7 +59,7 @@ describe('EventTypePill', () => {
 
 describe('ViewSwitcher', () => {
   it('все три вида доступны на каждом брейкпоинте, текущий отмечен', () => {
-    render(<ViewSwitcher view="day" platform="mobile" />);
+    render(<ViewSwitcher view="day" platform="mobile" currentQuery="" todayKey="2026-11-12" />);
     for (const name of ['День', 'Неделя', 'Месяц']) {
       expect(screen.getByRole('radio', { name })).toBeEnabled();
     }
@@ -70,13 +70,58 @@ describe('ViewSwitcher', () => {
     expect(root).toHaveAttribute('data-hydrated', 'true');
   });
 
-  it('клик по виду строит URL с переносом контекста (?date → ?week)', () => {
-    render(<ViewSwitcher view="day" platform="desktop" />);
-    fireEvent.click(screen.getByRole('radio', { name: 'Неделя' }));
-    expect(routerPush).toHaveBeenCalledWith('/schedule?view=week&week=2026-W46');
-    routerPush.mockClear();
-    fireEvent.click(screen.getByRole('radio', { name: 'Месяц' }));
-    expect(routerPush).toHaveBeenCalledWith('/schedule?view=month&month=2026-11');
+  it('виды — ссылки: href строится с переносом контекста (?date → ?week → ?month)', () => {
+    render(
+      <ViewSwitcher
+        view="day"
+        platform="desktop"
+        currentQuery="date=2026-11-11"
+        todayKey="2026-11-12"
+      />,
+    );
+    // router.push между поисковыми вариантами страницы расписания не
+    // коммитится (матрица переходов: направление застревания меняется от
+    // сборки к сборке) — виды навигируются как <Link>, путь Link'ов в
+    // приложении стабилен (ячейки месяца, стрелки недель).
+    expect(screen.getByRole('radio', { name: 'Неделя' })).toHaveAttribute(
+      'href',
+      '/schedule?view=week&week=2026-W46',
+    );
+    expect(screen.getByRole('radio', { name: 'Месяц' })).toHaveAttribute(
+      'href',
+      '/schedule?view=month&month=2026-11',
+    );
+    expect(screen.getByRole('radio', { name: 'День' })).toHaveAttribute(
+      'href',
+      '/schedule?view=day&date=2026-11-11',
+    );
+  });
+
+  it('контекст берёт ТОЛЬКО из currentQuery-пропса, а не из клиентских search params', () => {
+    // мок useSearchParams отдаёт ИНОЙ контекст (view=day&date=2026-11-11):
+    // если компонент его читает, дата в href уедет на 2026-11-11.
+    render(
+      <ViewSwitcher
+        view="week"
+        platform="desktop"
+        currentQuery="week=2026-W45"
+        todayKey="2026-11-12"
+      />,
+    );
+    // понедельник ISO-недели 45 — 2 ноября 2026 (46-я содержит «сегодня»)
+    expect(screen.getByRole('radio', { name: 'День' })).toHaveAttribute(
+      'href',
+      '/schedule?view=day&date=2026-11-02',
+    );
+    expect(screen.getByRole('radio', { name: 'Неделя' })).toHaveAttribute(
+      'href',
+      '/schedule?view=week&week=2026-W45',
+    );
+    // канонический URL «Месяца» всегда несёт явный месяц контекста
+    expect(screen.getByRole('radio', { name: 'Месяц' })).toHaveAttribute(
+      'href',
+      '/schedule?view=month&month=2026-11',
+    );
   });
 });
 
