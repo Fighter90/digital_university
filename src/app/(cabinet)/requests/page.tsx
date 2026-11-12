@@ -2,6 +2,7 @@
 // by requireDataCtx(): the list contains the session owner's requests only —
 // there is physically no way to render someone else's row here.
 import Link from 'next/link';
+import { FolderOpen } from 'lucide-react';
 import { requireDataCtx, listRequests } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { RequestStatusBadge } from '@/components/request-status-badge';
@@ -18,6 +19,26 @@ export default async function RequestsPage() {
         Заявки и обращения в деканат. Видны только ваши заявки — чужие не открываются даже по
         прямому адресу.
       </p>
+
+      {/* DIG-29 — точка входа в каталог сервисов (Figma «06 · Заявки — каталог»). */}
+      <Link
+        href="/services"
+        data-testid="services-catalog-cta"
+        className="mb-6 flex items-center gap-3 rounded-card border border-border bg-card p-4 shadow-soft transition-colors hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-coral-600"
+      >
+        <span
+          aria-hidden="true"
+          className="flex size-10 shrink-0 items-center justify-center rounded-button bg-accent-soft text-accent-ink"
+        >
+          <FolderOpen className="size-5" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-bold text-neutral-900">Каталог сервисов</span>
+          <span className="mt-0.5 block text-xs text-neutral-600">
+            Справки, заявления и услуги деканата — выберите и закажите.
+          </span>
+        </span>
+      </Link>
 
       {requests.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-neutral-300 p-8 text-center">
