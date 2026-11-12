@@ -26,7 +26,7 @@ export default async function GradebookPage() {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
         <h1 className="text-xl font-bold sm:text-2xl">Зачётная книжка</h1>
-        <div className="rounded-2xl border border-dashed border-neutral-300 p-8 text-center">
+        <div className="rounded-card border border-dashed border-border bg-card p-8 text-center">
           <p className="text-sm font-medium text-neutral-900">Доступно студентам</p>
           <p className="mt-1 text-sm text-neutral-600">
             Зачётная книжка показывает оценки студента — у сотрудника деканата этот раздел пуст.

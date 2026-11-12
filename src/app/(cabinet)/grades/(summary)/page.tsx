@@ -107,7 +107,9 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
 
 /** Какой семестр открыт по умолчанию (без валидного ?semester=). */
 function defaultSemesterKey(data: PerformanceData): SemesterKey {
-  const current = data.gpa?.currentSemesterKey ?? { startYear: 2026, term: 'FALL' as const };
+  // Динамический fallback: текущий год (не хардкод 2026 — устареет в 2027)
+  const fallback = { startYear: new Date().getFullYear(), term: 'FALL' as const };
+  const current = data.gpa?.currentSemesterKey ?? fallback;
   const currentView = disciplinesForSemester(data.disciplines, current, current);
   if (currentView.some((d) => d.accumulated !== null || d.finalGrade !== null)) {
     return current;
@@ -354,7 +356,7 @@ function GradesView({
 function DisciplineCardItem({ card }: { card: DisciplineCard }) {
   return (
     <li>
-      <a
+      <Link
         href={card.href}
         data-testid="discipline-card"
         data-level={card.level ?? undefined}
@@ -406,7 +408,7 @@ function DisciplineCardItem({ card }: { card: DisciplineCard }) {
             <Badge status={admissionBadgeStatus(card.admission)}>{card.admissionLabel}</Badge>
           </div>
         ) : null}
-      </a>
+      </Link>
     </li>
   );
 }

@@ -252,7 +252,7 @@ vi.mock('@/server/data', () => ({
   listExams: vi.fn(async () => examSessions),
 }));
 
-import GradesPage from '@/app/(cabinet)/grades/page';
+import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
 
 async function renderPage(
   Page: ComponentType,
