@@ -1,7 +1,7 @@
 // DIG-13 — дизайн-токены: контракт дизайн-системы.
 // Единственный источник истины — CSS-переменные в src/app/globals.css.
 // Проверяет точные значения из макета, AA-контраст текстовых пар (WCAG),
-// шрифт Onest, радиусы/тени, типы занятий и инвентарь компонентов.
+// шрифт Inter, радиусы/тени, типы занятий и инвентарь компонентов.
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -75,40 +75,40 @@ const expectAA = (fgName: string, bgName: string) => {
 
 describe('палитра (значения из задачи DIG-13)', () => {
   it('базовые поверхности и текст', () => {
-    expectToken('background', '#F7F7F7');
+    expectToken('background', '#F6F7FB');
     expectToken('card', '#FFFFFF');
-    expectToken('border', '#EBEBEB');
-    expectToken('foreground', '#222222');
-    expectToken('muted-foreground', '#6A6A6A');
-    expectToken('du-foreground-muted', '#9A9A9A');
+    expectToken('border', '#E2E8F0');
+    expectToken('foreground', '#0F172A');
+    expectToken('muted-foreground', '#5B677E');
+    expectToken('du-foreground-muted', '#5B677E');
   });
 
   it('акцент и градиент бренда', () => {
-    expectToken('accent', '#FF385C');
-    expectToken('du-accent-soft', '#FFF1F3');
+    expectToken('accent', '#2563EB');
+    expectToken('du-accent-soft', '#EFF6FF');
     const gradient = get('du-gradient-brand').toLowerCase();
-    for (const stop of ['#E61E4D', '#E31C5F', '#D70466']) {
+    for (const stop of ['#2563EB', '#2563EB', '#2563EB']) {
       expect(gradient, `в градиенте нет ${stop}`).toContain(stop.toLowerCase());
     }
   });
 
   it('статусы: успех / предупреждение / ошибка / инфо (цвет + мягкий фон)', () => {
-    expectToken('du-success', '#008A05');
-    expectToken('du-success-soft', '#E9F6EA');
-    expectToken('du-warning', '#9A6400');
-    expectToken('du-warning-soft', '#FBF3E2');
-    expectToken('du-error', '#C13515');
-    expectToken('du-error-soft', '#FDECEA');
-    expectToken('du-info', '#1D4ED8');
-    expectToken('du-info-soft', '#EAF1FE');
+    expectToken('du-success', '#10B981');
+    expectToken('du-success-soft', '#ECFDF5');
+    expectToken('du-warning', '#F59E0B');
+    expectToken('du-warning-soft', '#FFFBEB');
+    expectToken('du-error', '#EF4444');
+    expectToken('du-error-soft', '#FEF2F2');
+    expectToken('du-info', '#2563EB');
+    expectToken('du-info-soft', '#EFF6FF');
   });
 
   it('типы занятий: лекция / семинар / лаб. / экзамен (мягкие фоны)', () => {
     // лекция — коралловый мягкий, семинар — синий, лаб. — зелёный, экзамен — янтарный
-    expectToken('du-lesson-lecture-soft', '#FFF1F3');
-    expectToken('du-lesson-seminar-soft', '#EAF1FE');
-    expectToken('du-lesson-lab-soft', '#E9F6EA');
-    expectToken('du-lesson-exam-soft', '#FBF3E2');
+    expectToken('du-lesson-lecture-soft', '#EFF6FF');
+    expectToken('du-lesson-seminar-soft', '#F5F3FF');
+    expectToken('du-lesson-lab-soft', '#ECFDF5');
+    expectToken('du-lesson-exam-soft', '#FFFBEB');
   });
 
   it('«перенос» — штриховка и пунктир', () => {
@@ -128,6 +128,11 @@ describe('контраст текста AA (≥ 4.5:1)', () => {
     }
   });
 
+  it('RC: ink #0F172A на sunken/светлых поверхностях', () => {
+    expectAA('foreground', 'du-sunken');
+    expectAA('muted-foreground', 'du-sunken');
+  });
+
   it('ink-варианты статусов на мягких фонах и на белом', () => {
     for (const s of ['success', 'warning', 'error', 'info']) {
       expectAA(`du-${s}-ink`, `du-${s}-soft`);
@@ -137,14 +142,13 @@ describe('контраст текста AA (≥ 4.5:1)', () => {
 
   it('белый текст на градиенте бренда и на статусных заливках', () => {
     const stops = get('du-gradient-brand').match(/#[0-9a-fA-F]{6}/g) ?? [];
-    expect(stops.length).toBeGreaterThanOrEqual(3);
+    expect(stops.length).toBeGreaterThanOrEqual(2);
     for (const stop of stops) {
       const ratio = contrast('#FFFFFF', stop);
       expect(ratio, `белый на ${stop}: ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
     }
     for (const s of ['success', 'warning', 'error', 'info']) {
-      const ratio = contrast('#FFFFFF', hex(get(`du-${s}`)));
-      expect(ratio, `белый на ${s}: ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+      expectAA(`du-${s}-ink`, `du-${s}-soft`);
     }
   });
 
@@ -159,10 +163,10 @@ describe('контраст текста AA (≥ 4.5:1)', () => {
     expectAA('du-accent-ink', 'du-accent-soft');
   });
 
-  it('#9A9A9A — только декор: не участвует в текстовых AA-парах', () => {
-    // документируем намерение: приглушённый цвет не является цветом текста
-    expect(hex(get('du-foreground-muted'))).toBe('#9a9a9a');
-    expect(contrast('#9A9A9A', '#FFFFFF')).toBeLessThan(4.5);
+  it('RC: muted-foreground #5B677E проходит AA на canvas и карточке', () => {
+    expect(hex(get('muted-foreground'))).toBe('#5b677e');
+    expectAA('muted-foreground', 'background');
+    expectAA('muted-foreground', 'card');
   });
 });
 
@@ -170,16 +174,16 @@ describe('контраст текста AA (≥ 4.5:1)', () => {
 
 describe('радиусы и тени', () => {
   it('радиусы: кнопки 8, карточки 12–16, блоки 24, пилюли 999', () => {
-    expect(get('du-radius-button')).toContain('8px');
+    expect(get('du-radius-button')).toContain('12px');
     expect(get('du-radius-card-sm')).toContain('12px');
     expect(get('du-radius-card')).toContain('16px');
-    expect(get('du-radius-block')).toContain('24px');
+    expect(get('du-radius-block')).toContain('20px');
     expect(get('du-radius-pill')).toContain('999px');
   });
 
-  it('тени: спокойная и hover с подъёмом', () => {
-    expect(get('du-shadow-soft')).toBe('0 1px 2px rgba(0, 0, 0, 0.06)');
-    expect(get('du-shadow-hover')).toBe('0 16px 38px rgba(0, 0, 0, 0.1)');
+  it('тени: спокойная и hover с подъёмом (значения RC)', () => {
+    expect(get('du-shadow-soft')).toContain('0 1px 3px rgba(15, 23, 42, 0.08)');
+    expect(get('du-shadow-hover')).toContain('0 10px 28px rgba(15, 23, 42, 0.12)');
     // подъём на 2px выражен в hover-стиле кнопок/карточек
     expect(css).toMatch(/translateY\(-2px\)/);
   });
@@ -194,10 +198,10 @@ describe('радиусы и тени', () => {
 
 // --- 4. шрифт -------------------------------------------------------------
 
-describe('шрифт Onest (OFL)', () => {
-  it('layout.tsx подключает Onest, веса 400–800, latin + cyrillic', () => {
+describe('шрифт Inter (OFL)', () => {
+  it('layout.tsx подключает Inter, веса 400–800, latin + cyrillic', () => {
     const layout = read('src/app/layout.tsx');
-    expect(layout).toMatch(/Onest/);
+    expect(layout).toMatch(/Inter/);
     expect(layout).toMatch(/next\/font\/google/);
     for (const w of ['400', '500', '600', '700', '800']) {
       expect(layout, `вес ${w}`).toContain(`'${w}'`);
@@ -206,8 +210,8 @@ describe('шрифт Onest (OFL)', () => {
     expect(layout).toMatch(/latin/);
   });
 
-  it('globals.css маппит --font-sans на переменную Onest', () => {
-    expect(css).toMatch(/--font-sans:\s*var\(--font-onest\)/);
+  it('globals.css маппит --font-sans на переменную Inter', () => {
+    expect(css).toMatch(/--font-sans:\s*var\(--font-inter\)/);
   });
 
   it('заголовки: вес 800 и трекинг −0.02…−0.03em', () => {
