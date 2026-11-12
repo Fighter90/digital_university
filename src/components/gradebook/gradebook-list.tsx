@@ -59,7 +59,10 @@ export function GradebookList({
     <div className="flex flex-col gap-4">
       {data.semesters.map((semester, index) => {
         const testId = semesterTestId(semester);
-        const focus = focusSemesterKey && semester.key.startYear === focusSemesterKey.startYear && semester.key.term === focusSemesterKey.term;
+        const focus =
+          focusSemesterKey &&
+          semester.key.startYear === focusSemesterKey.startYear &&
+          semester.key.term === focusSemesterKey.term;
         const hasGrades = semester.disciplines.some(
           (d) => d.finalGrade !== null || d.accumulated !== null,
         );
@@ -67,7 +70,7 @@ export function GradebookList({
           <details
             key={testId}
             data-testid={testId}
-            open={index === 0}
+            open={index === 0 || Boolean(focus)}
             className="group rounded-card border border-border bg-card shadow-soft"
           >
             {/* Итог семестра — в шапке аккордеона: средний балл и кредиты */}
@@ -110,7 +113,10 @@ export function GradebookList({
 
             <div className="border-t border-border px-4 py-3 sm:px-5">
               {/* ── Десктоп: таблица ─────────────────────────────────────── */}
-              <div className="hidden md:block" data-testid={`gradebook-table-${testId.replace('semester-accordion-', '')}`}>
+              <div
+                className="hidden md:block"
+                data-testid={`gradebook-table-${testId.replace('semester-accordion-', '')}`}
+              >
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs uppercase text-neutral-500">
@@ -185,8 +191,7 @@ export function GradebookList({
                             {discipline.controlTypeLabel}
                           </span>
                           <span>
-                            {discipline.credits}{' '}
-                            {pluralRu(discipline.credits, CREDIT_FORMS)}
+                            {discipline.credits} {pluralRu(discipline.credits, CREDIT_FORMS)}
                           </span>
                           <span className="font-mono text-[11px] text-neutral-500">
                             {discipline.completedAt ? formatScoreDate(discipline.completedAt) : '—'}

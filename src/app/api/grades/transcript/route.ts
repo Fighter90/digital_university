@@ -6,11 +6,7 @@
 // у /api/requests/[number]), аноним недопускается middleware'ем. Документ
 // детерминирован при равных входах (код проверки — свежий случайный на
 // каждую выдачу, 160 бит — формат кода проверки DIG-47).
-import {
-  requireDataCtx,
-  getGradebook,
-  uniformNotFoundResponse,
-} from '@/server/data';
+import { requireDataCtx, getGradebook, uniformNotFoundResponse } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import {
   buildTranscriptPdf,
@@ -55,7 +51,7 @@ export async function GET() {
 
   const pdf = buildTranscriptPdf(data, { now, code: newVerificationCode() });
 
-  return new Response(pdf as unknown as BodyInit, {
+  return new Response(new Blob([new Uint8Array(pdf)], { type: 'application/pdf' }), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',

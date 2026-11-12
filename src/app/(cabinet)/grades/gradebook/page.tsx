@@ -54,9 +54,7 @@ export default async function GradebookPage({
       <header className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-extrabold tracking-heading sm:text-2xl">
-              Зачётная книжка
-            </h1>
+            <h1 className="text-xl font-extrabold tracking-heading sm:text-2xl">Зачётная книжка</h1>
             {data.student ? (
               <p className="mt-1 text-sm text-neutral-600">
                 {data.student.fullName} · {data.student.groupName} · №{' '}
@@ -86,7 +84,9 @@ export default async function GradebookPage({
             <div className="rounded-card border border-border bg-card p-4 shadow-soft">
               <p className="text-xs text-neutral-600">Средний балл за всё время</p>
               <p className="mt-1 text-xl font-extrabold tracking-heading text-neutral-900">
-                {data.overallAverage === null ? '—' : data.overallAverage.toFixed(2).replace('.', ',')}
+                {data.overallAverage === null
+                  ? '—'
+                  : data.overallAverage.toFixed(2).replace('.', ',')}
               </p>
             </div>
             <div className="rounded-card border border-border bg-card p-4 shadow-soft">
@@ -96,8 +96,7 @@ export default async function GradebookPage({
               </p>
             </div>
           </div>
-          <GradebookList
-        focusSemesterKey={focusSemester} data={data} />
+          <GradebookList focusSemesterKey={focusSemester} data={data} />
         </>
       ) : (
         <EmptyState
