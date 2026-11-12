@@ -194,17 +194,6 @@ export interface DisciplineComputation {
  * планом «только сданные элементы». DIG-27 переиспользует расчёт в
  * зачётке и карточке дисциплины (gradebook.ts).
  */
-interface DisciplineComputationInternal {
-  code: string;
-  name: string;
-  credits: number;
-  acc: AccumulatedGrade;
-  gradedCount: number;
-  totalElements: number;
-  isComplete: boolean;
-  semester: SemesterKey | null;
-}
-
 export function computeDisciplines(
   ownGrades: GradeRow[],
   disciplines: DisciplineRow[],
