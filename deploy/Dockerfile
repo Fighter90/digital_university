@@ -23,6 +23,9 @@ COPY . .
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 RUN pnpm exec prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
+# VM 889 MB RAM: жёсткий heap-лимит заставляет V8 GC-ить вместо роста
+# до SIGABRT (standalone-сборка умещается в ~500 МБ).
+ENV NODE_OPTIONS="--max-old-space-size=512"
 RUN pnpm build
 
 FROM base AS runner
