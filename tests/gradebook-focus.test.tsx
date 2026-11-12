@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { GradebookList } from '@/components/gradebook/gradebook-list';
+import type { GradebookData } from '@/server/data/gradebook';
 import type { GradebookData } from '@/server/data';
 
 const sem = (startYear: number, term: 'FALL' | 'SPRING', avg: number | null) => ({
@@ -18,13 +19,14 @@ const sem = (startYear: number, term: 'FALL' | 'SPRING', avg: number | null) => 
   ],
 });
 
-const data: GradebookData = {
-  student: { fullName: 'Анна Смирнова', groupName: 'ИВТ-21', course: 2, faculty: 'ИВТ' },
-  gpa: { overall: 4.7, semester: null, semesterKey: null, delta: null },
-  credits: { earned: 120, required: 240 },
-  debts: [],
+const data = {
+  student: { fullName: 'Анна Смирнова', login: 'anna.smirnova', groupName: 'ИВТ-21', course: 2 },
+  overallAverage: 4.7,
+  creditsEarned: 120,
+  creditsRequired: 240,
+  hasGrades: true,
   semesters: [sem(2025, 'SPRING', 4.8), sem(2025, 'FALL', 4.6)],
-};
+} as unknown as Parameters<typeof GradebookList>[0]['data'];
 
 describe('?discipline= focus (DIG-26 спека)', () => {
   it('focusSemesterKey на не-первом семестре → его details open', () => {
