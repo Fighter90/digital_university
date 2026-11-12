@@ -191,9 +191,21 @@ interface DisciplineComputation {
  * Расчёт по одной дисциплине: план контроля (все элементы, включая
  * неоценённые) + оценки студента. Дисциплины, которых нет в справочнике
  * группы (старые сиды), синтезируются из оценок с весом 1 кредит и
- * планом «только сданные элементы».
+ * планом «только сданные элементы». DIG-27 переиспользует расчёт в
+ * зачётке и карточке дисциплины (gradebook.ts).
  */
-function computeDisciplines(
+export interface DisciplineComputation {
+  code: string;
+  name: string;
+  credits: number;
+  acc: AccumulatedGrade;
+  gradedCount: number;
+  totalElements: number;
+  isComplete: boolean;
+  semester: SemesterKey | null;
+}
+
+export function computeDisciplines(
   ownGrades: GradeRow[],
   disciplines: DisciplineRow[],
   elements: DisciplineElementRow[],

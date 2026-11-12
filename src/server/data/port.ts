@@ -62,6 +62,8 @@ export interface DataDb {
   probeNotificationById(id: string): Promise<NotificationRow | null>;
   probeAppealById(id: string): Promise<AppealRow | null>;
   probeStudentById(id: string): Promise<StudentRow | null>;
+  /** DIG-27 — probe дисциплины по коду БЕЗ скоупа группы (только аудит отказа). */
+  probeDisciplineByCode(disciplineCode: string): Promise<DisciplineRow | null>;
 
   // ── requests (owner-scoped) ───────────────────────────────────────────────
   listRequestsByStudent(studentId: string): Promise<ServiceRequestRow[]>;
