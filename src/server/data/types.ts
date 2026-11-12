@@ -237,6 +237,16 @@ export interface DisciplineElementRow {
 }
 
 /**
+ * DIG-29 — закреплённый студентом сервис каталога: одна строка на пару
+ * (студент, сервис); порядок закрепления — по createdAt.
+ */
+export interface ServiceFavoriteRow {
+  studentId: string;
+  serviceId: string;
+  createdAt: Date;
+}
+
+/**
  * Why access was denied. `OWNERSHIP_DENIED` / `OUTSIDE_FACULTY` mean the row
  * exists but belongs to someone else; `NOT_FOUND` — no such row. The HTTP
  * answer is IDENTICAL (404) for both — the reason goes only to the audit log,

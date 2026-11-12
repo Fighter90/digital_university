@@ -24,6 +24,7 @@ import type {
   StudentNoteRow,
   StudentRow,
   StudentSettingsRow,
+  ServiceFavoriteRow,
 } from './types';
 
 export interface MemorySeed {
@@ -44,6 +45,8 @@ export interface MemorySeed {
   /** DIG-25 — справочник дисциплин группы (кредиты) и план контроля. */
   disciplines?: DisciplineRow[];
   elements?: DisciplineElementRow[];
+  /** DIG-29 — закреплённые студентом сервисы каталога. */
+  serviceFavorites?: ServiceFavoriteRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -70,6 +73,7 @@ export function createMemoryDataDb(): MemoryDataDb {
   let elements: DisciplineElementRow[] = [];
   let settings: StudentSettingsRow[] = [];
   let notes: StudentNoteRow[] = [];
+  let serviceFavorites: ServiceFavoriteRow[] = [];
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
@@ -96,6 +100,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       elements = seed.elements ? seed.elements.map(clone) : [];
       settings = seed.settings ? seed.settings.map(clone) : [];
       notes = seed.notes ? seed.notes.map(clone) : [];
+      serviceFavorites = seed.serviceFavorites ? seed.serviceFavorites.map(clone) : [];
       audit = [];
     },
 
@@ -309,6 +314,27 @@ export function createMemoryDataDb(): MemoryDataDb {
       if (index === -1) return false;
       notes.splice(index, 1);
       return true;
+    },
+
+    // ── DIG-29: избранное каталога сервисов (owner-scoped) ────────────────
+    async listFavoriteServiceIdsByStudent(studentId) {
+      return serviceFavorites
+        .filter((f) => f.studentId === studentId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map((f) => f.serviceId);
+    },
+    async addFavoriteServiceByStudent(studentId, serviceId) {
+      const exists = serviceFavorites.some(
+        (f) => f.studentId === studentId && f.serviceId === serviceId,
+      );
+      if (!exists) {
+        serviceFavorites.push({ studentId, serviceId, createdAt: new Date() });
+      }
+    },
+    async removeFavoriteServiceByStudent(studentId, serviceId) {
+      serviceFavorites = serviceFavorites.filter(
+        (f) => !(f.studentId === studentId && f.serviceId === serviceId),
+      );
     },
 
     async listStudentsByFaculty(faculty) {

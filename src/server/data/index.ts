@@ -16,11 +16,7 @@ export type {
   PerformanceData,
   RatingView,
 } from './performance';
-export {
-  createGradeAppeal,
-  getDisciplineCard,
-  getGradebook,
-} from './gradebook';
+export { createGradeAppeal, getDisciplineCard, getGradebook } from './gradebook';
 export type {
   DisciplineCardData,
   DisciplineCardPart,
@@ -69,6 +65,8 @@ export type {
 } from './dashboard';
 export { listDeaneryNews } from './news';
 export type { DeaneryNewsItem } from './news';
+export { getServicesPage, toggleFavoriteService, MAX_FAVORITES } from './services';
+export type { ServicesPageData, ServiceToggleResult } from './services';
 export {
   defaultSettingsFor,
   getOwnProfile,
@@ -120,4 +118,5 @@ export {
   type ExamSessionRow,
   type DisciplineRow,
   type DisciplineElementRow,
+  type ServiceFavoriteRow,
 } from './types';

@@ -159,6 +159,14 @@ export interface DataDb {
     input: { subject: string; message: string; authorName: string; createdAt: Date },
   ): Promise<AppealRow>;
 
+  // ── DIG-29: каталог сервисов — избранное (owner-scoped) ──────────────────
+  /** Id закреплённых сервисов студента в порядке закрепления (createdAt). */
+  listFavoriteServiceIdsByStudent(studentId: string): Promise<string[]>;
+  /** Закрепляет сервис; идемпотентно (повтор — no-op). */
+  addFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
+  /** Снимает закрепление; идемпотентно (несуществующее — no-op). */
+  removeFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
+
   // ── staff scope ───────────────────────────────────────────────────────────
   listStudentsByFaculty(faculty: string): Promise<StudentRow[]>;
 
