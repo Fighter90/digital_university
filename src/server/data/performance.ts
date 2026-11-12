@@ -170,7 +170,7 @@ function groupGradesByDiscipline(rows: GradeRow[]): Map<string, GradeRow[]> {
   return map;
 }
 
-interface DisciplineComputation {
+export interface DisciplineComputation {
   code: string;
   name: string;
   credits: number;
@@ -194,7 +194,7 @@ interface DisciplineComputation {
  * планом «только сданные элементы». DIG-27 переиспользует расчёт в
  * зачётке и карточке дисциплины (gradebook.ts).
  */
-export interface DisciplineComputation {
+interface DisciplineComputationInternal {
   code: string;
   name: string;
   credits: number;
