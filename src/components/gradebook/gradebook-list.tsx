@@ -5,7 +5,7 @@ import { formatScoreDate } from '@/lib/gradebook';
 import { pluralRu } from '@/lib/dashboard-format';
 import type { GradebookData, GradebookSemesterView } from '@/server/data';
 
-// DIG-27 — список зачётной книжки: аккордеон семестров (<details>), внутри
+// DIG-27 — список зачётной книжки: аккордеон семестров (<details open={focus || undefined}>), внутри
 // — десктопная таблица (md+) и мобильные карточки (до md): на 360 px
 // таблица превращается в карточки (приёмка задачи). Строки ведут в
 // карточку дисциплины /grades/<disciplineId>.
@@ -47,11 +47,19 @@ function fillTone(earned: number): string {
   return 'bg-error';
 }
 
-export function GradebookList({ data }: { data: GradebookData }) {
+export function GradebookList({
+  data,
+  focusSemesterKey,
+}: {
+  data: GradebookData;
+  /** ?discipline= из карточек главной — раскрыть семестр с этой дисциплиной. */
+  focusSemesterKey?: GradebookSemesterView['key'];
+}) {
   return (
     <div className="flex flex-col gap-4">
       {data.semesters.map((semester, index) => {
         const testId = semesterTestId(semester);
+        const focus = focusSemesterKey && semester.key.startYear === focusSemesterKey.startYear && semester.key.term === focusSemesterKey.term;
         const hasGrades = semester.disciplines.some(
           (d) => d.finalGrade !== null || d.accumulated !== null,
         );

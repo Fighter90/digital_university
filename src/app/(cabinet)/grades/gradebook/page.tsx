@@ -16,9 +16,22 @@ import { getGradebook, requireDataCtx } from '@/server/data';
 
 export const metadata = { title: 'Зачётная книжка — Цифровой деканат' };
 
-export default async function GradebookPage() {
+// DIG-26: ?discipline=CODE из карточек главной — раскрываем семестр,
+// в котором читается эта дисциплина (карточка ссылается сюда по спеке).
+export default async function GradebookPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ discipline?: string }>;
+}) {
+  const { discipline: disciplineParam } = (await searchParams) ?? {};
   const ctx = await requireDataCtx('/grades/gradebook');
   const data = await getGradebook(dataDb, ctx);
+  // Код дисциплины → семестр с этой дисциплиной (для начального details open)
+  const focusSemester = disciplineParam
+    ? data.semesters.find((sem) =>
+        sem.disciplines.some((d) => d.disciplineCode === disciplineParam),
+      )?.key
+    : undefined;
 
   // Сотруднику деканата студенческая зачётка не показывается (его кабинет —
   // отдельная задача DIG-48); слой данных отвечает пустым агрегатом + аудит.
@@ -83,7 +96,8 @@ export default async function GradebookPage() {
               </p>
             </div>
           </div>
-          <GradebookList data={data} />
+          <GradebookList
+        focusSemesterKey={focusSemester} data={data} />
         </>
       ) : (
         <EmptyState

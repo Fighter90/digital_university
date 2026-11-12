@@ -437,7 +437,7 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
 
   it('загрузка — скелетон: loading.tsx подключает GradesSkeleton', () => {
     const loading = readFileSync(
-      resolve(import.meta.dirname, '../src/app/(cabinet)/grades/loading.tsx'),
+      resolve(import.meta.dirname, '../src/app/(cabinet)/grades/(summary)/loading.tsx'),
       'utf8',
     );
     expect(loading).toContain('GradesSkeleton');
