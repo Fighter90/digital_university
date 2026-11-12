@@ -24,7 +24,7 @@ export function GradeAppealForm({ disciplineCode }: { disciplineCode: string }) 
         <p className="text-sm font-semibold text-success-ink">
           Обращение в деканат создано
         </p>
-        <p className="mt-1 text-sm text-neutral-700">
+        <p className="mt-1 text-sm text-muted-foreground">
           Мы передали вопрос по дисциплине вместе с текущими оценками — ответ появится в
           обращениях.
         </p>
@@ -39,12 +39,12 @@ export function GradeAppealForm({ disciplineCode }: { disciplineCode: string }) 
       <button
         type="submit"
         disabled={isPending}
-        className="inline-flex select-none items-center justify-center gap-2 rounded-button border border-border bg-card px-4 py-2.5 text-sm font-semibold text-neutral-800 shadow-soft transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        className="inline-flex select-none items-center justify-center gap-2 rounded-button border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
       >
         <MessageSquareWarning aria-hidden="true" className="size-4" />
         {isPending ? 'Отправляем…' : 'Ошибка в оценке?'}
       </button>
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-muted-foreground">
         Напишите в деканат, если считаете, что оценка выставлена неверно, — обращение
         создастся сразу с данными дисциплины.
       </p>

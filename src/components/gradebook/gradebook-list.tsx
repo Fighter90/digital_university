@@ -74,13 +74,13 @@ export function GradebookList({
             className="group rounded-card border border-border bg-card shadow-soft"
           >
             {/* Итог семестра — в шапке аккордеона: средний балл и кредиты */}
-            <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3.5 hover:bg-neutral-50 sm:px-5">
+            <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-3.5 hover:bg-muted/40 sm:px-5">
               <span className="flex min-w-0 items-center gap-2.5">
                 {/* стрелка-шеврон: раскрыта в открытом семестре */}
                 <svg
                   aria-hidden="true"
                   viewBox="0 0 16 16"
-                  className="size-4 shrink-0 text-neutral-500 transition-transform group-open:rotate-90"
+                  className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90"
                 >
                   <path
                     d="M6 3l5 5-5 5"
@@ -91,14 +91,14 @@ export function GradebookList({
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="truncate text-[15px] font-extrabold tracking-heading text-neutral-900">
+                <span className="truncate text-[15px] font-extrabold tracking-heading text-foreground">
                   {semester.label}
                 </span>
               </span>
               <span className="flex shrink-0 flex-wrap items-center gap-2 text-xs">
                 <span
                   data-testid={`${testId}-average`}
-                  className="rounded-pill bg-muted px-2.5 py-1 font-semibold text-neutral-800"
+                  className="rounded-pill bg-muted px-2.5 py-1 font-semibold text-foreground"
                 >
                   Средний балл: {formatAverage2(semester.average)}
                 </span>
@@ -119,7 +119,7 @@ export function GradebookList({
               >
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-xs uppercase text-neutral-500">
+                    <tr className="text-left text-xs uppercase text-muted-foreground">
                       <th scope="col" className="pb-2 pr-3 font-semibold">
                         Дисциплина
                       </th>
@@ -142,26 +142,26 @@ export function GradebookList({
                       <tr
                         key={discipline.disciplineCode}
                         data-testid={`gradebook-row-${discipline.disciplineCode}`}
-                        className="border-t border-border"
+                        className="border-t border-border transition-colors hover:bg-muted/30"
                       >
                         <td className="py-2.5 pr-3">
                           <Link
                             href={`/grades/${discipline.disciplineCode}`}
-                            className="font-semibold text-neutral-900 underline-offset-2 hover:text-coral-600 hover:underline"
+                            className="font-semibold text-foreground underline-offset-2 hover:text-accent-ink hover:underline"
                           >
                             {discipline.disciplineName}
                           </Link>
                         </td>
-                        <td className="py-2.5 pr-3 text-neutral-700">
+                        <td className="py-2.5 pr-3 text-muted-foreground">
                           {discipline.controlTypeLabel}
                         </td>
-                        <td className="py-2.5 pr-3 text-right text-neutral-700">
+                        <td className="py-2.5 pr-3 text-right text-muted-foreground">
                           {discipline.credits}
                         </td>
                         <td className="py-2.5 pr-3 text-right">
                           <GradeBadge grade={discipline.finalGrade} />
                         </td>
-                        <td className="py-2.5 text-right font-mono text-xs text-neutral-600">
+                        <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">
                           {discipline.completedAt ? formatScoreDate(discipline.completedAt) : '—'}
                         </td>
                       </tr>
@@ -183,17 +183,17 @@ export function GradebookList({
                       className="lift-hover flex items-center justify-between gap-3 rounded-card border border-border bg-background p-3.5 transition-colors hover:border-coral-200 hover:bg-coral-50"
                     >
                       <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-neutral-900">
+                        <span className="block truncate text-sm font-semibold text-foreground">
                           {discipline.disciplineName}
                         </span>
-                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-600">
+                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                           <span className="rounded-pill bg-muted px-2 py-0.5 font-medium">
                             {discipline.controlTypeLabel}
                           </span>
                           <span>
                             {discipline.credits} {pluralRu(discipline.credits, CREDIT_FORMS)}
                           </span>
-                          <span className="font-mono text-[11px] text-neutral-500">
+                          <span className="font-mono text-[11px] text-muted-foreground">
                             {discipline.completedAt ? formatScoreDate(discipline.completedAt) : '—'}
                           </span>
                         </span>
@@ -205,7 +205,7 @@ export function GradebookList({
               </ul>
 
               {hasGrades ? null : (
-                <p className="mt-3 text-xs text-neutral-500">
+                <p className="mt-3 text-xs text-muted-foreground">
                   Оценок в семестре ещё нет — итог появится, когда деканат выставит оценки.
                 </p>
               )}

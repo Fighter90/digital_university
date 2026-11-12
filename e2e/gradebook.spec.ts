@@ -31,8 +31,13 @@ test.describe('DIG-27: зачётная книжка', () => {
     await expect(page.getByTestId('semester-accordion-2025-spring')).toBeVisible();
     await expect(page.getByText('Осенний семестр 2026/27').first()).toBeVisible();
 
-    // Своя дисциплина завершённого семестра открывается в карточку.
-    const cardLink = page.locator('a[href="/grades/PI21-ALG"]').first();
+    // Своя дисциплина завершённого семестра: карточки главной ссылаются с
+    // ?discipline= — зачётка сама раскрывает нужный семестр (DIG-26 спека).
+    await page.goto('/grades/gradebook?discipline=PI21-ALG');
+    const spring = page.getByTestId('semester-accordion-2025-spring');
+    await expect(spring).toBeVisible();
+    await expect(spring).toHaveAttribute('open', '');
+    const cardLink = page.locator('a[href="/grades/PI21-ALG"]:visible').first();
     await expect(cardLink).toBeVisible();
     await cardLink.click();
     await expect(page).toHaveURL(/\/grades\/PI21-ALG$/);
@@ -87,6 +92,7 @@ test.describe('DIG-27: зачётная книжка', () => {
 
 test.describe('DIG-27: адаптивность зачётки', () => {
   test('1440 px: таблица семестра видима', async ({ page }) => {
+    test.skip(({ viewport }) => viewport?.width !== 1440, 'desktop-1440 only');
     await signIn(page, 'anna.smirnova', 'anna-demo-2026', '/grades/gradebook');
     await expect(page.getByTestId('semester-accordion-2026-fall')).toBeVisible();
     const table = page.getByTestId('gradebook-table-2026-fall');
@@ -94,6 +100,7 @@ test.describe('DIG-27: адаптивность зачётки', () => {
   });
 
   test('360 px: таблица превращается в карточки', async ({ page }) => {
+    test.skip(({ viewport }) => viewport?.width !== 360, 'mobile-360 only');
     await signIn(page, 'anna.smirnova', 'anna-demo-2026', '/grades/gradebook');
     await expect(page.getByTestId('semester-accordion-2026-fall')).toBeVisible();
     const cards = page.getByTestId('gradebook-cards-2026-fall');

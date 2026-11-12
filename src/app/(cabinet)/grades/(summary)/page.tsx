@@ -167,7 +167,7 @@ function GradesView({
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-      <header className="flex flex-col gap-3">
+      <header className="flex animate-rise flex-col gap-3">
         <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Успеваемость</h1>
         <nav aria-label="Семестры" className="flex flex-wrap gap-2">
           {pills.map((pill) => {
@@ -182,8 +182,8 @@ function GradesView({
                 title={pill.label}
                 className={
                   active
-                    ? 'rounded-pill border border-accent bg-accent-soft px-3.5 py-1.5 text-sm font-semibold text-accent-ink'
-                    : 'rounded-pill border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground hover:border-accent-soft hover:text-foreground'
+                    ? 'rounded-pill border border-accent bg-accent-soft px-3.5 py-1.5 text-sm font-semibold text-accent-ink transition-colors duration-200'
+                    : 'rounded-pill border border-border bg-card px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 hover:border-accent-soft hover:text-foreground'
                 }
               >
                 {pill.short}
@@ -194,7 +194,10 @@ function GradesView({
       </header>
 
       {/* ── Сводка «как у меня дела» ──────────────────────────────────────── */}
-      <div className="rounded-card border border-border bg-card p-5 shadow-soft">
+      <div
+        className="animate-rise rounded-card border border-border bg-card p-5 shadow-soft"
+        style={{ '--du-rise-delay': '60ms' } as React.CSSProperties}
+      >
         <div className="flex items-center gap-5">
           <ProgressRing value={semesterGpa ?? 0} label="Средний балл семестра" size={80} stroke={7}>
             <span className="text-base font-extrabold">
@@ -275,7 +278,8 @@ function GradesView({
       <div
         data-testid="traffic-light"
         data-tone={light.tone}
-        className="flex flex-col gap-2 rounded-card border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+        className="animate-rise flex flex-col gap-2 rounded-card border border-border bg-card p-4 shadow-soft sm:flex-row sm:items-center sm:justify-between"
+        style={{ '--du-rise-delay': '120ms' } as React.CSSProperties}
       >
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -296,8 +300,12 @@ function GradesView({
       {/* ── Дисциплины семестра ───────────────────────────────────────────── */}
       {hasGrades ? (
         <ul className="flex flex-col gap-3">
-          {cards.map((card) => (
-            <DisciplineCardItem key={card.disciplineCode} card={card} />
+          {cards.map((card, cardIndex) => (
+            <DisciplineCardItem
+              key={card.disciplineCode}
+              card={card}
+              index={cardIndex}
+            />
           ))}
         </ul>
       ) : (
@@ -353,14 +361,15 @@ function GradesView({
 }
 
 /** Карточка дисциплины: крупная оценка, уровень, допуск, ссылка в зачётку. */
-function DisciplineCardItem({ card }: { card: DisciplineCard }) {
+function DisciplineCardItem({ card, index }: { card: DisciplineCard; index: number }) {
   return (
     <li>
       <Link
         href={card.href}
         data-testid="discipline-card"
         data-level={card.level ?? undefined}
-        className="block rounded-card border border-border bg-card p-5 shadow-soft lift-hover focus-visible:outline-2"
+        style={{ '--du-rise-delay': `${180 + index * 60}ms` } as React.CSSProperties}
+        className="animate-rise block rounded-card border border-border bg-card p-5 shadow-soft lift-hover focus-visible:outline-2"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

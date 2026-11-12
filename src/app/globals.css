@@ -286,6 +286,24 @@
     transform: translateY(-2px);
     box-shadow: var(--du-shadow-hover);
   }
+  /* DIG-26: каскадное появление блоков (stagger через --du-rise-delay);
+     без анимации при reduced motion */
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes du-rise {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-rise {
+      animation: du-rise 420ms var(--du-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+      animation-delay: var(--du-rise-delay, 0ms);
+    }
+  }
   /* «перенос» занятия: штриховка + пунктирная граница */
   .hatch-rescheduled {
     background-image: repeating-linear-gradient(

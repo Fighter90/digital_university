@@ -11,6 +11,7 @@ import { Download, GraduationCap } from 'lucide-react';
 
 import { GradebookList } from '@/components/gradebook/gradebook-list';
 import { EmptyState } from '@/components/ui/empty-state';
+import { buttonVariants } from '@/components/ui/button';
 import { dataDb } from '@/server/data/db';
 import { getGradebook, requireDataCtx } from '@/server/data';
 
@@ -40,8 +41,8 @@ export default async function GradebookPage({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
         <h1 className="text-xl font-bold sm:text-2xl">Зачётная книжка</h1>
         <div className="rounded-card border border-dashed border-border bg-card p-8 text-center">
-          <p className="text-sm font-medium text-neutral-900">Доступно студентам</p>
-          <p className="mt-1 text-sm text-neutral-600">
+          <p className="text-sm font-medium text-foreground">Доступно студентам</p>
+          <p className="mt-1 text-sm text-muted-foreground">
             Зачётная книжка показывает оценки студента — у сотрудника деканата этот раздел пуст.
           </p>
         </div>
@@ -56,7 +57,7 @@ export default async function GradebookPage({
           <div className="min-w-0">
             <h1 className="text-xl font-extrabold tracking-heading sm:text-2xl">Зачётная книжка</h1>
             {data.student ? (
-              <p className="mt-1 text-sm text-neutral-600">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {data.student.fullName} · {data.student.groupName} · №{' '}
                 {data.student.gradebookNumber}
               </p>
@@ -67,13 +68,13 @@ export default async function GradebookPage({
             download
             data-testid="transcript-download"
             prefetch={false}
-            className="inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-button bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition-colors hover:bg-neutral-700"
+            className={buttonVariants({ variant: 'primary', size: 'sm' })}
           >
             <Download aria-hidden="true" className="size-4" />
             Скачать выписку PDF
           </Link>
         </div>
-        <p className="text-sm text-neutral-600">
+        <p className="text-sm text-muted-foreground">
           Оценки по семестрам с итогами. Выписка скачивается сразу — без заявки и очереди.
         </p>
       </header>
@@ -82,16 +83,16 @@ export default async function GradebookPage({
         <>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-card border border-border bg-card p-4 shadow-soft">
-              <p className="text-xs text-neutral-600">Средний балл за всё время</p>
-              <p className="mt-1 text-xl font-extrabold tracking-heading text-neutral-900">
+              <p className="text-xs text-muted-foreground">Средний балл за всё время</p>
+              <p className="mt-1 text-xl font-extrabold tracking-heading text-foreground">
                 {data.overallAverage === null
                   ? '—'
                   : data.overallAverage.toFixed(2).replace('.', ',')}
               </p>
             </div>
             <div className="rounded-card border border-border bg-card p-4 shadow-soft">
-              <p className="text-xs text-neutral-600">Кредиты набрано</p>
-              <p className="mt-1 text-xl font-extrabold tracking-heading text-neutral-900">
+              <p className="text-xs text-muted-foreground">Кредиты набрано</p>
+              <p className="mt-1 text-xl font-extrabold tracking-heading text-foreground">
                 {`${data.creditsEarned} из ${data.creditsRequired}`}
               </p>
             </div>
@@ -109,7 +110,7 @@ export default async function GradebookPage({
               download
               data-testid="transcript-download"
               prefetch={false}
-              className="inline-flex select-none items-center justify-center gap-2 rounded-button border border-border bg-card px-4 py-2.5 text-sm font-semibold text-neutral-800 shadow-soft transition-colors hover:bg-muted"
+              className="inline-flex select-none items-center justify-center gap-2 rounded-button border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted"
             >
               <Download aria-hidden="true" className="size-4" />
               Скачать выписку PDF

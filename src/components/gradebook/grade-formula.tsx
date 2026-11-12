@@ -15,7 +15,7 @@ const fillTone = (earned: number): string => {
 export function GradeFormula({ parts }: { parts: DisciplineCardPart[] }) {
   if (parts.length === 0) {
     return (
-      <p className="text-sm text-neutral-600">
+      <p className="text-sm text-muted-foreground">
         План контроля ещё не задан — формула оценки появится, когда деканат опубликует состав
         дисциплины.
       </p>
@@ -27,14 +27,14 @@ export function GradeFormula({ parts }: { parts: DisciplineCardPart[] }) {
       {parts.map((part) => (
         <div key={part.kind} data-testid={`part-${part.kind}`}>
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-            <span className="text-sm font-semibold text-neutral-900">
+            <span className="text-sm font-semibold text-foreground">
               {part.label}{' '}
-              <span className="font-normal text-neutral-500">{part.weightPercent}%</span>
+              <span className="font-normal text-muted-foreground">{part.weightPercent}%</span>
             </span>
             {part.earnedPercent === null ? (
-              <span className="text-xs font-medium text-neutral-500">не оценено</span>
+              <span className="text-xs font-medium text-muted-foreground">не оценено</span>
             ) : (
-              <span className="font-mono text-xs text-neutral-700">
+              <span className="font-mono text-xs text-muted-foreground">
                 {part.earnedPercent} из 100
               </span>
             )}
@@ -57,7 +57,7 @@ export function GradeFormula({ parts }: { parts: DisciplineCardPart[] }) {
 export function GradeRows({ grades }: { grades: DisciplineGradeRowView[] }) {
   if (grades.length === 0) {
     return (
-      <p className="text-sm text-neutral-600">
+      <p className="text-sm text-muted-foreground">
         Оценок пока нет — здесь появятся отдельные работы, тесты и экзамен.
       </p>
     );
@@ -77,8 +77,8 @@ export function GradeRows({ grades }: { grades: DisciplineGradeRowView[] }) {
         >
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <span className="min-w-0">
-              <span className="text-sm font-semibold text-neutral-900">{row.elementName}</span>
-              <span className="mt-0.5 block text-xs text-neutral-600">
+              <span className="text-sm font-semibold text-foreground">{row.elementName}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
                 {row.kindLabel} ·{' '}
                 <time dateTime={row.gradedAt.toISOString()} className="font-mono text-[11px]">
                   {formatScoreDate(row.gradedAt)}
@@ -86,7 +86,7 @@ export function GradeRows({ grades }: { grades: DisciplineGradeRowView[] }) {
               </span>
             </span>
             <span className="flex shrink-0 flex-col items-end gap-1">
-              <span className="font-mono text-sm font-bold text-neutral-900">
+              <span className="font-mono text-sm font-bold text-foreground">
                 {row.score} из {row.maxScore}
               </span>
               {!row.isLatest ? (
@@ -97,7 +97,7 @@ export function GradeRows({ grades }: { grades: DisciplineGradeRowView[] }) {
             </span>
           </div>
           {row.comment ? (
-            <p className="mt-1.5 text-xs text-neutral-600">{row.comment}</p>
+            <p className="mt-1.5 text-xs text-muted-foreground">{row.comment}</p>
           ) : null}
         </li>
       ))}

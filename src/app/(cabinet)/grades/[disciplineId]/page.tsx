@@ -34,7 +34,14 @@ export default async function DisciplineCardPage({
   params: Promise<{ disciplineId: string }>;
 }) {
   const { disciplineId: rawCode } = await params;
-  const disciplineCode = decodeURIComponent(rawCode);
+  // Next уже декодирует сегмент маршрута; повторный decodeURIComponent при
+  // «сыром» % даёт URIError → 500. Ловим и отвечаем единым 404 (контракт).
+  let disciplineCode: string;
+  try {
+    disciplineCode = decodeURIComponent(rawCode);
+  } catch {
+    notFound();
+  }
   const ctx = await requireDataCtx(`/grades/${rawCode}`);
 
   const card = await getDisciplineCard(dataDb, ctx, disciplineCode);
@@ -47,7 +54,7 @@ export default async function DisciplineCardPage({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 md:py-8">
       <Link
         href="/grades/gradebook"
-        className="inline-flex items-center gap-1.5 text-sm text-neutral-600 hover:text-neutral-900"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
         Зачётная книжка
@@ -57,18 +64,18 @@ export default async function DisciplineCardPage({
       <header className="rounded-block border border-border bg-card p-5 shadow-soft md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-extrabold tracking-heading text-neutral-900 sm:text-2xl">
+            <h1 className="text-xl font-extrabold tracking-heading text-foreground sm:text-2xl">
               {card.disciplineName}
             </h1>
-            <p className="mt-1.5 text-sm text-neutral-700">
+            <p className="mt-1.5 text-sm text-muted-foreground">
               {card.teacherName ? (
                 card.teacherName
               ) : (
-                <span className="text-neutral-500">Преподаватель не указан</span>
+                <span className="text-muted-foreground">Преподаватель не указан</span>
               )}
             </p>
             {card.teacherName ? (
-              <p className="mt-0.5 text-xs text-neutral-500">
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Профиль преподавателя появится в справочнике (раздел в разработке)
               </p>
             ) : null}
@@ -77,7 +84,7 @@ export default async function DisciplineCardPage({
                 {card.credits} {pluralRu(card.credits, CREDIT_FORMS)}
               </Badge>
               {card.semesterLabel ? (
-                <span className="rounded-pill bg-muted px-2.5 py-1 text-xs font-medium text-neutral-700">
+                <span className="rounded-pill bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                   {card.semesterLabel}
                 </span>
               ) : null}
@@ -99,25 +106,25 @@ export default async function DisciplineCardPage({
           <div className="flex shrink-0 flex-col items-end">
             {card.isComplete && card.finalGrade !== null ? (
               <>
-                <p className="text-xs uppercase text-neutral-500">Итог дисциплины</p>
+                <p className="text-xs uppercase text-muted-foreground">Итог дисциплины</p>
                 <p
                   data-testid="final-grade"
-                  className="text-5xl font-extrabold leading-none tracking-heading text-neutral-900"
+                  className="text-5xl font-extrabold leading-none tracking-heading text-foreground"
                 >
                   {card.finalGrade}
                 </p>
-                <p className="mt-1 text-xs text-neutral-500">из 100</p>
+                <p className="mt-1 text-xs text-muted-foreground">из 100</p>
               </>
             ) : (
               <>
-                <p className="text-xs uppercase text-neutral-500">Накопленная оценка</p>
+                <p className="text-xs uppercase text-muted-foreground">Накопленная оценка</p>
                 <p
                   data-testid="accumulated-grade"
-                  className="text-5xl font-extrabold leading-none tracking-heading text-neutral-900"
+                  className="text-5xl font-extrabold leading-none tracking-heading text-foreground"
                 >
                   {accumulatedLabel}
                 </p>
-                <p className="mt-1 text-xs text-neutral-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   из 100
                   {card.maxPossible !== null && !card.isComplete
                     ? ` · максимум ${card.maxPossible.toFixed(1).replace('.', ',')}`
@@ -167,10 +174,10 @@ export default async function DisciplineCardPage({
             >
               <Calculator className="size-4" />
             </span>
-            <div className="min-w-0 text-sm text-neutral-600">
+            <div className="min-w-0 text-sm text-muted-foreground">
               {card.exam ? (
                 <p>
-                  <span className="font-semibold text-neutral-900">{card.exam.elementName}</span>{' '}
+                  <span className="font-semibold text-foreground">{card.exam.elementName}</span>{' '}
                   · {card.exam.weightPercent}% итога · максимум {card.exam.maxScore}
                   {card.exam.graded ? ' · уже сдан' : ''}
                 </p>
@@ -196,7 +203,7 @@ export default async function DisciplineCardPage({
         </div>
       </section>
 
-      <p className="flex items-start gap-2 text-xs text-neutral-500">
+      <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
         <span>
           <BookMarked aria-hidden="true" className="mr-1 inline size-3.5" />
