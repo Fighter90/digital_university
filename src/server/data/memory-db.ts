@@ -125,6 +125,12 @@ export function createMemoryDataDb(): MemoryDataDb {
     async probeStudentById(id) {
       return clone(by(students, 'id', id));
     },
+    // DIG-27 — probe дисциплины по коду без скоупа группы: различение
+    // «чужая» (OWNERSHIP_DENIED) и «несуществующая» (NOT_FOUND) — только
+    // для аудита; наружу из слоя данных в обоих случаях уходит null.
+    async probeDisciplineByCode(disciplineCode) {
+      return clone(by(disciplines, 'disciplineCode', disciplineCode));
+    },
 
     // ── DIG-19: profile & settings (owner-scoped) ──────────────────────────
     async findStudentById(id) {

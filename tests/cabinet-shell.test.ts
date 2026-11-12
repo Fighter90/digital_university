@@ -101,7 +101,7 @@ import {
 } from '@/components/shell/nav-items';
 import DashboardPage from '@/app/(cabinet)/dashboard/page';
 import SchedulePage from '@/app/(cabinet)/schedule/page';
-import GradesPage from '@/app/(cabinet)/grades/page';
+import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
 import RequestsPage from '@/app/(cabinet)/requests/page';
 import NotificationsPage from '@/app/(cabinet)/notifications/page';
 import DeaneryPage from '@/app/(cabinet)/deanery/page';

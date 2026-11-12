@@ -16,6 +16,21 @@ export type {
   PerformanceData,
   RatingView,
 } from './performance';
+export {
+  createGradeAppeal,
+  getDisciplineCard,
+  getGradebook,
+} from './gradebook';
+export type {
+  DisciplineCardData,
+  DisciplineCardPart,
+  DisciplineExamView,
+  DisciplineGradeRowView,
+  GradebookData,
+  GradebookDisciplineView,
+  GradebookSemesterView,
+  GradebookStudentView,
+} from './gradebook';
 export { listNotifications, markNotificationRead } from './notifications';
 export { listAppeals, getAppeal, listAppealMessages } from './appeals';
 export { listSchedule, listExams } from './schedule';

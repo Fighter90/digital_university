@@ -68,6 +68,12 @@ export interface DisciplinePerformance {
   isComplete: boolean;
   /** Итог ≥ порога зачтения кредита (docs/grading.md). */
   creditEarned: boolean;
+  /** Преподаватель из справочника группы (null — дисциплина синтезирована из оценок). */
+  teacherName: string | null;
+  /** В плане контроля есть экзаменационный элемент (DIG-26, бейдж допуска). */
+  hasExamElement: boolean;
+  /** Экзаменационный элемент уже оценён. */
+  examGraded: boolean;
 }
 
 export interface GpaView {
@@ -164,7 +170,7 @@ function groupGradesByDiscipline(rows: GradeRow[]): Map<string, GradeRow[]> {
   return map;
 }
 
-interface DisciplineComputation {
+export interface DisciplineComputation {
   code: string;
   name: string;
   credits: number;
@@ -173,15 +179,22 @@ interface DisciplineComputation {
   totalElements: number;
   isComplete: boolean;
   semester: SemesterKey | null;
+  /** Преподаватель из справочника группы (null — дисциплина синтезирована). */
+  teacherName: string | null;
+  /** В плане контроля есть экзаменационный элемент (DIG-26, бейдж допуска). */
+  hasExamElement: boolean;
+  /** Экзаменационный элемент уже оценён (пересдача — по последней оценке). */
+  examGraded: boolean;
 }
 
 /**
  * Расчёт по одной дисциплине: план контроля (все элементы, включая
  * неоценённые) + оценки студента. Дисциплины, которых нет в справочнике
  * группы (старые сиды), синтезируются из оценок с весом 1 кредит и
- * планом «только сданные элементы».
+ * планом «только сданные элементы». DIG-27 переиспользует расчёт в
+ * зачётке и карточке дисциплины (gradebook.ts).
  */
-function computeDisciplines(
+export function computeDisciplines(
   ownGrades: GradeRow[],
   disciplines: DisciplineRow[],
   elements: DisciplineElementRow[],
@@ -230,6 +243,11 @@ function computeDisciplines(
         : gradedCodes.size;
     const isComplete = totalElements > 0 && gradedCount >= totalElements;
 
+    // Экзаменационный элемент плана: бейдж допуска экрана «Успеваемость»
+    // (DIG-26). Оценён — по тем же строкам GradeRow (пересдача даёт
+    // последнюю по дате, для флага достаточно самого факта оценки).
+    const examElement = plan.find((el) => el.kind === 'EXAM') ?? null;
+
     return {
       code,
       name: knownRow?.disciplineName ?? gradedRows[0]?.disciplineName ?? code,
@@ -239,6 +257,9 @@ function computeDisciplines(
       totalElements,
       isComplete,
       semester: disciplineSemesterOf(graded),
+      teacherName: knownRow?.teacherName ?? null,
+      hasExamElement: examElement !== null,
+      examGraded: examElement !== null && gradedCodes.has(examElement.elementCode),
     };
   });
 }
@@ -305,6 +326,9 @@ function buildDisciplineViews(
         totalElements: item.totalElements,
         isComplete: item.isComplete,
         creditEarned: item.isComplete && finalGrade !== null && finalGrade >= CREDIT_PASS_PERCENT,
+        teacherName: item.teacherName,
+        hasExamElement: item.hasExamElement,
+        examGraded: item.examGraded,
       };
     })
     .sort((a, b) => {
