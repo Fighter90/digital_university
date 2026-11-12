@@ -35,10 +35,7 @@ test.describe('DIG-28: сессия — студент', () => {
     await expect(item).toContainText('Зачёт');
     await expect(item).toContainText('Не допущен');
     await expect(item.getByTestId('admission-reason')).toContainText('Не сдано:');
-    await expect(item.getByTestId('admission-action')).toHaveAttribute(
-      'href',
-      '/grades/PI21-DB',
-    );
+    await expect(item.getByTestId('admission-action')).toHaveAttribute('href', '/grades/PI21-DB');
 
     // Допуск и оценка — на зачёте/экзамене Ильи (см. сценарий ниже), у Анны —
     // пересдача не в таймлайне, а в блоке пересдач.
@@ -72,7 +69,9 @@ test.describe('DIG-28: сессия — студент', () => {
     await page.goto('/requests');
     await expect(page.getByText('Запись на пересдачу — Информатика').first()).toBeVisible();
 
-    // Прошедшая пересдача (Дискретная математика, «закрыто») — запись закрыта.
+    // Обратно на «Сессию»: прошедшая пересдача (Дискретная математика,
+    // «закрыто») — запись закрыта.
+    await page.goto('/grades/session');
     const pastRetake = page.getByTestId('retake-item-exm-pi21-6');
     await expect(pastRetake).toBeVisible();
     await expect(pastRetake.getByTestId('retake-signup')).toHaveCount(0);
