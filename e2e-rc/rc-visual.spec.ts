@@ -9,6 +9,6 @@ test('rc-design: login + dashboard визуально', async ({ page }) => {
   await page.waitForURL('**/dashboard**', { timeout: 20000 });
   await page.waitForTimeout(3000);
   await page.screenshot({ path: '/tmp/rc-dashboard.png' });
-  const body = await page.textContent('body');
+  const body = (await page.textContent('body')) ?? '';
   expect(body.length).toBeGreaterThan(500);
 });
