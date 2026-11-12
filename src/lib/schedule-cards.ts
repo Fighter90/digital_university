@@ -484,8 +484,9 @@ export function pairsLabel(count: number): string {
 /**
  * Ссылка переключателя вида с переносом «куда смотрит студент»: день ↔ неделя
  * ↔ месяц обмениваются датой (?date → ключ ISO-недели → ?month). Мусорные
- * параметры игнорируются; без параметров остаются дефолты страницы
- * (десктоп — неделя «сейчас», мобильный — «сегодня»).
+ * параметры игнорируются. Без контекста дефолт фиксируется ЯВНО (сегодня /
+ * текущая неделя / текущий месяц) — URL всегда полный, переходы между видами
+ * коммитятся предсказуемо и делятся ссылками.
  */
 export function buildViewHref(current: URLSearchParams, next: ScheduleView, now: Date): string {
   const params = new URLSearchParams({ view: next });
@@ -496,16 +497,24 @@ export function buildViewHref(current: URLSearchParams, next: ScheduleView, now:
   const focus = date ?? monday ?? (month ? monthFocusDate(month, now) : null);
 
   if (next === 'day') {
-    if (focus) params.set('date', moscowDateKey(focus));
+    params.set('date', moscowDateKey(focus ?? startOfMoscowDay(now)));
   } else if (next === 'week') {
-    if (focus) params.set('week', isoWeekKeyOf(focus));
+    params.set('week', isoWeekKeyOf(focus ?? startOfMoscowWeek(now)));
   } else {
     const picked =
       month ??
-      (focus ? { year: moscowParts(focus).year, month: moscowParts(focus).month } : null);
-    if (picked) params.set('month', formatMonthKey(picked));
+      (focus
+        ? { year: moscowParts(focus).year, month: moscowParts(focus).month }
+        : moscowPartsYm(now));
+    params.set('month', formatMonthKey(picked));
   }
   return `/schedule?${params.toString()}`;
+}
+
+/** Текущий московский месяц — явный дефолт переключателя. */
+function moscowPartsYm(now: Date): YearMonth {
+  const p = moscowParts(now);
+  return { year: p.year, month: p.month };
 }
 
 /** Фокус месяца: текущий месяц → «сегодня», другой месяц → 1-е число. */

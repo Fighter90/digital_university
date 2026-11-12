@@ -46,7 +46,12 @@ import {
   toScheduleEventViews,
   WEEKDAY_SHORT as WEEKDAY_SHORT_VIEW,
 } from '@/lib/schedule-view';
-import { moscowDateKey, moscowParts, moscowWeekdayIndex, semesterBounds } from '@/lib/schedule-time';
+import {
+  moscowDateKey,
+  moscowParts,
+  moscowWeekdayIndex,
+  semesterBounds,
+} from '@/lib/schedule-time';
 import { dataDb } from '@/server/data/db';
 import { getMonth, getNextStudyDay, getSchedule, requireDataCtx } from '@/server/data';
 
@@ -72,6 +77,15 @@ async function ScheduleContent({
 }) {
   const ctx = await requireDataCtx('/schedule');
 
+  // Query текущего URL без «?» — контекст для переключателя видов и листания
+  // недель. Передаётся пропсами (сервер его уже распарсил): клиентские
+  // useSearchParams без Suspense-границы подвешивают soft-навигацию.
+  const currentQuery = new URLSearchParams(
+    Object.entries({ view, date, week, month }).filter((entry): entry is [string, string] =>
+      Boolean(entry[1]),
+    ),
+  ).toString();
+
   // Сотрудник деканата без группы: студенческое расписание ему не положено
   // (чтение групповых данных попадает в аудит) — явная заглушка.
   if (ctx.role === 'STAFF') {
@@ -95,17 +109,19 @@ async function ScheduleContent({
 
   try {
     if (desktopView === 'month') {
-      return await MonthContent({ ctx, now, bounds, todayKey, monthParam: month });
+      return await MonthContent({ ctx, now, bounds, todayKey, monthParam: month, currentQuery });
     }
     return await DayWeekContent({
       ctx,
       now,
       bounds,
       todayKey,
+      viewParam: view,
       dateParam: date,
       weekParam: week,
       desktopView,
       mobileView,
+      currentQuery,
     });
   } catch (error) {
     // не глотаем: без лога «Расписание не загрузилось» недиагностируемо
@@ -128,11 +144,15 @@ interface DayWeekProps {
   now: Date;
   bounds: Bounds;
   todayKey: string;
+  /** Сырой ?view= из URL: «week» означает, что листание недель сохраняет вид. */
+  viewParam?: string;
   dateParam?: string;
   weekParam?: string;
   /** «Месяц» сюда не доходит: его ветка обрабатывается раньше (MonthContent). */
   desktopView: ScheduleView;
   mobileView: ScheduleView;
+  /** Query URL для ViewSwitcher/WeekView (см. ScheduleContent). */
+  currentQuery: string;
 }
 
 async function DayWeekContent({
@@ -140,10 +160,12 @@ async function DayWeekContent({
   now,
   bounds,
   todayKey,
+  viewParam,
   dateParam,
   weekParam,
   desktopView,
   mobileView,
+  currentQuery,
 }: DayWeekProps) {
   // Страховка типов: ветка «месяца» уже отработала в ScheduleContent.
   const desktopMode: 'day' | 'week' = desktopView === 'week' ? 'week' : 'day';
@@ -247,6 +269,8 @@ async function DayWeekContent({
               mini={miniCalendarCells(weekPage.from)}
               kindCounts={kindCounts}
               teachers={teachers}
+              currentQuery={currentQuery}
+              keepViewParam={viewParam === 'week'}
             />
           ) : (
             <OutOfSemester />
@@ -254,7 +278,12 @@ async function DayWeekContent({
         ) : (
           <>
             <div className="mb-4 flex justify-end">
-              <ViewSwitcher view={desktopMode} platform="desktop" />
+              <ViewSwitcher
+                view={desktopMode}
+                platform="desktop"
+                currentQuery={currentQuery}
+                todayKey={todayKey}
+              />
             </div>
             <DayView
               title={formatDayTitle(selectedDate)}
@@ -272,7 +301,12 @@ async function DayWeekContent({
       {/* ── Мобильный (< 768 px): лента дат + выбранный день / компактная неделя ── */}
       <div className="md:hidden">
         <div className="mb-3">
-          <ViewSwitcher view={mobileMode} platform="mobile" />
+          <ViewSwitcher
+            view={mobileMode}
+            platform="mobile"
+            currentQuery={currentQuery}
+            todayKey={todayKey}
+          />
         </div>
         {mobileMode === 'week' && !(weekPage && weekDays) ? (
           <OutOfSemester />
@@ -297,9 +331,11 @@ interface MonthProps {
   bounds: Bounds;
   todayKey: string;
   monthParam?: string;
+  /** Query URL для ViewSwitcher (см. ScheduleContent). */
+  currentQuery: string;
 }
 
-async function MonthContent({ ctx, now, bounds, todayKey, monthParam }: MonthProps) {
+async function MonthContent({ ctx, now, bounds, todayKey, monthParam, currentQuery }: MonthProps) {
   const ym = resolveSelectedMonth(monthParam, now);
   const visible = monthVisible(ym, bounds);
   const prevMonth = shiftMonth(ym, -1);
@@ -315,10 +351,20 @@ async function MonthContent({ ctx, now, bounds, todayKey, monthParam }: MonthPro
     <section data-view="month" className="mx-auto flex w-full max-w-[1200px] flex-col gap-4">
       <h1 className="sr-only">Расписание</h1>
       <div className="hidden justify-end md:flex">
-        <ViewSwitcher view="month" platform="desktop" />
+        <ViewSwitcher
+          view="month"
+          platform="desktop"
+          currentQuery={currentQuery}
+          todayKey={todayKey}
+        />
       </div>
       <div className="mb-1 md:hidden">
-        <ViewSwitcher view="month" platform="mobile" />
+        <ViewSwitcher
+          view="month"
+          platform="mobile"
+          currentQuery={currentQuery}
+          todayKey={todayKey}
+        />
       </div>
 
       {visible ? (
@@ -357,5 +403,12 @@ function OutOfSemester() {
 
 export default async function SchedulePage({ searchParams }: SchedulePageProps) {
   const params = searchParams ? await searchParams : {};
-  return <ScheduleContent view={params.view} date={params.date} week={params.week} month={params.month} />;
+  return (
+    <ScheduleContent
+      view={params.view}
+      date={params.date}
+      week={params.week}
+      month={params.month}
+    />
+  );
 }

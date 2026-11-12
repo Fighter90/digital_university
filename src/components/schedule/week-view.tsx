@@ -24,7 +24,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { CalendarOff, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { cn } from 'cn';
 
@@ -68,6 +68,10 @@ export interface WeekViewProps {
   mini: { monthLabel: string; weekdays: readonly string[]; cells: MiniCalendarCell[] };
   kindCounts: Array<{ kind: ScheduleKind; count: number }>;
   teachers: string[];
+  /** Query текущего URL без «?» — уходит в ViewSwitcher (см. его комментарий). */
+  currentQuery: string;
+  /** URL открыт с явным ?view=week — листание недель сохраняет параметр вида. */
+  keepViewParam: boolean;
 }
 
 const weekHrefDefault = (weekKey: string) => `/schedule?week=${weekKey}`;
@@ -88,18 +92,20 @@ export function WeekView({
   mini,
   kindCounts,
   teachers,
+  currentQuery,
+  keepViewParam,
 }: WeekViewProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   // DIG-23: страница может быть открыта с явным ?view=week — листание недель
-  // сохраняет параметр вида, чтобы вид не сбрасывался на авто.
-  const viewParam = searchParams.get('view');
+  // сохраняет параметр вида, чтобы вид не сбрасывался на авто. Флаг приходит
+  // пропсом от сервера (он распарсил ?view): useSearchParams здесь не читаем —
+  // без Suspense-границы это подвешивает soft-навигацию (см. ViewSwitcher).
   const weekHref = useCallback(
     (weekKey: string) =>
-      viewParam === 'week'
+      keepViewParam
         ? `/schedule?view=week&week=${encodeURIComponent(weekKey)}`
         : weekHrefDefault(weekKey),
-    [viewParam],
+    [keepViewParam],
   );
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<ScheduleEventView | null>(null);
@@ -241,7 +247,12 @@ export function WeekView({
           <div className="flex items-center gap-3">
             {/* DIG-23: переключатель видов живой — «День» и «Месяц» ведут
                 в соответствующие виды (URL ?view=… с переносом контекста) */}
-            <ViewSwitcher view="week" platform="desktop" />
+            <ViewSwitcher
+              view="week"
+              platform="desktop"
+              currentQuery={currentQuery}
+              todayKey={todayKey}
+            />
             <Button
               variant="secondary"
               size="sm"

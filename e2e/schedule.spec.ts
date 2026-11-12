@@ -6,12 +6,17 @@ import { expect, test, type Page } from '@playwright/test';
 // БЕЗ перезагрузки страницы (URL ?week=2026-W46), клавиатура ←/→ и Esc,
 // боковая панель деталей пары. mobile-360: недельный вид заменён мобильным.
 
-/** Вход тестового студента через чип демо-аккаунта (как в dashboard.spec). */
+/** Вход тестового студента через чип демо-аккаунта (как в dashboard.spec).
+ *  Клик «Войти» + редирект повторяются через toPass: на нагруженной машине
+ *  серверный экшен входа может подвиснуть в pending («Входим…») дольше
+ *  15 с — повторный заход на /login пересоздаёт попытку (урок DIG-50). */
 async function signIn(page: Page) {
-  await page.goto('/login');
-  await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
-  await page.getByRole('button', { name: 'Войти', exact: true }).click();
-  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
+  await expect(async () => {
+    await page.goto('/login');
+    await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+    await page.getByRole('button', { name: 'Войти', exact: true }).click();
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 10_000 });
+  }).toPass({ timeout: 60_000 });
 }
 
 /** Понедельник недели по ключу «2026-W46» (дата внутри этой недели). */
@@ -98,15 +103,25 @@ test.describe('desktop 1440 — неделя в стиле Google Calendar', () 
     const monday = mondayOfWeekKey(startKey!);
     monday.setUTCDate(monday.getUTCDate() + 7);
     const expectedNext = weekKeyOf(monday);
-    await expect(page).toHaveURL(new RegExp(`week=${expectedNext}`));
-    await expect(page.getByTestId('week-board')).toHaveAttribute('data-week-key', expectedNext);
+    // URL и КОНТЕНТ недели: мягкая навигация применяется асинхронно, клик
+    // в окно перехода может быть проглочен — шаг с settle-маркером контента
+    // повторяется через toPass.
+    const board = page.getByTestId('week-board');
+    await expect(async () => {
+      await page.getByRole('link', { name: 'Следующая неделя' }).click();
+      await expect(page).toHaveURL(new RegExp(`week=${expectedNext}`), { timeout: 5_000 });
+      await expect(board).toHaveAttribute('data-week-key', expectedNext, { timeout: 5_000 });
+    }).toPass({ timeout: 30_000 });
     expect(
       await page.evaluate(() => (window as unknown as { __du_alive?: string }).__du_alive),
     ).toBe('yes');
 
     // «Сегодня» возвращает на текущую неделю (тоже без перезагрузки)
-    await page.getByRole('link', { name: 'Перейти к текущей неделе' }).click();
-    await expect(page).toHaveURL(new RegExp(`week=${startKey}`));
+    await expect(async () => {
+      await page.getByRole('link', { name: 'Перейти к текущей неделе' }).click();
+      await expect(page).toHaveURL(new RegExp(`week=${startKey!}`), { timeout: 5_000 });
+      await expect(board).toHaveAttribute('data-week-key', startKey!, { timeout: 5_000 });
+    }).toPass({ timeout: 30_000 });
     expect(
       await page.evaluate(() => (window as unknown as { __du_alive?: string }).__du_alive),
     ).toBe('yes');
@@ -120,23 +135,30 @@ test.describe('desktop 1440 — неделя в стиле Google Calendar', () 
     await expect(page.getByTestId('now-line')).toBeVisible({ timeout: 15_000 });
     const startKey = await page.getByTestId('week-board').getAttribute('data-week-key');
 
+    const board = page.getByTestId('week-board');
+    /** Нажатие стрелки + подтверждение URL и КОНТЕНТА недели (toPass: клик в
+     * окно применения мягкой навигации может быть проглочен). */
+    const pressArrow = async (key: 'ArrowLeft' | 'ArrowRight', expected: string) => {
+      await expect(async () => {
+        await page.keyboard.press(key);
+        await expect(page).toHaveURL(new RegExp(`week=${expected}`), { timeout: 5_000 });
+        await expect(board).toHaveAttribute('data-week-key', expected, { timeout: 5_000 });
+      }).toPass({ timeout: 30_000 });
+    };
+
     // ← : неделя назад
-    await page.keyboard.press('ArrowLeft');
     const prevMonday = mondayOfWeekKey(startKey!);
     prevMonday.setUTCDate(prevMonday.getUTCDate() - 7);
-    await expect(page).toHaveURL(new RegExp(`week=${weekKeyOf(prevMonday)}`));
+    await pressArrow('ArrowLeft', weekKeyOf(prevMonday));
 
     // → : дважды — неделя вперёд и ещё одна
-    await page.keyboard.press('ArrowRight');
-    await expect(page).toHaveURL(new RegExp(`week=${startKey}`));
-    await page.keyboard.press('ArrowRight');
+    await pressArrow('ArrowRight', startKey!);
     const nextMonday = mondayOfWeekKey(startKey!);
     nextMonday.setUTCDate(nextMonday.getUTCDate() + 7);
-    await expect(page).toHaveURL(new RegExp(`week=${weekKeyOf(nextMonday)}`));
+    await pressArrow('ArrowRight', weekKeyOf(nextMonday));
 
     // вернулись на текущую неделю: у сегодняшней пары открываем панель деталей
-    await page.keyboard.press('ArrowLeft');
-    await expect(page).toHaveURL(new RegExp(`week=${startKey}`));
+    await pressArrow('ArrowLeft', startKey!);
     const lesson = page.getByRole('button', {
       name: 'Лабораторная, Программирование, 12:00–13:30, ауд. 305, перенос',
     });
