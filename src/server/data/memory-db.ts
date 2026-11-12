@@ -76,6 +76,8 @@ export function createMemoryDataDb(): MemoryDataDb {
   let appealSeq = 0;
   let appealMessageSeq = 0;
   let noteSeq = 0;
+  let requestSeq = 0;
+  let requestEventSeq = 0;
 
   const by = <T, K extends keyof T>(rows: T[], key: K, value: T[K]) =>
     rows.find((row) => row[key] === value) ?? null;
@@ -124,6 +126,12 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
     async probeStudentById(id) {
       return clone(by(students, 'id', id));
+    },
+    // DIG-28 — probe контрольной по id без скоупа группы: различение
+    // «чужая» (OWNERSHIP_DENIED) и «несуществующая» (NOT_FOUND) — только
+    // для аудита; наружу из слоя данных в обоих случаях уходит null.
+    async probeExamById(id) {
+      return clone(by(exams, 'id', id));
     },
     // DIG-27 — probe дисциплины по коду без скоупа группы: различение
     // «чужая» (OWNERSHIP_DENIED) и «несуществующая» (NOT_FOUND) — только
@@ -207,6 +215,36 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
     async listRequestEvents(requestId) {
       return requestEvents.filter((e) => e.requestId === requestId).map(clone);
+    },
+    // DIG-28 — заявка из кабинета: строка заявки + первое событие SUBMITTED
+    // пишутся вместе (как appendAppealByStudent — атомарно в адаптере).
+    async appendRequestByStudent(studentId, input) {
+      requestSeq += 1;
+      const row: ServiceRequestRow = {
+        id: `req-new-${requestSeq}`,
+        studentId,
+        number: input.number,
+        type: input.type,
+        title: input.title,
+        status: 'SUBMITTED',
+        assignee: null,
+        resultNote: null,
+        createdAt: input.createdAt,
+        updatedAt: input.createdAt,
+      };
+      requests.push(row);
+      requestEventSeq += 1;
+      requestEvents.push({
+        id: `reqevt-new-${requestEventSeq}`,
+        requestId: row.id,
+        actorRole: 'STUDENT',
+        actorName: input.actorName,
+        statusFrom: null,
+        statusTo: 'SUBMITTED',
+        message: input.eventMessage,
+        createdAt: input.createdAt,
+      });
+      return clone(row);
     },
 
     async listGradesByStudent(studentId) {
