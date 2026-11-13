@@ -14,6 +14,14 @@ type UnreadBadgeProps = {
 // Начальное значение приходит с сервера, далее — polling /api/notifications/count.
 export function UnreadBadge({ count: initialCount }: UnreadBadgeProps) {
   const [count, setCount] = useState(initialCount);
+  // DIG-35: синхронизация с пропом во время рендера (паттерн React
+  // «adjusting state when a prop changes») — без setState-in-effect
+  // (react-hooks/set-state-in-effect).
+  const [prevInitialCount, setPrevInitialCount] = useState(initialCount);
+  if (initialCount !== prevInitialCount) {
+    setPrevInitialCount(initialCount);
+    setCount(initialCount);
+  }
 
   useEffect(() => {
     let alive = true;
@@ -35,6 +43,9 @@ export function UnreadBadge({ count: initialCount }: UnreadBadgeProps) {
       clearInterval(interval);
     };
   }, []);
+
+  // DIG-35: после server action'ов экран вызывает router.refresh() — каркас
+  // приносит свежее серверное значение: его подхватывает проверка пропа выше.
 
   if (count <= 0) return null;
 

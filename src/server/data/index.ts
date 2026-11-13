@@ -27,7 +27,12 @@ export type {
   GradebookSemesterView,
   GradebookStudentView,
 } from './gradebook';
-export { listNotifications, markNotificationRead } from './notifications';
+export {
+  listNotifications,
+  markNotificationRead,
+  countUnreadNotifications,
+  markAllNotificationsRead,
+} from './notifications';
 export { listAppeals, getAppeal, listAppealMessages } from './appeals';
 export { listSchedule, listExams } from './schedule';
 export { getSession, createRetakeRequest } from './session';

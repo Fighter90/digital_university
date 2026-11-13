@@ -96,6 +96,10 @@ export interface DataDb {
   listGradesByStudent(studentId: string): Promise<GradeRow[]>;
   listNotificationsByStudent(studentId: string): Promise<NotificationRow[]>;
   markNotificationReadByStudent(studentId: string, id: string): Promise<boolean>;
+  /** DIG-35 — число непрочитанных владельца (счётчик колокольчика). */
+  countUnreadNotificationsByStudent(studentId: string): Promise<number>;
+  /** DIG-35 — «Отметить все прочитанными»; возвращает число изменённых строк. */
+  markAllNotificationsReadByStudent(studentId: string): Promise<number>;
   listAppealsByStudent(studentId: string): Promise<AppealRow[]>;
   findAppealByStudentAndId(studentId: string, id: string): Promise<AppealRow | null>;
   listAppealMessages(appealId: string): Promise<AppealMessageRow[]>;

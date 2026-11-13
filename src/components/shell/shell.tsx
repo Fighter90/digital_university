@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShellUser } from '@/lib/user';
+import type { NotificationFeedItem } from '@/lib/notification-view';
 import { TopBar } from './top-bar';
 import { SideNav } from './side-nav';
 import { TabBar } from './tab-bar';
@@ -11,6 +12,8 @@ import { SearchPalette } from './search-palette';
 type ShellProps = {
   user: ShellUser;
   unreadCount: number;
+  /** DIG-35 — последние 5 уведомлений владельца для панели колокольчика. */
+  recentNotifications: NotificationFeedItem[];
   children: React.ReactNode;
 };
 
@@ -18,7 +21,7 @@ type ShellProps = {
 // Десктоп: верхняя панель + меню 212 px. Планшет: иконочный рельс.
 // Мобильный (<768): таб-бар + плавающая AI-кнопка. Первая таб-стоп —
 // skip-link «К содержимому» (доступность с клавиатуры).
-export function Shell({ user, unreadCount, children }: ShellProps) {
+export function Shell({ user, unreadCount, recentNotifications, children }: ShellProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   // Кнопка поиска: ссылка нужна палитре, чтобы вернуть фокус при закрытии.
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
@@ -48,6 +51,7 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
       <TopBar
         user={user}
         unreadCount={unreadCount}
+        recentNotifications={recentNotifications}
         onOpenSearch={() => setSearchOpen(true)}
         searchTriggerRef={searchTriggerRef}
       />

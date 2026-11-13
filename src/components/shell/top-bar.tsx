@@ -1,23 +1,32 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, Search, Sparkles } from 'lucide-react';
+import { Search, Sparkles } from 'lucide-react';
 import type { ShellUser } from '@/lib/user';
+import type { NotificationFeedItem } from '@/lib/notification-view';
 import { cn } from '@/lib/utils';
-import { UnreadBadge } from './unread-badge';
 import { UserMenu } from './user-menu';
+import { NotificationsBell } from './notifications-bell';
 
 type TopBarProps = {
   user: ShellUser;
   unreadCount: number;
+  /** DIG-35 — последние уведомления для панели колокольчика (SSR). */
+  recentNotifications: NotificationFeedItem[];
   onOpenSearch: () => void;
   /** Ref кнопки поиска — Shell передаёт его палитре для возврата фокуса. */
   searchTriggerRef?: React.Ref<HTMLButtonElement>;
 };
 
 // DIG-14: верхняя панель 72 px (56 px на мобильном): вымышленный логотип,
-// поиск (⌘K), AI, колокольчик с непрочитанными, аватар с меню и плашка концепта.
-export function TopBar({ user, unreadCount, onOpenSearch, searchTriggerRef }: TopBarProps) {
+// поиск (⌘K), AI, колокольчик с панелью уведомлений, аватар и плашка концепта.
+export function TopBar({
+  user,
+  unreadCount,
+  recentNotifications,
+  onOpenSearch,
+  searchTriggerRef,
+}: TopBarProps) {
   return (
     <header className="z-40 border-b border-neutral-200/80 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/75 md:sticky md:top-0">
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-1.5 px-3 md:h-18 md:gap-3 md:px-6">
@@ -73,14 +82,7 @@ export function TopBar({ user, unreadCount, onOpenSearch, searchTriggerRef }: To
             <Sparkles className="size-4" aria-hidden="true" />
           </Link>
 
-          <Link
-            href="/notifications"
-            className="relative grid size-8 shrink-0 place-items-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-coral-600 md:size-9"
-          >
-            <Bell className="size-4" aria-hidden="true" />
-            <UnreadBadge count={unreadCount} />
-            <span className="sr-only">Уведомления: {unreadCount} непрочитанных</span>
-          </Link>
+          <NotificationsBell initialItems={recentNotifications} initialCount={unreadCount} />
 
           <UserMenu user={user} />
         </div>

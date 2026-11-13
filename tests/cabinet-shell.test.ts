@@ -68,13 +68,18 @@ vi.mock('@/server/data', () => ({
       updatedAt: new Date('2026-11-01T10:00:00Z'),
     },
   ]),
+  // DIG-35: экран «Уведомления» читает ленту владельца сессии.
+  listNotifications: vi.fn(async () => []),
   // DIG-20: главная кабинета читает агрегат getDashboard и новости деканата.
   getDashboard: vi.fn(async () => ({
     firstName: 'Анна',
     greeting: 'Добрый день',
     headingDate: 'среда, 11 ноября',
     summary: 'Сегодня 2 пары.',
-    today: { ok: true, value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null } },
+    today: {
+      ok: true,
+      value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null },
+    },
     deadlines: { ok: true, value: [] },
     progress: {
       ok: true,

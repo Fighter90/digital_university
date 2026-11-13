@@ -265,6 +265,19 @@ export function createMemoryDataDb(): MemoryDataDb {
       row.isRead = true;
       return true;
     },
+    async countUnreadNotificationsByStudent(studentId) {
+      return notifications.filter((n) => n.studentId === studentId && !n.isRead).length;
+    },
+    async markAllNotificationsReadByStudent(studentId) {
+      let marked = 0;
+      for (const row of notifications) {
+        if (row.studentId === studentId && !row.isRead) {
+          row.isRead = true;
+          marked += 1;
+        }
+      }
+      return marked;
+    },
 
     async listAppealsByStudent(studentId) {
       return appeals.filter((a) => a.studentId === studentId).map(clone);
