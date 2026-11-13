@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import {
+  ArrowRight,
   CalendarClock,
   FileText,
   MessagesSquare,
@@ -130,7 +131,10 @@ export function Hero({
           {`${greeting}${firstName ? `, ${firstName}` : ''}!`}
         </p>
         {summary ? (
-          <p data-testid="dashboard-summary" className="mt-2 text-sm leading-relaxed text-neutral-100 md:text-base">
+          <p
+            data-testid="dashboard-summary"
+            className="mt-2 text-sm leading-relaxed text-neutral-100 md:text-base"
+          >
             {summary}
           </p>
         ) : null}
@@ -146,7 +150,9 @@ export function Hero({
               <p className="mt-1 text-xl font-extrabold tracking-heading text-white md:text-2xl">
                 {tile.value}
               </p>
-              {tile.hint ? <p className="mt-0.5 text-[11px] text-neutral-400">{tile.hint}</p> : null}
+              {tile.hint ? (
+                <p className="mt-0.5 text-[11px] text-neutral-400">{tile.hint}</p>
+              ) : null}
             </Link>
           ))}
         </div>
@@ -226,7 +232,9 @@ export function TodaySection({ today }: { today: DashboardSection<TodayView> }) 
               </div>
               <p className="mt-1 text-xs text-neutral-600">{lesson.teacherName}</p>
               {lesson.transferNote ? (
-                <p className="mt-1.5 text-xs font-semibold text-warning-ink">{lesson.transferNote}</p>
+                <p className="mt-1.5 text-xs font-semibold text-warning-ink">
+                  {lesson.transferNote}
+                </p>
               ) : null}
               {lesson.isCancelled && lesson.note ? (
                 <p className="mt-1.5 text-xs text-error-ink">{lesson.note}</p>
@@ -428,8 +436,9 @@ export function NewsSection({
         <ul className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1">
           {news.map((item) => (
             <li key={item.id} className="min-w-0 shrink-0 snap-start">
+              {/* DIG-36: карточки ведут на свои страницы новостей /news/<id>. */}
               <Link
-                href="/notifications"
+                href={`/news/${item.id}`}
                 className="lift-hover flex h-full w-64 flex-col rounded-card border border-border bg-card p-4 shadow-soft"
               >
                 <span className="text-[11px] uppercase text-neutral-500">
@@ -444,6 +453,15 @@ export function NewsSection({
           ))}
         </ul>
       )}
+      {/* DIG-36: вход в полную ленту новостей и объявлений. */}
+      <Link
+        href="/news"
+        data-testid="dashboard-news-all"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-button px-1 text-sm font-semibold text-coral-600 transition-colors hover:text-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
+      >
+        Все новости и объявления
+        <ArrowRight aria-hidden="true" className="size-4" />
+      </Link>
     </section>
   );
 }

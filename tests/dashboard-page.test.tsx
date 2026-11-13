@@ -11,10 +11,7 @@ import { resolve } from 'node:path';
 import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
-import type {
-  DashboardData,
-  DashboardSection,
-} from '@/server/data/dashboard';
+import type { DashboardData, DashboardSection } from '@/server/data/dashboard';
 
 const studentCtx = {
   userId: 'auth-anna',
@@ -125,9 +122,7 @@ const fullDashboard: DashboardData = {
     averageDelta: 2.3,
     credits: 120,
     creditsTotal: 240,
-    debts: [
-      { disciplineName: 'Информатика', dateLabel: '18 ноября', daysLeft: 7 },
-    ],
+    debts: [{ disciplineName: 'Информатика', dateLabel: '18 ноября', daysLeft: 7 }],
     disciplines: [
       { code: 'PI21-PROG', disciplineName: 'Программирование', average: 92, level: 'good' },
       { code: 'PI21-INFO', disciplineName: 'Информатика', average: 88, level: 'good' },
@@ -184,7 +179,11 @@ const newsFixture = [
 
 vi.mock('@/server/auth/session', () => ({
   getAuthSession: vi.fn(async () => null),
-  requireUser: vi.fn(async () => ({ id: 'auth-anna', login: 'anna.smirnova', role: 'STUDENT' as const })),
+  requireUser: vi.fn(async () => ({
+    id: 'auth-anna',
+    login: 'anna.smirnova',
+    role: 'STUDENT' as const,
+  })),
   requireStaff: vi.fn(async () => ({ id: 'x', login: 'x', role: 'STAFF' as const })),
 }));
 
@@ -282,7 +281,9 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
     expect(html).toContain('href="/ai-assistant"');
     expect(html).toContain('Новости деканата');
     expect(html).toContain('Пересдачи: расписание опубликовано');
-    expect(html).toContain('href="/notifications"');
+    // DIG-36: карточки новостей ведут на свои страницы новостей.
+    expect(html).toContain('href="/news/news-1"');
+    expect(html).not.toContain('href="/notifications"');
   });
 
   it('page stays a section inside the shell main (no own <main> landmark)', async () => {
@@ -319,7 +320,10 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
     // Поведенческое покрытие — e2e dashboard.spec (real server, settled waits).
     // Здесь — контракт исходника: page.tsx оборачивает DashboardContent
     // в Suspense с fallback = DashboardSkeleton.
-    const source = readFileSync(resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'), 'utf8');
+    const source = readFileSync(
+      resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'),
+      'utf8',
+    );
     expect(source).toContain('<Suspense fallback={<DashboardSkeleton />}>');
     expect(source).toContain('<DashboardContent />');
   });
@@ -327,7 +331,10 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
   it('STAFF-ветка: источник содержит явную заглушку «Кабинет сотрудника»', () => {
     // В юнит-среде нет request scope (cookies) — рендер страницы недоступен;
     // поведение покрывает e2e prod-auth, здесь — контракт исходника.
-    const source = readFileSync(resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'), 'utf8');
+    const source = readFileSync(
+      resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'),
+      'utf8',
+    );
     expect(source).toContain('Кабинет сотрудника');
     expect(source).toMatch(/role === 'STAFF'/);
   });
