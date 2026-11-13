@@ -15,8 +15,9 @@
 // и токенам DIG-13 (Inter/Onest, Shell из (cabinet)).
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, BookMarked, Calculator, Info } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, BookMarked, Calculator, Info } from 'lucide-react';
 
+import { personHrefByFullName } from '@/lib/people-catalog';
 import { GradeAppealForm } from '@/components/gradebook/grade-appeal-form';
 import { GradeFormula, GradeRows } from '@/components/gradebook/grade-formula';
 import { Badge } from '@/components/ui/badge';
@@ -75,9 +76,20 @@ export default async function DisciplineCardPage({
               )}
             </p>
             {card.teacherName ? (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Профиль преподавателя появится в справочнике (раздел в разработке)
-              </p>
+              personHrefByFullName(card.teacherName) ? (
+                <Link
+                  href={personHrefByFullName(card.teacherName)!}
+                  data-testid="discipline-teacher-link"
+                  className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-coral-600 transition-colors hover:text-coral-500"
+                >
+                  Профиль в справочнике
+                  <ArrowUpRight aria-hidden="true" className="size-3.5" />
+                </Link>
+              ) : (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Профиль преподавателя появится в справочнике
+                </p>
+              )
             ) : null}
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge status="neutral">
@@ -177,8 +189,8 @@ export default async function DisciplineCardPage({
             <div className="min-w-0 text-sm text-muted-foreground">
               {card.exam ? (
                 <p>
-                  <span className="font-semibold text-foreground">{card.exam.elementName}</span>{' '}
-                  · {card.exam.weightPercent}% итога · максимум {card.exam.maxScore}
+                  <span className="font-semibold text-foreground">{card.exam.elementName}</span> ·{' '}
+                  {card.exam.weightPercent}% итога · максимум {card.exam.maxScore}
                   {card.exam.graded ? ' · уже сдан' : ''}
                 </p>
               ) : (
@@ -207,8 +219,8 @@ export default async function DisciplineCardPage({
         <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
         <span>
           <BookMarked aria-hidden="true" className="mr-1 inline size-3.5" />
-          Накопленная оценка — вклад сданных работ в итог по правилам docs/grading.md: пересдача
-          не удваивает счёт, учитывается последняя попытка.
+          Накопленная оценка — вклад сданных работ в итог по правилам docs/grading.md: пересдача не
+          удваивает счёт, учитывается последняя попытка.
         </span>
       </p>
     </section>

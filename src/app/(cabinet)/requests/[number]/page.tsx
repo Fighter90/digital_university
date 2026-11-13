@@ -18,6 +18,7 @@ import {
 import { dataDb } from '@/server/data/db';
 import { RequestStatusBadge } from '@/components/request-status-badge';
 import { REQUEST_TYPE_LABELS, formatRequestDate } from '@/lib/request-labels';
+import { personHrefByFullName } from '@/lib/people-catalog';
 
 export default async function RequestDetailPage({
   params,
@@ -61,15 +62,33 @@ export default async function RequestDetailPage({
 
       <h2 className="mb-3 text-base font-semibold">История заявки</h2>
       <ol className="flex flex-col gap-3">
-        {events.map((event) => (
-          <li key={event.id} className="rounded-2xl border border-neutral-200 p-4">
-            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-medium text-neutral-900">{event.actorName}</span>
-              <span className="text-xs text-neutral-500">{formatRequestDate(event.createdAt)}</span>
-            </div>
-            <p className="text-sm text-neutral-700">{event.message}</p>
-          </li>
-        ))}
+        {events.map((event) => {
+          // DIG-37 — имя сотрудника деканата ведёт на карточку человека в
+          // справочнике; имена студентов в справочнике сотрудников нет,
+          // поэтому остаются обычным текстом.
+          const peopleHref =
+            event.actorRole === 'STAFF' ? personHrefByFullName(event.actorName) : null;
+          return (
+            <li key={event.id} className="rounded-2xl border border-neutral-200 p-4">
+              <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+                {peopleHref ? (
+                  <Link
+                    href={peopleHref}
+                    className="text-sm font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:text-coral-600 hover:decoration-coral-400"
+                  >
+                    {event.actorName}
+                  </Link>
+                ) : (
+                  <span className="text-sm font-medium text-neutral-900">{event.actorName}</span>
+                )}
+                <span className="text-xs text-neutral-500">
+                  {formatRequestDate(event.createdAt)}
+                </span>
+              </div>
+              <p className="text-sm text-neutral-700">{event.message}</p>
+            </li>
+          );
+        })}
       </ol>
     </section>
   );

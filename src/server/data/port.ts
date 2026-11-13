@@ -185,6 +185,15 @@ export interface DataDb {
   /** Снимает закрепление; идемпотентно (несуществующее — no-op). */
   removeFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
 
+  // ── DIG-36: новости — отметки «Прочитано» (owner-scoped) ─────────────────
+  /** Id прочитанных студентом новостей/объявлений. */
+  listNewsReadIdsByStudent(studentId: string): Promise<string[]>;
+  /**
+   * Ставит отметку «Прочитано»; идемпотентно (повтор — no-op).
+   * Валидация id новости (whitelist каталога) — в слое данных, не здесь.
+   */
+  markNewsReadByStudent(studentId: string, newsId: string): Promise<void>;
+
   // ── staff scope ───────────────────────────────────────────────────────────
   listStudentsByFaculty(faculty: string): Promise<StudentRow[]>;
 

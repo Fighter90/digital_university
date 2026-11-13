@@ -138,7 +138,11 @@ describe('EventCard', () => {
     expect(screen.getByText('до 11:30')).toBeVisible();
     expect(screen.getByText('Информатика')).toBeVisible();
     expect(screen.getByText('Лекция')).toBeVisible();
-    expect(screen.getByText('ауд. 301 · Петров Пётр Петрович')).toBeVisible();
+    // DIG-37 — преподаватель подписан вместе с аудиторией и ведёт в справочник.
+    expect(screen.getByText('ауд. 301 ·')).toBeVisible();
+    const teacherLink = screen.getByText('Петров Пётр Петрович').closest('a');
+    expect(teacherLink).toHaveAttribute('href', '/people/teacher-petrov');
+    expect(teacherLink).toHaveAttribute('data-testid', 'event-teacher-ev-1');
   });
 
   it('перенос: бейдж «Перенос», «было: ауд. 214», причина и штриховка', () => {
@@ -202,7 +206,11 @@ describe('EventCard', () => {
         <EventCard event={online} />
       </ul>,
     );
-    expect(screen.getByText('онлайн · Петров Пётр Петрович')).toBeVisible();
+    expect(screen.getByText('онлайн ·')).toBeVisible();
+    expect(screen.getByText('Петров Пётр Петрович').closest('a')).toHaveAttribute(
+      'href',
+      '/people/teacher-petrov',
+    );
   });
 
   it('компактный режим (мобильная неделя) помечается data-compact', () => {

@@ -74,7 +74,10 @@ vi.mock('@/server/data', () => ({
     greeting: 'Добрый день',
     headingDate: 'среда, 11 ноября',
     summary: 'Сегодня 2 пары.',
-    today: { ok: true, value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null } },
+    today: {
+      ok: true,
+      value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null },
+    },
     deadlines: { ok: true, value: [] },
     progress: {
       ok: true,
@@ -111,7 +114,7 @@ import SettingsPage from '@/app/(cabinet)/settings/page';
 import MorePage from '@/app/(cabinet)/more/page';
 
 describe('nav config (cabinet shell)', () => {
-  it('exposes the 8 mandated cabinet sections with unique hrefs', () => {
+  it('exposes the 9 mandated cabinet sections with unique hrefs', () => {
     const expected = [
       ['/dashboard', 'Главная'],
       ['/schedule', 'Расписание'],
@@ -119,6 +122,7 @@ describe('nav config (cabinet shell)', () => {
       ['/requests', 'Заявки и справки'],
       ['/notifications', 'Уведомления'],
       ['/deanery', 'Связь с деканатом'],
+      ['/people', 'Справочник'],
       ['/ai-assistant', 'AI-ассистент'],
       ['/profile', 'Профиль'],
     ] as const;
@@ -141,10 +145,11 @@ describe('nav config (cabinet shell)', () => {
     ]);
   });
 
-  it('«Ещё» covers Уведомления, Связь с деканатом, AI-ассистент, Профиль, Настройки', () => {
+  it('«Ещё» covers Уведомления, Связь с деканатом, Справочник, AI-ассистент, Профиль, Настройки', () => {
     expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
       '/notifications',
       '/deanery',
+      '/people',
       '/ai-assistant',
       '/profile',
       '/settings',

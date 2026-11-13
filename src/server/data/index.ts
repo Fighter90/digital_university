@@ -58,6 +58,13 @@ export type {
   StaffChangeStatus,
 } from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
+export { getPeopleDirectory, getPersonCard, MAX_UPCOMING_EVENTS } from './people';
+export type {
+  PeopleDirectoryData,
+  PersonCardData,
+  PersonListEntry,
+  PersonUpcomingEvent,
+} from './people';
 export { getDashboard } from './dashboard';
 export type {
   DashboardData,
@@ -70,8 +77,15 @@ export type {
   TodayLessonView,
   TodayView,
 } from './dashboard';
-export { listDeaneryNews } from './news';
-export type { DeaneryNewsItem } from './news';
+export { getNewsPage, getNewsArticle, markNewsRead, listDeaneryNews } from './news';
+export type {
+  DeaneryNewsItem,
+  NewsArticleData,
+  NewsCardView,
+  NewsPageData,
+  NewsPageInput,
+} from './news';
+export { parseNewsScope, parseNewsTopic } from '@/lib/news-catalog';
 export { getServicesPage, toggleFavoriteService, MAX_FAVORITES } from './services';
 export type { ServicesPageData, ServiceToggleResult } from './services';
 export {
@@ -126,4 +140,5 @@ export {
   type DisciplineRow,
   type DisciplineElementRow,
   type ServiceFavoriteRow,
+  type NewsReadRow,
 } from './types';
