@@ -1,52 +1,52 @@
 # Tasks: экран «Новости и объявления» — DIG-36
 
-- [ ] 1. Red-first: `tests/news-catalog.test.ts` — контракт каталога новостей:
+- [x] 1. Red-first: `tests/news-catalog.test.ts` — контракт каталога новостей:
   уникальные id, непустые поля, 4 темы с точными метками, 3 скоупа с точными
   метками; `newsForScope` (по группе/факультету, сортировка свежие сверху),
   `newsForTopic`, важные объявления (в т.ч. «изменился порядок пересдач»),
   обложки-файлы существуют на диске с alt, вложения ведут на существующие
   файлы; QA-тексты («ёлочки», без двойных пробелов, без точки в заголовке).
   Падало до реализации.
-- [ ] 2. Red-first: `tests/news.test.ts` — слой данных: `getNewsPage` —
+- [x] 2. Red-first: `tests/news.test.ts` — слой данных: `getNewsPage` —
   дефолтный скоуп группы (Анна: только ПИ-21, без ЭК-11), вкладки
   факультет/вуз, фильтр темы, совместный фильтр, `scopeDefaulted` для
   сотрудника; `getNewsArticle` (+isRead); `markNewsRead` owner-scoped
   (отметка Ильи не видна Анне), идемпотентно, неизвестный id — false.
   Падало до реализации.
-- [ ] 3. Red-first: `tests/news-page.test.tsx` — контракт /news (SSR):
+- [x] 3. Red-first: `tests/news-page.test.tsx` — контракт /news (SSR):
   заголовок «Новости и объявления», полоса «Важно» с «Прочитано», вкладки
   (дефолт «Моя группа»), пилюли тем, карточки (обложка img с alt +
   loading="lazy", дата, источник, заголовок, 2 строки), пустое состояние,
   статья (/news/[id]): заголовок, дата, автор, абзацы, вложения,
   «Поделиться ссылкой», markNewsRead при открытии, 404 на неизвестный id,
   скелетон в Suspense. Падало до реализации.
-- [ ] 4. Red-first: `e2e/news.spec.ts` — чёрный ящик: дефолтная вкладка
+- [x] 4. Red-first: `e2e/news.spec.ts` — чёрный ящик: дефолтная вкладка
   группы, чужие новости не видны, фильтр темы, объявление «Важно» →
   статья → «Прочитано» после возврата, «Поделиться ссылкой», 404,
   360 px — одна колонка + горизонтальный скролл пилюль, 1440 px —
   несколько колонок, сотруднику — факультетский скоуп. Падало до реализации.
-- [ ] 5. `src/lib/news-catalog.ts` — вымышленный каталог (14 записей: группа
+- [x] 5. `src/lib/news-catalog.ts` — вымышленный каталог (14 записей: группа
   ПИ-21/ЭК-11, факультет ИТ/ЭК, вуз), типы, метки, `findNews`,
   `newsForScope`, `newsForTopic`, `importantOf`, обложки с alt, вложения.
-- [ ] 6. Слой данных: тип `NewsReadRow`, порт
+- [x] 6. Слой данных: тип `NewsReadRow`, порт
   (`listNewsReadIdsByStudent`, `markNewsReadByStudent`), memory-адаптер
   (`newsRead` в seed), `src/server/data/news.ts` (`getNewsPage`,
   `getNewsArticle`, `markNewsRead` — whitelist каталога, `listDeaneryNews`
   из каталога), barrel `@/server/data`, demo-сид (у Анны одно прочитанное
   объявление).
-- [ ] 7. Экран `/news` (+ скелетон): страница (RSC, searchParams
+- [x] 7. Экран `/news` (+ скелетон): страница (RSC, searchParams
   scope/topic), полоса объявлений «Важно» с «Прочитано», вкладки скоупа
   (клиентский radiogroup ссылок), пилюли тем, сетка карточек, пустое
   состояние; компоненты `src/components/news/*`.
-- [ ] 8. Страница `/news/[id]`: обложка (alt, lazy), мета (дата, источник,
+- [x] 8. Страница `/news/[id]`: обложка (alt, lazy), мета (дата, источник,
   автор), абзацы, вложения (статичные файлы), «Поделиться ссылкой»
   (clipboard + fallback), notFound на неизвестный id, markNewsRead при
   открытии.
-- [ ] 9. Обложки `public/news/covers/*.svg` (4 темы) и вложения
+- [x] 9. Обложки `public/news/covers/*.svg` (4 темы) и вложения
   `public/news/files/*.txt` (вымышленные); блок новостей на главной ведёт
   на `/news/<id>` (sections.tsx + тест главной).
-- [ ] 10. Зелёные гейты: узкие vitest-прогоны, полный `pnpm test`,
+- [x] 10. Зелёные гейты: узкие vitest-прогоны, полный `pnpm test`,
   `pnpm lint`, `pnpm typecheck`, `node scripts/swarm/gates.mjs`, e2e
   `e2e/news.spec.ts` (оба вьюпорта).
-- [ ] 11. Change-папка openspec/changes/dig-36-news-screen (proposal, tasks,
+- [x] 11. Change-папка openspec/changes/dig-36-news-screen (proposal, tasks,
   delta-спека news) — задачи отмечаются по ходу.
