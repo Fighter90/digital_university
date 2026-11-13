@@ -6,7 +6,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fsMod from 'node:fs';
 import cpMod from 'node:child_process';
-import { extractDev, extractVerdict, extractSecurity, buildAiLog, securityFailureFeedback, acquireLock } from '../scripts/swarm/orchestrator.mjs';
+import {
+  extractDev,
+  extractVerdict,
+  extractSecurity,
+  buildAiLog,
+  securityFailureFeedback,
+  acquireLock,
+  planWorkerRetry,
+} from '../scripts/swarm/orchestrator.mjs';
 import { planGates } from '../scripts/swarm/gates.mjs';
 
 test('extractDev: full summary line', () => {
@@ -49,10 +57,16 @@ test('extractSecurity: pass/fail/absent', () => {
 
 test('buildAiLog: contains key fields', () => {
   const md = buildAiLog({
-    identifier: 'DIG-6', title: 'Init repo', today: '2026-11-11',
-    rounds: 2, verdicts: 'RETURN → ACCEPT', security: 'PASS',
-    gates: 'GATES: lint=pass typecheck=pass', prUrl: 'https://github.com/x/y/pull/1',
-    story: 'Было нужно — рой сделал — студент получает.', devSummary: 'status: done',
+    identifier: 'DIG-6',
+    title: 'Init repo',
+    today: '2026-11-11',
+    rounds: 2,
+    verdicts: 'RETURN → ACCEPT',
+    security: 'PASS',
+    gates: 'GATES: lint=pass typecheck=pass',
+    prUrl: 'https://github.com/x/y/pull/1',
+    story: 'Было нужно — рой сделал — студент получает.',
+    devSummary: 'status: done',
   });
   assert.match(md, /## DIG-6 · Init repo/);
   assert.match(md, /2026-11-11/);
@@ -90,16 +104,111 @@ test('acquireLock: fresh file, stale pid reclaimed, live pid refused', () => {
   const live = cpMod.spawn('sleep', ['5']);
   writeFileSync(lockPath, String(live.pid));
   assert.throws(() => acquireLock(lockPath, process.pid), /holds the lock/);
-  try { process.kill(live.pid, 'SIGKILL'); } catch {}
+  try {
+    process.kill(live.pid, 'SIGKILL');
+  } catch {}
   rmSync(dir, { recursive: true, force: true });
 });
 
 test('planGates: adaptive per package.json', () => {
-  const full = planGates({ hasPackageJson: true, scripts: { lint: 'next lint', test: 'vitest', build: 'next build' }, hasTS: true });
-  assert.deepEqual(full.map((s) => `${s.name}:${s.cmd ? 'run' : 'skip'}`), ['lint:run', 'typecheck:run', 'build:run', 'test:run']);
+  const full = planGates({
+    hasPackageJson: true,
+    scripts: { lint: 'next lint', test: 'vitest', build: 'next build' },
+    hasTS: true,
+  });
+  assert.deepEqual(
+    full.map((s) => `${s.name}:${s.cmd ? 'run' : 'skip'}`),
+    ['lint:run', 'typecheck:run', 'build:run', 'test:run'],
+  );
   const noTest = planGates({ hasPackageJson: true, scripts: { lint: 'x' }, hasTS: false });
-  assert.deepEqual(noTest.map((s) => `${s.name}:${s.cmd ? 'run' : 'skip'}`), ['lint:run', 'typecheck:skip', 'build:skip', 'test:skip']);
+  assert.deepEqual(
+    noTest.map((s) => `${s.name}:${s.cmd ? 'run' : 'skip'}`),
+    ['lint:run', 'typecheck:skip', 'build:skip', 'test:skip'],
+  );
   const bootstrap = planGates({ hasPackageJson: false });
   assert.equal(bootstrap.length, 1);
   assert.equal(bootstrap[0].name, 'bootstrap');
+});
+
+// ── planWorkerRetry: пережить rate-limit/краш LLM-воркера, не роняя весь рой ──
+
+test('planWorkerRetry: code 0 — фаза завершилась, повторы не нужны', () => {
+  const p = planWorkerRetry({ code: 0, tail: 'DEV_SUMMARY:\nstatus: done', attempt: 0 });
+  assert.equal(p.action, 'accept');
+});
+
+test('planWorkerRetry: краш без вердикта → cooldown + retry той же фазы', () => {
+  const p = planWorkerRetry({
+    code: 1,
+    tail: 'executor · glm Read docs/figma-screens.md',
+    status: 'blocked', // extractDev без маркера DEV_SUMMARY даёт blocked
+    attempt: 0,
+    maxRetries: 2,
+    cooldownMs: 180000,
+  });
+  assert.equal(p.action, 'retry');
+  assert.equal(p.cooldownMs, 180000);
+});
+
+test('planWorkerRetry: маркер rate limit → retry даже при наличии вердикта', () => {
+  for (const marker of [
+    'Retrying… Rate limit',
+    'HTTP 429',
+    'quota exceeded',
+    'Too Many Requests',
+  ]) {
+    const p = planWorkerRetry({
+      code: 1,
+      tail: `chatter ${marker} chatter\nDEV_SUMMARY:\nstatus: blocked`,
+      status: 'blocked',
+      attempt: 1,
+      maxRetries: 2,
+      cooldownMs: 60000,
+    });
+    assert.equal(p.action, 'retry', `marker: ${marker}`);
+  }
+});
+
+test('planWorkerRetry: попытки исчерпаны → сдаёмся (blocked идёт в Linear)', () => {
+  const p = planWorkerRetry({
+    code: 1,
+    tail: 'Retrying… Rate limit',
+    status: 'blocked',
+    attempt: 2,
+    maxRetries: 2,
+    cooldownMs: 60000,
+  });
+  assert.equal(p.action, 'give-up');
+});
+
+test('planWorkerRetry: честный blocked (code 0, чистый выход) — accept, дальше решает конвейер', () => {
+  const p = planWorkerRetry({
+    code: 0,
+    tail: 'DEV_SUMMARY:\nstatus: blocked\nrisk: неоднозначная задача',
+    status: 'blocked',
+    attempt: 0,
+    maxRetries: 2,
+  });
+  assert.equal(p.action, 'accept');
+});
+
+test('planWorkerRetry: код ≠ 0, честный blocked с DEV_SUMMARY без rate-маркеров — не ретраим', () => {
+  const p = planWorkerRetry({
+    code: 1,
+    tail: 'executor crashed after summary\nDEV_SUMMARY:\nstatus: blocked',
+    status: 'blocked',
+    attempt: 0,
+    maxRetries: 2,
+  });
+  assert.equal(p.action, 'give-up');
+});
+
+test('planWorkerRetry: already-implemented при code 0 — accept', () => {
+  const p = planWorkerRetry({
+    code: 0,
+    tail: 'DEV_SUMMARY:\nstatus: already-implemented',
+    status: 'already-implemented',
+    attempt: 0,
+  });
+  assert.equal(p.action, 'accept');
 });

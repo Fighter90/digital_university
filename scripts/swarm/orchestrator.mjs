@@ -109,13 +109,43 @@ const sh = async (cmd, opts) => {
 
 // LLM worker: `opencode run --agent <role> "<message>"`. System prompt lives in
 // .opencode/agent/<role>.md; the message carries the task data + markers contract.
+//
+// DIG-49/PRO-49 lesson (rate limit): параллельные рои долбят одного провайдера —
+// воркер может умереть (code≠0) посреди фазы или отдать «Retrying… Rate limit».
+// Такой краш НЕ роняет весь прогон: cooldown и повтор ТОЙ ЖЕ фазы (политика
+// planWorkerRetry ниже). Тяжёлые LLM-фазы разнесены паузой LLM_GAP после
+// успешного завершения (де-бёрст при нескольких к LeroyGo-провайдеру роях).
+const WORKER_RETRIES = Number(process.env.SWARM_WORKER_RETRIES ?? 2);
+const WORKER_COOLDOWN_MS = Number(process.env.SWARM_WORKER_COOLDOWN_MS ?? 180_000);
+const LLM_GAP_MS = Number(process.env.SWARM_LLM_GAP_MS ?? 20_000);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function worker(role, message, { timeoutMs = 25 * 60_000 } = {}) {
-  log(`  [${role}] GLM worker started (timeout ${Math.round(timeoutMs / 60000)}m)`);
-  const r = await run('opencode', ['run', '--agent', role, message], { timeoutMs });
-  const tail = r.all.slice(-4000);
-  log(`  [${role}] finished code=${r.code}`);
-  log(`  [${role}] tail: ${short(tail, 600)}`);
-  return { ...r, tail };
+  let r;
+  for (let attempt = 0; ; attempt += 1) {
+    log(`  [${role}] GLM worker started (timeout ${Math.round(timeoutMs / 60000)}m)`);
+    r = await run('opencode', ['run', '--agent', role, message], { timeoutMs });
+    const tail = r.all.slice(-4000);
+    log(`  [${role}] finished code=${r.code}`);
+    const plan = planWorkerRetry({
+      code: r.code,
+      tail,
+      status: extractDev(tail).status,
+      attempt,
+      maxRetries: WORKER_RETRIES,
+      cooldownMs: WORKER_COOLDOWN_MS,
+    });
+    if (plan.action === 'retry') {
+      log(
+        `  [${role}] crash/rate-limit без вердикта — cooldown ${Math.round(plan.cooldownMs / 1000)}s, повтор ${attempt + 1}/${WORKER_RETRIES}`,
+      );
+      await sleep(plan.cooldownMs);
+      continue;
+    }
+    log(`  [${role}] tail: ${short(tail, 600)}`);
+    if (r.code === 0 && LLM_GAP_MS > 0) await sleep(LLM_GAP_MS); // разнести LLM-фазы
+    return { ...r, tail };
+  }
 }
 const after = (text, marker, until) => {
   const i = text.indexOf(marker);
@@ -125,6 +155,35 @@ const after = (text, marker, until) => {
 };
 
 // ---------- pure helpers (unit-tested in tests/swarm-orchestrator.test.mjs) ----------
+
+/** Маркеры того, что воркер умер от rate limit провайдера (а не от честного blocked). */
+export const RATE_LIMIT_RE = /(rate.?limit|429|quota|too many requests|перегруж|retrying)/i;
+
+/**
+ * Политика повтора упавшей LLM-фазы. Чистая функция (юнит-тесты):
+ *  - code 0 → фаза завершилась, «accept»;
+ *  - код ≠ 0 и маркер rate limit → «retry» с cooldown (даже если вердикт есть);
+ *  - код ≠ 0 без DEV_SUMMARY-вердикта (краш посреди фазы) → «retry»;
+ *  - иначе (честный blocked / уже попыток maxRetries) → «give-up» — статус
+ *    уходит в Linear, рой не крутится впустую.
+ */
+export function planWorkerRetry({
+  code,
+  tail,
+  status,
+  attempt,
+  maxRetries = 2,
+  cooldownMs = 180_000,
+}) {
+  if (code === 0) return { action: 'accept' };
+  if (attempt >= maxRetries) return { action: 'give-up' };
+  const rateLimited = RATE_LIMIT_RE.test(tail || '');
+  const crashWithoutVerdict = !(tail || '').includes('DEV_SUMMARY:');
+  if (rateLimited || (crashWithoutVerdict && status === 'blocked')) {
+    return { action: 'retry', cooldownMs };
+  }
+  return { action: 'give-up' };
+}
 
 export const extractDev = (tail) => {
   const status =
@@ -538,10 +597,9 @@ async function main() {
           `🔀 PR готов: ${prUrl}\nГейты: ${gatesLine || 'green'} · Ревью: ACCEPT · Security: PASS`,
         );
         {
-          const mg = await sh(
-            `gh pr merge ${prUrl.split('/').pop()} --squash --delete-branch`,
-            { timeoutMs: 600_000 },
-          );
+          const mg = await sh(`gh pr merge ${prUrl.split('/').pop()} --squash --delete-branch`, {
+            timeoutMs: 600_000,
+          });
           if (mg.code !== 0) throw new Error(`auto-merge failed: ${short(mg.all)}`);
           await sh('git fetch origin -q && git checkout -q --detach origin/main');
         }
