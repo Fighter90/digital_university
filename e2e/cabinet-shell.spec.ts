@@ -220,7 +220,9 @@ test.describe('mobile 360 — tab bar and safe area', () => {
 
   test('floating AI button is visible above the tab bar', async ({ page }) => {
     await page.goto('/dashboard');
-    const fab = page.getByRole('link', { name: 'AI-ассистент' }).last();
+    // DIG-46: плавающая кнопка — кнопка (открывает выезжающую панель),
+    // не ссылка; .last() выбирает FAB, а не кнопку AI в шапке.
+    const fab = page.getByRole('button', { name: 'AI-ассистент' }).last();
     await expect(fab).toBeVisible();
     const box = await fab.boundingBox();
     expect(box).not.toBeNull();
