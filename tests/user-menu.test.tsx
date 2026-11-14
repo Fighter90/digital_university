@@ -60,12 +60,35 @@ describe('UserMenu — «Выйти» завершает сессию через
     expect(signOutActionMock).toHaveBeenCalledTimes(1);
   });
 
+  // DIG-55, e2e-найденная регрессия: onClick «Выйти» закрывал меню через
+  // setOpen(false) → форма (внутри {open && …}) размонтировалась ДО того, как
+  // браузер выполнял default action клика (submit) → server action не
+  // вызывался, сессия оставалась живой («Выйти не работает на проде»).
+  // jsdom это не ловит (все равно диспетчит submit у detached form owner),
+  // поэтому пиним: после клика меню и форма обязаны оставаться в DOM —
+  // меню закрывает сама навигация на /login, а не локальный state.
+  it('клик по «Выйти» НЕ размонтирует форму до отправки (меню живёт до навигации)', () => {
+    render(<UserMenu user={USER} />);
+    openMenu();
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Выйти' }));
+
+    expect(
+      screen.getByRole('menu', { name: 'Меню пользователя' }),
+      'меню (и форма signOutAction) должно остаться в DOM после клика',
+    ).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Выйти' })).toBeInTheDocument();
+  });
+
   it('остальные пункты меню остаются ссылками и не трогают сессию', () => {
     render(<UserMenu user={USER} />);
     openMenu();
 
     expect(screen.getByRole('menuitem', { name: 'Профиль' })).toHaveAttribute('href', '/profile');
-    expect(screen.getByRole('menuitem', { name: 'Настройки' })).toHaveAttribute('href', '/settings');
+    expect(screen.getByRole('menuitem', { name: 'Настройки' })).toHaveAttribute(
+      'href',
+      '/settings',
+    );
     expect(signOutActionMock).not.toHaveBeenCalled();
   });
 });

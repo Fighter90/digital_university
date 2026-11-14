@@ -182,9 +182,16 @@ test.describe('DIG-55: «Выйти» завершает сессию — deskto
   test('«Выйти» → /login с сообщением → Back → снова /login (не кабинет)', async ({ page }) => {
     await page.context().clearCookies();
     await page.goto('/login');
+    // Паттерн prod-auth спеки: явный fill + ожидание значений. Клик по чипу
+    // подставляет значения через React state — Enter сразу после клика гонится
+    // с рендером и может отправить пустую форму (сожжёт попытку rate-limit'а).
     await page.getByRole('button', { name: ANNA_CHIP }).click();
-    await page.getByLabel('Пароль', { exact: true }).press('Enter');
-    await expect(page).toHaveURL(/\/dashboard$/);
+    const login = page.getByLabel('Логин');
+    const password = page.getByLabel('Пароль', { exact: true });
+    await expect(login).toHaveValue('anna.smirnova');
+    await expect(password).toHaveValue('anna-demo-2026');
+    await page.getByRole('button', { name: 'Войти', exact: true }).click();
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
 
     // Защищённая страница отдаётся с no-store (иначе Back покажет кэш).
     const dashboard = await page.goto('/dashboard');
@@ -206,9 +213,7 @@ test.describe('DIG-55: «Выйти» завершает сессию — deskto
     await expect(page.getByRole('status')).toContainText('Вы вышли из кабинета');
 
     // Сессия удалена: токена __Host-session больше нет в браузере.
-    const sessionCookie = (await page.context().cookies()).find(
-      (c) => c.name === '__Host-session',
-    );
+    const sessionCookie = (await page.context().cookies()).find((c) => c.name === '__Host-session');
     expect(sessionCookie, 'кука __Host-session обязана быть удалена').toBeUndefined();
 
     // Back не возвращает кабинет: no-store заставляет перезапросить документ,
@@ -216,9 +221,7 @@ test.describe('DIG-55: «Выйти» завершает сессию — deskto
     await page.goBack();
     await expect(page).not.toHaveURL(/\/dashboard/);
     await expect(page).toHaveURL(/\/login/);
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Кабинет студента' }),
-    ).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1, name: 'Кабинет студента' })).toHaveCount(0);
   });
 });
 

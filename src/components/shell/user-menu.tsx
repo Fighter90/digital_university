@@ -90,12 +90,16 @@ export function UserMenu({ user }: { user: ShellUser }) {
             <Settings className="size-4" aria-hidden="true" /> Настройки
           </Link>
           <div className="my-1 border-t border-neutral-100" role="separator" />
+          {/* DIG-55: submit-форма server action signOutAction. ВАЖНО: кнопка НЕ
+              закрывает меню в onClick — размонтирование формы до завершения
+              клика отменяет встроенную отправку формы, и сессия не завершается
+              (видно в e2e: страница оставалась на /dashboard). Редирект action
+              сам уводит со страницы, поэтому закрытие не нужно. */}
           <form action={signOutAction}>
             <button
               type="submit"
               role="menuitem"
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none"
-              onClick={() => setOpen(false)}
             >
               <LogOut className="size-4" aria-hidden="true" /> Выйти
             </button>

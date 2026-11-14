@@ -193,7 +193,8 @@ test('settings: password change works end-to-end (old password stops working)', 
 
   // Проверяем входом: старый пароль больше не работает.
   await page.getByRole('button', { name: 'Выйти на этом устройстве' }).click();
-  await expect(page).toHaveURL(/\/login$/, { timeout: 15000 });
+  // DIG-55: выход завершается на /login?signedOut=1 с сообщением об успехе.
+  await expect(page).toHaveURL(/\/login\?signedOut=1$/, { timeout: 15000 });
   await signIn(page, login, 'temp-pass-2026', '/settings?tab=security');
   await expect(page).toHaveURL(/tab=security$/, { timeout: 15000 });
 
