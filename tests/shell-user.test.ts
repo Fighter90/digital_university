@@ -58,6 +58,7 @@ describe('resolveShellUser (fail-soft, DIG-50)', () => {
       name: 'Анна Смирнова',
       email: 'anna.smirnova@example.edu',
       group: 'ИВТ-21',
+      role: 'STUDENT',
     });
   });
 
@@ -66,6 +67,7 @@ describe('resolveShellUser (fail-soft, DIG-50)', () => {
       name: 'Мария Ковалёва',
       email: 'm.kovaleva@example.edu',
       group: 'менеджер курса',
+      role: 'STAFF',
     });
   });
 

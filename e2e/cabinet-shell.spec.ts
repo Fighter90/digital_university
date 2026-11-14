@@ -97,7 +97,8 @@ test.describe('desktop 1440 — shell chrome', () => {
     await page.keyboard.press('ControlOrMeta+KeyK');
     const dialog = page.getByRole('dialog', { name: 'Поиск по кабинету' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('textbox')).toHaveAttribute(
+    // DIG-45: поле ввода — combobox (ARIA-паттерн с listbox-результатами).
+    await expect(dialog.getByRole('combobox')).toHaveAttribute(
       'placeholder',
       'Найти пару, преподавателя, справку…',
     );
@@ -119,7 +120,7 @@ test.describe('desktop 1440 — shell chrome', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Поиск по кабинету' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('textbox')).toBeFocused();
+    await expect(dialog.getByRole('combobox')).toBeFocused();
 
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
