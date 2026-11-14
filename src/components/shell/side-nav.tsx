@@ -46,8 +46,11 @@ export function SideNav({ unreadCount }: { unreadCount: number }) {
                   <Icon className="size-5 shrink-0" aria-hidden="true" />
                   <span className="hidden min-w-0 flex-1 truncate lg:inline">{section.label}</span>
                   {showBadge && (
+                    // DIG-54: inline-вариант бейджа — без absolute, иначе он
+                    // позиционируется относительно <aside sticky> и «уезжает»
+                    // в угол сайдбара (баг на проде).
                     <span className="ml-auto hidden lg:inline-flex">
-                      <UnreadBadge count={unreadCount} />
+                      <UnreadBadge variant="inline" count={unreadCount} />
                     </span>
                   )}
                 </Link>

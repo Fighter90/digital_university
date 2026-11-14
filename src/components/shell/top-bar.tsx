@@ -75,6 +75,8 @@ export function TopBar({ user, unreadCount, onOpenSearch, searchTriggerRef }: To
 
           <Link
             href="/notifications"
+            // DIG-54: контейнер бейджа — точка привязки e2e-проверки позиции.
+            data-testid="unread-badge"
             className="relative grid size-8 shrink-0 place-items-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-coral-600 md:size-9"
           >
             <Bell className="size-4" aria-hidden="true" />
