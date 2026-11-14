@@ -33,7 +33,7 @@ vi.mock('@/server/data', () => ({
   getPeopleDirectory: vi.fn(async () => state.directory),
 }));
 
-import PeoplePage from '@/app/(cabinet)/people/page';
+import PeoplePage from '@/app/(cabinet)/people/(list)/page';
 
 async function renderPage(): Promise<string> {
   const Page = PeoplePage as unknown as ComponentType;
