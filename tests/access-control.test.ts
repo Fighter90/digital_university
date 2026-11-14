@@ -20,6 +20,8 @@ describe('route guard: public vs protected paths', () => {
     ['/forgot-password', true], // DIG-18: stub screen «Забыли пароль?» остаётся публичным
     ['/login?next=%2F', true],
     ['/api/health', true],
+    ['/verify/ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-6777', true], // DIG-47: публичная проверка справок
+    ['/verify/abc', true],
     ['/dashboard', false],
     ['/dashboard/sub', false],
     ['/staff', false],

@@ -280,6 +280,33 @@ export interface ServiceFavoriteRow {
 }
 
 /**
+ * DIG-47 — выданная справка: строка реестра проверки подлинности.
+ * Публичный ключ — verificationCode (160 бит base32): по нему публичная
+ * страница /verify/<код> отвечает БЕЗ входа, поэтому наружу из слоя
+ * данных уходит только минимальное представление (см. certificates.ts) —
+ * studentId/полное имя/заявка через публичный контракт не проходят.
+ */
+export interface CertificateRow {
+  id: string;
+  studentId: string;
+  /** Заявка-основание (справки «вне заявки» — null, сид демо). */
+  requestId: string | null;
+  /** Тип документа, например «Справка об обучении». */
+  documentType: string;
+  /** Назначение («для банка»); null — по месту требования. */
+  purpose: string | null;
+  /** Номер справки на документе, «СП-ГГГГ-NNNNNN». */
+  number: string;
+  /** Канонический код проверки: base32 группами по 4 (≥128 бит). */
+  verificationCode: string;
+  issuedAt: Date;
+  expiresAt: Date;
+  /** Отзыв сотрудником деканата; null — действует. */
+  revokedAt: Date | null;
+  revokedReason: string | null;
+}
+
+/**
  * Строка настроек, как она лежит в хранилище: полная (DIG-44) или «легаси» —
  * записанная до DIG-44 без новых полей. Вход `normalizeSettings`, который
  * восстанавливает недостающее из значений по умолчанию.

@@ -16,6 +16,7 @@ import { newRequestNumber } from './request-number';
 import type {
   AppealMessageRow,
   AppealRow,
+  CertificateRow,
   DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
@@ -297,6 +298,89 @@ function buildRequests(): {
 }
 
 const { requests, requestEvents } = buildRequests();
+
+// DIG-47 — демо-реестр справок. Код проверки — НЕ секрет (страница
+// проверки публична по самому замыслу), фиксированные значения нужны для
+// стабильного демо жюри и e2e: действительная справка Анны и отозванная
+// справка Ильи. Справка заявки req-anna-1 не сеется — она выдаётся
+// лениво (код генерируется криптографически) при первом открытии
+// карточки заявки или скачивании PDF.
+export const DEMO_CERTIFICATES = {
+  annaValid: {
+    code: 'QK4W-R7X2-M5DJ-V3TH-PL6N-B2QF-UXK3-ZD6A',
+  },
+  /** Отдельные действительные справки: применяются e2e отзыва (параллельные проекты 1440/360). */
+  annaRevokeDesktop: {
+    code: 'P7QM-X3TB-K6VD-H4LN-F2RS-C5QB-W2XK-Z4MT',
+  },
+  annaRevokeMobile: {
+    code: 'T5WQ-C2XV-N7KD-M3LP-R6SF-B4QG-Y2HK-V7ZT',
+  },
+  ilyaRevoked: {
+    code: 'YT3Q-C6VB-N2KH-W5LM-R7XD-P4FS-J6GQ-Z3MT',
+  },
+} as const;
+
+const certificateExpiry = (offsetDays: number): Date => {
+  const d = day(offsetDays, 12, 0);
+  d.setFullYear(d.getFullYear() + 1);
+  return d;
+};
+
+const certificates: CertificateRow[] = [
+  {
+    id: 'cert-demo-anna',
+    studentId: 'st-anna',
+    requestId: null, // справка выдана деканатом напрямую (вне заявки)
+    documentType: 'Справка об обучении',
+    purpose: 'для предъявления по месту требования',
+    number: 'СП-2026-000412',
+    verificationCode: DEMO_CERTIFICATES.annaValid.code,
+    issuedAt: day(-5, 12, 0),
+    expiresAt: certificateExpiry(-5),
+    revokedAt: null,
+    revokedReason: null,
+  },
+  {
+    id: 'cert-demo-anna-bank',
+    studentId: 'st-anna',
+    requestId: null,
+    documentType: 'Справка об обучении',
+    purpose: 'для предъявления в банк',
+    number: 'СП-2026-000431',
+    verificationCode: DEMO_CERTIFICATES.annaRevokeDesktop.code,
+    issuedAt: day(-4, 12, 0),
+    expiresAt: certificateExpiry(-4),
+    revokedAt: null,
+    revokedReason: null,
+  },
+  {
+    id: 'cert-demo-anna-military',
+    studentId: 'st-anna',
+    requestId: null,
+    documentType: 'Справка для отсрочки от армии',
+    purpose: 'для военкомата по месту учёбы',
+    number: 'СП-2026-000442',
+    verificationCode: DEMO_CERTIFICATES.annaRevokeMobile.code,
+    issuedAt: day(-3, 12, 0),
+    expiresAt: certificateExpiry(-3),
+    revokedAt: null,
+    revokedReason: null,
+  },
+  {
+    id: 'cert-demo-ilya',
+    studentId: 'st-ilya',
+    requestId: null,
+    documentType: 'Справка об обучении',
+    purpose: 'для предъявления по месту требования',
+    number: 'СП-2026-000777',
+    verificationCode: DEMO_CERTIFICATES.ilyaRevoked.code,
+    issuedAt: day(-30, 12, 0),
+    expiresAt: certificateExpiry(-30),
+    revokedAt: day(-1, 15, 0),
+    revokedReason: 'Отозвано деканатом: выдана ошибочно',
+  },
+];
 
 const grades: GradeRow[] = [
   {
@@ -900,6 +984,8 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.
     disciplines: disciplineRows,
     elements: elementRows,
+    // DIG-47 — реестр справок: действительная (Анна) и отозванная (Илья).
+    certificates,
   });
 
   // DIG-11 memory auth store: seed the demo logins (guarded — when the Prisma
