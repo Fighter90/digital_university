@@ -10,10 +10,7 @@ import { resolve } from 'node:path';
 import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
-import type {
-  PerformanceData,
-  DisciplinePerformance,
-} from '@/server/data/performance';
+import type { PerformanceData, DisciplinePerformance } from '@/server/data/performance';
 import type { DataCtx, ExamSessionRow } from '@/server/data/types';
 
 const studentCtx: DataCtx = {
@@ -240,7 +237,11 @@ const examSessions: ExamSessionRow[] = [
 
 vi.mock('@/server/auth/session', () => ({
   getAuthSession: vi.fn(async () => null),
-  requireUser: vi.fn(async () => ({ id: 'auth-anna', login: 'anna.smirnova', role: 'STUDENT' as const })),
+  requireUser: vi.fn(async () => ({
+    id: 'auth-anna',
+    login: 'anna.smirnova',
+    role: 'STUDENT' as const,
+  })),
   requireStaff: vi.fn(async () => ({ id: 'x', login: 'x', role: 'STAFF' as const })),
 }));
 
@@ -254,10 +255,7 @@ vi.mock('@/server/data', () => ({
 
 import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
 
-async function renderPage(
-  Page: ComponentType,
-  props?: Record<string, unknown>,
-): Promise<string> {
+async function renderPage(Page: ComponentType, props?: Record<string, unknown>): Promise<string> {
   const { prelude } = await prerenderToNodeStream(createElement(Page, props));
   let html = '';
   for await (const chunk of prelude) {
@@ -290,7 +288,10 @@ async function renderWith(overrides: {
     getPerformance.mockResolvedValueOnce(overrides.performance ?? richPerformance);
   }
   listExams.mockResolvedValueOnce(overrides.exams ?? examSessions);
-  return renderPage(GradesPage, overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined);
+  return renderPage(
+    GradesPage,
+    overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined,
+  );
 }
 
 describe('/grades (DIG-26) — «Успеваемость: сводка»', () => {
@@ -396,18 +397,29 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
   });
 
   it('семестр без оценок: пустое состояние с подсказкой о первой контрольной', async () => {
-    const html = await renderWith({
-      performance: freshSemesterPerformance,
-      searchParams: { semester: '2026-FALL' },
-    });
-    expect(html).toContain('Оценок пока нет');
-    expect(html).toContain('Первая контрольная');
-    expect(html).toContain('Базы данных');
-    expect(html).toContain('14 ноября');
-    // карточек дисциплин нет — только пустое состояние
-    expect(html).not.toContain('data-testid="discipline-card"');
-    // светофор честно нейтрален: долгов нет, оценок нет
-    expect(html).toMatch(/data-testid="traffic-light" data-tone="idle"/);
+    // Дата-бомба: подсказка называет первую контрольную В БУДУЩЕМ относительно
+    // реального «сегодня» (grades page читает new Date() при рендере). Без пина
+    // тест детерминированно красный с 14.11.2026 (зачёт по «Базам данных»
+    // становится прошлым и подсказка перескакивает на «Информатику»).
+    // Пиним Date на день до fixture-ного зачёта; фейкуются только Date,
+    // таймеры не трогаем — prerenderToNodeStream остаётся асинхронно живым.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 10, 13, 9, 0) });
+    try {
+      const html = await renderWith({
+        performance: freshSemesterPerformance,
+        searchParams: { semester: '2026-FALL' },
+      });
+      expect(html).toContain('Оценок пока нет');
+      expect(html).toContain('Первая контрольная');
+      expect(html).toContain('Базы данных');
+      expect(html).toContain('14 ноября');
+      // карточек дисциплин нет — только пустое состояние
+      expect(html).not.toContain('data-testid="discipline-card"');
+      // светофор честно нейтрален: долгов нет, оценок нет
+      expect(html).toMatch(/data-testid="traffic-light" data-tone="idle"/);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('дефолт при пустом текущем семестре — семестр с последними оценками (весна)', async () => {
