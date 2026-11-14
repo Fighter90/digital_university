@@ -18,6 +18,7 @@ import type {
   AppealMessageRow,
   AppealRow,
   AuditLogRow,
+  CertificateRow,
   DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
@@ -184,6 +185,36 @@ export interface DataDb {
   addFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
   /** Снимает закрепление; идемпотентно (несуществующее — no-op). */
   removeFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
+
+  // ── DIG-47: реестр справок и публичная проверка подлинности ──────────────
+  /**
+   * Публичный поиск по коду проверки — ОСОЗНАННОЕ исключение из
+   * owner-scope: страница /verify/<код> по определению работает без
+   * входа, а код несёт 160 бит энтропии. Вызов разрешён ТОЛЬКО
+   * certificates.ts, который отдаёт наружу публичное представление без
+   * studentId и полного имени; любые другие употребления запрещены.
+   */
+  findCertificateByCode(code: string): Promise<CertificateRow | null>;
+  /** Справка заявки владельца (find-or-create опирается на этот поиск). */
+  findCertificateByStudentAndRequestId(
+    studentId: string,
+    requestId: string,
+  ): Promise<CertificateRow | null>;
+  /**
+   * Выдача справки владельцу: код/номер генерирует вызывающий
+   * (certificates.ts), адаптер обязан записать строку атомарно.
+   */
+  appendCertificateForStudent(studentId: string, input: CertificateRow): Promise<CertificateRow>;
+  /**
+   * Отзыв сотрудником факультета: адаптер сам присоединяет студента и
+   * проверяет faculty; чужой/несуществующий код → null. Повторный отзыв
+   * идемпотентен (revokedAt не перезаписывается).
+   */
+  revokeCertificateByStaff(
+    faculty: string,
+    code: string,
+    input: { revokedAt: Date; reason: string | null },
+  ): Promise<CertificateRow | null>;
 
   // ── staff scope ───────────────────────────────────────────────────────────
   listStudentsByFaculty(faculty: string): Promise<StudentRow[]>;

@@ -12,6 +12,7 @@ import type {
   AppealMessageRow,
   AppealRow,
   AuditLogRow,
+  CertificateRow,
   DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
@@ -47,6 +48,8 @@ export interface MemorySeed {
   elements?: DisciplineElementRow[];
   /** DIG-29 — закреплённые студентом сервисы каталога. */
   serviceFavorites?: ServiceFavoriteRow[];
+  /** DIG-47 — реестр выданных справок (проверка подлинности по коду). */
+  certificates?: CertificateRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -74,6 +77,7 @@ export function createMemoryDataDb(): MemoryDataDb {
   let settings: StudentSettingsRow[] = [];
   let notes: StudentNoteRow[] = [];
   let serviceFavorites: ServiceFavoriteRow[] = [];
+  let certificates: CertificateRow[] = [];
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
@@ -82,6 +86,7 @@ export function createMemoryDataDb(): MemoryDataDb {
   let noteSeq = 0;
   let requestSeq = 0;
   let requestEventSeq = 0;
+  let certificateSeq = 0;
 
   const by = <T, K extends keyof T>(rows: T[], key: K, value: T[K]) =>
     rows.find((row) => row[key] === value) ?? null;
@@ -103,6 +108,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       settings = seed.settings ? seed.settings.map(clone) : [];
       notes = seed.notes ? seed.notes.map(clone) : [];
       serviceFavorites = seed.serviceFavorites ? seed.serviceFavorites.map(clone) : [];
+      certificates = seed.certificates ? seed.certificates.map(clone) : [];
       audit = [];
     },
 
@@ -373,6 +379,35 @@ export function createMemoryDataDb(): MemoryDataDb {
       serviceFavorites = serviceFavorites.filter(
         (f) => !(f.studentId === studentId && f.serviceId === serviceId),
       );
+    },
+
+    // ── DIG-47: реестр справок (публичная проверка по коду) ────────────────
+    async findCertificateByCode(code) {
+      return clone(by(certificates, 'verificationCode', code));
+    },
+    async findCertificateByStudentAndRequestId(studentId, requestId) {
+      return clone(
+        certificates.find((c) => c.studentId === studentId && c.requestId === requestId) ?? null,
+      );
+    },
+    async appendCertificateForStudent(studentId, input) {
+      if (input.studentId !== studentId) {
+        throw new Error('appendCertificateForStudent: input.studentId must equal the scope');
+      }
+      certificateSeq += 1;
+      const row: CertificateRow = { ...clone(input), id: input.id || `cert-new-${certificateSeq}` };
+      certificates.push(row);
+      return clone(row);
+    },
+    async revokeCertificateByStaff(faculty, code, input) {
+      const row = certificates.find((c) => c.verificationCode === code);
+      if (!row) return null;
+      const owner = students.find((s) => s.id === row.studentId);
+      if (!owner || owner.faculty !== faculty) return null;
+      if (row.revokedAt) return clone(row); // идемпотентно: дата не перезаписывается
+      row.revokedAt = input.revokedAt;
+      row.revokedReason = input.reason;
+      return clone(row);
     },
 
     async listStudentsByFaculty(faculty) {

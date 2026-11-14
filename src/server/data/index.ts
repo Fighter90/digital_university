@@ -77,6 +77,19 @@ export type { SearchResponse, SearchGroup, SearchHit, SearchHitKind } from '@/li
 export { getServicesPage, toggleFavoriteService, MAX_FAVORITES } from './services';
 export type { ServicesPageData, ServiceToggleResult } from './services';
 export {
+  getCertificatePdfInput,
+  getOrCreateCertificateForRequest,
+  newCertificateNumber,
+  revokeCertificateByCode,
+  verifyCertificateByCode,
+  CERTIFICATE_VALIDITY_DAYS,
+} from './certificates';
+export type {
+  CertificatePdfInput,
+  CertificatePublicView,
+  RevokeCertificateInput,
+} from './certificates';
+export {
   defaultSettingsFor,
   getOwnProfile,
   getOwnSettings,
@@ -128,4 +141,5 @@ export {
   type DisciplineRow,
   type DisciplineElementRow,
   type ServiceFavoriteRow,
+  type CertificateRow,
 } from './types';

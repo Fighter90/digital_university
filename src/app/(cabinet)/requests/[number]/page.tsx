@@ -14,6 +14,7 @@ import {
   getRequestByNumber,
   listRequestEvents,
   normalizeRequestNumber,
+  getOrCreateCertificateForRequest,
 } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { RequestStatusBadge } from '@/components/request-status-badge';
@@ -33,6 +34,14 @@ export default async function RequestDetailPage({
 
   const events = await listRequestEvents(dataDb, ctx, request.id);
   if (!events) notFound();
+
+  // DIG-47 — справка выполненной заявки: реестр (код + QR) и PDF.
+  // getOrCreateCertificateForRequest скоупится владельцем: чужая заявка
+  // и сотрудник получают null (блок просто не показывается).
+  const certificate =
+    ctx.role === 'STUDENT'
+      ? await getOrCreateCertificateForRequest(dataDb, ctx, request, new Date())
+      : null;
 
   return (
     <section className="mx-auto max-w-3xl px-4 py-8">
@@ -56,6 +65,43 @@ export default async function RequestDetailPage({
         <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4">
           <p className="text-sm font-medium text-green-800">Результат</p>
           <p className="mt-1 text-sm text-green-900">{request.resultNote}</p>
+        </div>
+      ) : null}
+
+      {certificate ? (
+        <div
+          data-testid="certificate-block"
+          className="mb-6 rounded-2xl border border-neutral-200 bg-card p-4"
+        >
+          <p className="text-sm font-bold text-neutral-900">Справка готова</p>
+          <p className="mt-1 text-xs text-neutral-600">
+            Скачайте PDF или проверьте подлинность по коду — страница проверки открывается без входа
+            (для банка, военкомата, работодателя).
+          </p>
+          <p
+            className="mt-2 font-mono text-xs break-all text-neutral-500"
+            data-testid="certificate-code"
+          >
+            {certificate.verificationCode}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <a
+              href={`/api/requests/${request.number}/certificate`}
+              data-testid="certificate-pdf"
+              className="rounded-button bg-coral-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
+            >
+              Скачать справку (PDF)
+            </a>
+            <Link
+              href={`/verify/${certificate.verificationCode}`}
+              target="_blank"
+              rel="noreferrer"
+              data-testid="certificate-verify"
+              className="rounded-button border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 transition-colors hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-coral-600"
+            >
+              Проверить подлинность
+            </Link>
+          </div>
         </div>
       ) : null}
 

@@ -15,7 +15,9 @@ const PUBLIC_EXACT_PATHS = new Set([
   '/api/health',
   '/favicon.ico',
 ]);
-const PUBLIC_PREFIXES = ['/_next/', '/assets/'];
+// DIG-47: /verify/<код> — публичная проверка подлинности справок (без входа);
+// ключ — неугадываемый код проверки, перебор ограничен rate limit'ом страницы.
+const PUBLIC_PREFIXES = ['/_next/', '/assets/', '/verify/'];
 
 export function isPublicPath(pathname: string): boolean {
   return (
