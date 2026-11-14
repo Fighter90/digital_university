@@ -3,8 +3,10 @@
 // middleware decision (cabinet gate, /staff role gate, API Origin check).
 import { describe, expect, it } from 'vitest';
 import {
+  cacheControlFor,
   decideAccess,
   isPublicPath,
+  NO_STORE_CACHE_CONTROL,
   safeNextPath,
   shouldSlideAuthCookies,
 } from '@/lib/route-guard';
@@ -182,4 +184,48 @@ describe('sliding cookie renewal decision (review round 3)', () => {
   it('does not slide without a session cookie (nothing to renew)', () => {
     expect(shouldSlideAuthCookies({ kind: 'allow' }, false)).toBe(false);
   });
+
+  // DIG-55: server actions (logout!) выставляют/очищают куки на ответе POST.
+  // Слепое переиздание `__Host-session` в middleware на том же ответе
+  // конкурирует с кукой-очисткой (побеждает последний Set-Cookie, порядок
+  // между слоями не гарантирован). Мутирующие запросы не продлевают куки:
+  // переходы страниц — GET/HEAD, они куки никогда не очищают.
+  it.each(['POST', 'PUT', 'DELETE', 'PATCH'])(
+    'does not slide on a mutating %s request (server actions clear cookies — DIG-55)',
+    (method) => {
+      expect(shouldSlideAuthCookies({ kind: 'allow' }, true, method)).toBe(false);
+    },
+  );
+
+  it.each(['GET', 'HEAD'])('still slides on plain %s navigations (DIG-55)', (method) => {
+    expect(shouldSlideAuthCookies({ kind: 'allow' }, true, method)).toBe(true);
+  });
+
+  it('defaults to GET when the method is not provided (backwards compatible)', () => {
+    expect(shouldSlideAuthCookies({ kind: 'allow' }, true)).toBe(true);
+  });
+});
+
+// DIG-55: «Назад» после выхода не должен показывать кабинет из кэша
+// (bfcache/дисковый кэш). Защищённые страницы отдаются с явным no-store,
+// публичные пути сохраняют дефолты фреймворка (статику это не трогает).
+describe('cache-control for protected screens (DIG-55)', () => {
+  it.each([
+    '/dashboard',
+    '/schedule',
+    '/requests/SR-2026-ABC12',
+    '/grades/semester/3',
+    '/profile',
+    '/staff/requests',
+  ])('protected %s → no-store', (pathname) => {
+    expect(cacheControlFor(pathname)).toBe(NO_STORE_CACHE_CONTROL);
+    expect(NO_STORE_CACHE_CONTROL).toContain('no-store');
+  });
+
+  it.each(['/', '/login', '/forgot-password', '/api/health', '/_next/static/chunk.js', '/verify/x'])(
+    'public %s keeps the framework default (no explicit header)',
+    (pathname) => {
+      expect(cacheControlFor(pathname)).toBeNull();
+    },
+  );
 });

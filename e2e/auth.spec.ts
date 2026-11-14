@@ -171,6 +171,57 @@ test.describe('DIG-18: реальные входы и блокировка — d
   });
 });
 
+// DIG-55 — приёмка бага «Выйти не работает на проде»: пункт меню аватара
+// «Выйти» обязан завершать сессию (БД + обе куки), вести на /login с
+// сообщением об успехе, и «Назад» не должен возвращать кабинет из кэша.
+// Отдельная serial-группа (один успешный вход — лимит попыток на IP общий).
+test.describe('DIG-55: «Выйти» завершает сессию — desktop-1440', () => {
+  test.skip(({ viewport }) => viewport?.width !== 1440, 'desktop-1440 only');
+  test.describe.configure({ mode: 'serial' });
+
+  test('«Выйти» → /login с сообщением → Back → снова /login (не кабинет)', async ({ page }) => {
+    await page.context().clearCookies();
+    await page.goto('/login');
+    await page.getByRole('button', { name: ANNA_CHIP }).click();
+    await page.getByLabel('Пароль', { exact: true }).press('Enter');
+    await expect(page).toHaveURL(/\/dashboard$/);
+
+    // Защищённая страница отдаётся с no-store (иначе Back покажет кэш).
+    const dashboard = await page.goto('/dashboard');
+    expect(dashboard?.headers()['cache-control'] ?? '').toContain('no-store');
+
+    // Открываем меню аватара (паттерн prod-auth спеки: гидратация через toPass).
+    const menuButton = page.getByRole('button', { name: 'Меню пользователя' });
+    const menu = page.getByRole('menu', { name: 'Меню пользователя' });
+    await expect(async () => {
+      await menuButton.focus();
+      await page.keyboard.press('Enter');
+      await expect(menu).toBeVisible();
+    }).toPass({ timeout: 15000 });
+
+    await page.getByRole('menuitem', { name: 'Выйти' }).click();
+
+    // Редирект на /login с сообщением об успешном выходе.
+    await expect(page).toHaveURL(/\/login\?signedOut=1$/);
+    await expect(page.getByRole('status')).toContainText('Вы вышли из кабинета');
+
+    // Сессия удалена: токена __Host-session больше нет в браузере.
+    const sessionCookie = (await page.context().cookies()).find(
+      (c) => c.name === '__Host-session',
+    );
+    expect(sessionCookie, 'кука __Host-session обязана быть удалена').toBeUndefined();
+
+    // Back не возвращает кабинет: no-store заставляет перезапросить документ,
+    // middleware без сессии уводит на /login?next=…
+    await page.goBack();
+    await expect(page).not.toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/login/);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Кабинет студента' }),
+    ).toHaveCount(0);
+  });
+});
+
 test.describe('DIG-18: мобильный 360 px', () => {
   test.skip(({ viewport }) => viewport?.width !== 360, 'mobile-360 only');
 

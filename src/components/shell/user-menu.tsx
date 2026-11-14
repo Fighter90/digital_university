@@ -3,11 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { LogOut, Settings, UserRound } from 'lucide-react';
+import { signOutAction } from '@/server/actions/auth';
 import type { ShellUser } from '@/lib/user';
 
 // DIG-14: меню аватара (Профиль, Настройки, Выйти). Доступно с клавиатуры:
 // Enter открывает, фокус уходит на первый пункт, Escape закрывает и
-// возвращает фокус на кнопку. «Выйти» — заглушка до DIG-18 (signOut).
+// возвращает фокус на кнопку.
+// DIG-55: «Выйти» больше не ссылка-заглушка на /login (та не завершала
+// сессию — на проде «Выйти не работает»), а submit-форма server action
+// signOutAction: удаляет сессию в БД и обе куки, редирект на /login?signedOut=1.
 export function UserMenu({ user }: { user: ShellUser }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -86,14 +90,16 @@ export function UserMenu({ user }: { user: ShellUser }) {
             <Settings className="size-4" aria-hidden="true" /> Настройки
           </Link>
           <div className="my-1 border-t border-neutral-100" role="separator" />
-          <Link
-            role="menuitem"
-            href="/login"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none"
-            onClick={() => setOpen(false)}
-          >
-            <LogOut className="size-4" aria-hidden="true" /> Выйти
-          </Link>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              role="menuitem"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none"
+              onClick={() => setOpen(false)}
+            >
+              <LogOut className="size-4" aria-hidden="true" /> Выйти
+            </button>
+          </form>
         </div>
       )}
     </div>

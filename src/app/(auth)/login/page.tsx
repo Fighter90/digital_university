@@ -15,7 +15,7 @@ export const metadata = { title: 'Вход — Цифровой деканат' 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; signedOut?: string }>;
 }) {
   const auth = await getAuthSession();
   if (auth) redirect('/dashboard');
@@ -28,6 +28,9 @@ export default async function LoginPage({
 
   const params = await searchParams;
   const next = safeNextPath(params.next) ?? undefined;
+  // DIG-55: выход завершается редиректом сюда с ?signedOut=1 — показываем
+  // вежливый статус (role="status"), что сессия действительно закрыта.
+  const signedOut = params.signedOut === '1';
 
   return (
     <main className="flex min-h-screen flex-1 flex-col md:flex-row">
@@ -116,6 +119,15 @@ export default async function LoginPage({
             </span>
             <span className="text-lg font-extrabold tracking-heading">Цифровой деканат</span>
           </div>
+          {signedOut ? (
+            <p
+              role="status"
+              data-testid="signed-out-notice"
+              className="mb-4 rounded-card-sm border border-success-soft bg-success-soft px-4 py-3 text-sm font-medium text-success-ink"
+            >
+              Вы вышли из кабинета. Войдите снова, чтобы продолжить.
+            </p>
+          ) : null}
           <LoginForm next={next} />
         </div>
       </section>

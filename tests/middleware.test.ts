@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
 import { middleware } from '@/middleware';
 import { SESSION_COOKIE_NAME, SESSION_MAX_AGE_SECONDS } from '@/server/auth/cookies';
+import { NO_STORE_CACHE_CONTROL } from '@/lib/route-guard';
 import { ROLE_COOKIE_NAME, signRoleHint } from '@/server/auth/role-cookie';
 
 const SECRET = 'middleware-test-secret';
@@ -114,5 +115,45 @@ describe('middleware: sliding renewal of auth cookies (review round 3)', () => {
   it('anonymous requests without cookies stay cookie-free on public paths', async () => {
     const response = await middleware(request('/login'));
     expect(setCookieHeaders(response)).toHaveLength(0);
+  });
+});
+
+// DIG-55 — logout must be able to clear the cookies uncontested:
+// - protected screens carry an explicit `Cache-Control: no-store` so «Back»
+//   after sign-out re-requests the page (and lands on /login) instead of
+//   restoring the cabinet from the cache;
+// - server-action POSTs (logout!) are NOT slid: the middleware re-issue would
+//   compete with the action's cleared cookie for the same name, and the
+//   winning Set-Cookie order between middleware and handler is not guaranteed.
+describe('middleware: no-store on protected screens, no renewal on POST (DIG-55)', () => {
+  it('protected screen response carries Cache-Control: no-store', async () => {
+    const response = await middleware(request('/dashboard', `${SESSION_COOKIE_NAME}=tok_abc123`));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe(NO_STORE_CACHE_CONTROL);
+  });
+
+  it.each(['/login', '/', '/forgot-password'])(
+    'public path %s keeps the framework default (no explicit cache-control)',
+    async (path) => {
+      const response = await middleware(request(path));
+      expect(response.headers.get('cache-control')).toBeNull();
+    },
+  );
+
+  it('server-action POST to a protected path re-issues no auth cookies', async () => {
+    const response = await middleware(
+      new NextRequest(`${ORIGIN}/settings`, {
+        method: 'POST',
+        headers: new Headers({
+          cookie: `${SESSION_COOKIE_NAME}=tok_abc123`,
+          'next-action': 'signOutAction',
+        }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    // The action owns the cookie fate on this response; the middleware must
+    // not resurrect `__Host-session` behind its back.
+    expect(setCookieFor(response, SESSION_COOKIE_NAME)).toBeUndefined();
+    expect(setCookieFor(response, ROLE_COOKIE_NAME)).toBeUndefined();
   });
 });
