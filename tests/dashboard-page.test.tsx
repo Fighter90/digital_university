@@ -11,10 +11,7 @@ import { resolve } from 'node:path';
 import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
-import type {
-  DashboardData,
-  DashboardSection,
-} from '@/server/data/dashboard';
+import type { DashboardData, DashboardSection } from '@/server/data/dashboard';
 
 const studentCtx = {
   userId: 'auth-anna',
@@ -125,9 +122,7 @@ const fullDashboard: DashboardData = {
     averageDelta: 2.3,
     credits: 120,
     creditsTotal: 240,
-    debts: [
-      { disciplineName: 'Информатика', dateLabel: '18 ноября', daysLeft: 7 },
-    ],
+    debts: [{ disciplineName: 'Информатика', dateLabel: '18 ноября', daysLeft: 7 }],
     disciplines: [
       { code: 'PI21-PROG', disciplineName: 'Программирование', average: 92, level: 'good' },
       { code: 'PI21-INFO', disciplineName: 'Информатика', average: 88, level: 'good' },
@@ -184,7 +179,11 @@ const newsFixture = [
 
 vi.mock('@/server/auth/session', () => ({
   getAuthSession: vi.fn(async () => null),
-  requireUser: vi.fn(async () => ({ id: 'auth-anna', login: 'anna.smirnova', role: 'STUDENT' as const })),
+  requireUser: vi.fn(async () => ({
+    id: 'auth-anna',
+    login: 'anna.smirnova',
+    role: 'STUDENT' as const,
+  })),
   requireStaff: vi.fn(async () => ({ id: 'x', login: 'x', role: 'STAFF' as const })),
 }));
 
@@ -196,6 +195,7 @@ vi.mock('@/server/data', async () => {
     requireDataCtx: vi.fn(async () => studentCtx),
     getDashboard: vi.fn(async () => fullDashboard),
     listDeaneryNews,
+    getOwnSettings: vi.fn(async () => null),
   };
 });
 
@@ -319,7 +319,10 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
     // Поведенческое покрытие — e2e dashboard.spec (real server, settled waits).
     // Здесь — контракт исходника: page.tsx оборачивает DashboardContent
     // в Suspense с fallback = DashboardSkeleton.
-    const source = readFileSync(resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'), 'utf8');
+    const source = readFileSync(
+      resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'),
+      'utf8',
+    );
     expect(source).toContain('<Suspense fallback={<DashboardSkeleton />}>');
     expect(source).toContain('<DashboardContent />');
   });
@@ -327,8 +330,58 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
   it('STAFF-ветка: источник содержит явную заглушку «Кабинет сотрудника»', () => {
     // В юнит-среде нет request scope (cookies) — рендер страницы недоступен;
     // поведение покрывает e2e prod-auth, здесь — контракт исходника.
-    const source = readFileSync(resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'), 'utf8');
+    const source = readFileSync(
+      resolve(import.meta.dirname, '../src/app/(cabinet)/dashboard/page.tsx'),
+      'utf8',
+    );
     expect(source).toContain('Кабинет сотрудника');
     expect(source).toMatch(/role === 'STAFF'/);
+  });
+});
+
+describe('/dashboard (DIG-44) — порядок и видимость виджетов из настроек', () => {
+  it('renders sections in the saved order and hides disabled ones', async () => {
+    vi.mocked(
+      (await import('@/server/data')).getOwnSettings as ReturnType<typeof vi.fn>,
+    ).mockResolvedValueOnce({
+      studentId: 'st-anna',
+      phone: null,
+      emailVisibleToStaff: true,
+      phoneVisibleToStaff: true,
+      notificationChannels: {},
+      theme: 'SYSTEM',
+      widgets: [
+        { id: 'deadlines', enabled: true },
+        { id: 'today', enabled: true },
+        { id: 'news', enabled: false },
+        { id: 'performance', enabled: true },
+        { id: 'requests', enabled: true },
+        { id: 'events', enabled: true },
+      ],
+      quietHours: { enabled: false, from: '22:00', to: '08:00' },
+      language: 'RU',
+      fontSize: 'NORMAL',
+      reduceMotion: false,
+      updatedAt: new Date('2026-11-11T10:00:00.000Z'),
+    });
+    const html = await renderPage(DashboardPage);
+    // Порядок: Дедлайны раньше Сегодня; Новости скрыты.
+    expect(html.indexOf('Ближайшие дедлайны')).toBeLessThan(html.indexOf('>Сегодня<'));
+    expect(html).not.toContain('Новости деканата');
+    expect(html).toContain('Как у меня дела');
+    // Секции «Заявки» и «Мероприятия» рендерятся своими виджетами.
+    expect(html).toContain('Заявки в работе и на проверке');
+    expect(html).toContain('Мероприятия');
+  });
+
+  it('without settings (null) renders the default order with every widget', async () => {
+    vi.mocked(
+      (await import('@/server/data')).getOwnSettings as ReturnType<typeof vi.fn>,
+    ).mockResolvedValueOnce(null);
+    const html = await renderPage(DashboardPage);
+    expect(html.indexOf('>Сегодня<')).toBeLessThan(html.indexOf('Ближайшие дедлайны'));
+    expect(html).toContain('Новости деканата');
+    expect(html).toContain('Заявки в работе и на проверке');
+    expect(html).toContain('Мероприятия');
   });
 });

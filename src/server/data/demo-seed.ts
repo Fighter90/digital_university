@@ -102,6 +102,11 @@ const settings: StudentSettingsRow[] = [
       DEADLINE: { PUSH: true, EMAIL: false, TELEGRAM: false },
     },
     theme: 'SYSTEM',
+    widgets: defaultSettingsFor('st-anna').widgets,
+    quietHours: defaultSettingsFor('st-anna').quietHours,
+    language: 'RU',
+    fontSize: 'NORMAL',
+    reduceMotion: false,
     updatedAt: new Date(),
   },
   {
@@ -111,6 +116,11 @@ const settings: StudentSettingsRow[] = [
     phoneVisibleToStaff: false,
     notificationChannels: defaultSettingsFor('st-ilya').notificationChannels,
     theme: 'SYSTEM',
+    widgets: defaultSettingsFor('st-ilya').widgets,
+    quietHours: defaultSettingsFor('st-ilya').quietHours,
+    language: 'RU',
+    fontSize: 'NORMAL',
+    reduceMotion: false,
     updatedAt: new Date(),
   },
 ];

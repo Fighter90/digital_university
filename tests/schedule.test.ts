@@ -162,6 +162,18 @@ function seedScheduleDb(): MemoryDataDb {
         // Борис отключил PUSH по расписанию — fan-out обязан его пропустить.
         notificationChannels: channelMatrix(false),
         theme: 'SYSTEM',
+        widgets: [
+          { id: 'today', enabled: true },
+          { id: 'deadlines', enabled: true },
+          { id: 'performance', enabled: true },
+          { id: 'requests', enabled: true },
+          { id: 'news', enabled: true },
+          { id: 'events', enabled: true },
+        ],
+        quietHours: { enabled: false, from: '22:00', to: '08:00' },
+        language: 'RU',
+        fontSize: 'NORMAL',
+        reduceMotion: false,
         updatedAt: NOW,
       },
     ],

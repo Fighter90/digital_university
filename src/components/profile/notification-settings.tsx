@@ -9,12 +9,17 @@ import {
   NOTIFICATION_TYPE_LABELS,
 } from '@/lib/notification-labels';
 import { saveNotificationChannelAction } from '@/server/actions/profile';
-import type { NotificationChannel, NotificationType, StudentSettingsRow } from '@/server/data/types';
+import type {
+  NotificationChannel,
+  NotificationType,
+  StudentSettingsRow,
+} from '@/server/data/types';
 
-// DIG-19: матрица «тип уведомления × канал» (push / email / Telegram).
-// Telegram — «скоро»: переключатели выключены на сервере и в интерфейсе.
-// Изменение сохраняется сразу (server action) и влияет на генерацию
-// уведомлений: тип с выключенным push не попадает в ленту.
+// DIG-19 (обновлено DIG-44): матрица «тип уведомления × канал»
+// («в кабинете» / email / Telegram). Telegram — «скоро»: переключатели
+// выключены на сервере и в интерфейсе. Изменение сохраняется сразу
+// (server action) и влияет на генерацию уведомлений: тип с выключенным
+// каналом «в кабинете» не попадает в ленту.
 export function NotificationSettings({ settings }: { settings: StudentSettingsRow }) {
   const [channels, setChannels] = useState(settings.notificationChannels);
   const [isPending, startTransition] = useTransition();
@@ -35,12 +40,11 @@ export function NotificationSettings({ settings }: { settings: StudentSettingsRo
   };
 
   return (
-    <div
-      role="table"
-      aria-label="Каналы уведомлений"
-      className="flex flex-col gap-2"
-    >
-      <div role="row" className="grid grid-cols-[minmax(0,1fr)_repeat(3,auto)] items-center gap-x-2 pb-1">
+    <div role="table" aria-label="Каналы уведомлений" className="flex flex-col gap-2">
+      <div
+        role="row"
+        className="grid grid-cols-[minmax(0,1fr)_repeat(3,auto)] items-center gap-x-2 pb-1"
+      >
         <span role="columnheader" className="sr-only">
           Тип уведомлений
         </span>

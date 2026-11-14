@@ -15,10 +15,18 @@ import {
   defaultSettingsFor,
   getOwnProfile,
   getOwnSettings,
+  normalizeSettings,
   updateOwnContacts,
+  updateOwnFontSize,
+  updateOwnLanguage,
   updateOwnNotificationChannel,
+  updateOwnQuietHours,
+  updateOwnReduceMotion,
   updateOwnTheme,
+  updateOwnWidgets,
 } from '@/server/data/profile';
+import { DEFAULT_WIDGET_ORDER } from '@/lib/dashboard-widgets';
+import type { StoredStudentSettingsRow } from '@/server/data/types';
 import { listNotifications } from '@/server/data/notifications';
 import { listAppeals } from '@/server/data/appeals';
 import type { DataCtx } from '@/server/data/types';
@@ -125,8 +133,9 @@ describe('settings defaults + mutations are per student', () => {
   });
 
   it('defaultSettingsFor is a pure factory without shared references', () => {
-    const a = defaultSettingsFor('st-x');
-    const b = defaultSettingsFor('st-x');
+    const now = new Date();
+    const a = defaultSettingsFor('st-x', now);
+    const b = defaultSettingsFor('st-x', now);
     expect(a).toEqual(b);
     expect(a.notificationChannels).not.toBe(b.notificationChannels);
   });
@@ -183,6 +192,159 @@ describe('settings defaults + mutations are per student', () => {
     expect((await updateOwnTheme(db, anna, 'LIGHT'))?.theme).toBe('LIGHT');
     expect((await mustSettings(anna)).theme).toBe('LIGHT');
     expect((await mustSettings(ilya)).theme).toBe('SYSTEM');
+  });
+});
+
+describe('DIG-44 — widgets, quiet hours and appearance preferences', () => {
+  it('defaults: six widgets enabled in canonical order, quiet hours off, RU/NORMAL/motion on', async () => {
+    const settings = await mustSettings(anna);
+    expect(settings.widgets.map((w) => w.id)).toEqual(DEFAULT_WIDGET_ORDER);
+    expect(settings.widgets.every((w) => w.enabled)).toBe(true);
+    expect(settings.quietHours).toEqual({ enabled: false, from: '22:00', to: '08:00' });
+    expect(settings.language).toBe('RU');
+    expect(settings.fontSize).toBe('NORMAL');
+    expect(settings.reduceMotion).toBe(false);
+  });
+
+  it('legacy row without DIG-44 fields is normalized on read (no crash, defaults filled)', () => {
+    // Строка до DIG-44: только старые поля.
+    const legacy: StoredStudentSettingsRow = {
+      studentId: 'st-legacy',
+      phone: null,
+      emailVisibleToStaff: true,
+      phoneVisibleToStaff: true,
+      notificationChannels: defaultSettingsFor('st-legacy').notificationChannels,
+      theme: 'SYSTEM',
+      updatedAt: new Date(),
+    };
+    const normalized = normalizeSettings(legacy);
+    expect(normalized).not.toBeNull();
+    expect(normalized!.widgets.map((w) => w.id)).toEqual(DEFAULT_WIDGET_ORDER);
+    expect(normalized!.quietHours.enabled).toBe(false);
+    expect(normalized!.language).toBe('RU');
+    expect(normalized!.fontSize).toBe('NORMAL');
+    expect(normalized!.reduceMotion).toBe(false);
+    expect(normalizeSettings(undefined)).toBeNull();
+  });
+
+  it('updateOwnWidgets persists order+visibility for the owner only', async () => {
+    // Полный порядок (как его отправляет server action после normalizeWidgets):
+    // «Дедлайны» первый, «Новости» выключены.
+    const widgets = [
+      { id: 'deadlines' as const, enabled: true },
+      { id: 'today' as const, enabled: true },
+      { id: 'performance' as const, enabled: true },
+      { id: 'requests' as const, enabled: true },
+      { id: 'news' as const, enabled: false },
+      { id: 'events' as const, enabled: true },
+    ];
+    const saved = await updateOwnWidgets(db, anna, widgets);
+    expect(saved?.widgets.map((w) => w.id)).toEqual([
+      'deadlines',
+      'today',
+      'performance',
+      'requests',
+      'news',
+      'events',
+    ]);
+    expect(saved?.widgets.find((w) => w.id === 'news')?.enabled).toBe(false);
+
+    // Порядок доходит до следующего чтения…
+    const reread = await mustSettings(anna);
+    expect(reread.widgets.map((w) => w.id).slice(0, 2)).toEqual(['deadlines', 'today']);
+    // …и не затрагивает другого студента.
+    expect((await mustSettings(ilya)).widgets.map((w) => w.id)).toEqual(DEFAULT_WIDGET_ORDER);
+  });
+
+  it('updateOwnWidgets rejects an invalid order (must cover all known ids once)', async () => {
+    const before = (await mustSettings(anna)).widgets;
+    const bad = await updateOwnWidgets(db, anna, [{ id: 'today', enabled: true }]);
+    expect(bad?.widgets).toEqual(before); // nothing written
+  });
+
+  it('staff ctx cannot change widgets (ROLE_MISMATCH, nothing written)', async () => {
+    db.auditEvents().length = 0;
+    expect(await updateOwnWidgets(db, maria, [{ id: 'today', enabled: false }])).toBeNull();
+    expect(lastAudit()?.reason).toBe('ROLE_MISMATCH');
+    expect((await mustSettings(anna)).widgets.map((w) => w.id).slice(0, 2)).toEqual([
+      'deadlines',
+      'today',
+    ]);
+  });
+
+  it('updateOwnQuietHours persists the window; invalid windows are rejected', async () => {
+    const saved = await updateOwnQuietHours(db, anna, {
+      enabled: true,
+      from: '23:00',
+      to: '07:30',
+    });
+    expect(saved?.quietHours).toEqual({ enabled: true, from: '23:00', to: '07:30' });
+
+    expect(
+      await updateOwnQuietHours(db, anna, { enabled: true, from: '25:00', to: '07:30' }),
+    ).toBeNull();
+    expect(
+      await updateOwnQuietHours(db, anna, { enabled: true, from: '07:00', to: '07:00' }),
+    ).toBeNull();
+    expect((await mustSettings(anna)).quietHours.from).toBe('23:00');
+  });
+
+  it('quiet hours suppress in-cabinet notification generation inside the window only', async () => {
+    // Окно 23:00–07:30 (включено выше): 23:30 — тихий час…
+    const atNight = await createNotificationForStudent(db, anna, {
+      type: 'GRADE',
+      title: 'Ночная оценка',
+      body: 'Тест — 9 из 10.',
+      now: new Date(2026, 10, 11, 23, 30),
+    });
+    expect(atNight).toBeNull();
+    // …06:00 — тоже внутри окна…
+    expect(
+      await createNotificationForStudent(db, anna, {
+        type: 'GRADE',
+        title: 'Ранняя оценка',
+        body: 'Тест — 9 из 10.',
+        now: new Date(2026, 10, 11, 6, 0),
+      }),
+    ).toBeNull();
+    // …а днём уведомления создаются как обычно.
+    const atDay = await createNotificationForStudent(db, anna, {
+      type: 'GRADE',
+      title: 'Дневная оценка',
+      body: 'Тест — 9 из 10.',
+      now: new Date(2026, 10, 11, 12, 0),
+    });
+    expect(atDay?.title).toBe('Дневная оценка');
+  });
+
+  it('updateOwnFontSize / updateOwnReduceMotion / updateOwnLanguage persist per student', async () => {
+    expect((await updateOwnFontSize(db, anna, 'LARGE'))?.fontSize).toBe('LARGE');
+    expect((await updateOwnReduceMotion(db, anna, true))?.reduceMotion).toBe(true);
+    expect((await updateOwnLanguage(db, anna, 'RU'))?.language).toBe('RU');
+
+    const annaSettings = await mustSettings(anna);
+    expect(annaSettings.fontSize).toBe('LARGE');
+    expect(annaSettings.reduceMotion).toBe(true);
+
+    // Илья не тронут.
+    const ilyaSettings = await mustSettings(ilya);
+    expect(ilyaSettings.fontSize).toBe('NORMAL');
+    expect(ilyaSettings.reduceMotion).toBe(false);
+  });
+
+  it('language accepts only known values', async () => {
+    expect(await updateOwnLanguage(db, anna, 'FR' as unknown as 'RU' | 'EN')).toBeNull();
+  });
+
+  it('staff ctx cannot change appearance prefs', async () => {
+    db.auditEvents().length = 0;
+    expect(await updateOwnFontSize(db, maria, 'XLARGE')).toBeNull();
+    expect(await updateOwnReduceMotion(db, maria, true)).toBeNull();
+    expect(await updateOwnLanguage(db, maria, 'EN')).toBeNull();
+    expect(
+      await updateOwnQuietHours(db, maria, { enabled: true, from: '01:00', to: '02:00' }),
+    ).toBeNull();
+    expect(lastAudit()?.reason).toBe('ROLE_MISMATCH');
   });
 });
 

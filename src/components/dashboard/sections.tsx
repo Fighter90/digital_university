@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
   CalendarClock,
+  CalendarDays,
   FileText,
   MessagesSquare,
   Newspaper,
@@ -130,7 +131,10 @@ export function Hero({
           {`${greeting}${firstName ? `, ${firstName}` : ''}!`}
         </p>
         {summary ? (
-          <p data-testid="dashboard-summary" className="mt-2 text-sm leading-relaxed text-neutral-100 md:text-base">
+          <p
+            data-testid="dashboard-summary"
+            className="mt-2 text-sm leading-relaxed text-neutral-100 md:text-base"
+          >
             {summary}
           </p>
         ) : null}
@@ -146,7 +150,9 @@ export function Hero({
               <p className="mt-1 text-xl font-extrabold tracking-heading text-white md:text-2xl">
                 {tile.value}
               </p>
-              {tile.hint ? <p className="mt-0.5 text-[11px] text-neutral-400">{tile.hint}</p> : null}
+              {tile.hint ? (
+                <p className="mt-0.5 text-[11px] text-neutral-400">{tile.hint}</p>
+              ) : null}
             </Link>
           ))}
         </div>
@@ -226,7 +232,9 @@ export function TodaySection({ today }: { today: DashboardSection<TodayView> }) 
               </div>
               <p className="mt-1 text-xs text-neutral-600">{lesson.teacherName}</p>
               {lesson.transferNote ? (
-                <p className="mt-1.5 text-xs font-semibold text-warning-ink">{lesson.transferNote}</p>
+                <p className="mt-1.5 text-xs font-semibold text-warning-ink">
+                  {lesson.transferNote}
+                </p>
               ) : null}
               {lesson.isCancelled && lesson.note ? (
                 <p className="mt-1.5 text-xs text-error-ink">{lesson.note}</p>
@@ -444,6 +452,65 @@ export function NewsSection({
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+// ── DIG-44 — виджеты «Заявки» и «Мероприятия» ───────────────────────────────
+
+export function RequestsSection({ requests }: { requests: DashboardSection<RequestsView> }) {
+  if (!requests.ok) return <SectionFailure title="Заявки" error={requests.error} />;
+  const { inWork, total } = requests.value;
+  const ready = Math.max(0, total - inWork);
+
+  return (
+    <section aria-labelledby="dashboard-requests-title">
+      <h2 id="dashboard-requests-title" className="text-lg font-extrabold tracking-heading">
+        Заявки
+      </h2>
+      <div className="lift-hover mt-3 rounded-card border border-border bg-card p-5 shadow-soft">
+        <p className="text-sm text-neutral-600">Заявки в работе и на проверке</p>
+        <div className="mt-3 flex flex-wrap items-end gap-6">
+          <p className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold tracking-heading text-neutral-900">
+              {inWork}
+            </span>
+            <span className="text-sm text-neutral-600">
+              {pluralRu(inWork, ['заявка в работе', 'заявки в работе', 'заявок в работе'])}
+            </span>
+          </p>
+          <p className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold tracking-heading text-neutral-900">
+              {ready}
+            </span>
+            <span className="text-sm text-neutral-600">
+              {pluralRu(ready, ['готова к получению', 'готовы к получению', 'готово к получению'])}
+            </span>
+          </p>
+          <Link
+            href="/requests"
+            className="ml-auto rounded-pill border border-border px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+          >
+            Все заявки
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function EventsSection() {
+  return (
+    <section aria-labelledby="dashboard-events-title">
+      <h2 id="dashboard-events-title" className="text-lg font-extrabold tracking-heading">
+        Мероприятия
+      </h2>
+      <EmptyState
+        className="mt-3"
+        icon={CalendarDays}
+        title="Мероприятия скоро появятся"
+        description="Раздел готовится — здесь будут события и мероприятия вуза."
+      />
     </section>
   );
 }
