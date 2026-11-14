@@ -15,8 +15,9 @@ interface LintMessage {
 
 const ROOT = resolve(__dirname, '..');
 
-// Общий инстанс: холодная компиляция конфига (compat + jiti) недетерминированно
-// падает в первом вызове воркера — прогрев в beforeAll + синглтон лечат это.
+// Общий инстанс: холодная компиляция конфига (compat + jiti + плагины Next)
+// недетерминированно падает в первом вызове воркера — прогрев в beforeAll +
+// синглтон лечат это.
 let _eslint: ESLint | null = null;
 const getESLint = () => (_eslint ??= new ESLint({ cwd: ROOT }));
 const lint = async (code: string, filePath: string) => {
@@ -28,6 +29,14 @@ const lint = async (code: string, filePath: string) => {
   }
 };
 
+// Урок раунда 3 (гейт): на машине роя воркеры Vitest гоняются параллельно с
+// другими executor'ами — холодная компиляция конфига ESLint превышает
+// глобальный hookTimeout 30s и beforeAll падает по таймауту до первого
+// assertions. Поэтому: у прогрева и у каждого теста — собственный щедрый
+// таймаут (значение последним аргументом перекрывает глобальный кап).
+const WARMUP_TIMEOUT_MS = 120_000;
+const LINT_TIMEOUT_MS = 90_000;
+
 const restrictedHits = (messages: LintMessage[]) =>
   messages.filter((m) => m.ruleId === 'no-restricted-imports' && /prisma/i.test(m.message));
 
@@ -38,62 +47,91 @@ const PRISMA_CODE = [
 
 describe('eslint no-restricted-imports: prisma is server-only (DIG-12)', () => {
   beforeAll(async () => {
-    // прогрев конфига: первый lintText в воркере может отработать вхолостую
+    // прогрев конфига: первый lintText в воркере может отработать вхолостую;
+    // таймаут прогрева — явно, глобальные 30s на насыщенной машине не хватает
     try {
       await lint('const warm = 1;', 'src/warmup.ts');
     } catch {
       /* прогрев не обязан успехом — важен кэш компиляции */
     }
-  });
+  }, WARMUP_TIMEOUT_MS);
 
-  it('a page-level import of @prisma/client FAILS lint', async () => {
-    const [result] = await lint(PRISMA_CODE, 'src/app/virtual-dashboard-page.tsx');
-    expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
-  });
+  it(
+    'a page-level import of @prisma/client FAILS lint',
+    async () => {
+      const [result] = await lint(PRISMA_CODE, 'src/app/virtual-dashboard-page.tsx');
+      expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
+    },
+    LINT_TIMEOUT_MS,
+  );
 
-  it('a component-level import of @prisma/client FAILS lint', async () => {
-    const [result] = await lint(PRISMA_CODE, 'src/components/request-card.tsx');
-    expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
-  });
+  it(
+    'a component-level import of @prisma/client FAILS lint',
+    async () => {
+      const [result] = await lint(PRISMA_CODE, 'src/components/request-card.tsx');
+      expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
+    },
+    LINT_TIMEOUT_MS,
+  );
 
-  it('a relative import of the generated client from src/components FAILS lint', async () => {
-    const code = [
-      "import { PrismaClient } from '../generated/prisma';",
-      'export const makeClient = () => new PrismaClient();',
-    ].join('\n');
-    const [result] = await lint(code, 'src/components/virtual.tsx');
-    expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
-  });
+  it(
+    'a relative import of the generated client from src/components FAILS lint',
+    async () => {
+      const code = [
+        "import { PrismaClient } from '../generated/prisma';",
+        'export const makeClient = () => new PrismaClient();',
+      ].join('\n');
+      const [result] = await lint(code, 'src/components/virtual.tsx');
+      expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
+    },
+    LINT_TIMEOUT_MS,
+  );
 
-  it("an aliased import '@/generated/prisma' from src/lib FAILS lint", async () => {
-    const code = [
-      "import { PrismaClient } from '@/generated/prisma';",
-      'export const makeClient = () => new PrismaClient();',
-    ].join('\n');
-    const [result] = await lint(code, 'src/lib/virtual.ts');
-    expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
-  });
+  it(
+    "an aliased import '@/generated/prisma' from src/lib FAILS lint",
+    async () => {
+      const code = [
+        "import { PrismaClient } from '@/generated/prisma';",
+        'export const makeClient = () => new PrismaClient();',
+      ].join('\n');
+      const [result] = await lint(code, 'src/lib/virtual.ts');
+      expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
+    },
+    LINT_TIMEOUT_MS,
+  );
 
-  it('an import of @prisma/adapter-pg from src/app FAILS lint', async () => {
-    const code = [
-      "import { PrismaPg } from '@prisma/adapter-pg';",
-      'export const makeAdapter = () => new PrismaPg({ connectionString: "" });',
-    ].join('\n');
-    const [result] = await lint(code, 'src/app/api/virtual/route.ts');
-    expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
-  });
+  it(
+    'an import of @prisma/adapter-pg from src/app FAILS lint',
+    async () => {
+      const code = [
+        "import { PrismaPg } from '@prisma/adapter-pg';",
+        'export const makeAdapter = () => new PrismaPg({ connectionString: "" });',
+      ].join('\n');
+      const [result] = await lint(code, 'src/app/api/virtual/route.ts');
+      expect(restrictedHits(result.messages).length).toBeGreaterThan(0);
+    },
+    LINT_TIMEOUT_MS,
+  );
 
-  it('the same import inside src/server/ is allowed', async () => {
-    const [result] = await lint(PRISMA_CODE, 'src/server/data/prisma-adapter.ts');
-    expect(result.errorCount).toBe(0);
-  });
+  it(
+    'the same import inside src/server/ is allowed',
+    async () => {
+      const [result] = await lint(PRISMA_CODE, 'src/server/data/prisma-adapter.ts');
+      expect(result.errorCount).toBe(0);
+    },
+    LINT_TIMEOUT_MS,
+  );
 
-  it('regular data-layer imports from a page stay allowed', async () => {
-    const code = [
-      "import { listRequests } from '@/server/data/requests';",
-      'export const load = () => listRequests;',
-    ].join('\n');
-    const [result] = await lint(code, 'src/app/(cabinet)/requests/virtual-page.tsx');
-    expect(result.errorCount).toBe(0);
-  });
+  it(
+    'regular data-layer imports from a page stay allowed',
+    async () => {
+      const code = [
+        "import { listRequests } from '@/server/data/requests';",
+        'export const load = () => listRequests;',
+      ].join('\n');
+      const [result] = await lint(code, 'src/app/(cabinet)/requests/virtual-page.tsx');
+      expect(result.errorCount).toBe(0);
+    },
+    LINT_TIMEOUT_MS,
+  );
 });
