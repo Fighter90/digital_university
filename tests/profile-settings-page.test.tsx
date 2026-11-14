@@ -1,9 +1,9 @@
-// DIG-19 — render contract of the /profile and /settings screens (unit, SSR).
-// Pages are async server components; we prerender them with mocked session
+// DIG-19 — render contract of the /profile screen (unit, SSR).
+// The page is an async server component; we prerender it with mocked session
 // and data modules (same approach as tests/cabinet-shell.test.ts) and pin
 // the visible contract: masked student badge, one «Нашли ошибку» entry point,
-// the notification channel matrix with Telegram disabled («скоро»), the theme
-// picker and the active-sessions list.
+// the contacts form. The /settings screen contract moved to
+// tests/settings-page.test.tsx (DIG-44 rebuilt it as a tabbed screen).
 import { describe, expect, it, vi } from 'vitest';
 import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
@@ -97,7 +97,6 @@ vi.mock('@/lib/profile-format', async (importOriginal) => ({
 }));
 
 import ProfilePage from '@/app/(cabinet)/profile/page';
-import SettingsPage from '@/app/(cabinet)/settings/page';
 
 async function renderPage(Page: ComponentType): Promise<string> {
   const { prelude } = await prerenderToNodeStream(createElement(Page));
@@ -145,50 +144,5 @@ describe('/profile (DIG-19)', () => {
   it('has exactly one «Нашли ошибку в данных?» entry point', async () => {
     const html = await renderPage(ProfilePage);
     expect(html.match(/Нашли ошибку в данных\?/g)?.length).toBe(1);
-  });
-});
-
-describe('/settings (DIG-19)', () => {
-  it('renders the notification matrix: 5 types × push/email/telegram', async () => {
-    const html = await renderPage(SettingsPage);
-    for (const label of ['Расписание', 'Дедлайны', 'Заявки', 'Оценки', 'Объявления']) {
-      expect(html, `type ${label} missing`).toContain(label);
-    }
-    expect(html).toContain('Telegram');
-    expect(html).toContain('скоро');
-  });
-
-  it('telegram channel is disabled everywhere (never togglable)', async () => {
-    const html = await renderPage(SettingsPage);
-    // 5 строк матрицы, в каждой Telegram-переключатель disabled.
-    const disabledCount = html.match(/disabled/g)?.length ?? 0;
-    expect(disabledCount).toBeGreaterThanOrEqual(5);
-  });
-
-  it('theme picker shows light/system/dark labels', async () => {
-    const html = await renderPage(SettingsPage);
-    for (const label of ['Светлая', 'Системная', 'Тёмная']) {
-      expect(html, `theme ${label} missing`).toContain(label);
-    }
-  });
-
-  it('renders active sessions with device, time and the «this device» marker', async () => {
-    const html = await renderPage(SettingsPage);
-    expect(html).toContain('Активные сессии');
-    expect(html).toContain('Windows · Chrome');
-    expect(html).toContain('iPhone · Safari');
-    expect(html).toContain('Это устройство');
-  });
-
-  it('offers both sign-out entry points', async () => {
-    const html = await renderPage(SettingsPage);
-    expect(html).toContain('Выйти на этом устройстве');
-    expect(html).toContain('Выйти везде');
-  });
-
-  it('stays a section inside the shell (no own <main>)', async () => {
-    const html = await renderPage(SettingsPage);
-    expect(html).toContain('<section');
-    expect(html).not.toContain('<main');
   });
 });

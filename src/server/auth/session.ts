@@ -5,6 +5,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { authStore } from './store';
+import { hashPassword, verifyPassword } from './password';
 import {
   SESSION_COOKIE_NAME,
   buildClearedRoleHintCookie,
@@ -66,4 +67,31 @@ export async function signOutAllDevices(): Promise<number> {
  */
 export async function listActiveUserSessions(userId: string): Promise<AuthSessionRow[]> {
   return authStore.listUserSessions(userId, new Date());
+}
+
+/**
+ * DIG-44 — «Завершить» для одного сеанса: владение проверяет сам store
+ * (sessionId ищется только среди сессий этого пользователя), поэтому
+ * подделанный id чужой сессии ничего не удалит.
+ */
+export async function revokeUserSessionById(userId: string, sessionId: string): Promise<boolean> {
+  const deleted = await authStore.deleteSessionById(userId, sessionId);
+  return deleted > 0;
+}
+
+/**
+ * DIG-44 — смена пароля владельца сессии: проверяем текущий пароль и пишем
+ * новый argon2id-хэш. Плaintext существует только как аргументы этого вызова.
+ */
+export async function changeOwnPassword(
+  userId: string,
+  login: string,
+  currentPlain: string,
+  nextPlain: string,
+): Promise<{ ok: boolean } | 'wrong-current' | 'unknown-user'> {
+  const row = await authStore.findUserByLogin(login);
+  if (!row) return 'unknown-user';
+  if (!(await verifyPassword(row.passwordHash, currentPlain))) return 'wrong-current';
+  await authStore.setPasswordHash(userId, await hashPassword(nextPlain));
+  return { ok: true };
 }

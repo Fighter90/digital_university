@@ -130,5 +130,22 @@ export function createPrismaAuthStore(client: PrismaAuthClient): AuthStore {
         .filter((row) => row.expiresAt > now)
         .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
     },
+
+    // ── DIG-44 — смена пароля и завершение сеанса ────────────────────────────
+
+    async setPasswordHash(userId, passwordHash) {
+      // Плaintext сюда не доходит: на входе только готовый argon2id-хэш.
+      await client.user.update({ where: { id: userId }, data: { passwordHash } });
+    },
+
+    async deleteSessionById(userId, sessionId) {
+      // Владение внутри адаптера: выборка ограничена userId, чужая сессия
+      // по id недостижима (IDOR-защита на уровне хранилища).
+      const rows = await client.session.findMany({ where: { userId } });
+      const target = rows.find((row) => row.id === sessionId);
+      if (!target) return 0;
+      const { count } = await client.session.deleteMany({ where: { tokenHash: target.tokenHash } });
+      return count;
+    },
   };
 }

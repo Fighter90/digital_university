@@ -91,6 +91,18 @@ export interface AuthStore {
    * «Активные сессии» screen. Read-only; contains only token hashes.
    */
   listUserSessions(userId: string, now: Date): Promise<AuthSessionRow[]>;
+  /**
+   * DIG-44 — смена пароля: записывает НОВЫЙ argon2id-хэш пользователя.
+   * Плaintext сюда не попадает никогда — только готовый хэш.
+   */
+  setPasswordHash(userId: string, passwordHash: string): Promise<void>;
+  /**
+   * DIG-44 — «Завершить» на экране активных сеансов: удаляет сессию
+   * ТОЛЬКО когда она принадлежит данному пользователю (владение проверяется
+   * внутри адаптера — подделанный sessionId чужой сессии ничего не удалит).
+   * Возвращает 1, если сессия удалена, иначе 0.
+   */
+  deleteSessionById(userId: string, sessionId: string): Promise<number>;
 }
 
 /** Sliding-window rate limiter keyed by IP. */

@@ -114,6 +114,8 @@ export async function saveThemeAction(theme: string): Promise<boolean> {
   if (!next) return false;
 
   await updateOwnTheme(dataDb, ctx, next);
-  revalidatePath('/settings');
+  // DIG-44: тема применяется ко всему кабинету — перевалидируем layout,
+  // чтобы класс на <html> обновился сразу после сохранения.
+  revalidatePath('/', 'layout');
   return true;
 }

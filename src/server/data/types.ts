@@ -21,8 +21,29 @@ export type NotificationType = 'SCHEDULE' | 'GRADE' | 'REQUEST' | 'NEWS' | 'DEAD
 /** DIG-19 — delivery channel of a notification (Telegram is «скоро»: off). */
 export type NotificationChannel = 'PUSH' | 'EMAIL' | 'TELEGRAM';
 
-/** DIG-19 — theme preference (dark is reserved but disabled in the UI). */
+/** DIG-19 — theme preference (DIG-44: dark is now applied to the UI). */
 export type ThemePreference = 'LIGHT' | 'SYSTEM' | 'DARK';
+
+/** DIG-44 — interface language (EN is a stub «скоро»: only RU is accepted). */
+export type LanguagePreference = 'RU' | 'EN';
+
+/** DIG-44 — UI font size applied to <html> (rem scale of the whole cabinet). */
+export type FontSizePreference = 'NORMAL' | 'LARGE' | 'XLARGE';
+
+/** DIG-44 — state of one dashboard widget (order = position in the array). */
+export interface WidgetState {
+  id: import('@/lib/dashboard-widgets').DashboardWidgetId;
+  enabled: boolean;
+}
+
+/** DIG-44 — quiet hours window; notification generation pauses inside it. */
+export interface QuietHoursSettings {
+  enabled: boolean;
+  /** «HH:MM» — window start. */
+  from: string;
+  /** «HH:MM» — window end (may be past midnight). */
+  to: string;
+}
 
 export type AppealStatus = 'OPEN' | 'ANSWERED' | 'CLOSED';
 
@@ -78,6 +99,8 @@ export interface StudentRow {
  * DIG-19 — editable side of the profile: contacts (phone + visibility for
  * teachers), notification channel matrix and the theme preference.
  * One row per student; created lazily from `defaultSettingsFor` on first read.
+ * DIG-44 adds the dashboard-widget list (order + visibility), quiet hours
+ * and appearance prefs (language / font size / reduce motion).
  */
 export interface StudentSettingsRow {
   studentId: string;
@@ -86,6 +109,16 @@ export interface StudentSettingsRow {
   phoneVisibleToStaff: boolean;
   notificationChannels: Record<NotificationType, Record<NotificationChannel, boolean>>;
   theme: ThemePreference;
+  /** DIG-44 — порядок и видимость виджетов главной (см. lib/dashboard-widgets). */
+  widgets: WidgetState[];
+  /** DIG-44 — тихие часы (окно без генерации уведомлений в кабинете). */
+  quietHours: QuietHoursSettings;
+  /** DIG-44 — язык интерфейса (EN — заглушка «скоро»). */
+  language: LanguagePreference;
+  /** DIG-44 — размер шрифта интерфейса. */
+  fontSize: FontSizePreference;
+  /** DIG-44 — «Уменьшить анимацию». */
+  reduceMotion: boolean;
   updatedAt: Date;
 }
 
@@ -245,6 +278,19 @@ export interface ServiceFavoriteRow {
   serviceId: string;
   createdAt: Date;
 }
+
+/**
+ * Строка настроек, как она лежит в хранилище: полная (DIG-44) или «легаси» —
+ * записанная до DIG-44 без новых полей. Вход `normalizeSettings`, который
+ * восстанавливает недостающее из значений по умолчанию.
+ */
+export type StoredStudentSettingsRow = Omit<
+  StudentSettingsRow,
+  'widgets' | 'quietHours' | 'language' | 'fontSize' | 'reduceMotion'
+> &
+  Partial<
+    Pick<StudentSettingsRow, 'widgets' | 'quietHours' | 'language' | 'fontSize' | 'reduceMotion'>
+  >;
 
 /**
  * Why access was denied. `OWNERSHIP_DENIED` / `OUTSIDE_FACULTY` mean the row
