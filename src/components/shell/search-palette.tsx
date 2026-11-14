@@ -139,7 +139,9 @@ export function SearchPalette({ open, onClose, returnFocusRef, role }: SearchPal
     setGroups(data.groups);
     setError(false);
     setLoading(false);
-    setActiveIndex(data.groups.some((g) => g.hits.length > 0) ? 0 : -1);
+    // Активной становится первая строка плоского списка: при пустой выдаче
+    // это AI-подвал (DIG-45 р3) — Enter открывает его без стрелок.
+    setActiveIndex(0);
   }, []);
 
   // Сам поиск: ≥2 символов, отмена устаревших, мгновенный кеш повторов.

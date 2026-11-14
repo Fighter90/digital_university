@@ -224,6 +224,27 @@ describe('AI-подвал и пустые состояния', () => {
     expect(screen.getByText(/Спросить AI/)).toBeVisible();
   });
 
+  // DIG-45 р3: AI-подвал — часть навигации, поэтому при пустой выдаче Enter
+  // обязан открывать его без стрелок (активной строкой становится подвал).
+  it('нулевой результат: Enter сразу открывает AI-подвал', async () => {
+    fetchMock.mockImplementation(async () => ({
+      ok: true,
+      json: async () => ({ query: 'вымышленныйзапрос', groups: [] }),
+    }));
+    const { input } = renderPalette();
+    typeQuery(input, 'вымышленныйзапрос');
+    await waitFor(() => expect(screen.getByText(/Ничего не найдено/)).toBeVisible(), {
+      timeout: 2000,
+    });
+    const ai = screen.getAllByRole('option').at(-1)!;
+    expect(ai).toHaveAttribute('data-kind', 'ai');
+    expect(ai).toHaveAttribute('aria-selected', 'true');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(pushMock).toHaveBeenCalledWith(
+      '/ai-assistant?q=' + encodeURIComponent('вымышленныйзапрос'),
+    );
+  });
+
   it('ошибка сети — сообщение о недоступности', async () => {
     fetchMock.mockImplementation(async () => ({ ok: false }));
     const { input } = renderPalette();

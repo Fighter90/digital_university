@@ -149,22 +149,62 @@ export interface HighlightChunk {
 /**
  * Куски текста для подсветки (`<mark>`): без учёта регистра и с ё-фолдингом;
  * пустой запрос или без совпадений — один кусок.
+ *
+ * DIG-45 р3: индексы совпадений считаются в нормализованном тексте, а нарезка
+ * идёт по ИСХОДНОМУ — когда нормализация меняет длину (схлопнутые пробелы,
+ * переносы), нарезка по индексам нормы съезжала бы. Поэтому нормализация
+ * строится вместе с картой `map[i] → позиция в исходном тексте`.
  */
+interface NormalizedView {
+  /** Нормализованный текст (для indexOf). */
+  norm: string;
+  /** map[i] — позиция символа norm[i] в исходном тексте. */
+  map: number[];
+}
+
+function normalizeWithMap(text: string): NormalizedView {
+  const chars: string[] = [];
+  const map: number[] = [];
+  let pendingSpace = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const original = text[i]!;
+    if (/\s/.test(original)) {
+      if (pendingSpace) continue; // пробельный прогон схлопывается в один
+      pendingSpace = true;
+      chars.push(' ');
+      map.push(i);
+      continue;
+    }
+    pendingSpace = false;
+    // toLowerCase может дать >1 символа (экзотика Unicode): каждый символ
+    // результата привязывается к одной и той же исходной позиции.
+    for (const lowered of original.toLowerCase()) {
+      chars.push(lowered === 'ё' ? 'е' : lowered);
+      map.push(i);
+    }
+  }
+  return { norm: chars.join(''), map };
+}
+
 export function highlightText(text: string, query: string): HighlightChunk[] {
   const q = normalizeSearchQuery(query);
   if (q === '') return [{ text, hit: false }];
-  const lower = normalizeSearchQuery(text);
+  const { norm, map } = normalizeWithMap(text);
   const chunks: HighlightChunk[] = [];
-  let cursor = 0;
+  let normCursor = 0;
+  let textCursor = 0;
   while (true) {
-    const at = lower.indexOf(q, cursor);
+    const at = norm.indexOf(q, normCursor);
     if (at === -1) break;
-    if (at > cursor) chunks.push({ text: text.slice(cursor, at), hit: false });
-    chunks.push({ text: text.slice(at, at + q.length), hit: true });
-    cursor = at + q.length;
+    const start = map[at]!;
+    const end = (map[at + q.length - 1] ?? text.length - 1) + 1;
+    if (start > textCursor) chunks.push({ text: text.slice(textCursor, start), hit: false });
+    chunks.push({ text: text.slice(start, end), hit: true });
+    textCursor = end;
+    normCursor = at + q.length;
   }
   if (chunks.length === 0) return [{ text, hit: false }];
-  if (cursor < text.length) chunks.push({ text: text.slice(cursor), hit: false });
+  if (textCursor < text.length) chunks.push({ text: text.slice(textCursor), hit: false });
   return chunks;
 }
 
