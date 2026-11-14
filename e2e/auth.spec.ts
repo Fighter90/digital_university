@@ -132,7 +132,7 @@ test.describe('DIG-18: реальные входы и блокировка — d
       await page.getByRole('button', { name: chip }).click();
       await page.getByLabel('Пароль', { exact: true }).press('Enter');
       await expect(page).toHaveURL(/\/dashboard$/);
-      await expect(page.getByRole('heading', { level: 1, name: 'Кабинет студента' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: /^Ваша неделя/ })).toBeVisible();
     }
   });
 
