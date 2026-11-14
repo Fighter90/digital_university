@@ -53,7 +53,7 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
       />
 
       <div className="mx-auto flex w-full max-w-[1440px]">
-        <SideNav unreadCount={unreadCount} />
+        <SideNav unreadCount={unreadCount} role={user.role} />
         <main
           id="main-content"
           tabIndex={-1}
@@ -63,8 +63,8 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
         </main>
       </div>
 
-      <TabBar />
-      <AiFab />
+      <TabBar role={user.role} />
+      {user.role === 'STUDENT' && <AiFab />}
       <SearchPalette
         open={searchOpen}
         onClose={closeSearch}

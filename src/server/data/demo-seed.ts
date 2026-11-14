@@ -16,6 +16,7 @@ import { newRequestNumber } from './request-number';
 import type {
   AppealMessageRow,
   AppealRow,
+  AnnouncementRow,
   CertificateRow,
   DisciplineElementRow,
   DisciplineRow,
@@ -188,6 +189,10 @@ function buildRequests(): {
       'Мария Петрова',
       null,
     ),
+    // DIG-48 — очередь сотрудника: просроченная по SLA (справка, SLA 3 дня,
+    // подана 9 дней назад) и свежая «сегодня» — для сводки деканата.
+    mk('req-anna-4', 'st-anna', 'CERTIFICATE', 'Справка для военкомата', 'SUBMITTED', -9),
+    mk('req-anna-5', 'st-anna', 'STATEMENT', 'Заявление на перезачёт дисциплины', 'SUBMITTED', 0),
     mk('req-ilya-1', 'st-ilya', 'STATEMENT', 'Заявление на академический отпуск', 'SUBMITTED', -2),
     mk(
       'req-ilya-2',
@@ -291,6 +296,27 @@ function buildRequests(): {
       statusTo: 'REJECTED',
       message: 'Перенос невозможен: приказ уже утверждён',
       createdAt: day(-11, 15, 45),
+    },
+    // DIG-48 — события новых заявок очереди сотрудника.
+    {
+      id: 'evt-anna-4a',
+      requestId: 'req-anna-4',
+      actorRole: 'STUDENT',
+      actorName: 'Анна Ковалёва',
+      statusFrom: null,
+      statusTo: 'SUBMITTED',
+      message: 'Заявка подана через личный кабинет',
+      createdAt: day(-9, 11, 30),
+    },
+    {
+      id: 'evt-anna-5a',
+      requestId: 'req-anna-5',
+      actorRole: 'STUDENT',
+      actorName: 'Анна Ковалёва',
+      statusFrom: null,
+      statusTo: 'SUBMITTED',
+      message: 'Заявка подана через личный кабинет',
+      createdAt: day(0, 10, 15),
     },
   ];
 
@@ -685,6 +711,31 @@ const appealMessages: AppealMessageRow[] = [
     body: 'Пересдача назначена на пятницу, ауд. 12.',
     createdAt: day(-8, 10, 0),
   },
+  // DIG-48 — сообщение открытого обращения Анны (факультет «ИТ» — чат
+  // виден сотруднику demo-кабинета).
+  {
+    id: 'msg-anna-1a',
+    appealId: 'apl-anna-1',
+    authorRole: 'STUDENT',
+    authorName: 'Анна Ковалёва',
+    body: 'Здравствуйте! Засчитывается ли зачёт по физкультуре за прошлый семестр?',
+    createdAt: day(-2, 19, 5),
+  },
+];
+
+// DIG-48 — демо-объявление сотрудника (факультет «ИТ»): список раздела
+// «Объявления» не пуст при первом открытии.
+const announcements: AnnouncementRow[] = [
+  {
+    id: 'ann-demo-pi21',
+    faculty: 'ИТ',
+    groupName: 'ПИ-21',
+    title: 'Собрание группы ПИ-21',
+    body: 'Завтра в 10:00, ауд. 305: вопросы сессии и практики. Возьмите зачётные книжки.',
+    authorLogin: 'dean.kovaleva',
+    authorName: 'Мария Петрова',
+    createdAt: day(-1, 13, 0),
+  },
 ];
 
 const schedule: ScheduleEventRow[] = [
@@ -978,6 +1029,8 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     notifications,
     appeals,
     appealMessages,
+    // DIG-48 — демо-объявление раздела «Объявления» сотрудника.
+    announcements,
     schedule,
     exams,
     settings,

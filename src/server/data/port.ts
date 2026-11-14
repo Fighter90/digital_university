@@ -17,6 +17,7 @@
 import type {
   AppealMessageRow,
   AppealRow,
+  AnnouncementRow,
   AuditLogRow,
   CertificateRow,
   DisciplineElementRow,
@@ -26,6 +27,7 @@ import type {
   NotificationRow,
   NotificationType,
   RequestEventRow,
+  RequestStatus,
   ScheduleEventRow,
   ServiceRequestRow,
   StaffRow,
@@ -33,6 +35,47 @@ import type {
   StudentRow,
   StudentSettingsRow,
 } from './types';
+
+/** DIG-48 — уведомление студенту, записываемое вместе с действием сотрудника. */
+export interface StaffNotificationInput {
+  type: NotificationType;
+  title: string;
+  body: string;
+  link: string | null;
+}
+
+/** DIG-48 — смена статуса заявки сотрудником (все поля нужны адаптеру сразу). */
+export interface StaffRequestUpdateInput {
+  /** Актуальный статус строки (защита от гонки двух сотрудников). */
+  from: RequestStatus;
+  to: RequestStatus;
+  /** Причина доработки/отказа; null — переход без комментария. */
+  note: string | null;
+  actorName: string;
+  eventMessage: string;
+  notification: StaffNotificationInput | null;
+  now: Date;
+}
+
+/** DIG-48 — ответ сотрудника на обращение или «Решено». */
+export interface StaffAppealMessageInput {
+  authorName: string;
+  /** Пустая строка допустима только при resolve=true. */
+  body: string;
+  resolve: boolean;
+  notification: StaffNotificationInput | null;
+  now: Date;
+}
+
+/** DIG-48 — публикация объявления сотрудником. */
+export interface StaffAnnouncementInput {
+  groupName: string | null;
+  title: string;
+  body: string;
+  authorLogin: string;
+  authorName: string;
+  now: Date;
+}
 
 /** DIG-21 — полуинтервал периода расписания [from, to) в инстантах времени. */
 export interface SchedulePeriod {
@@ -218,6 +261,43 @@ export interface DataDb {
 
   // ── staff scope ───────────────────────────────────────────────────────────
   listStudentsByFaculty(faculty: string): Promise<StudentRow[]>;
+
+  // ── DIG-48: кабинет сотрудника (faculty-scoped, см. staff-workflow.ts) ────
+  /** Все заявки студентов факультета, свежие первыми. */
+  listRequestsByFaculty(faculty: string): Promise<ServiceRequestRow[]>;
+  /**
+   * Смена статуса сотрудником факультета: адаптер проверяет факультет
+   * владельца и актуальность статуса (from), обновляет строку, дописывает
+   * событие истории и уведомление студенту АТОМАРНО (один вызов — Prisma-
+   * адаптер обязан использовать транзакцию). null — заявки нет, чужой
+   * факультет или статус уже изменился (гонка).
+   */
+  updateRequestByStaff(
+    faculty: string,
+    number: string,
+    input: StaffRequestUpdateInput,
+  ): Promise<ServiceRequestRow | null>;
+  /** Все обращения студентов факультета, свежие первыми. */
+  listAppealsByFaculty(faculty: string): Promise<AppealRow[]>;
+  /** Обращение студента факультета; null — нет или чужой факультет. */
+  findAppealByFacultyAndId(faculty: string, appealId: string): Promise<AppealRow | null>;
+  /**
+   * Ответ сотрудника (resolve=false → ANSWERED) или «Решено» (true →
+   * CLOSED): сообщение от сотрудника + смена статуса + уведомление
+   * студенту — атомарно. null — обращения нет или чужой факультет.
+   */
+  appendAppealMessageByStaff(
+    faculty: string,
+    appealId: string,
+    input: StaffAppealMessageInput,
+  ): Promise<AppealRow | null>;
+  /** Объявления факультета, свежие первыми. */
+  listAnnouncementsByFaculty(faculty: string): Promise<AnnouncementRow[]>;
+  /** Публикация объявления сотрудником факультета (группа НЕ проверяется — см. staff-workflow). */
+  appendAnnouncementByStaff(
+    faculty: string,
+    input: StaffAnnouncementInput,
+  ): Promise<AnnouncementRow>;
 
   // ── audit (append-only) ───────────────────────────────────────────────────
   appendAudit(

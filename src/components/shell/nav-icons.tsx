@@ -1,10 +1,13 @@
 import {
   Bell,
   CalendarDays,
+  ClipboardList,
   Ellipsis,
   FileText,
   GraduationCap,
   House,
+  LayoutDashboard,
+  Megaphone,
   MessagesSquare,
   Sparkles,
   UserRound,
@@ -23,6 +26,11 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   '/ai-assistant': Sparkles,
   '/profile': UserRound,
   '/more': Ellipsis,
+  // DIG-48 — кабинет сотрудника.
+  '/staff': LayoutDashboard,
+  '/staff/requests': ClipboardList,
+  '/staff/appeals': MessagesSquare,
+  '/staff/announcements': Megaphone,
 };
 
 export function sectionIcon(href: string): LucideIcon {

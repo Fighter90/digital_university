@@ -155,6 +155,72 @@ export interface CertificatePdfInput {
 }
 
 /**
+ * DIG-48 — PDF выполненной заявки-справки по запросу СОТРУДНИКА факультета.
+ * Студент-владелец определяется из строки заявки, его факультет обязан
+ * совпадать с факультетом сессии; неготовая/не-справка — null без аудита
+ * (как у студенческого варианта). Идемпотентно: один код на заявку.
+ */
+export async function getStaffCertificatePdfInput(
+  db: DataDb,
+  ctx: DataCtx,
+  request: ServiceRequestRow,
+  now: Date,
+): Promise<CertificatePdfInput | null> {
+  if (ctx.role !== 'STAFF' || ctx.faculty === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: request.number,
+      reason: 'ROLE_MISMATCH',
+    });
+    return null;
+  }
+  const student = await db.findStudentById(request.studentId);
+  if (!student || student.faculty !== ctx.faculty) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: request.number,
+      reason: student ? 'OUTSIDE_FACULTY' : 'NOT_FOUND',
+    });
+    return null;
+  }
+  if (request.type !== 'CERTIFICATE' || request.status !== 'COMPLETED') {
+    return null; // справка ещё не выдана: нет ни отказа доступа, ни выдачи
+  }
+
+  let certificate = await db.findCertificateByStudentAndRequestId(student.id, request.id);
+  if (!certificate) {
+    const expiresAt = new Date(now);
+    expiresAt.setDate(expiresAt.getDate() + CERTIFICATE_VALIDITY_DAYS);
+    certificate = await db.appendCertificateForStudent(student.id, {
+      id: '',
+      studentId: student.id,
+      requestId: request.id,
+      documentType: request.title,
+      purpose: null,
+      number: newCertificateNumber(now),
+      verificationCode: generateVerificationCode(),
+      issuedAt: now,
+      expiresAt,
+      revokedAt: null,
+      revokedReason: null,
+    });
+  }
+  return {
+    documentType: certificate.documentType,
+    number: certificate.number,
+    issuedAt: certificate.issuedAt,
+    fullName: student.fullName,
+    program: student.program,
+    course: student.course,
+    studyForm: student.studyForm,
+    purpose: certificate.purpose,
+    verificationCode: certificate.verificationCode,
+  };
+}
+
+/**
  * Данные PDF справки заявки владельца: справка + профиль студента
  * (профиль читается по ctx.studentId — никогда не по вводу). null —
  * справка не выдана или нарушение скоупа.

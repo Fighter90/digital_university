@@ -10,10 +10,7 @@ import { resolve } from 'node:path';
 import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
-import type {
-  PerformanceData,
-  DisciplinePerformance,
-} from '@/server/data/performance';
+import type { PerformanceData, DisciplinePerformance } from '@/server/data/performance';
 import type { DataCtx, ExamSessionRow } from '@/server/data/types';
 
 const studentCtx: DataCtx = {
@@ -209,8 +206,11 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-DB',
     disciplineName: 'Базы данных',
     kind: 'CREDIT',
-    date: new Date(2026, 10, 14, 10, 0),
-    startsAt: new Date(2026, 10, 14, 10, 0),
+    // 2099: фикстура «будущей» контрольной — дата должна оставаться в
+    // будущем у любого прогона (14.11.2026 10:00 стало прошлым после
+    // 14.11.2026 10:00 и ломало пустое состояние), формат «14 ноября» сохранён.
+    date: new Date(2099, 10, 14, 10, 0),
+    startsAt: new Date(2099, 10, 14, 10, 0),
     room: '212',
     note: null,
   },
@@ -220,8 +220,8 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-INFO',
     disciplineName: 'Информатика',
     kind: 'EXAM',
-    date: new Date(2026, 11, 24, 10, 0),
-    startsAt: new Date(2026, 11, 24, 10, 0),
+    date: new Date(2099, 11, 24, 10, 0),
+    startsAt: new Date(2099, 11, 24, 10, 0),
     room: '305',
     note: null,
   },
@@ -240,7 +240,11 @@ const examSessions: ExamSessionRow[] = [
 
 vi.mock('@/server/auth/session', () => ({
   getAuthSession: vi.fn(async () => null),
-  requireUser: vi.fn(async () => ({ id: 'auth-anna', login: 'anna.smirnova', role: 'STUDENT' as const })),
+  requireUser: vi.fn(async () => ({
+    id: 'auth-anna',
+    login: 'anna.smirnova',
+    role: 'STUDENT' as const,
+  })),
   requireStaff: vi.fn(async () => ({ id: 'x', login: 'x', role: 'STAFF' as const })),
 }));
 
@@ -254,10 +258,7 @@ vi.mock('@/server/data', () => ({
 
 import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
 
-async function renderPage(
-  Page: ComponentType,
-  props?: Record<string, unknown>,
-): Promise<string> {
+async function renderPage(Page: ComponentType, props?: Record<string, unknown>): Promise<string> {
   const { prelude } = await prerenderToNodeStream(createElement(Page, props));
   let html = '';
   for await (const chunk of prelude) {
@@ -290,7 +291,10 @@ async function renderWith(overrides: {
     getPerformance.mockResolvedValueOnce(overrides.performance ?? richPerformance);
   }
   listExams.mockResolvedValueOnce(overrides.exams ?? examSessions);
-  return renderPage(GradesPage, overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined);
+  return renderPage(
+    GradesPage,
+    overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined,
+  );
 }
 
 describe('/grades (DIG-26) — «Успеваемость: сводка»', () => {

@@ -22,7 +22,7 @@ export function TopBar({ user, unreadCount, onOpenSearch, searchTriggerRef }: To
     <header className="z-40 border-b border-neutral-200/80 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/75 md:sticky md:top-0">
       <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-1.5 px-3 md:h-18 md:gap-3 md:px-6">
         <Link
-          href="/dashboard"
+          href={user.role === 'STAFF' ? '/staff' : '/dashboard'}
           className="flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
           aria-label="Цифровой деканат — на главную"
         >

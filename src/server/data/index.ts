@@ -58,6 +58,28 @@ export type {
   StaffChangeStatus,
 } from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
+export {
+  answerStaffAppeal,
+  changeStaffRequestStatus,
+  createStaffAnnouncement,
+  getStaffAppealThread,
+  getStaffAppeals,
+  getStaffQueue,
+  getStaffRequestDetail,
+  getStaffSummaryData,
+  listFacultyGroups,
+  listStaffAnnouncements,
+  resolveStaffAppeal,
+} from './staff-workflow';
+export type {
+  StaffAppealItem,
+  StaffAppealThread,
+  StaffAnnouncementResult,
+  StaffQueueItem,
+  StaffRequestDetail,
+  StaffStatusChangeResult,
+  StaffSummaryData,
+} from './staff-workflow';
 export { getDashboard } from './dashboard';
 export type {
   DashboardData,
@@ -79,6 +101,7 @@ export type { ServicesPageData, ServiceToggleResult } from './services';
 export {
   getCertificatePdfInput,
   getOrCreateCertificateForRequest,
+  getStaffCertificatePdfInput,
   newCertificateNumber,
   revokeCertificateByCode,
   verifyCertificateByCode,
@@ -110,7 +133,15 @@ export {
   isValidRequestNumber,
   REQUEST_NUMBER_PATTERN,
 } from './request-number';
-export type { DataDb, SchedulePeriod, ScheduleChangePatch } from './port';
+export type {
+  DataDb,
+  SchedulePeriod,
+  ScheduleChangePatch,
+  StaffNotificationInput,
+  StaffRequestUpdateInput,
+  StaffAppealMessageInput,
+  StaffAnnouncementInput,
+} from './port';
 export {
   type DataCtx,
   type Role,
@@ -142,4 +173,5 @@ export {
   type DisciplineElementRow,
   type ServiceFavoriteRow,
   type CertificateRow,
+  type AnnouncementRow,
 } from './types';

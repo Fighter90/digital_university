@@ -7,7 +7,14 @@
 // Swapping to PostgreSQL later is a one-line change in src/server/data/db.ts:
 // a Prisma adapter implements the very same `DataDb` signatures.
 
-import type { DataDb, ScheduleChangePatch, SchedulePeriod } from './port';
+import type {
+  DataDb,
+  ScheduleChangePatch,
+  SchedulePeriod,
+  StaffAnnouncementInput,
+  StaffAppealMessageInput,
+  StaffRequestUpdateInput,
+} from './port';
 import type {
   AppealMessageRow,
   AppealRow,
@@ -26,6 +33,7 @@ import type {
   StudentRow,
   StudentSettingsRow,
   ServiceFavoriteRow,
+  AnnouncementRow,
 } from './types';
 
 export interface MemorySeed {
@@ -50,6 +58,8 @@ export interface MemorySeed {
   serviceFavorites?: ServiceFavoriteRow[];
   /** DIG-47 — реестр выданных справок (проверка подлинности по коду). */
   certificates?: CertificateRow[];
+  /** DIG-48 — объявления сотрудников деканата. */
+  announcements?: AnnouncementRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -78,6 +88,7 @@ export function createMemoryDataDb(): MemoryDataDb {
   let notes: StudentNoteRow[] = [];
   let serviceFavorites: ServiceFavoriteRow[] = [];
   let certificates: CertificateRow[] = [];
+  let announcements: AnnouncementRow[] = [];
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
@@ -87,6 +98,7 @@ export function createMemoryDataDb(): MemoryDataDb {
   let requestSeq = 0;
   let requestEventSeq = 0;
   let certificateSeq = 0;
+  let announcementSeq = 0;
 
   const by = <T, K extends keyof T>(rows: T[], key: K, value: T[K]) =>
     rows.find((row) => row[key] === value) ?? null;
@@ -109,6 +121,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       notes = seed.notes ? seed.notes.map(clone) : [];
       serviceFavorites = seed.serviceFavorites ? seed.serviceFavorites.map(clone) : [];
       certificates = seed.certificates ? seed.certificates.map(clone) : [];
+      announcements = seed.announcements ? seed.announcements.map(clone) : [];
       audit = [];
     },
 
@@ -412,6 +425,124 @@ export function createMemoryDataDb(): MemoryDataDb {
 
     async listStudentsByFaculty(faculty) {
       return students.filter((s) => s.faculty === faculty).map(clone);
+    },
+
+    // ── DIG-48: кабинет сотрудника (faculty-scoped) ────────────────────────
+    async listRequestsByFaculty(faculty) {
+      const facultyStudentIds = new Set(
+        students.filter((s) => s.faculty === faculty).map((s) => s.id),
+      );
+      return requests
+        .filter((r) => facultyStudentIds.has(r.studentId))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .map(clone);
+    },
+    async updateRequestByStaff(faculty, number, input: StaffRequestUpdateInput) {
+      const row = requests.find((r) => r.number === number);
+      if (!row) return null;
+      const owner = students.find((s) => s.id === row.studentId);
+      if (!owner || owner.faculty !== faculty) return null;
+      if (row.status !== input.from) return null; // гонка: статус уже изменился
+      row.status = input.to;
+      // Исполнитель: «Взять в работу» назначает всегда, прочие переходы
+      // заполняют пустое поле (не перезаписывая чужую работу).
+      if (input.to === 'IN_PROGRESS' || !row.assignee) row.assignee = input.actorName;
+      if (input.note !== null) row.resultNote = input.note;
+      row.updatedAt = input.now;
+      requestEventSeq += 1;
+      requestEvents.push({
+        id: `reqevt-staff-${requestEventSeq}`,
+        requestId: row.id,
+        actorRole: 'STAFF',
+        actorName: input.actorName,
+        statusFrom: input.from,
+        statusTo: input.to,
+        message: input.eventMessage,
+        createdAt: input.now,
+      });
+      if (input.notification) {
+        notificationSeq += 1;
+        notifications.push({
+          id: `ntf-staff-${notificationSeq}`,
+          studentId: row.studentId,
+          type: input.notification.type,
+          title: input.notification.title,
+          body: input.notification.body,
+          link: input.notification.link ?? null,
+          isRead: false,
+          createdAt: input.now,
+        });
+      }
+      return clone(row);
+    },
+    async listAppealsByFaculty(faculty) {
+      const facultyStudentIds = new Set(
+        students.filter((s) => s.faculty === faculty).map((s) => s.id),
+      );
+      return appeals
+        .filter((a) => facultyStudentIds.has(a.studentId))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .map(clone);
+    },
+    async findAppealByFacultyAndId(faculty, appealId) {
+      const row = appeals.find((a) => a.id === appealId);
+      if (!row) return null;
+      const owner = students.find((s) => s.id === row.studentId);
+      if (!owner || owner.faculty !== faculty) return null;
+      return clone(row);
+    },
+    async appendAppealMessageByStaff(faculty, appealId, input: StaffAppealMessageInput) {
+      const row = appeals.find((a) => a.id === appealId);
+      if (!row) return null;
+      const owner = students.find((s) => s.id === row.studentId);
+      if (!owner || owner.faculty !== faculty) return null;
+      if (input.body.trim().length > 0 || input.resolve) {
+        appealMessageSeq += 1;
+        appealMessages.push({
+          id: `msg-staff-${appealMessageSeq}`,
+          appealId: row.id,
+          authorRole: 'STAFF',
+          authorName: input.authorName,
+          body: input.body,
+          createdAt: input.now,
+        });
+      }
+      row.status = input.resolve ? 'CLOSED' : 'ANSWERED';
+      if (input.notification) {
+        notificationSeq += 1;
+        notifications.push({
+          id: `ntf-staff-${notificationSeq}`,
+          studentId: row.studentId,
+          type: input.notification.type,
+          title: input.notification.title,
+          body: input.notification.body,
+          link: input.notification.link ?? null,
+          isRead: false,
+          createdAt: input.now,
+        });
+      }
+      return clone(row);
+    },
+    async listAnnouncementsByFaculty(faculty) {
+      return announcements
+        .filter((a) => a.faculty === faculty)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .map(clone);
+    },
+    async appendAnnouncementByStaff(faculty, input: StaffAnnouncementInput) {
+      announcementSeq += 1;
+      const row: AnnouncementRow = {
+        id: `ann-new-${announcementSeq}`,
+        faculty,
+        groupName: input.groupName,
+        title: input.title,
+        body: input.body,
+        authorLogin: input.authorLogin,
+        authorName: input.authorName,
+        createdAt: input.now,
+      };
+      announcements.push(row);
+      return clone(row);
     },
 
     async appendAudit(event) {

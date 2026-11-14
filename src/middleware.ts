@@ -1,7 +1,7 @@
 // DIG-11 — route protection middleware.
 // - unauthenticated visitors cannot enter the cabinet screens → /login?next=…;
-// - students cannot enter /staff (cheap HMAC-signed role hint; every staff
-//   page re-verifies the role server-side via requireStaff());
+// - students cannot enter /staff: DIG-48 answers HTTP 403 (cheap HMAC-signed
+//   role hint; every staff page re-verifies the role server-side);
 // - mutating API calls must be same-origin (Origin check, CSRF defence).
 // The pure decision logic lives in src/lib/route-guard.ts and is unit-tested.
 import { NextResponse, type NextRequest } from 'next/server';

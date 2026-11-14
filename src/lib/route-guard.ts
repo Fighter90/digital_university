@@ -98,7 +98,12 @@ export function decideAccess(input: AccessInput): AccessDecision {
   }
 
   if (pathname === STAFF_PREFIX || pathname.startsWith(`${STAFF_PREFIX}/`)) {
-    if (input.roleHint?.role !== 'STAFF') return { kind: 'redirect', location: '/dashboard' };
+    // DIG-48 (критерий приёмки): студент не может открыть ни один экран
+    // сотрудника — ответ 403 (не redirect, чтобы URL /staff* не «притворялся»
+    // доступным). Fail closed: нет/невалиден подписанный hint → тоже 403.
+    // Аноним отсечён раньше (redirect на /login). Страницы /staff* всё равно
+    // перепроверяют роль серверно — hint лишь быстрый edge-фильтр.
+    if (input.roleHint?.role !== 'STAFF') return { kind: 'forbidden' };
   }
 
   return { kind: 'allow' };

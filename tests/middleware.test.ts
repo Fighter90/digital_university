@@ -80,14 +80,15 @@ describe('middleware: sliding renewal of auth cookies (review round 3)', () => {
       request('/staff', `${SESSION_COOKIE_NAME}=tok_abc123; ${ROLE_COOKIE_NAME}=forged.value`),
     );
 
-    // Student-gate redirect → no cookie writes at all on this response.
-    expect(response.status).toBe(307);
+    // DIG-48: студент (и нечитаемый hint — fail closed) получают 403 на /staff;
+    // на этом ответе cookie-записей нет вовсе.
+    expect(response.status).toBe(403);
     expect(setCookieFor(response, ROLE_COOKIE_NAME)).toBeUndefined();
   });
 
   it.each([
     ['anonymous visitor redirected to /login', '/dashboard', false],
-    ['student bounced off /staff', '/staff', true],
+    ['student forbidden on /staff (DIG-48: 403, no cookies)', '/staff', true],
     ['CSRF-forbidden API mutation', '/api/requests', true],
   ])('sets no auth cookies on %s', async (_name, path, withCookie) => {
     const cookieParts: string[] = [];
