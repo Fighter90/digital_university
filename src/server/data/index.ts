@@ -72,6 +72,8 @@ export type {
 } from './dashboard';
 export { listDeaneryNews } from './news';
 export type { DeaneryNewsItem } from './news';
+export { searchCabinet } from './search';
+export type { SearchResponse, SearchGroup, SearchHit, SearchHitKind } from '@/lib/search-core';
 export { getServicesPage, toggleFavoriteService, MAX_FAVORITES } from './services';
 export type { ServicesPageData, ServiceToggleResult } from './services';
 export {

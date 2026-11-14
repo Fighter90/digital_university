@@ -65,7 +65,12 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
 
       <TabBar />
       <AiFab />
-      <SearchPalette open={searchOpen} onClose={closeSearch} returnFocusRef={searchTriggerRef} />
+      <SearchPalette
+        open={searchOpen}
+        onClose={closeSearch}
+        returnFocusRef={searchTriggerRef}
+        role={user.role}
+      />
     </div>
   );
 }

@@ -16,15 +16,20 @@ export async function resolveShellUser(db: DataDb, user: AuthUser): Promise<Shel
   if (user.role === 'STUDENT') {
     const student = await db.findStudentByLogin(user.login);
     if (student) {
-      return { name: student.fullName, email: student.email, group: student.groupName };
+      return {
+        name: student.fullName,
+        email: student.email,
+        group: student.groupName,
+        role: 'STUDENT',
+      };
     }
   } else {
     const staff = await db.findStaffByLogin(user.login);
     if (staff) {
-      return { name: staff.fullName, email: staff.email, group: staff.position };
+      return { name: staff.fullName, email: staff.email, group: staff.position, role: 'STAFF' };
     }
   }
   // Fallback: the session identity itself. Non-empty placeholders keep the
   // user menu layout intact until the profile row exists for this login.
-  return { name: user.login, email: '—', group: '—' };
+  return { name: user.login, email: '—', group: '—', role: user.role };
 }
