@@ -47,3 +47,31 @@
   DIG-55 приёмка зелёная; без новых падений.
 - [x] `npm run lint` — 0 ошибок; `npm run typecheck` — зелёный.
 - [x] `node scripts/swarm/gates.mjs` — см. финальный прогон.
+
+## Раунд 2 — замечания ревью (тест-гейты)
+
+- [x] `scripts/build-lock.mjs` + `tests/build-lock.test.mjs` (red-first) —
+  причина красного гейта build: два параллельных `next build` на общем
+  checkout (на машине живут несколько orchestrator'ов) гоняются за один
+  `.next` → `unhandledRejection ENOENT copyfile
+  .next/server/edge-runtime-webpack.js → .next/standalone/…` на этапе
+  «Collecting build traces» (воспроизведено косвенно: `rm -rf .next` поймал
+  «Directory not empty» от параллельной записи). `npm run build` теперь
+  берёт эксклюзивный mkdir-lock (`.next-build.lock`, в .gitignore): gates,
+  e2e webServer (`pnpm build`) и Dockerfile выстраиваются в очередь; lock
+  от убитого процесса крадётся по мёртвому pid или staleMs.
+  scripts/swarm/ не тронут.
+- [x] `src/app/(cabinet)/grades/session/page.tsx` — убран неиспользуемый
+  импорт `SessionSkeleton` (скелетон подключает loading.tsx).
+- [x] `src/components/gradebook/gradebook-list.tsx` — убран мёртвый
+  `fillTone` (прогресс-бара в компоненте нет).
+- [x] `src/lib/transcript-pdf.ts` — убрана неиспользуемая константа
+  `COL_DATE` (таблица PDF без колонки дат в паддинге).
+- [x] `src/server/data/memory-db.ts` — убран неиспользуемый type-import
+  `SchedulePeriod` (параметр типизируется интерфейсом порта).
+- [x] `tests/build-hermetic.test.ts` — контракт `scripts.build` обновлён
+  (red-first: гейт test поймал старое ожидание `build === 'next build'`):
+  обёртка build-lock сохраняет инвариант DIG-12 (чистый webpack-прогон без
+  чистящей прелюдии), добавляя только сериализацию параллельных сборок.
+- [x] Повторный прогон гейтов — lint/typecheck/build/test зелёные
+  (замечания «unused-vars» из хвоста ревью устранены, build детерминирован).

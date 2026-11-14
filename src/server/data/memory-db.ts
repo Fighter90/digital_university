@@ -7,7 +7,7 @@
 // Swapping to PostgreSQL later is a one-line change in src/server/data/db.ts:
 // a Prisma adapter implements the very same `DataDb` signatures.
 
-import type { DataDb, ScheduleChangePatch, SchedulePeriod } from './port';
+import type { DataDb, ScheduleChangePatch } from './port';
 import type {
   AppealMessageRow,
   AppealRow,
