@@ -125,14 +125,20 @@ test.describe('DIG-18: реальные входы и блокировка — d
   test('вход каждым тестовым аккаунтом попадает в кабинет (Enter в поле пароля)', async ({
     page,
   }) => {
-    for (const chip of [ANNA_CHIP, ILYA_CHIP, STAFF_CHIP]) {
+    // Каждый чип → своя роль: студенты видят «Ваша неделя …», сотрудник —
+    // «Кабинет сотрудника» (в обоих случаях landing = /dashboard).
+    for (const [chip, h1Name] of [
+      [ANNA_CHIP, /^Ваша неделя/],
+      [ILYA_CHIP, /^Ваша неделя/],
+      [STAFF_CHIP, 'Кабинет сотрудника'],
+    ] as const) {
       await page.context().clearCookies();
       await page.goto('/login');
       await page.waitForLoadState('networkidle');
       await page.getByRole('button', { name: chip }).click();
       await page.getByLabel('Пароль', { exact: true }).press('Enter');
       await expect(page).toHaveURL(/\/dashboard$/);
-      await expect(page.getByRole('heading', { level: 1, name: /^Ваша неделя/ })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1, name: h1Name })).toBeVisible();
     }
   });
 
@@ -221,7 +227,7 @@ test.describe('DIG-55: «Выйти» завершает сессию — deskto
     await page.goBack();
     await expect(page).not.toHaveURL(/\/dashboard/);
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Кабинет студента' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 1, name: /^Ваша неделя/ })).toHaveCount(0);
   });
 });
 

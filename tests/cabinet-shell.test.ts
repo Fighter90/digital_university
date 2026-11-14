@@ -74,7 +74,10 @@ vi.mock('@/server/data', () => ({
     greeting: 'Добрый день',
     headingDate: 'среда, 11 ноября',
     summary: 'Сегодня 2 пары.',
-    today: { ok: true, value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null } },
+    today: {
+      ok: true,
+      value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null },
+    },
     deadlines: { ok: true, value: [] },
     progress: {
       ok: true,
@@ -111,11 +114,7 @@ import SettingsPage from '@/app/(cabinet)/settings/page';
 import MorePage from '@/app/(cabinet)/more/page';
 
 describe('nav config (cabinet shell)', () => {
-<<<<<<< Updated upstream
   it('exposes the 8 mandated cabinet sections with unique hrefs', () => {
-=======
-  it('exposes the 10 mandated cabinet sections with unique hrefs', () => {
->>>>>>> Stashed changes
     const expected = [
       ['/dashboard', 'Главная'],
       ['/schedule', 'Расписание'],
@@ -123,11 +122,6 @@ describe('nav config (cabinet shell)', () => {
       ['/requests', 'Заявки и справки'],
       ['/notifications', 'Уведомления'],
       ['/deanery', 'Связь с деканатом'],
-<<<<<<< Updated upstream
-=======
-      ['/people', 'Справочник'],
-      ['/help', 'Вопросы и ответы'],
->>>>>>> Stashed changes
       ['/ai-assistant', 'AI-ассистент'],
       ['/profile', 'Профиль'],
     ] as const;
@@ -150,19 +144,10 @@ describe('nav config (cabinet shell)', () => {
     ]);
   });
 
-<<<<<<< Updated upstream
   it('«Ещё» covers Уведомления, Связь с деканатом, AI-ассистент, Профиль, Настройки', () => {
     expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
       '/notifications',
       '/deanery',
-=======
-  it('«Ещё» covers Уведомления, Связь с деканатом, Справочник, Вопросы и ответы, AI-ассистент, Профиль, Настройки', () => {
-    expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
-      '/notifications',
-      '/deanery',
-      '/people',
-      '/help',
->>>>>>> Stashed changes
       '/ai-assistant',
       '/profile',
       '/settings',
