@@ -7,15 +7,23 @@
 // группы, исполнитель его заявок, собственный профиль). Сотруднику
 // студенческие группы не отдаются вовсе: до появления справочника (DIG-37/48)
 // у него нет честных переходов к чужим профилям — палитра не делает видимых
-// мёртвых ссылок. Частично введённый номер чужой заявки ничего не находит,
-// полный чужой номер попадает в AuditLog через listRequests (ROLE_MISMATCH
-// невозможен: список и так скоуплен владельцем).
+// мёртвых ссылок.
+//
+// Аудит (DIG-45, раунд 2): аудит OWNERSHIP_DENIED живёт ЗДЕСЬ, в
+// searchCabinet — полного номера заявки, который существует, но принадлежит
+// не сессии. По образцу getRequestByNumber (requests.ts) делаем
+// probeRequestByNumber без скоупа только чтобы различить «чужая» и «нет»:
+// «чужая» → denyAccess (студент — OWNERSHIP_DENIED, сотрудник —
+// ROLE_MISMATCH) при том же пустом ответе; «несуществующая» в поиске не
+// аудитится (это подсказки, а не запрос карточки — NOT_FOUND пишет маршрут
+// /api/requests/[number]). Частичный набор по буквам не аудитится.
 
 import { FAQ_ENTRIES } from '@/lib/faq-catalog';
 import {
   MIN_QUERY_LENGTH,
   buildGroups,
   hitMatchesSearch,
+  isFullRequestNumberQuery,
   isRequestNumberQuery,
   matchesSearchQuery,
   normalizeSearchQuery,
@@ -24,10 +32,32 @@ import {
 } from '@/lib/search-core';
 import { matchService, servicesForRole } from '@/lib/services-catalog';
 import { CABINET_SECTIONS, MORE_SECTIONS } from '@/components/shell/nav-items';
+import { denyAccess } from './access';
 import { listDeaneryNews } from './news';
 import { normalizeRequestNumber } from './request-number';
 import type { DataDb } from './port';
 import type { DataCtx } from './types';
+
+const RESOURCE = 'request';
+
+/**
+ * Адресный пробо-запрос к чужой заявке (только ПОЛНЫЙ номер): «заявка
+ * существует, но не сессии» → DENIED-строка в аудите при пустом ответе.
+ * Существующий свой номер и несуществующие номера аудита не создают.
+ */
+async function auditForeignRequestProbe(db: DataDb, ctx: DataCtx, rawQuery: string): Promise<void> {
+  if (!isFullRequestNumberQuery(rawQuery)) return;
+  const probed = await db.probeRequestByNumber(normalizeRequestNumber(rawQuery));
+  if (!probed) return; // «нет» — молча (см. шапку)
+  if (ctx.studentId === null || probed.studentId !== ctx.studentId) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: probed.number,
+      reason: ctx.studentId === null ? 'ROLE_MISMATCH' : 'OWNERSHIP_DENIED',
+    });
+  }
+}
 
 export async function searchCabinet(
   db: DataDb,
@@ -68,23 +98,24 @@ export async function searchCabinet(
   }
 
   // ── Заявки владельца: по публичному номеру (в т.ч. частичному) и названию ─
-  if (isStudent) {
-    const requests = await db.listRequestsByStudent(ctx.studentId!);
-    const numberish = isRequestNumberQuery(rawQuery);
-    const numberQ = normalizeRequestNumber(rawQuery);
-    for (const request of requests) {
-      const numberMatch = numberish && request.number.startsWith(numberQ);
-      const titleMatch = matchesSearchQuery(request.title, query);
-      if (!numberMatch && !titleMatch) continue;
-      hits.push({
-        id: `request-${request.id}`,
-        kind: 'request',
-        title: request.title,
-        subtitle: `№ ${request.number}`,
-        href: `/requests/${request.number}`,
-        meta: request.number,
-      });
-    }
+  // Одна выборка на весь поиск (DIG-45 р2: раньше звали дважды — на «Заявки»
+  // и на «Людей»); адресный пробо чужого ПОЛНОГО номера — до фильтра выдачи.
+  const numberish = isRequestNumberQuery(rawQuery);
+  const numberQ = numberish ? normalizeRequestNumber(rawQuery) : '';
+  const requests = isStudent ? await db.listRequestsByStudent(ctx.studentId!) : [];
+  await auditForeignRequestProbe(db, ctx, rawQuery);
+  for (const request of requests) {
+    const numberMatch = numberish && request.number.startsWith(numberQ);
+    const titleMatch = matchesSearchQuery(request.title, query);
+    if (!numberMatch && !titleMatch) continue;
+    hits.push({
+      id: `request-${request.id}`,
+      kind: 'request',
+      title: request.title,
+      subtitle: `№ ${request.number}`,
+      href: `/requests/${request.number}`,
+      meta: request.number,
+    });
   }
 
   if (isStudent) {
@@ -125,7 +156,6 @@ export async function searchCabinet(
     }
 
     // ── Люди: + исполнитель заявок (виден в карточках) + свой профиль ──────
-    const requests = await db.listRequestsByStudent(ctx.studentId!);
     for (const request of requests) {
       if (request.assignee && matchesSearchQuery(request.assignee, query)) {
         addPerson(request.assignee, 'Деканат', '/deanery');

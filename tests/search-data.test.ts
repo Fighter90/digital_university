@@ -175,6 +175,41 @@ describe('IDOR: чужие данные через поиск недостижи
     expect(groupOf(own, 'request')?.hits[0]?.href).toBe(`/requests/${ILYA_NUMBER}`);
   });
 
+  it('полный чужой номер попадает в AuditLog как OWNERSHIP_DENIED (DIG-45 р2)', async () => {
+    const before = db.auditEvents().length;
+    const result = await searchCabinet(db, ilya, ANNA_NUMBER);
+    expect(groupOf(result, 'request')).toBeNull();
+    const events = db.auditEvents();
+    expect(events.length).toBe(before + 1);
+    const event = events.at(-1)!;
+    expect(event.reason).toBe('OWNERSHIP_DENIED');
+    expect(event.outcome).toBe('DENIED');
+    expect(event.resourceType).toBe('request');
+    expect(event.resourceRef).toBe(ANNA_NUMBER);
+    expect(event.actorLogin).toBe('ilya');
+    // ответ снаружи тот же, что при несуществующем номере: групп заявок нет
+    const missing = await searchCabinet(db, ilya, 'SR-2026-XXXXX');
+    expect(groupOf(missing, 'request')).toBeNull();
+  });
+
+  it('частичный чужой номер и свой полный номер — без новых DENIED-записей', async () => {
+    const before = db.auditEvents().filter((e) => e.outcome === 'DENIED').length;
+    await searchCabinet(db, ilya, 'SR-2026-A1B');
+    await searchCabinet(db, ilya, ILYA_NUMBER);
+    await searchCabinet(db, anna, ANNA_NUMBER);
+    expect(db.auditEvents().filter((e) => e.outcome === 'DENIED').length).toBe(before);
+  });
+
+  it('сотрудник с полным номером заявки студента — ROLE_MISMATCH в аудите', async () => {
+    const before = db.auditEvents().length;
+    const result = await searchCabinet(db, maria, ANNA_NUMBER);
+    expect(groupOf(result, 'request')).toBeNull();
+    const event = db.auditEvents().at(-1)!;
+    expect(db.auditEvents().length).toBe(before + 1);
+    expect(event.reason).toBe('ROLE_MISMATCH');
+    expect(event.resourceRef).toBe(ANNA_NUMBER);
+  });
+
   it('преподаватели чужой группы не находятся', async () => {
     const result = await searchCabinet(db, ilya, 'Иванова');
     expect(groupOf(result, 'person')).toBeNull();

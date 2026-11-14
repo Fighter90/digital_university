@@ -9,6 +9,7 @@ import {
   SEARCH_GROUP_ORDER,
   buildGroups,
   highlightText,
+  isFullRequestNumberQuery,
   isRequestNumberQuery,
   matchesSearchQuery,
   normalizeSearchQuery,
@@ -50,6 +51,19 @@ describe('isRequestNumberQuery', () => {
     expect(isRequestNumberQuery('справка')).toBe(false);
     expect(isRequestNumberQuery('SRX-2026-A')).toBe(false);
     expect(isRequestNumberQuery('SR-2026-ABCDEF')).toBe(false);
+  });
+});
+
+describe('isFullRequestNumberQuery (аудит чужих заявок, DIG-45 р2)', () => {
+  it('полный номер SR-YYYY-XXXXX — да, в любом регистре и с решёткой', () => {
+    expect(isFullRequestNumberQuery('SR-2026-A1B2C')).toBe(true);
+    expect(isFullRequestNumberQuery('#sr-2026-z9y8x')).toBe(true);
+  });
+  it('частичный номер и слова — нет (набор по буквам не аудитим)', () => {
+    expect(isFullRequestNumberQuery('SR-2026-A1B')).toBe(false);
+    expect(isFullRequestNumberQuery('SR-2026')).toBe(false);
+    expect(isFullRequestNumberQuery('SR')).toBe(false);
+    expect(isFullRequestNumberQuery('справка')).toBe(false);
   });
 });
 

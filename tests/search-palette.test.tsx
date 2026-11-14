@@ -16,7 +16,9 @@ vi.mock('next/navigation', () => ({
 }));
 
 import { SearchPalette } from '@/components/shell/search-palette';
-import type { SearchResponse } from '@/lib/search-core';
+import { MAX_CACHED_QUERIES, type SearchResponse } from '@/lib/search-core';
+
+const DEBOUNCE_MS = 120;
 
 const FIXTURE: SearchResponse = {
   query: 'справка',
@@ -229,5 +231,33 @@ describe('AI-подвал и пустые состояния', () => {
     await waitFor(() => expect(screen.getByText(/Поиск временно недоступен/)).toBeVisible(), {
       timeout: 2000,
     });
+  });
+});
+
+describe('кеш повторов: лимит (DIG-45 р2)', () => {
+  it('повтор запроса идёт из кеша; вытесненная запись ищется заново', async () => {
+    vi.useFakeTimers();
+    try {
+      const { input } = renderPalette();
+      const search = async (term: string) => {
+        typeQuery(input, term);
+        await vi.advanceTimersByTimeAsync(DEBOUNCE_MS + 30);
+      };
+      await search('справка');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      await search('справка');
+      expect(fetchMock).toHaveBeenCalledTimes(1); // из кеша, сеть не трогаем
+
+      // переполняем кеш уникальными запросами — «справка» вытесняется
+      for (let i = 0; i < MAX_CACHED_QUERIES; i += 1) {
+        await search(`запрос номер ${i}`);
+      }
+      expect(fetchMock).toHaveBeenCalledTimes(1 + MAX_CACHED_QUERIES);
+
+      await search('справка');
+      expect(fetchMock).toHaveBeenCalledTimes(2 + MAX_CACHED_QUERIES); // кеш не бездонный
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

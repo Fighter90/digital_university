@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import type { ShellUserRole } from '@/lib/user';
 import {
   MIN_QUERY_LENGTH,
+  MAX_CACHED_QUERIES,
   clearRecentQueries,
   highlightText,
   popularActions,
@@ -172,6 +173,11 @@ export function SearchPalette({ open, onClose, returnFocusRef, role }: SearchPal
         const data = (await response.json()) as SearchResponse;
         if (seq !== seqRef.current) return;
         cacheRef.current.set(term, data);
+        // Кеш не бездонный: вытесняем самый старый запрос (DIG-45 р2).
+        if (cacheRef.current.size > MAX_CACHED_QUERIES) {
+          const oldest = cacheRef.current.keys().next().value;
+          if (oldest !== undefined) cacheRef.current.delete(oldest);
+        }
         applyResult(data);
       } catch (cause) {
         if (seq !== seqRef.current || (cause as Error).name === 'AbortError') return;

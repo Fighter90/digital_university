@@ -25,3 +25,21 @@
       AI-подвал) и mobile 360 (полноэкранный поиск, без гор. скролла).
 - [x] Гейты: lint, typecheck, vitest, playwright (search + shell-регресс),
       `node scripts/swarm/gates.mjs`.
+
+### Раунд 2 (замечания ревью)
+
+- [x] Аудит `OWNERSHIP_DENIED` живёт в `searchCabinet` (раньше комментарий
+      ссылался на несуществующий путь через `listRequests`, а спека уже
+      требовала аудит): полный чужой номер → `probeRequestByNumber` +
+      `denyAccess` (студент — OWNERSHIP_DENIED, сотрудник — ROLE_MISMATCH),
+      ответ пользователю прежний; «несуществующий» номер и частичный набор
+      не аудитятся (подсказки, а не карточка).
+- [x] Red: `tests/search-data.test.ts` — аудит чужого полного номера
+      (OWNERSHIP_DENIED с resourceRef, ROLE_MISMATCH у сотрудника), свои/
+      частичные номера — без новых DENIED-записей.
+- [x] Red: `tests/search-core.test.ts` — `isFullRequestNumberQuery`
+      (полный vs частичный номер).
+- [x] `searchCabinet`: одна выборка `listRequestsByStudent` на весь поиск
+      (раньше — две: на «Заявки» и на «Людей»).
+- [x] Кеш ответов палитры ограничен (`MAX_CACHED_QUERIES`, вытеснение
+      старого) — red-тест в `tests/search-palette.test.tsx` (fake timers).

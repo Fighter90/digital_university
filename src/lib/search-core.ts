@@ -71,6 +71,12 @@ export const MIN_QUERY_LENGTH = 2;
 export const RECENT_QUERIES_KEY = 'du.search.recent.v1';
 export const MAX_RECENT_QUERIES = 5;
 
+/**
+ * Лимит кеша ответов палитры за сессию: не бездонный (DIG-45 р2) — при
+ * переполнении вытесняется самый старый запрос (Map хранит порядок вставки).
+ */
+export const MAX_CACHED_QUERIES = 24;
+
 /** Нормализация запроса: trim, нижний регистр, пробелы, «ё→е». */
 export function normalizeSearchQuery(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, ' ').replaceAll('ё', 'е');
@@ -88,6 +94,16 @@ export function matchesSearchQuery(haystack: string, query: string): boolean {
  */
 export function isRequestNumberQuery(raw: string): boolean {
   return /^#?sr(-\d{4}(-[a-z0-9]{0,5})?)?$/i.test(raw.trim());
+}
+
+/**
+ * Введён ПОЛНЫЙ номер заявки SR-YYYY-XXXXX (5 символов суффикса)? В отличие
+ * от частичного ввода это адресный запрос к конкретной заявке: чужой полный
+ * номер аудитится (OWNERSHIP_DENIED / ROLE_MISMATCH), как getRequestByNumber;
+ * частичный набор по буквам аудит не засоряет.
+ */
+export function isFullRequestNumberQuery(raw: string): boolean {
+  return /^#?sr-\d{4}-[a-z0-9]{5}$/i.test(raw.trim());
 }
 
 /** Совпал ли хит запросом: название, подзаголовок или мета-строка. */
