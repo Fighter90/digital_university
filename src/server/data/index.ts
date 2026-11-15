@@ -98,6 +98,20 @@ export {
 } from './calendar';
 export type { CalendarFeedData, CalendarSubscriptionView } from './calendar';
 export {
+  checkRequestTransition,
+  allowedRequestTransitions,
+  formatStatusTransition,
+  isTerminalRequestStatus,
+} from '../../lib/request-machine';
+export type {
+  CanonicalRequestStatus,
+  RequestActor,
+  RequestTransitionRule,
+  RequestTransitionInput,
+  RequestTransitionCheck,
+} from '../../lib/request-machine';
+export { slaReadyDate, addWorkingDays, formatReadyBy, isWeekend } from '../../lib/request-sla';
+export {
   defaultSettingsFor,
   getOwnProfile,
   getOwnSettings,
@@ -116,9 +130,34 @@ export { ensureAppData } from './bootstrap';
 export {
   newRequestNumber,
   normalizeRequestNumber,
+  decodeRequestNumberParam,
   isValidRequestNumber,
   REQUEST_NUMBER_PATTERN,
 } from './request-number';
+export {
+  formatCanonicalRequestNumber,
+  canonicalRequestNumberYear,
+  canonicalRequestNumberSeq,
+  isValidCanonicalRequestNumber,
+  CANONICAL_REQUEST_NUMBER_PATTERN,
+} from './canonical-request-number';
+export {
+  REQUEST_DUPLICATE_WINDOW_MS,
+  listCanonicalRequestTypes,
+  createCanonicalRequest,
+  transitionCanonicalRequest,
+  getCanonicalRequestByNumber,
+  getCanonicalRequestById,
+  listCanonicalRequestsByStudent,
+  listCanonicalRequestEvents,
+  CANONICAL_REQUEST_STATUS_LABELS,
+} from './canonical-requests';
+export type {
+  CreateCanonicalRequestInput,
+  CreateCanonicalRequestResult,
+  TransitionCanonicalRequestInput,
+  TransitionCanonicalRequestResult,
+} from './canonical-requests';
 export type { DataDb, SchedulePeriod, ScheduleChangePatch } from './port';
 export {
   type DataCtx,
@@ -140,6 +179,9 @@ export {
   type StudentSettingsRow,
   type ServiceRequestRow,
   type RequestEventRow,
+  type CanonicalRequestRow,
+  type CanonicalRequestTypeRow,
+  type CanonicalRequestEventRow,
   type GradeRow,
   type NotificationRow,
   type AppealRow,

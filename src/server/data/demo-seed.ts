@@ -12,12 +12,15 @@ import { hashPassword } from '@/server/auth/password';
 import type { AuthStore } from '@/server/auth/types';
 import type { MemoryDataDb } from './memory-db';
 import { defaultSettingsFor } from './profile';
+import { formatCanonicalRequestNumber } from './canonical-request-number';
 import { newRequestNumber } from './request-number';
 import type {
   AppealMessageRow,
   AppealRow,
   CertificateRow,
-  DisciplineElementRow,
+  CanonicalRequestEventRow,
+  CanonicalRequestRow,
+  CanonicalRequestTypeRow,  DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
@@ -971,6 +974,139 @@ const exams: ExamSessionRow[] = [
 ];
 
 /**
+ * DIG-30 — словарь типов канонических заявок («Заявки и справки») и пара
+ * живых заявок Анны: мгновенная справка (READY, можно скачать) и бумажный
+ * дубликат диплома в очереди. Всё вымышленное.
+ */
+function buildCanonicalRequests(): {
+  types: CanonicalRequestTypeRow[];
+  requests: CanonicalRequestRow[];
+  events: CanonicalRequestEventRow[];
+} {
+  const types: CanonicalRequestTypeRow[] = [
+    {
+      id: 'crt-cert',
+      code: 'CERT_ENROLLMENT',
+      name: 'Справка об обучении',
+      etaDays: 1,
+      format: 'ELECTRONIC',
+      isInstant: true,
+      formSchema: {
+        keyField: 'purpose',
+        fields: [
+          {
+            key: 'purpose',
+            label: 'Назначение',
+            type: 'enum',
+            required: true,
+            options: ['для банка', 'для военкомата', 'по месту требования', 'для работодателя'],
+          },
+        ],
+      },
+    },
+    {
+      id: 'crt-extract',
+      code: 'GRADES_EXTRACT',
+      name: 'Выписка оценок',
+      etaDays: 1,
+      format: 'ELECTRONIC',
+      isInstant: true,
+      formSchema: null,
+    },
+    {
+      id: 'crt-diploma',
+      code: 'DIPLOMA_COPY',
+      name: 'Дубликат диплома',
+      etaDays: 5,
+      format: 'PAPER',
+      isInstant: false,
+      formSchema: {
+        keyField: 'reason',
+        fields: [{ key: 'reason', label: 'Причина', type: 'text', required: true, maxLength: 200 }],
+      },
+    },
+    {
+      id: 'crt-academic',
+      code: 'ACADEMIC_LEAVE',
+      name: 'Заявление на академический отпуск',
+      etaDays: 3,
+      format: 'HYBRID',
+      isInstant: false,
+      formSchema: {
+        keyField: 'period',
+        fields: [
+          { key: 'period', label: 'Период', type: 'text', required: true, maxLength: 60 },
+          { key: 'reason', label: 'Причина', type: 'text', required: true },
+          { key: 'from', label: 'Дата начала', type: 'date', required: true },
+        ],
+      },
+    },
+  ];
+
+  const certCreated = day(0, 9, 5); // сегодня утром — окно 24 ч активно
+  const diplomaCreated = day(-3, 11, 40);
+
+  const requests: CanonicalRequestRow[] = [
+    {
+      id: 'creq-demo-cert',
+      number: formatCanonicalRequestNumber(certCreated.getFullYear(), 1),
+      studentId: 'st-anna',
+      typeCode: 'CERT_ENROLLMENT',
+      typeName: 'Справка об обучении',
+      title: 'Справка об обучении · для банка',
+      params: { purpose: 'для банка' },
+      status: 'READY',
+      createdAt: certCreated,
+      updatedAt: certCreated,
+    },
+    {
+      id: 'creq-demo-diploma',
+      number: formatCanonicalRequestNumber(diplomaCreated.getFullYear(), 2),
+      studentId: 'st-anna',
+      typeCode: 'DIPLOMA_COPY',
+      typeName: 'Дубликат диплома',
+      title: 'Дубликат диплома · утрата оригинала',
+      params: { reason: 'утрата оригинала' },
+      status: 'SUBMITTED',
+      createdAt: diplomaCreated,
+      updatedAt: diplomaCreated,
+    },
+  ];
+
+  const events: CanonicalRequestEventRow[] = [
+    {
+      id: 'cev-demo-cert',
+      requestId: 'creq-demo-cert',
+      actorUserId: 'auth-anna',
+      actorRole: 'STUDENT',
+      actorName: 'Анна Ковалёва',
+      fromStatus: null,
+      toStatus: 'READY',
+      comment: 'Документ сформирован автоматически',
+      createdAt: certCreated,
+    },
+    {
+      id: 'cev-demo-diploma',
+      requestId: 'creq-demo-diploma',
+      actorUserId: 'auth-anna',
+      actorRole: 'STUDENT',
+      actorName: 'Анна Ковалёва',
+      fromStatus: null,
+      toStatus: 'SUBMITTED',
+      comment: null,
+      createdAt: diplomaCreated,
+    },
+  ];
+  return { types, requests, events };
+}
+
+const {
+  types: canonicalRequestTypes,
+  requests: canonicalRequests,
+  events: canonicalRequestEvents,
+} = buildCanonicalRequests();
+
+/**
  * Seeds the fictional demo dataset. Idempotent: safe to call on every boot;
  * auth users are added only if missing (authStore may already hold sessions).
  */
@@ -980,6 +1116,10 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     staff: staffRows,
     requests,
     requestEvents,
+    // DIG-30 — канонические заявки «Заявки и справки» (номера ЗД-…).
+    canonicalRequestTypes,
+    canonicalRequests,
+    canonicalRequestEvents,
     grades: [...grades, ...mateGrades],
     notifications,
     appeals,

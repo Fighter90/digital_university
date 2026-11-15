@@ -14,7 +14,9 @@ import type {
   AuditLogRow,
   CalendarSubscriptionRow,
   CertificateRow,
-  DisciplineElementRow,
+  CanonicalRequestEventRow,
+  CanonicalRequestRow,
+  CanonicalRequestTypeRow,  DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
@@ -28,12 +30,17 @@ import type {
   StudentSettingsRow,
   ServiceFavoriteRow,
 } from './types';
+import { canonicalRequestNumberSeq } from './canonical-request-number';
 
 export interface MemorySeed {
   students?: StudentRow[];
   staff?: StaffRow[];
   requests?: ServiceRequestRow[];
   requestEvents?: RequestEventRow[];
+  /** DIG-30 — канонические заявки «Заявки и справки» (номера ЗД-…). */
+  canonicalRequestTypes?: CanonicalRequestTypeRow[];
+  canonicalRequests?: CanonicalRequestRow[];
+  canonicalRequestEvents?: CanonicalRequestEventRow[];
   grades?: GradeRow[];
   notifications?: NotificationRow[];
   appeals?: AppealRow[];
@@ -69,6 +76,9 @@ export function createMemoryDataDb(): MemoryDataDb {
   let staff: StaffRow[] = [];
   let requests: ServiceRequestRow[] = [];
   let requestEvents: RequestEventRow[] = [];
+  let canonicalRequestTypes: CanonicalRequestTypeRow[] = [];
+  let canonicalRequests: CanonicalRequestRow[] = [];
+  let canonicalRequestEvents: CanonicalRequestEventRow[] = [];
   let grades: GradeRow[] = [];
   let notifications: NotificationRow[] = [];
   let appeals: AppealRow[] = [];
@@ -91,7 +101,8 @@ export function createMemoryDataDb(): MemoryDataDb {
   let requestSeq = 0;
   let requestEventSeq = 0;
   let certificateSeq = 0;
-
+  let canonicalRequestSeq = 0;
+  let canonicalEventSeq = 0;
   const by = <T, K extends keyof T>(rows: T[], key: K, value: T[K]) =>
     rows.find((row) => row[key] === value) ?? null;
 
@@ -101,6 +112,13 @@ export function createMemoryDataDb(): MemoryDataDb {
       staff = seed.staff ? seed.staff.map(clone) : [];
       requests = seed.requests ? seed.requests.map(clone) : [];
       requestEvents = seed.requestEvents ? seed.requestEvents.map(clone) : [];
+      canonicalRequestTypes = seed.canonicalRequestTypes
+        ? seed.canonicalRequestTypes.map(clone)
+        : [];
+      canonicalRequests = seed.canonicalRequests ? seed.canonicalRequests.map(clone) : [];
+      canonicalRequestEvents = seed.canonicalRequestEvents
+        ? seed.canonicalRequestEvents.map(clone)
+        : [];
       grades = seed.grades ? seed.grades.map(clone) : [];
       notifications = seed.notifications ? seed.notifications.map(clone) : [];
       appeals = seed.appeals ? seed.appeals.map(clone) : [];
@@ -263,6 +281,98 @@ export function createMemoryDataDb(): MemoryDataDb {
         createdAt: input.createdAt,
       });
       return clone(row);
+    },
+
+    // ── DIG-30: canonical requests «Заявки и справки» (owner-scoped) ──────
+    async listCanonicalRequestTypes() {
+      return canonicalRequestTypes.map(clone);
+    },
+    async findCanonicalRequestTypeByCode(code) {
+      return clone(by(canonicalRequestTypes, 'code', code));
+    },
+    async probeCanonicalRequestByNumber(number) {
+      return clone(by(canonicalRequests, 'number', number));
+    },
+    async probeCanonicalRequestById(id) {
+      return clone(by(canonicalRequests, 'id', id));
+    },
+    async findCanonicalRequestByStudentAndNumber(studentId, number) {
+      return clone(
+        canonicalRequests.find((r) => r.studentId === studentId && r.number === number) ?? null,
+      );
+    },
+    async findCanonicalRequestByStudentAndId(studentId, id) {
+      return clone(canonicalRequests.find((r) => r.studentId === studentId && r.id === id) ?? null);
+    },
+    async listCanonicalRequestsByStudent(studentId) {
+      return canonicalRequests
+        .filter((r) => r.studentId === studentId)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .map(clone);
+    },
+    async listCanonicalRequestEvents(requestId) {
+      return canonicalRequestEvents
+        .filter((e) => e.requestId === requestId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map(clone);
+    },
+    async insertCanonicalRequest(row, event) {
+      if (by(canonicalRequests, 'number', row.number)) {
+        // UNIQUE «number» из миграции DIG-9: дубль номера — сбой хранения.
+        throw new Error('duplicate canonical request number');
+      }
+      canonicalRequestSeq += 1;
+      const created: CanonicalRequestRow = { ...clone(row), id: `creq-${canonicalRequestSeq}` };
+      canonicalRequests.push(created);
+      canonicalEventSeq += 1;
+      canonicalRequestEvents.push({
+        ...clone(event),
+        id: `cev-${canonicalEventSeq}`,
+        requestId: created.id,
+      });
+      return clone(created);
+    },
+    async saveCanonicalRequestStatus(requestId, patch, event) {
+      const row = canonicalRequests.find((r) => r.id === requestId);
+      if (!row) return null;
+      row.status = patch.status;
+      row.updatedAt = patch.updatedAt;
+      canonicalEventSeq += 1;
+      canonicalRequestEvents.push({
+        ...clone(event),
+        id: `cev-${canonicalEventSeq}`,
+        requestId,
+      });
+      return clone(row);
+    },
+    async findLatestCanonicalRequestByStudentAndType(
+      studentId,
+      typeCode,
+      createdAfter,
+      keyField,
+      keyValue,
+    ) {
+      const candidates = canonicalRequests
+        .filter(
+          (r) =>
+            r.studentId === studentId &&
+            r.typeCode === typeCode &&
+            r.createdAt.getTime() >= createdAfter.getTime() &&
+            // Дубликат = тот же документ: совпадает и ключевой параметр.
+            (keyField == null || (r.params[keyField] ?? '') === (keyValue ?? '')),
+        )
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return candidates.length > 0 ? clone(candidates[0]!) : null;
+    },
+    async nextCanonicalRequestSeq(year) {
+      const prefix = `ЗД-${year}-`;
+      let max = 0;
+      for (const row of canonicalRequests) {
+        if (!row.number.startsWith(prefix)) continue;
+        const seq = canonicalRequestNumberSeq(row.number);
+        if (seq !== null && seq > max) max = seq;
+      }
+      return max + 1;
     },
 
     async listGradesByStudent(studentId) {
