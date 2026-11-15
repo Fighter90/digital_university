@@ -10,6 +10,7 @@ import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
 import { DEFAULT_WIDGET_ORDER, normalizeWidgets } from '@/lib/dashboard-widgets';
+import { ASSISTANT_DOC_URL, DOCS_LINKS } from '@/lib/docs-links';
 
 const studentCtx = {
   userId: 'auth-anna',
@@ -220,6 +221,28 @@ describe('/settings?tab=appearance — theme, language, font, motion', () => {
     expect(html).toContain('Крупный');
     expect(html).toContain('Очень крупный');
     expect(html).toContain('Уменьшить анимацию');
+  });
+});
+
+describe('/settings?tab=home — справка и документация (DIG-59)', () => {
+  it('renders the docs card with links to help, assistant and architecture', async () => {
+    const html = await renderPage('home');
+    expect(html).toContain('Справка и документация');
+    for (const doc of DOCS_LINKS) {
+      expect(html, `нет ссылки на ${doc.repoPath}`).toContain(`href="${doc.href}"`);
+      expect(html, `нет названия «${doc.title}»`).toContain(doc.title);
+    }
+    // Внешние ссылки: новая вкладка, без referrer.
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noreferrer noopener"');
+  });
+});
+
+describe('/settings?tab=mcp — ссылка на справку ассистента (DIG-59)', () => {
+  it('links the MCP help card to docs/assistant.md', async () => {
+    const html = await renderPage('mcp');
+    expect(html).toContain('Справка: MCP');
+    expect(html).toContain(`href="${ASSISTANT_DOC_URL}"`);
   });
 });
 
