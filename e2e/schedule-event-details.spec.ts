@@ -1,4 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { test as base, expect, type Page } from '@playwright/test';
 
 // DIG-24 — экран «Детали пары» (боковая панель / нижний лист на мобильном,
 // Figma «04 · Расписание — детали пары»). Приёмка: открывается по клику на
@@ -10,22 +13,69 @@ import { expect, test, type Page } from '@playwright/test';
 // онлайн-ссылка, домашнее задание и материалы, «Моя заметка» (сохранение/
 // удаление), «Добавить в календарь» (.ics), «Спросить AI об этой паре».
 
-/** Вход тестового студента (Анна Ковалёва · ПИ-21) — как в schedule.spec. */
+/**
+ * Вход тестового студента (Анна Ковалёва · ПИ-21). Один заход на воркер
+ * (см. фикстуру storageState ниже): per-IP rate limiter входа на сервере —
+ * 30 попыток / 15 минут с одного IP, а параллельные воркеры долбят логин
+ * с одного localhost. Проштучный вход каждого теста с toPass-повторами
+ * выжигал бюджет и каскадно лочил остальные тесты; не ослабляя лимитер,
+ * логинимся один раз на воркер и переиспользуем сессию через storageState.
+ */
 async function signIn(page: Page) {
   await expect(async () => {
     await page.goto('/login');
     await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
     await page.getByRole('button', { name: 'Войти', exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard$/, { timeout: 10_000 });
-  }).toPass({ timeout: 60_000 });
+  }).toPass({
+    // ограниченный повтор (гонка гидрации на первом клике): не более 3-4
+    // попыток за 30 с — не «молотилка» на 60 с без пауз
+    timeout: 30_000,
+    intervals: [2_000, 5_000, 10_000],
+  });
 }
+
+/** Каталог для сессионных файлов воркеров. */
+const AUTH_DIR = path.join(os.tmpdir(), 'dig-24-e2e-auth');
+
+/**
+ * Каждый воркер входит один раз и дальше его тесты стартуют уже с сессией
+ * (канонический паттерн Playwright «Authenticate once per worker»).
+ */
+const test = base.extend<{ storageState: string }, { workerStorageState: string }>({
+  storageState: async ({ workerStorageState }, use) => {
+    // фикстура Playwright, не React-хук: use() — контракт фикстур
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    await use(workerStorageState);
+  },
+  workerStorageState: [
+    async ({ browser }, use, workerInfo) => {
+      const file = path.join(
+        AUTH_DIR,
+        `${process.pid}-${Date.now()}-worker-${workerInfo.workerIndex}.json`,
+      );
+      // browser.newPage() не наследует опции тестового контекста — baseURL
+      // (и пустой storageState) передаём явно, чтобы signIn ходил по «/login»
+      const page = await browser.newPage({
+        baseURL: workerInfo.project.use.baseURL ?? 'http://localhost:3000',
+        storageState: undefined,
+      });
+      await signIn(page);
+      await page.context().storageState({ path: file });
+      await page.close();
+      await use(file);
+      // сессия живёт на сервере и в файле tmpdir — оставлять её осознанно
+      // нечего (демо-данные), файл удаляем вместе с воркером
+      fs.rmSync(file, { force: true });
+    },
+    { scope: 'worker' },
+  ],
+});
 
 test.describe('desktop 1440 — панель из вида «Неделя»', () => {
   test.skip(({ viewport }) => viewport?.width !== 1440, 'desktop-1440 only');
 
-  test.beforeEach(async ({ page }) => {
-    await signIn(page);
-  });
+  // сессия приходит из worker-scoped storageState — повторный вход не нужен
 
   test('клик по паре открывает панель по ?event=; Esc закрывает и возвращает фокус; «Назад» закрывает', async ({
     page,
@@ -39,7 +89,8 @@ test.describe('desktop 1440 — панель из вида «Неделя»', ()
 
     await expect(page).toHaveURL(/event=sch-pi21-4/);
     const dialog = page.getByTestId('event-details-panel');
-    await expect(dialog).toBeVisible();
+    // 10с — гидрация панели под нагрузкой параллельного прогона двух проектов
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     await expect(dialog).toContainText('Программирование');
     // жёлтый блок переноса: «Было → Стало», причина и кто изменил
     await expect(dialog).toContainText('Было: ауд. 214, 12:00');
@@ -56,22 +107,29 @@ test.describe('desktop 1440 — панель из вида «Неделя»', ()
 
     // фокус при открытии — в панели (a11y-требование приёмки); эффект
     // начального фокуса срабатывает после гидрации — ждём через expect.poll
+    // (таймаут с запасом: полный прогон идёт параллельно двум проектам)
     await expect
-      .poll(() =>
-        page.evaluate(
-          () =>
-            (document.activeElement?.closest('[role="dialog"]') ?? null) !== null &&
-            document.activeElement?.getAttribute('data-testid') === 'event-details-panel',
-        ),
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              (document.activeElement?.closest('[role="dialog"]') ?? null) !== null &&
+              document.activeElement?.getAttribute('data-testid') === 'event-details-panel',
+          ),
+        { timeout: 10_000 },
       )
       .toBe(true);
 
     // Esc закрывает панель, фокус возвращается на блок пары, ?event= уходит из URL
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
-    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-event-id'))).toBe(
-      'sch-pi21-4',
-    );
+    // фокус возвращает эффект закрытия панели — ждём, а не читаем мгновенно
+    await expect
+      .poll(
+        () => page.evaluate(() => document.activeElement?.getAttribute('data-event-id') ?? null),
+        { timeout: 10_000 },
+      )
+      .toBe('sch-pi21-4');
     await expect(page).not.toHaveURL(/event=/);
 
     // «Назад» браузера ведёт к записи до открытия панели (панель закрыта)
@@ -83,7 +141,8 @@ test.describe('desktop 1440 — панель из вида «Неделя»', ()
   test('отменённая пара: красный блок с причиной и «Что делать»', async ({ page }) => {
     await page.goto('/schedule?event=sch-pi21-5');
     const dialog = page.getByTestId('event-details-panel');
-    await expect(dialog).toBeVisible();
+    // 10с — гидрация панели под нагрузкой параллельного прогона двух проектов
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     await expect(dialog).toContainText('Причина: Лаборатория закрыта');
     await expect(dialog).toContainText('Что делать: Занятие будет восполнено 20 ноября, ауд. 212');
   });
@@ -93,7 +152,8 @@ test.describe('desktop 1440 — панель из вида «Неделя»', ()
   }) => {
     await page.goto('/schedule?event=sch-pi21-1');
     const dialog = page.getByTestId('event-details-panel');
-    await expect(dialog).toBeVisible();
+    // 10с — гидрация панели под нагрузкой параллельного прогона двух проектов
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     // состав: домашнее задание, материалы, преподаватель с email и справочником
     await expect(dialog).toContainText('Подготовить вопросы к коллоквиуму');
     await expect(dialog).toContainText('Конспект лекции №7, слайды в библиотеке');
@@ -111,26 +171,24 @@ test.describe('desktop 1440 — панель из вида «Неделя»', ()
       '/api/schedule/sch-pi21-1/ics',
     );
 
-    // заметка: сохранить → сохранить → перезагрузка → текст на месте
+    // заметка: сохранить → сервер вернул сохранённый текст в редактор
+    // (revalidate перерисовывает панель заметкой из слоя данных; server action
+    // при параллельном прогоне двух проектов бывает нетороплив — таймаут 15с)
     const textarea = dialog.getByRole('textbox');
     await textarea.fill('Принести конспект и ноутбук');
     await dialog.getByRole('button', { name: 'Сохранить', exact: true }).click();
-    await expect(dialog.getByText('Заметка сохранена')).toBeVisible();
-    await page.reload();
-    const dialogAfterReload = page.getByTestId('event-details-panel');
-    await expect(dialogAfterReload.getByRole('textbox')).toHaveValue('Принести конспект и ноутбук');
+    await expect(dialog.getByText('Заметка сохранена')).toBeVisible({ timeout: 15_000 });
+    await expect(dialog.getByRole('textbox')).toHaveValue('Принести конспект и ноутбук');
     // удаление возвращает пустой редактор
-    await dialogAfterReload.getByRole('button', { name: 'Удалить' }).click();
-    await expect(dialogAfterReload.getByRole('textbox')).toHaveValue('');
+    await dialog.getByRole('button', { name: 'Удалить' }).click();
+    await expect(dialog.getByRole('textbox')).toHaveValue('', { timeout: 10_000 });
   });
 });
 
 test.describe('mobile 360 — нижний лист из мобильного вида', () => {
   test.skip(({ viewport }) => viewport?.width !== 360, 'mobile-360 only');
 
-  test.beforeEach(async ({ page }) => {
-    await signIn(page);
-  });
+  // сессия приходит из worker-scoped storageState — повторный вход не нужен
 
   test('клик по карточке пары открывает нижний лист, отмена видна составом, Esc возвращает фокус, без гор. скролла', async ({
     page,
@@ -143,7 +201,8 @@ test.describe('mobile 360 — нижний лист из мобильного в
 
     await expect(page).toHaveURL(/event=sch-pi21-5/);
     const dialog = page.getByTestId('event-details-panel');
-    await expect(dialog).toBeVisible();
+    // 10с — гидрация панели под нагрузкой параллельного прогона двух проектов
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     await expect(dialog).toContainText('Физика');
     await expect(dialog).toContainText('Причина: Лаборатория закрыта');
     await expect(dialog).toContainText('Что делать: Занятие будет восполнено 20 ноября, ауд. 212');
@@ -155,16 +214,21 @@ test.describe('mobile 360 — нижний лист из мобильного в
 
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
-    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-event-id'))).toBe(
-      'sch-pi21-5',
-    );
+    // фокус возвращает эффект закрытия панели — ждём, а не читаем мгновенно
+    await expect
+      .poll(
+        () => page.evaluate(() => document.activeElement?.getAttribute('data-event-id') ?? null),
+        { timeout: 10_000 },
+      )
+      .toBe('sch-pi21-5');
     await expect(page).not.toHaveURL(/event=/);
   });
 
   test('онлайн-пара: ссылка на встречу вместо «Как пройти»', async ({ page }) => {
     await page.goto('/schedule?event=sch-pi21-6');
     const dialog = page.getByTestId('event-details-panel');
-    await expect(dialog).toBeVisible();
+    // 10с — гидрация панели под нагрузкой параллельного прогона двух проектов
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     await expect(dialog).toContainText('онлайн');
     const meeting = dialog.getByRole('link', { name: 'Ссылка на онлайн-встречу' });
     await expect(meeting).toHaveAttribute('href', 'https://meet.example.edu/hist-seminar');
@@ -173,19 +237,22 @@ test.describe('mobile 360 — нижний лист из мобильного в
 });
 
 test.describe('прямой URL — uniform 404 на чужую и несуществующую пару', () => {
-  test.beforeEach(async ({ page }) => {
-    await signIn(page);
-  });
+  // сессия приходит из worker-scoped storageState — повторный вход не нужен
 
   test('чужая пара (группа ЭК-11) → 404', async ({ page }) => {
     await page.goto('/schedule?event=sch-ek11-1');
-    await expect(page.getByRole('heading', { name: 'Страница не найдена' })).toBeVisible();
+    // 10с — рендер not-found под нагрузкой параллельного прогона двух проектов
+    await expect(page.getByRole('heading', { name: 'Страница не найдена' })).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(page.getByTestId('event-details-panel')).toHaveCount(0);
   });
 
   test('несуществующий id → тот же 404 (не раскрывает существование)', async ({ page }) => {
     await page.goto('/schedule?event=no-such-pair');
-    await expect(page.getByRole('heading', { name: 'Страница не найдена' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Страница не найдена' })).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(page.getByTestId('event-details-panel')).toHaveCount(0);
   });
 });

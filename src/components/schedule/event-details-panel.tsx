@@ -104,9 +104,16 @@ export function EventDetailsPanel({ view, note, closeHref }: EventDetailsPanelPr
     // Диалог уже закрыт (ловушка фокуса снята): вернуть фокус на блок пары,
     // из которого панель открыли, и убрать ?event= из URL (приёмка DIG-24).
     // replaceState без навигации — см. шапку файла; фокус переживает закрытие.
-    const trigger = document.querySelector<HTMLElement>(
-      `[data-testid="lesson-${CSS.escape(view.id)}"], [data-event-id="${CSS.escape(view.id)}"]`,
-    );
+    // ВАЖНО: страница содержит блоки пар ДВУХ брейкпоинтов (десктопная сетка
+    // скрыта `hidden md:block` на мобильном и наоборот) — focus() на
+    // display:none элемент молча не срабатывает, поэтому берём первый
+    // ВИДИМЫй триггер.
+    const selector = `[data-testid="lesson-${CSS.escape(view.id)}"], [data-event-id="${CSS.escape(view.id)}"]`;
+    const matches = Array.from(document.querySelectorAll<HTMLElement>(selector));
+    const trigger =
+      matches.find((el) =>
+        typeof el.checkVisibility === 'function' ? el.checkVisibility() : el.offsetParent !== null,
+      ) ?? null;
     trigger?.focus();
     window.history.replaceState(null, '', closeHref);
   }, [open, closeHref, view.id]);
