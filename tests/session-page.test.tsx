@@ -2,7 +2,7 @@
 // Приёмка: шапка с названием сезона, диапазоном и отсчётом; таймлайн
 // экзаменов/зачётов со статусами-пилюлями (Не допущен — с причиной и
 // действием); блок пересдач с записью и состоянием «Заявка создана»;
-// консультации; подсказка AI; кнопка «вся сессия в календарь»;
+// консультации; подсказка AI; живая ICS-подписка календаря (DIG-63);
 // пустое состояние и заглушка сотрудника.
 import { describe, expect, it, vi } from 'vitest';
 import { createElement, type ComponentType } from 'react';
@@ -26,9 +26,19 @@ const state = vi.hoisted(() => ({
   ctx: null as unknown,
   session: null as SessionData | null,
   throwing: false,
+  subscription: { token: 'v1.tok.tok', createdAt: new Date(2026, 10, 15) } as {
+    token: string;
+    createdAt: Date;
+  } | null,
 }));
 
 vi.mock('@/server/data/db', () => ({ dataDb: {} }));
+
+vi.mock('next/headers', () => ({
+  headers: vi.fn(async () => ({
+    get: (name: string) => (name === 'host' ? 'localhost:3000' : null),
+  })),
+}));
 
 vi.mock('@/server/data', () => ({
   requireDataCtx: vi.fn(async () => state.ctx),
@@ -36,6 +46,7 @@ vi.mock('@/server/data', () => ({
     if (state.throwing) throw new Error('exams db down');
     return state.session;
   }),
+  getOrCreateCalendarSubscription: vi.fn(async () => state.subscription),
 }));
 
 import SessionPage from '@/app/(cabinet)/grades/session/page';
@@ -157,23 +168,38 @@ function sessionFixture(): SessionData {
 }
 
 describe('/grades/session — студент', () => {
-  it('шапка: сезон, диапазон, отсчёт, кнопка календаря и подсказка AI', async () => {
+  it('шапка: сезон, диапазон, отсчёт, подписка на календарь и подсказка AI', async () => {
     state.ctx = studentCtx;
     state.session = sessionFixture();
     state.throwing = false;
+    state.subscription = { token: 'v1.tok.tok', createdAt: new Date(2026, 10, 15) };
 
     const html = await renderPage();
     expect(html).toContain('Зимняя сессия');
     expect(html).toContain('23 декабря – 1 января');
     expect(html).toContain('data-testid="session-countdown"');
     expect(html).toContain('До первого экзамена 3 дня');
-    expect(html).toContain('data-testid="session-ics"');
-    expect(html).toContain('href="/api/session/ics"');
-    expect(html).toContain('Добавить всю сессию в календарь');
+    // DIG-63: живая подписка по персональной подписанной ссылке (абсолютный
+    // origin из заголовков; токен подписан сервером).
+    expect(html).toContain('Подписка на календарь');
+    expect(html).toContain('data-testid="calendar-subscribe-url"');
+    expect(html).toContain('data-testid="calendar-subscribe-copy"');
+    expect(html).toContain('http://localhost:3000/api/calendar/ics?token=v1.tok.tok');
     expect(html).toContain('data-testid="ai-hint"');
     expect(html).toContain('Подготовиться к экзамену по «Информатика»');
     // В HTML-атрибуте React экранирует & как &amp;.
     expect(html).toContain('href="/ai-assistant?intent=exam-prep&amp;discipline=PI21-INFO"');
+  });
+
+  it('подписка не выдана (нет секрета): карточка не рисуется, экран жив', async () => {
+    state.ctx = studentCtx;
+    state.session = sessionFixture();
+    state.throwing = false;
+    state.subscription = null;
+
+    const html = await renderPage();
+    expect(html).toContain('Зимняя сессия');
+    expect(html).not.toContain('data-testid="calendar-subscribe"');
   });
 
   it('таймлайн: дата/время/аудитория/преподаватель/тип и статусы-пилюли', async () => {
@@ -267,10 +293,11 @@ describe('/grades/session — состояния', () => {
   it('сотруднику деканата экран не показывается', async () => {
     state.ctx = staffCtx;
     state.session = null;
+    state.subscription = { token: 'v1.tok.tok', createdAt: new Date(2026, 10, 15) };
 
     const html = await renderPage();
     expect(html).toContain('Экран доступен студентам');
-    expect(html).not.toContain('data-testid="session-ics"');
+    expect(html).not.toContain('data-testid="calendar-subscribe"');
     expect(html).not.toContain('data-testid="session-timeline"');
   });
 

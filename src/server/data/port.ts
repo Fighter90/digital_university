@@ -18,6 +18,7 @@ import type {
   AppealMessageRow,
   AppealRow,
   AuditLogRow,
+  CalendarSubscriptionRow,
   CertificateRow,
   DisciplineElementRow,
   DisciplineRow,
@@ -227,6 +228,32 @@ export interface DataDb {
     code: string,
     input: { revokedAt: Date; reason: string | null },
   ): Promise<CertificateRow | null>;
+
+  // ── DIG-63: живая ICS-подписка расписания и дедлайнов ────────────────────
+  /** Активная подписка владельца (строка одна на студента). */
+  findCalendarSubscriptionByStudent(studentId: string): Promise<CalendarSubscriptionRow | null>;
+  /**
+   * Поиск подписки по tokenId БЕЗ скоупа — осознанное исключение из
+   * owner-scope по образцу findCertificateByCode: публичный фид по
+   * определению читает без входа, а tokenId несёт 128 бит энтропии и
+   * HMAC-подпись (проверяется в calendar.ts до этого вызова). Наружу из
+   * слоя данных уходит только представление без studentId (см. calendar.ts);
+   * любые другие употребления запрещены.
+   */
+  findCalendarSubscriptionByTokenId(tokenId: string): Promise<CalendarSubscriptionRow | null>;
+  /** Upsert подписки владельца: один tokenId на строку (активная ссылка). */
+  saveCalendarSubscriptionForStudent(
+    studentId: string,
+    input: { tokenId: string; createdAt: Date; rotatedAt: Date | null },
+  ): Promise<CalendarSubscriptionRow>;
+  /** Отзыв владельцем (ротация в кабинете); false — подписки нет. */
+  deleteCalendarSubscriptionByStudent(studentId: string): Promise<boolean>;
+  /**
+   * Отзыв по логину владельца — контракт выхода из кабинета (login приходит
+   * из живой сессии в server action, никогда не из ввода). false — у
+   * логина нет студента или активной подписки.
+   */
+  deleteCalendarSubscriptionByLogin(login: string): Promise<boolean>;
 
   // ── staff scope ───────────────────────────────────────────────────────────
   listStudentsByFaculty(faculty: string): Promise<StudentRow[]>;

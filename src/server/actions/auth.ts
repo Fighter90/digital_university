@@ -8,8 +8,10 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { signInWithDefaults } from '@/server/auth/store';
-import { signOutAllDevices, signOutCurrentSession } from '@/server/auth/session';
+import { getAuthSession, signOutAllDevices, signOutCurrentSession } from '@/server/auth/session';
 import { ensureAppData } from '@/server/data/bootstrap';
+import { revokeCalendarSubscriptionOfLogin } from '@/server/data/calendar';
+import { dataDb } from '@/server/data/db';
 import {
   buildRoleHintCookie,
   buildSessionCookie,
@@ -84,12 +86,30 @@ export async function signInAction(
 // signOutCurrentSession/signOutAllDevices (server/auth/session.ts); the
 // middleware never re-issues cookies on POSTs, so the cleared state reaches
 // the browser uncontested.
+//
+// DIG-63: выход из кабинета отзывает живую ICS-подписку (персональная
+// ссылка календаря умирает вместе с сессией; при новом входе выдаётся
+// новая ссылка). Логин читается из живой сессии ДО удаления строки —
+// никогда из ввода. Отзыв идемпотентен и не блокирует сам выход: сбой
+// слоя данных не должен оставить студента запертым в кабинете.
+async function revokeCalendarSubscriptionBeforeSignOut(): Promise<void> {
+  try {
+    const auth = await getAuthSession();
+    if (!auth) return;
+    await revokeCalendarSubscriptionOfLogin(dataDb, auth.user.login);
+  } catch (error) {
+    console.error('[sign-out] calendar subscription revoke failed', error);
+  }
+}
+
 export async function signOutAction(): Promise<void> {
+  await revokeCalendarSubscriptionBeforeSignOut();
   await signOutCurrentSession();
   redirect('/login?signedOut=1');
 }
 
 export async function signOutAllDevicesAction(): Promise<void> {
+  await revokeCalendarSubscriptionBeforeSignOut();
   await signOutAllDevices();
   redirect('/login?signedOut=1');
 }

@@ -12,6 +12,7 @@ import type {
   AppealMessageRow,
   AppealRow,
   AuditLogRow,
+  CalendarSubscriptionRow,
   CertificateRow,
   DisciplineElementRow,
   DisciplineRow,
@@ -50,6 +51,8 @@ export interface MemorySeed {
   serviceFavorites?: ServiceFavoriteRow[];
   /** DIG-47 — реестр выданных справок (проверка подлинности по коду). */
   certificates?: CertificateRow[];
+  /** DIG-63 — активные ICS-подписки студентов (одна на студента). */
+  calendarSubscriptions?: CalendarSubscriptionRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -78,6 +81,7 @@ export function createMemoryDataDb(): MemoryDataDb {
   let notes: StudentNoteRow[] = [];
   let serviceFavorites: ServiceFavoriteRow[] = [];
   let certificates: CertificateRow[] = [];
+  let calendarSubscriptions: CalendarSubscriptionRow[] = [];
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
@@ -109,6 +113,9 @@ export function createMemoryDataDb(): MemoryDataDb {
       notes = seed.notes ? seed.notes.map(clone) : [];
       serviceFavorites = seed.serviceFavorites ? seed.serviceFavorites.map(clone) : [];
       certificates = seed.certificates ? seed.certificates.map(clone) : [];
+      calendarSubscriptions = seed.calendarSubscriptions
+        ? seed.calendarSubscriptions.map(clone)
+        : [];
       audit = [];
     },
 
@@ -408,6 +415,44 @@ export function createMemoryDataDb(): MemoryDataDb {
       row.revokedAt = input.revokedAt;
       row.revokedReason = input.reason;
       return clone(row);
+    },
+
+    // ── DIG-63: активные ICS-подписки (одна строка на студента) ─────────────
+    async findCalendarSubscriptionByStudent(studentId) {
+      return clone(by(calendarSubscriptions, 'studentId', studentId));
+    },
+    // Поиск по tokenId без скоупа — осознанное исключение (см. port.ts):
+    // публичный фид читает без входа;tokenId несёт 128 бит + HMAC-подпись,
+    // которую calendar.ts проверяет до этого вызова.
+    async findCalendarSubscriptionByTokenId(tokenId) {
+      return clone(by(calendarSubscriptions, 'tokenId', tokenId));
+    },
+    async saveCalendarSubscriptionForStudent(studentId, input) {
+      const row: CalendarSubscriptionRow = {
+        studentId,
+        tokenId: input.tokenId,
+        createdAt: input.createdAt,
+        rotatedAt: input.rotatedAt,
+      };
+      const index = calendarSubscriptions.findIndex((s) => s.studentId === studentId);
+      if (index === -1) {
+        calendarSubscriptions.push(row);
+      } else {
+        calendarSubscriptions[index] = row;
+      }
+      return clone(row);
+    },
+    async deleteCalendarSubscriptionByStudent(studentId) {
+      const before = calendarSubscriptions.length;
+      calendarSubscriptions = calendarSubscriptions.filter((s) => s.studentId !== studentId);
+      return calendarSubscriptions.length < before;
+    },
+    async deleteCalendarSubscriptionByLogin(login) {
+      const owner = students.find((s) => s.login === login);
+      if (!owner) return false;
+      const before = calendarSubscriptions.length;
+      calendarSubscriptions = calendarSubscriptions.filter((s) => s.studentId !== owner.id);
+      return calendarSubscriptions.length < before;
     },
 
     async listStudentsByFaculty(faculty) {

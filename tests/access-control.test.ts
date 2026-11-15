@@ -22,6 +22,7 @@ describe('route guard: public vs protected paths', () => {
     ['/forgot-password', true], // DIG-18: stub screen «Забыли пароль?» остаётся публичным
     ['/login?next=%2F', true],
     ['/api/health', true],
+    ['/api/calendar/ics', true], // DIG-63: ICS-подписка по персональному токену (календарные клиенты без кук)
     ['/verify/ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-6777', true], // DIG-47: публичная проверка справок
     ['/verify/abc', true],
     ['/api/mcp', true], // DIG-64: демо-MCP-сервер — Bearer-токен вместо cookie-сессии

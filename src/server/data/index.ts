@@ -90,6 +90,14 @@ export type {
   RevokeCertificateInput,
 } from './certificates';
 export {
+  buildCalendarFeed,
+  getOrCreateCalendarSubscription,
+  resolveCalendarFeed,
+  revokeCalendarSubscriptionOfLogin,
+  icsTokenSecret,
+} from './calendar';
+export type { CalendarFeedData, CalendarSubscriptionView } from './calendar';
+export {
   defaultSettingsFor,
   getOwnProfile,
   getOwnSettings,
@@ -143,4 +151,5 @@ export {
   type DisciplineElementRow,
   type ServiceFavoriteRow,
   type CertificateRow,
+  type CalendarSubscriptionRow,
 } from './types';
