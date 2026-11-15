@@ -14,11 +14,13 @@ import { dataDb } from '@/server/data/db';
 import {
   updateOwnFontSize,
   updateOwnLanguage,
+  updateOwnMcpConnection,
   updateOwnQuietHours,
   updateOwnReduceMotion,
   updateOwnWidgets,
 } from '@/server/data/profile';
 import { DASHBOARD_WIDGETS, isDashboardWidgetId, normalizeWidgets } from '@/lib/dashboard-widgets';
+import { isMcpServerId } from '@/lib/mcp-servers';
 
 /** Revalidates every layout/page of the cabinet — appearance prefs apply at once. */
 function revalidateAll(): void {
@@ -132,6 +134,25 @@ export async function saveLanguageAction(value: string): Promise<boolean> {
   if (!ctx) return false;
   if (value !== 'RU') return false;
   const saved = await updateOwnLanguage(dataDb, ctx, 'RU');
+  if (!saved) return false;
+  revalidatePath('/settings');
+  return true;
+}
+
+// ── Вкладка «Настройка MCP»: подключение демо-серверов (DIG-58) ─────────────
+
+/**
+ * Сохраняет статус подключения одного демо MCP-сервера. id проверяется по
+ * whitelist каталога — неизвестные значения отклоняются без записи;
+ * мутация скоуплена сессией студента (staff → false, аудит в data-слое).
+ */
+export async function setMcpServerConnectionAction(
+  serverId: string,
+  connected: boolean,
+): Promise<boolean> {
+  const ctx = await requireStudentCtx();
+  if (!ctx || typeof connected !== 'boolean' || !isMcpServerId(serverId)) return false;
+  const saved = await updateOwnMcpConnection(dataDb, ctx, serverId, connected);
   if (!saved) return false;
   revalidatePath('/settings');
   return true;

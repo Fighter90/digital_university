@@ -45,6 +45,12 @@ export interface QuietHoursSettings {
   to: string;
 }
 
+/** DIG-58 — состояние подключения одного демо MCP-сервера (см. lib/mcp-servers). */
+export interface McpServerState {
+  id: import('@/lib/mcp-servers').McpServerId;
+  connected: boolean;
+}
+
 export type AppealStatus = 'OPEN' | 'ANSWERED' | 'CLOSED';
 
 export type ScheduleKind = 'LECTURE' | 'PRACTICE' | 'LAB' | 'SEMINAR' | 'CONSULTATION';
@@ -119,6 +125,8 @@ export interface StudentSettingsRow {
   fontSize: FontSizePreference;
   /** DIG-44 — «Уменьшить анимацию». */
   reduceMotion: boolean;
+  /** DIG-58 — статусы подключения демо MCP-серверов (по каталогу lib/mcp-servers). */
+  mcpConnections: McpServerState[];
   updatedAt: Date;
 }
 
@@ -313,10 +321,13 @@ export interface CertificateRow {
  */
 export type StoredStudentSettingsRow = Omit<
   StudentSettingsRow,
-  'widgets' | 'quietHours' | 'language' | 'fontSize' | 'reduceMotion'
+  'widgets' | 'quietHours' | 'language' | 'fontSize' | 'reduceMotion' | 'mcpConnections'
 > &
   Partial<
-    Pick<StudentSettingsRow, 'widgets' | 'quietHours' | 'language' | 'fontSize' | 'reduceMotion'>
+    Pick<
+      StudentSettingsRow,
+      'widgets' | 'quietHours' | 'language' | 'fontSize' | 'reduceMotion' | 'mcpConnections'
+    >
   >;
 
 /**

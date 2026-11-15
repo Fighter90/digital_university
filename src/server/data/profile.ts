@@ -18,6 +18,12 @@ import {
   isDashboardWidgetId,
   normalizeWidgets,
 } from '@/lib/dashboard-widgets';
+import {
+  DEFAULT_MCP_CONNECTIONS,
+  isMcpServerId,
+  normalizeMcpConnections,
+  setMcpConnected,
+} from '@/lib/mcp-servers';
 import { isWithinQuietHours, isValidQuietHours } from '@/lib/quiet-hours';
 import { NOTIFICATION_SETTING_TYPES } from '@/lib/notification-labels';
 import { denyAccess } from './access';
@@ -70,6 +76,7 @@ export function defaultSettingsFor(studentId: string, now: Date = new Date()): S
     language: 'RU',
     fontSize: 'NORMAL',
     reduceMotion: false,
+    mcpConnections: DEFAULT_MCP_CONNECTIONS.map((state) => ({ ...state })),
     updatedAt: now,
   };
 }
@@ -77,7 +84,9 @@ export function defaultSettingsFor(studentId: string, now: Date = new Date()): S
 /**
  * DIG-44 — fills missing DIG-44 fields of a stored row with defaults
  * (rows written before DIG-44 have no widgets/quietHours/language/fontSize/
- * reduceMotion). Also normalizes the widget list. Pure; null passes through.
+ * reduceMotion). DIG-58: the mcpConnections list is rebuilt against the
+ * catalog the same way. Also normalizes the widget list. Pure; null
+ * passes through.
  */
 export function normalizeSettings(
   row: StoredStudentSettingsRow | null | undefined,
@@ -92,6 +101,7 @@ export function normalizeSettings(
     language: row.language ?? defaults.language,
     fontSize: row.fontSize ?? defaults.fontSize,
     reduceMotion: row.reduceMotion ?? defaults.reduceMotion,
+    mcpConnections: normalizeMcpConnections(row.mcpConnections),
   };
 }
 
@@ -282,6 +292,29 @@ export async function updateOwnLanguage(
   const settings = await resolveSettings(db, ctx);
   if (!settings) return null;
   return db.saveSettingsByStudent(ctx.studentId!, { ...settings, language, updatedAt: new Date() });
+}
+
+// ── DIG-58 — MCP-интеграции: статусы подключения демо-серверов ──────────────
+
+/**
+ * Persists the connected/disconnected flag of ONE demo MCP server. The id
+ * must be in the catalog whitelist — anything else is ignored (nothing is
+ * written). The ctx scoping keeps it owner-only (staff → audited null).
+ */
+export async function updateOwnMcpConnection(
+  db: DataDb,
+  ctx: DataCtx,
+  serverId: string,
+  connected: boolean,
+): Promise<StudentSettingsRow | null> {
+  if (typeof connected !== 'boolean' || !isMcpServerId(serverId)) return null;
+  const settings = await resolveSettings(db, ctx);
+  if (!settings) return null;
+  return db.saveSettingsByStudent(ctx.studentId!, {
+    ...settings,
+    mcpConnections: setMcpConnected(settings.mcpConnections, serverId, connected),
+    updatedAt: new Date(),
+  });
 }
 
 export interface GenerateNotificationInput {

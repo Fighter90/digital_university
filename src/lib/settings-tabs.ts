@@ -2,7 +2,7 @@
 // и вкладки-ссылки объединяет один реестр, неизвестные значения ?tab=
 // безопасно откатываются на «Главную».
 
-export type SettingsTabId = 'home' | 'notifications' | 'security' | 'appearance';
+export type SettingsTabId = 'home' | 'notifications' | 'security' | 'appearance' | 'mcp';
 
 export interface SettingsTabMeta {
   id: SettingsTabId;
@@ -14,6 +14,7 @@ export const SETTINGS_TABS: SettingsTabMeta[] = [
   { id: 'notifications', label: 'Уведомления' },
   { id: 'security', label: 'Безопасность' },
   { id: 'appearance', label: 'Вид' },
+  { id: 'mcp', label: 'Настройка MCP' },
 ];
 
 /** Значение ?tab= из URL → валидный id вкладки (дефолт — «Главная»). */
