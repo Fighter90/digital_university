@@ -18,7 +18,7 @@ import { OrderWizardEntry } from '@/components/requests/order-wizard';
 export default async function RequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order?: string }>;
+  searchParams?: Promise<{ order?: string }>;
 }) {
   const ctx = await requireDataCtx('/requests');
   const { requests, student } = await getRequestsPage(dataDb, ctx);

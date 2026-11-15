@@ -11,7 +11,7 @@
 // не редактируются. Успех: «Справка готова» + «Скачать PDF» у мгновенных,
 // номер заявки, ожидаемая дата, «Следить за статусом».
 
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import Link from 'next/link';
 import { FileCheck2, X } from 'lucide-react';
@@ -93,6 +93,39 @@ const parseIntSafe = (raw: string): number => {
   return Number.isNaN(value) ? -1 : value;
 };
 
+interface SavedDraft {
+  serviceId?: string;
+  step?: number;
+  destination?: string;
+  language?: WizardLanguage;
+  copiesStr?: string;
+  delivery?: WizardDelivery;
+  comment?: string;
+  consent?: boolean;
+}
+
+/**
+ * Черновик из sessionStorage (без файлов: FileList браузером не
+ * восстанавливается — вложения прикрепляют заново). Читается один раз в
+ * ленивом инициализаторе состояния; на сервере всегда null (окно-гард),
+ * поэтому SSR-разметка детерминирована, а правила react-hooks
+ * (set-state-in-effect) не нарушаются.
+ */
+function readSavedDraft(): SavedDraft | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as SavedDraft;
+    if (saved.serviceId && wizardDocFor(saved.serviceId)) return saved;
+    return null;
+  } catch {
+    return null; // повреждённый черновик игнорируем
+  }
+}
+
+const emptySubscribe = () => () => {};
+
 interface OrderWizardProps {
   student: WizardStudentPreview;
   initialServiceId: string | null;
@@ -101,15 +134,44 @@ interface OrderWizardProps {
 
 function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) {
   const docs = wizardDocs();
-  const [serviceId, setServiceId] = useState<string | null>(initialServiceId);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [destination, setDestination] = useState('');
-  const [language, setLanguage] = useState<WizardLanguage>('RU');
-  const [copiesStr, setCopiesStr] = useState('1');
-  const [delivery, setDelivery] = useState<WizardDelivery | ''>('');
-  const [comment, setComment] = useState('');
+  // Диалог рендерится только после гидрации: SSR-разметка не зависит от
+  // sessionStorage-черновика, рассинхрона гидрации нет (каноничный
+  // useSyncExternalStore-gate без setState в эффектах).
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+
+  const [savedDraft] = useState(readSavedDraft);
+  // Приоритет — документ из URL (?order=); поля черновика применяются,
+  // только если они принадлежат тому же документу.
+  const effectiveInitial = initialServiceId ?? savedDraft?.serviceId ?? null;
+  const restoreFields = savedDraft !== null && savedDraft.serviceId === effectiveInitial;
+
+  const [serviceId, setServiceId] = useState<string | null>(effectiveInitial);
+  const [step, setStep] = useState<1 | 2 | 3>(
+    restoreFields && savedDraft?.step !== undefined && savedDraft.step >= 1 && savedDraft.step <= 3
+      ? (savedDraft.step as 1 | 2 | 3)
+      : 1,
+  );
+  const [destination, setDestination] = useState(
+    restoreFields && typeof savedDraft?.destination === 'string' ? savedDraft.destination : '',
+  );
+  const [language, setLanguage] = useState<WizardLanguage>(
+    restoreFields && savedDraft?.language === 'EN' ? 'EN' : 'RU',
+  );
+  const [copiesStr, setCopiesStr] = useState(
+    restoreFields && typeof savedDraft?.copiesStr === 'string' ? savedDraft.copiesStr : '1',
+  );
+  const [delivery, setDelivery] = useState<WizardDelivery | ''>(
+    restoreFields && savedDraft?.delivery ? savedDraft.delivery : '',
+  );
+  const [comment, setComment] = useState(
+    restoreFields && typeof savedDraft?.comment === 'string' ? savedDraft.comment : '',
+  );
   const [attachments, setAttachments] = useState<WizardAttachment[]>([]);
-  const [consent, setConsent] = useState(false);
+  const [consent, setConsent] = useState(restoreFields && savedDraft?.consent === true);
   const [errors, setErrors] = useState<WizardFieldErrors>({});
   const [confirmClose, setConfirmClose] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -120,63 +182,32 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
   );
 
   const doc = serviceId === null ? null : wizardDocFor(serviceId);
-  const startedFromUrl = initialServiceId !== null;
   const success = state !== null && state.ok ? state : null;
 
-  // Смена типа документа: способ получения нормализуем под набор документа.
-  useEffect(() => {
-    if (doc && !doc.config.delivery.includes(delivery)) {
-      setDelivery(doc.config.delivery[0]!);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serviceId]);
+  // Способ получения всегда внутри набора документа: при смене типа значение
+  // выводится, а не синхронизируется эффектом (правила react-hooks).
+  const effectiveDelivery: WizardDelivery | '' =
+    doc === null
+      ? ''
+      : delivery !== '' && doc.config.delivery.includes(delivery)
+        ? delivery
+        : doc.config.delivery[0]!;
 
-  // Восстановление черновика после случайной перезагрузки (без файлов:
-  // FileList браузером не восстанавливается — вложения прикрепляют заново).
+  // Черновик дублируется в sessionStorage на каждое изменение (эффект только
+  // пишет — setState в эффекте не вызывает).
   useEffect(() => {
-    try {
-      const raw = window.sessionStorage.getItem(DRAFT_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as {
-        serviceId?: string;
-        step?: number;
-        destination?: string;
-        language?: WizardLanguage;
-        copiesStr?: string;
-        delivery?: WizardDelivery;
-        comment?: string;
-        consent?: boolean;
-      };
-      if (saved.serviceId && wizardDocFor(saved.serviceId)) {
-        setServiceId(saved.serviceId);
-        setStep(saved.step === 2 || saved.step === 3 ? saved.step : 1);
-        setDestination(typeof saved.destination === 'string' ? saved.destination : '');
-        if (saved.language === 'EN') setLanguage('EN');
-        setCopiesStr(typeof saved.copiesStr === 'string' ? saved.copiesStr : '1');
-        if (saved.delivery) setDelivery(saved.delivery);
-        setComment(typeof saved.comment === 'string' ? saved.comment : '');
-        if (saved.consent === true) setConsent(true);
-      }
-    } catch {
-      // повреждённый черновик игнорируем
-    }
-  }, []);
-
-  // Черновик дублируется в sessionStorage на каждое изменение.
-  useEffect(() => {
-    if (success) return;
+    if (typeof window === 'undefined' || success) return;
     window.sessionStorage.setItem(
       DRAFT_KEY,
       JSON.stringify({ serviceId, step, destination, language, copiesStr, delivery, comment, consent }),
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serviceId, step, destination, language, copiesStr, delivery, comment, consent, success]);
 
   const draftInput = (withConsent: boolean): WizardDraftInput => ({
     destination,
     language,
     copies: parseIntSafe(copiesStr),
-    delivery: (delivery === '' ? 'PDF' : delivery) as WizardDelivery,
+    delivery: (effectiveDelivery === '' ? 'PDF' : effectiveDelivery) as WizardDelivery,
     comment,
     consent: withConsent ? consent : true,
     attachments,
@@ -230,17 +261,19 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
 
   // Серверные ошибки полей: возвращаем студента к конкретному полю (шаг 2),
   // кроме случая «только согласие не подтверждено» — остаёмся на шаге 3.
-  useEffect(() => {
+  // Каноничный паттерн «корректировка состояния при изменении пропса» —
+  // во время рендера с трекингом предыдущего значения (без setState в эффекте).
+  const [adjustedState, setAdjustedState] = useState<WizardSubmitState>(null);
+  if (state !== adjustedState) {
+    setAdjustedState(state);
     if (state && !state.ok && state.fieldErrors) {
       setErrors(state.fieldErrors);
       const keys = Object.keys(state.fieldErrors);
-      if (keys.length === 1 && state.fieldErrors.consent !== undefined) {
-        setStep(3);
-      } else {
+      if (!(keys.length === 1 && state.fieldErrors.consent !== undefined)) {
         setStep(2);
       }
     }
-  }, [state]);
+  }
 
   const clearAttachments = () => {
     setAttachments([]);
@@ -271,6 +304,10 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
         {errors[key]}
       </p>
     ) : null;
+
+  // До гидрации мастер не рендерится вовсе: разметка SSR (только CTA на
+  // странице) не зависит от черновика, рассинхрона гидрации нет.
+  if (!mounted) return null;
 
   return (
     <BaseDialog.Root open onOpenChange={(open) => { if (!open) attemptClose(); }}>
@@ -427,7 +464,6 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
                         {errorLine('destination')}
                       </div>
                     ) : null}
-
                     {doc?.config.language ? (
                       <fieldset>
                         <legend className="mb-1 text-sm font-semibold">Язык документа</legend>
@@ -452,7 +488,7 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
                             </label>
                           ))}
                         </div>
-                        {errorLine('language')}
+                        {/* Язык нормализуется валидатором — ошибок у поля нет. */}
                       </fieldset>
                     ) : null}
 
@@ -486,7 +522,7 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
                               key={method}
                               className={cn(
                                 'flex cursor-pointer items-center gap-2 rounded-button border px-3 py-2 text-sm font-medium',
-                                delivery === method ? 'border-coral-600 bg-accent-soft/60' : 'border-border',
+                                effectiveDelivery === method ? 'border-coral-600 bg-accent-soft/60' : 'border-border',
                               )}
                             >
                               <input
@@ -494,7 +530,7 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
                                 name="delivery"
                                 value={method}
                                 data-testid={`wizard-delivery-${method}`}
-                                checked={delivery === method}
+                                checked={effectiveDelivery === method}
                                 onChange={() => setDelivery(method)}
                                 className="size-4"
                               />
@@ -625,7 +661,7 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
                           <div className="flex gap-2">
                             <dt className="text-muted-foreground">Получение</dt>
                             <dd className="font-medium">
-                              {WIZARD_DELIVERY_LABELS[delivery === '' ? doc.config.delivery[0]! : delivery]}
+                              {effectiveDelivery !== '' ? WIZARD_DELIVERY_LABELS[effectiveDelivery] : ''}
                             </dd>
                           </div>
                           {comment.trim() !== '' ? (

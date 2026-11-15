@@ -52,10 +52,11 @@ describe('createWizardRequest — создание заявки из масте�
     expect(request!.number).toMatch(/^SR-\d{4}-[A-Z0-9]{5}$/);
 
     const events = await listRequestEvents(db, studentCtx, request!.id);
-    expect(events).toHaveLength(1);
-    expect(events[0]!.statusTo).toBe('SUBMITTED');
-    expect(events[0]!.message).toContain('Военкомат по месту учёбы');
-    expect(events[0]!.message).toContain('Почтой');
+    expect(events).not.toBeNull();
+    expect(events!).toHaveLength(1);
+    expect(events![0]!.statusTo).toBe('SUBMITTED');
+    expect(events![0]!.message).toContain('Военкомат по месту учёбы');
+    expect(events![0]!.message).toContain('Почтой');
   });
 
   it('мгновенная справка об обучении: COMPLETED + результат-заметка', async () => {
@@ -77,8 +78,9 @@ describe('createWizardRequest — создание заявки из масте�
       { ...input, serviceId: 'stmt-academic-leave', destination: '', copies: 1, delivery: 'PICKUP', attachmentNames: ['spravka.pdf', 'skan.png'] },
     );
     const events = await listRequestEvents(db, studentCtx, request!.id);
-    expect(events[0]!.message).toContain('spravka.pdf');
-    expect(events[0]!.message).toContain('skan.png');
+    expect(events).not.toBeNull();
+    expect(events![0]!.message).toContain('spravka.pdf');
+    expect(events![0]!.message).toContain('skan.png');
   });
 
   it('сотрудник получает null и аудированный ROLE_MISMATCH', async () => {

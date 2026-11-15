@@ -47,7 +47,8 @@ export async function submitRequestWizardAction(
     return { ok: false, error: 'Такой документ недоступен для заказа' };
   }
 
-  const language = String(formData.get('language') ?? 'RU') === 'EN' ? 'EN' : 'RU';
+  const languageRaw = String(formData.get('language') ?? 'RU');
+  const language: WizardLanguage = languageRaw === 'EN' ? 'EN' : 'RU';
   const copiesRaw = String(formData.get('copies') ?? '').trim();
   const copies = /^\d+$/.test(copiesRaw) ? Number.parseInt(copiesRaw, 10) : Number.NaN;
   const delivery = String(formData.get('delivery') ?? '').trim() as WizardDelivery;
@@ -77,7 +78,7 @@ export async function submitRequestWizardAction(
   const input: WizardRequestInput = {
     serviceId,
     destination: destination.slice(0, WIZARD_LIMITS.MAX_DESTINATION_LENGTH),
-    language: language as WizardLanguage,
+    language,
     copies: Number.isNaN(copies) ? -1 : copies,
     delivery,
     comment: comment.slice(0, WIZARD_LIMITS.MAX_COMMENT_LENGTH),
