@@ -172,6 +172,37 @@ test.describe('desktop 1440 — shell chrome', () => {
       badgeBox!.y + badgeBox!.height > asideBox!.y;
     expect(overlaps, 'badge must not overlap the sidebar').toBe(false);
   });
+
+  // DIG-54 (раунд 2, замечание ревью): спека требует проверяемого сценария
+  // «Бейдж в сайдбаре не покидает строку меню» — inline-бейдж static и целиком
+  // внутри своей строки. Требование «не пересекать <aside>» к inline-потомку
+  // aside невыполнимо (bbox всегда внутри aside) — оно осталось только для
+  // бейджа колокольчика в тесте выше.
+  test('sidebar badge is inline and stays inside its menu row', async ({ page }) => {
+    await page.goto('/dashboard');
+
+    const row = page
+      .getByRole('navigation', { name: MENU_LABEL })
+      .getByRole('link', { name: /Уведомления/ });
+    const badge = row.getByTestId('unread-count');
+    await expect(badge).toHaveText('3');
+
+    // Inline-вариант: никакого абсолютного позиционирования — проверяем
+    // вычисленный стиль, а не классы (регрессия к absolute ловится независимо
+    // от Tailwind-классов).
+    const position = await badge.evaluate((el) => getComputedStyle(el).position);
+    expect(position, 'sidebar badge must not be absolutely positioned').toBe('static');
+
+    // Бейдж целиком в пределах своей строки меню.
+    const rowBox = await row.boundingBox();
+    const badgeBox = await badge.boundingBox();
+    expect(rowBox, 'menu row has a box').not.toBeNull();
+    expect(badgeBox, 'badge has a box').not.toBeNull();
+    expect(badgeBox!.x).toBeGreaterThanOrEqual(rowBox!.x);
+    expect(badgeBox!.y).toBeGreaterThanOrEqual(rowBox!.y);
+    expect(badgeBox!.x + badgeBox!.width).toBeLessThanOrEqual(rowBox!.x + rowBox!.width);
+    expect(badgeBox!.y + badgeBox!.height).toBeLessThanOrEqual(rowBox!.y + rowBox!.height);
+  });
 });
 
 test.describe('mobile 360 — tab bar and safe area', () => {

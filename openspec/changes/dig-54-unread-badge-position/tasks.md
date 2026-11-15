@@ -13,3 +13,16 @@
 - [x] Гейты: lint=pass, typecheck=pass, build=pass; test — единственное
       падение `grades-page.test.tsx` воспроизводится на чистом HEAD
       (pre-existing, вне задачи).
+
+## Раунд 2 — замечания ревью
+
+- [x] Спека: сценарий «Бейдж в сайдбаре не покидает строку меню» — THEN
+      переформулирован в выполнимый (inline: `position: static`, bbox целиком
+      в пределах строки меню); невыполнимое «не пересекать `<aside>`»
+      (inline-бейдж — потомок aside, bbox всегда внутри) перенесено в сценарий
+      бейджа колокольчика в шапке, где его реально проверяет e2e.
+- [x] Спека проверяемой: e2e desktop-1440 — новый кейс «sidebar badge is
+      inline and stays inside its menu row»: вычисленный `position: static`
+      (не классы) + bbox бейджа целиком внутри bbox строки «Уведомления».
+- [x] Pre-existing падение `tests/grades-page.test.tsx` зафиксировано
+      отдельной Linear-задачей DIG-67, ссылка добавлена в proposal.md.
