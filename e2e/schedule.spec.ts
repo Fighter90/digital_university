@@ -78,7 +78,7 @@ test.describe('desktop 1440 — неделя в стиле Google Calendar', () 
     }
     // Демо-данные сегодняшнего дня: пара перенесена из ауд. 214 в 305.
     await expect(
-      page.getByRole('button', {
+      page.getByRole('link', {
         name: 'Лабораторная, Программирование, 12:00–13:30, ауд. 305, перенос',
       }),
     ).toBeVisible();
@@ -159,7 +159,7 @@ test.describe('desktop 1440 — неделя в стиле Google Calendar', () 
 
     // вернулись на текущую неделю: у сегодняшней пары открываем панель деталей
     await pressArrow('ArrowLeft', startKey!);
-    const lesson = page.getByRole('button', {
+    const lesson = page.getByRole('link', {
       name: 'Лабораторная, Программирование, 12:00–13:30, ауд. 305, перенос',
     });
     await lesson.click();
@@ -176,7 +176,7 @@ test.describe('desktop 1440 — неделя в стиле Google Calendar', () 
 
   test('kind filters hide and reveal lesson blocks with counts', async ({ page }) => {
     await page.goto('/schedule');
-    const lecture = page.getByRole('button', {
+    const lecture = page.getByRole('link', {
       name: 'Лекция, Информатика, 10:00–11:30, ауд. 301',
     });
     await expect(lecture).toBeVisible();
@@ -189,7 +189,7 @@ test.describe('desktop 1440 — неделя в стиле Google Calendar', () 
 
   test('cancelled lesson: strikethrough heading and «Отменена» badge', async ({ page }) => {
     await page.goto('/schedule');
-    const cancelled = page.getByRole('button', {
+    const cancelled = page.getByRole('link', {
       name: 'Лабораторная, Физика, 14:00–15:30, ауд. 212, отменена',
     });
     await expect(cancelled).toBeVisible();

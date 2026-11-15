@@ -935,6 +935,8 @@ const appealMessages: AppealMessageRow[] = [
 
 const schedule: ScheduleEventRow[] = [
   {
+    // DIG-24 — обычная пара с полным составом панели: корпус, email
+    // преподавателя, домашнее задание и материалы.
     id: 'sch-pi21-1',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-INFO',
@@ -944,14 +946,19 @@ const schedule: ScheduleEventRow[] = [
     endsAt: day(0, 11, 30),
     kind: 'LECTURE',
     room: '301',
+    building: 'Главный корпус',
     teacherName: 'Петров Пётр Петрович',
+    teacherEmail: 'p.petrov@example.edu',
     status: 'SCHEDULED',
     note: null,
+    homework: 'Подготовить вопросы к коллоквиуму',
+    materials: 'Конспект лекции №7, слайды в библиотеке',
   },
   // DIG-20 — насыщенный «сегодня» для главной: 4 пары, одна перенесена
   // (214 → 305), одна отменена, одна онлайн (строка-резюме героя).
   // Пары «сегодня» — sch-pi21-4/5/6, блок ниже после sch-pi21-3.
   {
+    // DIG-24 — перенос с причиной и автором изменения (жёлтый блок панели).
     id: 'sch-pi21-2',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-PROG',
@@ -961,10 +968,14 @@ const schedule: ScheduleEventRow[] = [
     endsAt: day(1, 13, 30),
     kind: 'LAB',
     room: '405',
+    building: 'Лабораторный корпус',
     teacherName: 'Иванова Ирина Игоревна',
+    teacherEmail: 'i.ivanova@example.edu',
     status: 'ROOM_CHANGED',
     note: 'Перенесено из ауд. 310',
     previousRoom: '310',
+    changeNote: 'В ауд. 310 монтируют новое оборудование',
+    changeAuthor: 'Мария Петрова (деканат)',
   },
   {
     id: 'sch-pi21-3',
@@ -977,10 +988,12 @@ const schedule: ScheduleEventRow[] = [
     kind: 'PRACTICE',
     room: '212',
     teacherName: 'Соколов Сергей Сергеевич',
+    teacherEmail: 's.sokolov@example.edu',
     status: 'SCHEDULED',
     note: null,
   },
   {
+    // DIG-24 — перенос «сегодня» с причиной и автором (жёлтый блок панели).
     id: 'sch-pi21-4',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-PROG',
@@ -990,12 +1003,20 @@ const schedule: ScheduleEventRow[] = [
     endsAt: day(0, 13, 30),
     kind: 'LAB',
     room: '305',
+    building: 'Главный корпус',
     teacherName: 'Иванова Ирина Игоревна',
+    teacherEmail: 'i.ivanova@example.edu',
     status: 'ROOM_CHANGED',
     note: 'Пара перенесена в ауд. 305',
     previousRoom: '214',
+    previousStartsAt: day(0, 12, 0),
+    changeNote: 'Аудитория 214 занята факультетским мероприятием',
+    changeAuthor: 'Мария Петрова (деканат)',
+    homework: 'Задача 7 до следующей пары',
+    materials: 'Конспект лекции №7',
   },
   {
+    // DIG-24 — отмена с причиной и «что делать» (красный блок панели).
     id: 'sch-pi21-5',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-PHYS',
@@ -1005,11 +1026,16 @@ const schedule: ScheduleEventRow[] = [
     endsAt: day(0, 15, 30),
     kind: 'LAB',
     room: '212',
+    building: 'Лабораторный корпус',
     teacherName: 'Соколов Сергей Сергеевич',
+    teacherEmail: 's.sokolov@example.edu',
     status: 'CANCELLED',
     note: 'Лаборатория закрыта',
+    changeNote: 'Занятие будет восполнено 20 ноября, ауд. 212',
+    changeAuthor: 'Мария Петрова (деканат)',
   },
   {
+    // DIG-24 — онлайн-пара со ссылкой на встречу.
     id: 'sch-pi21-6',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-HIST',
@@ -1020,8 +1046,10 @@ const schedule: ScheduleEventRow[] = [
     kind: 'SEMINAR',
     room: 'Онлайн',
     teacherName: 'Орлов Олег Олегович',
+    teacherEmail: 'o.orlov@example.edu',
     status: 'SCHEDULED',
     note: null,
+    onlineUrl: 'https://meet.example.edu/hist-seminar',
   },
   {
     id: 'sch-ek11-1',

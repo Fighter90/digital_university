@@ -365,6 +365,11 @@ model ScheduleEvent {
   note             String?
   previousRoom     String?
   previousStartsAt DateTime?
+  // DIG-24 — панель «Детали пары»
+  changeAuthor     String?
+  teacherEmail     String?
+  homework         String?
+  materials        String?
 
   group      Group?       @relation(fields: [groupId], references: [id])
   discipline Discipline?  @relation(fields: [disciplineId], references: [id])

@@ -42,13 +42,34 @@ export const TEACHER_NAMES = [
   'Романова Екатерина Ильинична',
 ] as const;
 
+// DIG-24 — email преподавателей для панели «Детали пары» (кнопка «Написать»).
+export const TEACHER_EMAILS: Record<string, string> = {
+  'Волков Артём Игоревич': 'a.volkov@example.edu',
+  'Крылова Дарья Максимовна': 'd.krylova@example.edu',
+  'Никитин Егор Дмитриевич': 'e.nikitin@example.edu',
+  'Соловьёва Марина Андреевна': 'm.soloveva@example.edu',
+  'Захаров Игорь Львович': 'i.zakharov@example.edu',
+  'Гусева Ольга Сергеевна': 'o.guseva@example.edu',
+  'Белов Пётр Романович': 'p.belov@example.edu',
+  'Морозова Алина Викторовна': 'a.morozova@example.edu',
+  'Титов Арсений Павлович': 'a.titov@example.edu',
+  'Романова Екатерина Ильинична': 'e.romanova@example.edu',
+};
+
+/** Корпус по литере аудитории («А-312» → «Корпус А»; без литеры — главный). */
+function buildingOfRoom(room: string): string {
+  const letter = room.trim().charAt(0).toUpperCase();
+  return /[А-Я]/.test(letter) ? `Корпус ${letter}` : 'Главный корпус';
+}
+
 // argon2id-хэши паролей демо-аккаунтов (плейнтекст — только в README,
 // раздел «Тестовые аккаунты»). Алгоритм совпадает с verify при входе (DIG-11):
 // bcrypt-хэши из ранней версии сида были несовместимы с argon2id-верификатором.
 export const STUDENT_SEED: StudentSeed[] = [
   {
     login: 'anna.smirnova',
-    passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$3Rjss8EcsWbLn9OAV3gy2g$JbRrvYohL0SW04Cq2OFY9sdpLyBoLNHdCRn3BFBZ/W4',
+    passwordHash:
+      '$argon2id$v=19$m=19456,t=2,p=1$3Rjss8EcsWbLn9OAV3gy2g$JbRrvYohL0SW04Cq2OFY9sdpLyBoLNHdCRn3BFBZ/W4',
     fullName: 'Анна Смирнова',
     email: 'anna.smirnova@example.edu',
     groupName: 'ИВТ-21',
@@ -60,7 +81,8 @@ export const STUDENT_SEED: StudentSeed[] = [
   },
   {
     login: 'ilya.petrov',
-    passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$dE4a7w4YBFD8OENOy0WBWg$cvHfUePfnTWppDgAQ5FSEBbxtOWiSmV/zrr80rHwGmk',
+    passwordHash:
+      '$argon2id$v=19$m=19456,t=2,p=1$dE4a7w4YBFD8OENOy0WBWg$cvHfUePfnTWppDgAQ5FSEBbxtOWiSmV/zrr80rHwGmk',
     fullName: 'Илья Петров',
     email: 'ilya.petrov@example.edu',
     groupName: 'ЭК-23',
@@ -75,7 +97,8 @@ export const STUDENT_SEED: StudentSeed[] = [
 export const STAFF_SEED: StaffSeed[] = [
   {
     login: 'dean.kovaleva',
-    passwordHash: '$argon2id$v=19$m=19456,t=2,p=1$PoKF0lLB58r1qjGsMGYnmA$8sMol1AoIV3h0wvT9g8/cPq0PzFYgQB8yjsYMnXfSwk',
+    passwordHash:
+      '$argon2id$v=19$m=19456,t=2,p=1$PoKF0lLB58r1qjGsMGYnmA$8sMol1AoIV3h0wvT9g8/cPq0PzFYgQB8yjsYMnXfSwk',
     fullName: 'Мария Ковалёва',
     position: 'менеджер курса',
     email: 'm.kovaleva@example.edu',
@@ -337,6 +360,14 @@ export interface ScheduleEventSeed {
   note: string | null;
   previousRoom: string | null;
   previousStartsAt: Date | null;
+  changeNote: string | null;
+  // DIG-24 — панель «Детали пары» (building/onlineUrl были в схеме с DIG-9).
+  building: string | null;
+  onlineUrl: string | null;
+  teacherEmail: string | null;
+  changeAuthor: string | null;
+  homework: string | null;
+  materials: string | null;
 }
 
 const SESSION_WEEK_START = 12; // weeks 12..14 are the exam session
@@ -370,6 +401,13 @@ export function buildScheduleEvents(now: Date): ScheduleEventSeed[] {
           note: null,
           previousRoom: null,
           previousStartsAt: null,
+          changeNote: null,
+          building: buildingOfRoom(d.room),
+          onlineUrl: null,
+          teacherEmail: TEACHER_EMAILS[d.teacherName] ?? null,
+          changeAuthor: null,
+          homework: null,
+          materials: null,
         });
       }
     }
@@ -397,7 +435,11 @@ export function buildScheduleEvents(now: Date): ScheduleEventSeed[] {
   roomMove.status = 'ROOM_CHANGED';
   roomMove.previousRoom = roomMove.room;
   roomMove.room = 'Б-204';
+  roomMove.building = buildingOfRoom(roomMove.room);
   roomMove.note = 'Аудитория занята факультетским мероприятием — пара переносится в Б-204';
+  // DIG-24 — жёлтый блок панели: причина (changeNote) и кто изменил.
+  roomMove.changeNote = 'Аудитория А-312 занята факультетским мероприятием';
+  roomMove.changeAuthor = 'Мария Петрова (деканат)';
 
   const timeMove = find('ЭК-23', 2, 0); // Wednesday: Статистика lecture
   timeMove.status = 'TIME_CHANGED';
@@ -405,11 +447,34 @@ export function buildScheduleEvents(now: Date): ScheduleEventSeed[] {
   timeMove.startsAt = atTime(timeMove.date, SLOT_TIMES[2][0]);
   timeMove.endsAt = atTime(timeMove.date, SLOT_TIMES[2][1]);
   timeMove.note = 'Лектор в командировке — занятие перенесено на 12:30';
+  timeMove.changeNote = 'Лектор в командировке';
+  timeMove.changeAuthor = 'Мария Петрова (деканат)';
+  timeMove.homework = 'Решить задачи 3.1–3.4 из задачника';
 
   const cancelled = find('ИВТ-21', 4, 2); // Friday: Веб-технологии consultation
   cancelled.status = 'CANCELLED';
   cancelled.note =
     'Консультация отменена: преподаватель на конференции, вопросы — через обращения в деканат';
+  // DIG-24 — красный блок панели: «Что делать» (changeNote) и автор.
+  cancelled.changeNote = 'Консультация будет восполнена в следующую пятницу, ауд. А-305';
+  cancelled.changeAuthor = 'Мария Петрова (деканат)';
+
+  // DIG-24 — онлайн-встреча: семинары английского идут онлайн (ссылка в панели).
+  for (const event of events) {
+    if (event.disciplineCode === 'ИВТ21-ИНГЛ' || event.disciplineCode === 'ЭК23-ИНГЛ') {
+      event.room = 'Онлайн';
+      event.building = null;
+      event.onlineUrl = 'https://meet.example.edu/online-english-seminar';
+    }
+  }
+
+  // DIG-24 — домашнее задание и материалы у практических пар алгоритмов.
+  for (const event of events) {
+    if (event.disciplineCode === 'ИВТ21-АЛГ' && event.kind === 'PRACTICE') {
+      event.homework = 'Решить задачи из листка к следующей паре';
+      event.materials = 'Конспект лекции, листок задач (библиотека курса)';
+    }
+  }
 
   return events;
 }

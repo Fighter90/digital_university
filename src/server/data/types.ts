@@ -330,6 +330,18 @@ export interface ScheduleEventRow {
   previousStartsAt?: Date | null;
   /** DIG-21 — причина изменения, оставленная сотрудником деканата. */
   changeNote?: string | null;
+  /** DIG-24 — кто внёс изменение (панель «Детали пары»); null — «деканат». */
+  changeAuthor?: string | null;
+  /** DIG-24 — корпус аудитории (панель деталей); null — фолбэк «Главный корпус». */
+  building?: string | null;
+  /** DIG-24 — ссылка на онлайн-встречу (панель деталей). */
+  onlineUrl?: string | null;
+  /** DIG-24 — email преподавателя (панель деталей, «Написать»). */
+  teacherEmail?: string | null;
+  /** DIG-24 — домашнее задание пары (панель деталей). */
+  homework?: string | null;
+  /** DIG-24 — материалы пары (панель деталей). */
+  materials?: string | null;
 }
 
 /** DIG-21 — заметка студента к конкретной паре (уникальна по паре студент+пара). */
