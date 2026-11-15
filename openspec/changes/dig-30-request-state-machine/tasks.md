@@ -44,5 +44,10 @@
 ## Гейты
 
 - [x] `npx vitest run` новые тесты — зелёные (red-first соблюдён).
-- [x] `npm run lint` / `npm run typecheck` — чисто.
-- [x] `node scripts/swarm/gates.mjs` — пройден.
+- [x] `npm run lint` — 0 ошибок (9 warnings — pre-existing, файлы задачи не тронуты).
+- [x] `npm run typecheck` — зелёный; `npm run build` — зелёный.
+- [x] Полный `vitest`: 692/693 — единственный fail
+      `tests/grades-page.test.tsx` (пустое состояние /grades) — pre-existing,
+      воспроизводится на чистом HEAD в отдельном worktree, к DIG-30 не относится.
+- [x] `node scripts/swarm/gates.mjs`: lint=pass typecheck=pass build=pass
+      test=fail (только тот же pre-existing тест).
