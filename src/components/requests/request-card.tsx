@@ -63,10 +63,12 @@ export function RequestCard({ request }: { request: RequestCardView }) {
         isFix ? 'border-warning/60 bg-warning-soft/40' : 'border-border'
       }`}
     >
-      {/* Ссылка-подложка: вся карточка ведёт в «Карточку заявки». */}
+      {/* Ссылка-подложка: вся карточка ведёт в «Карточку заявки».
+          z-10 поднимает её над контентом карточки (степпер — positioned
+          li, иначе он перехватывает клики), кнопки действий выше — z-20. */}
       <Link
         href={`/requests/${encodeURIComponent(request.number)}`}
-        className="absolute inset-0 rounded-card focus-visible:outline-2 focus-visible:outline-coral-600"
+        className="absolute inset-0 z-10 rounded-card focus-visible:outline-2 focus-visible:outline-coral-600"
       >
         <span className="sr-only">
           Открыть заявку {request.number} — {request.title}
@@ -84,9 +86,7 @@ export function RequestCard({ request }: { request: RequestCardView }) {
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-            <h3 className="text-sm font-bold text-foreground sm:text-base">
-              {request.title}
-            </h3>
+            <h3 className="text-sm font-bold text-foreground sm:text-base">{request.title}</h3>
             <span
               data-testid="request-status-pill"
               className={`inline-block shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
@@ -119,7 +119,7 @@ export function RequestCard({ request }: { request: RequestCardView }) {
       </p>
 
       {request.action ? (
-        <div className="relative z-10 mt-3 flex flex-wrap items-center gap-2">
+        <div className="relative z-20 mt-3 flex flex-wrap items-center gap-2">
           {request.action === 'DOWNLOAD' ? (
             <a
               href={`/api/requests/${encodeURIComponent(request.number)}/document`}
