@@ -33,3 +33,24 @@
 
 - [x] vitest: 64 файла / 965 тестов зелёные; node --test (swarm): 36 зелёных
 - [x] gates: lint=pass typecheck=pass build=pass test=pass (GATES_SUMMARY: green)
+
+## Раунд 2 — замечания ревью (факты docs vs код)
+
+- [x] tests/docs-facts.test.ts — red-first: документация не расходится с
+      кодом (хэши, пути слоёв, формат номера, подписи UI)
+- [x] README: «NextAuth (bcrypt)» → собственные cookie-сессии на argon2id
+      (3 места: стек, тестовые аккаунты, безопасность)
+- [x] docs/architecture.md: реальные пути слоёв — `(cabinet)` вместо `(app)`,
+      `src/server/auth/`, `src/server/data/` (in-memory демо-стора),
+      токены в `src/app/globals.css`; ER и «ручные фрагменты»: номер заявки
+      `SR-<год>-<5 случайных>` из `src/server/data/request-number.ts`
+      (ЗД-фрагмент миграции — legacy канона DIG-9), FTS готов к Prisma-сторе,
+      сейчас поиск в памяти; продление сессии описано точно
+- [x] docs/help.md: категории каталога с «Помощь» (CATEGORY_LABELS), бейдж
+      «перенос»/«отменена» как в UI, матрица уведомлений без «Системы»
+      (NOTIFICATION_SETTING_TYPES), профиль: «студенческий билет»
+      (замаскирован), «учебный год», кнопка «Нашли ошибку в данных?»
+      (data-error-report.tsx)
+- [x] docs/assistant.md: хэндофф из поиска ⌘K (FAQ — внутри выдачи поиска),
+      контекст `?q=`/`?intent=` передают ссылки, диалог подхватит в DIG-46
+- [x] gates повторно: зелёные (см. финальный запуск в раунде 2)

@@ -44,8 +44,9 @@
 ## Стек
 
 Next.js 15 (App Router, TypeScript) · Prisma + PostgreSQL · Tailwind CSS
-(дизайн-токены, Inter) · NextAuth (bcrypt-хэши) · Vitest + Playwright ·
-Docker Compose + Caddy (авто-TLS) · Linear + GitHub + OpenCode.
+(дизайн-токены, Inter) · собственные cookie-сессии (argon2id-хэши) ·
+Vitest + Playwright · Docker Compose + Caddy (авто-TLS) · Linear + GitHub +
+OpenCode.
 
 ## Быстрый старт (3 команды)
 
@@ -76,7 +77,7 @@ Caddy (авто-TLS в проде). Кабинет — http://localhost:3000, he
 ## Тестовые аккаунты (вымышленные)
 
 Создаются сидом (`pnpm db:seed`), все данные вымышленные, у студентов данные
-не пересекаются. В коде и БД — только bcrypt-хэши; открытые пароли — только
+не пересекаются. В коде и БД — только argon2id-хэши; открытые пароли — только
 здесь, для жюри.
 
 | Логин | Пароль | Кто |
@@ -110,7 +111,7 @@ https://ostrovok.store — Timeweb Cloud VM + Docker Compose + Caddy (авто-T
 ## Безопасность
 
 - Только свои данные: фильтрация по сессии на сервере, тесты на IDOR.
-- Пароли — только bcrypt-хэши, вход ограничен rate-limit'ом.
+- Пароли — только argon2id-хэши, вход ограничен rate-limit'ом.
 - Секреты — в окружении, `.env` не в git; в браузер не попадают.
 - Простыми словами: [`docs/security.md`](docs/security.md).
 
