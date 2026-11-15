@@ -39,8 +39,9 @@ describe('страница /faq/[slug]', () => {
   }));
 
   async function renderArticle(slug: string): Promise<string> {
-    const { FaqArticlePage } = await import('@/app/(cabinet)/faq/[slug]/page');
-    const Page = FaqArticlePage as unknown as ComponentType<{
+    // default-export файла страницы (Next.js не допускает именованных).
+    const Page = (await import('@/app/(cabinet)/faq/[slug]/page'))
+      .default as unknown as ComponentType<{
       params: Promise<{ slug: string }>;
     }>;
     const { prelude } = await prerenderToNodeStream(

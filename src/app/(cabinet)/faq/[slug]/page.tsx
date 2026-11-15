@@ -13,7 +13,9 @@ import { findFaqArticle } from '@/lib/faq-catalog';
 
 export const metadata = { title: 'Вопросы и ответы — Цифровой деканат' };
 
-export async function FaqArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+// NOTE: только default-export — Next.js 15 отклоняет лишние именованные
+// экспорты файла страницы («not a valid Page export field»).
+export default async function FaqArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const article = findFaqArticle(slug);
   if (!article) notFound();
@@ -61,5 +63,3 @@ export async function FaqArticlePage({ params }: { params: Promise<{ slug: strin
     </section>
   );
 }
-
-export default FaqArticlePage;
