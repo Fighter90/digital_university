@@ -45,3 +45,18 @@
   MobileSchedule / WeekView (контекст вида сохраняется в href); week-view:
   локальный мини-Sheet заменён URL-панелью.
 - [x] 12. Гейты (lint/typecheck/build/test), e2e прогон, коммит.
+
+## Раунд 2 — красный гейт (lint/build)
+
+- [x] 13. lint-гейт: убраны все `no-unused-vars` warnings, накапливавшиеся
+  на ветке из смежных задач — `SessionSkeleton` (grades/session),
+  `fillTone` (gradebook-list), `COL_DATE` (transcript-pdf),
+  `SchedulePeriod` (memory-db), `Readable` (cabinet-shell.test),
+  `spawnSync` (swarm-orchestrator.test), `expect` (e2e-rc/rc-dash);
+  `prisma.config.ts` — default-экспорт через именованную константу
+  (import/no-anonymous-default-export). `scripts/swarm/` не тронут
+  (запрещено правилами роя).
+- [x] 14. build-гейт: ENOENT `routes-manifest.json → .next/standalone/…`
+  был stale-артефактом `.next` от прерванной сборки; после `rm -rf .next`
+  и чистого прогона `node scripts/swarm/gates.mjs` —
+  `GATES: lint=pass typecheck=pass build=pass test=pass`.
