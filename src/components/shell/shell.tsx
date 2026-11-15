@@ -67,8 +67,9 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
       <TabBar />
       <AiFab />
       {/* DIG-62: AI-гид — вне <main>, чтобы краулер DIG-60 и геометрия
-          контента не видели его ссылки; только роль студента. */}
-      <AiGuide userName={user.name} role={user.role} />
+          контента не видели его ссылки; только роль студента. DIG-65:
+          флаг voiceAssistant прячет/показывает микрофон голосового ввода. */}
+      <AiGuide userName={user.name} role={user.role} voiceEnabled={user.voiceAssistant} />
       <SearchPalette
         open={searchOpen}
         onClose={closeSearch}

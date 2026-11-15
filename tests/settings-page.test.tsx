@@ -42,6 +42,7 @@ const annaSettings = {
   language: 'RU' as const,
   fontSize: 'NORMAL' as const,
   reduceMotion: false,
+  voiceAssistant: true,
   updatedAt: new Date('2026-11-11T10:00:00.000Z'),
 };
 
@@ -231,6 +232,33 @@ describe('/settings?tab=appearance — theme, language, font, motion', () => {
     expect(html).toContain('Крупный');
     expect(html).toContain('Очень крупный');
     expect(html).toContain('Уменьшить анимацию');
+  });
+});
+
+// DIG-65 — вкладка «Вид»: карточка «Голосовой ассистент» с переключателем
+// «Озвучка и голосовой ввод» (кнопка «Прослушать день» + микрофон AI-гида).
+describe('/settings?tab=appearance — voice assistant (DIG-65)', () => {
+  it('показывает карточку с переключателем, включённым по настройке студента', async () => {
+    const html = await renderPage('appearance');
+    expect(html).toContain('Голосовой ассистент');
+    expect(html).toContain('Озвучка и голосовой ввод');
+    expect(html).toContain('Прослушать день');
+    // aria-checked="true" — настройка из строки настроек (voiceAssistant: true).
+    const toggle = html.match(/<button[^>]*aria-label="Озвучка и голосовой ввод"[^>]*>/)?.[0] ?? '';
+    expect(toggle).toContain('aria-checked="true"');
+  });
+
+  it('показывает выключенный переключатель, если настройка отключена', async () => {
+    const { getOwnSettings } = await import('@/server/data');
+    vi.mocked(getOwnSettings).mockResolvedValueOnce({
+      ...annaSettings,
+      voiceAssistant: false,
+    } as Awaited<ReturnType<typeof getOwnSettings>>);
+    const html = await renderPage('appearance');
+    expect(html).toContain('Голосовой ассистент');
+    expect(html).toContain('Выключено: кнопка озвучки и микрофон скрыты во всём кабинете.');
+    const toggle = html.match(/<button[^>]*aria-label="Озвучка и голосовой ввод"[^>]*>/)?.[0] ?? '';
+    expect(toggle).toContain('aria-checked="false"');
   });
 });
 

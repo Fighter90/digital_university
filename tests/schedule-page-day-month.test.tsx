@@ -116,6 +116,12 @@ vi.mock('@/server/data', () => ({
     return state.month.rows;
   }),
   getNextStudyDay: vi.fn(async () => state.nextStudy),
+  // DIG-65: настройка «Озвучка и голосовой ввод» владельца сессии — дефолт.
+  getOwnSettings: vi.fn(async () => ({
+    studentId: 'st-x',
+    voiceAssistant: true,
+    updatedAt: new Date(),
+  })),
 }));
 
 vi.mock('next/navigation', () => ({

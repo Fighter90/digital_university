@@ -17,6 +17,7 @@ import {
   updateOwnMcpConnection,
   updateOwnQuietHours,
   updateOwnReduceMotion,
+  updateOwnVoiceAssistant,
   updateOwnWidgets,
 } from '@/server/data/profile';
 import { DASHBOARD_WIDGETS, isDashboardWidgetId, normalizeWidgets } from '@/lib/dashboard-widgets';
@@ -122,6 +123,20 @@ export async function saveReduceMotionAction(enabled: boolean): Promise<boolean>
   const ctx = await requireStudentCtx();
   if (!ctx || typeof enabled !== 'boolean') return false;
   const saved = await updateOwnReduceMotion(dataDb, ctx, enabled);
+  if (!saved) return false;
+  revalidateAll();
+  return true;
+}
+
+/**
+ * DIG-65 — «Озвучка и голосовой ввод»: кнопка «Прослушать день» на
+ * расписании и микрофон в AI-гиде. Флаг читают Shell/AiGuide (layout) и
+ * страница расписания — перевалидируется весь layout.
+ */
+export async function saveVoiceAssistantAction(enabled: boolean): Promise<boolean> {
+  const ctx = await requireStudentCtx();
+  if (!ctx || typeof enabled !== 'boolean') return false;
+  const saved = await updateOwnVoiceAssistant(dataDb, ctx, enabled);
   if (!saved) return false;
   revalidateAll();
   return true;

@@ -1,0 +1,82 @@
+'use client';
+
+import { useRef, useState } from 'react';
+import { Mic } from 'lucide-react';
+import { cn } from 'cn';
+
+import { getSpeechRecognitionCtor, type SpeechRecognitionLike } from '@/lib/voice-assistant';
+
+// DIG-65 — голосовой ввод в AI-гиде: кнопка-микрофон рядом со свободным
+// вводом. Распознавание выполняет браузер (Web Speech API, ru-RU) — демо
+// без внешних ключей; расшифровка дописывается в поле вопроса и никуда
+// не отправляется из нашего кода. В браузере без SpeechRecognition кнопка
+// честно не отрисовывается (мёртвой кнопки нет).
+export function VoiceInputButton({
+  onResult,
+  className,
+}: {
+  /** Финальная расшифровка сказанного (trimmed). */
+  onResult: (text: string) => void;
+  className?: string;
+}) {
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  if (!getSpeechRecognitionCtor()) return null;
+
+  const stopListening = () => {
+    recognitionRef.current = null;
+    setListening(false);
+  };
+
+  const startListening = () => {
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor || recognitionRef.current) return;
+    try {
+      const recognition = new Ctor();
+      recognition.lang = 'ru-RU';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = (event) => {
+        const result = event.results[event.resultIndex] ?? event.results[0];
+        const transcript = result?.[0]?.transcript?.trim();
+        if (transcript) onResult(transcript);
+      };
+      recognition.onend = stopListening;
+      recognition.onerror = stopListening;
+      recognitionRef.current = recognition;
+      recognition.start();
+      setListening(true);
+    } catch {
+      // start() бросает при запрете микрофона и подобных состояниях — тихо остаёмся в idle.
+      stopListening();
+    }
+  };
+
+  const toggle = () => {
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    startListening();
+  };
+
+  return (
+    <button
+      type="button"
+      data-testid="voice-input"
+      onClick={toggle}
+      aria-pressed={listening}
+      aria-label={listening ? 'Остановить запись' : 'Голосовой ввод'}
+      title={listening ? 'Остановить запись' : 'Голосовой ввод'}
+      className={cn(
+        'grid size-9 shrink-0 place-items-center rounded-lg border border-border text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600',
+        listening && 'border-coral-500 bg-coral-50 text-coral-600 animate-pulse',
+        className,
+      )}
+    >
+      <Mic className="size-4" aria-hidden="true" />
+    </button>
+  );
+}

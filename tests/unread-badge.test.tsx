@@ -27,6 +27,7 @@ const USER = {
   group: 'ПИ-21',
   email: 'anna@example.edu',
   role: 'STUDENT' as const,
+  voiceAssistant: true,
 };
 
 /** HTML элемента с data-testid="unread-count" (открывающий тег). */
