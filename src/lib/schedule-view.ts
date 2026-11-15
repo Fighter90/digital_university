@@ -52,6 +52,18 @@ export const PX_PER_HOUR = 64;
 /** Высота сетки в px: 12 часов × 64. */
 export const GRID_HEIGHT_PX = ((GRID_END_MINUTES - GRID_START_MINUTES) / 60) * PX_PER_HOUR; // 768
 
+// ── Скролл недельной сетки (DIG-56, как в Google Calendar) ───────────────────
+
+/** Ширина гуттера с часами (Tailwind w-14) — участвует в min-width контента. */
+export const WEEK_GUTTER_PX = 56;
+/** Минимальная ширина колонки дня: сетка шире окна → горизонтальный drag/Shift+wheel. */
+export const WEEK_MIN_COLUMN_PX = 160;
+/** Высота окна сетки: шкала 08:00–20:00 (768 px) прокручивается внутри него,
+ * страницу колесо над сеткой не двигает. */
+export const WEEK_GRID_VIEWPORT_PX = 480;
+/** Порог движения между «тянем сетку» и «кликнули по паре». */
+export const WEEK_DRAG_THRESHOLD_PX = 5;
+
 /** top блока пары внутри колонки: (start − 480)/60·64, кламп в [0, высота сетки]. */
 export function eventTopPx(startMinutes: number): number {
   const raw = ((startMinutes - GRID_START_MINUTES) / 60) * PX_PER_HOUR;

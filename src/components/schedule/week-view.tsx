@@ -16,13 +16,21 @@
 // заголовок, бледный блок, бейдж «Отменена»), пересекающиеся пары делят
 // ширину колонки. Мобильный вид (< 768 px) рендерит страница (DIG-23).
 //
+// DIG-56: сетка — скролл-контейнер в стиле Google Calendar. Горизонталь:
+// touch-drag (нативный pan), drag мышью с зажатой кнопкой и Shift+wheel —
+// колонка дня имеет минимальную ширину, контент шире окна. Вертикаль:
+// шкала 08:00–20:00 прокручивается внутри окна сетки, не двигая страницу
+// (overflow-auto + overscroll-contain). Drag и клик разделены порогом 5 px —
+// перетаскивание, начатое на паре, не открывает панель деталей. Шапка дней
+// прилипает к верху окна, гуттер часов — к левому краю.
+//
 // Клавиатура: ←/→ листают недели (router.push — URL ?week=2026-W46 меняется
 // без перезагрузки страницы), Esc закрывает панель деталей. Клик по паре —
 // боковая панель с деталями (полная карточка пары — задача DIG-24).
 // Листание данных — сервером (resolveWeekPage + getSchedule на странице),
 // фильтры — локальные (клиентские), поэтому не перезапрашивают сеть.
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CalendarOff, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
@@ -35,6 +43,10 @@ import {
   lessonKindMeta,
   type MiniCalendarCell,
   type ScheduleEventView,
+  WEEK_DRAG_THRESHOLD_PX,
+  WEEK_GRID_VIEWPORT_PX,
+  WEEK_GUTTER_PX,
+  WEEK_MIN_COLUMN_PX,
 } from '@/lib/schedule-view';
 import type { ScheduleKind } from '@/server/data/types';
 import { Badge } from '@/components/ui/badge';
@@ -182,6 +194,77 @@ export function WeekView({
   const totalEvents = filteredDays.reduce((sum, day) => sum + day.laid.length, 0);
   const showNowLine = nowMinutes !== null && days.some((day) => day.isToday);
 
+  // ── DIG-56: прокрутка сетки как в Google Calendar ─────────────────────────
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  /** Жест-прокрутка мыши идёт: курсор grabbing, выделение текста выключено. */
+  const [panning, setPanning] = useState(false);
+  /** Следующий после drag-жеста click гасится (жест не должен открыть пару). */
+  const suppressNextClickRef = useRef(false);
+
+  // Shift+колесо и горизонтальный жест трекпада скроллят сетку по горизонтали.
+  // Вертикальное колесо НЕ перехватываем: сетка скроллится нативно
+  // (overflow-y + overscroll-contain не пускает цепочку на страницу).
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    const onWheel = (event: WheelEvent) => {
+      if (event.shiftKey) {
+        event.preventDefault();
+        scroller.scrollLeft += event.deltaX !== 0 ? event.deltaX : event.deltaY;
+        return;
+      }
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+        event.preventDefault();
+        scroller.scrollLeft += event.deltaX;
+      }
+    };
+    scroller.addEventListener('wheel', onWheel, { passive: false });
+    return () => scroller.removeEventListener('wheel', onWheel);
+  }, []);
+
+  // Drag мышью с зажатой основной кнопкой — тянем сетку за содержимое
+  // (курсор по всему контейнеру, включая блоки пар). Touch/pen не
+  // перехватываем — нативный pan контейнера. Порог 5 px отделяет жест
+  // прокрутки от клика: пока порог не пройден, это клик по паре.
+  const onGridPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const scroller = scrollRef.current;
+    if (!scroller || event.pointerType !== 'mouse' || event.button !== 0) return;
+    // не начинаем выделение текста жестом; click при этом генерируется
+    event.preventDefault();
+    const last = { x: event.clientX, y: event.clientY };
+    let dragging = false;
+    const onMove = (move: PointerEvent) => {
+      if (!dragging) {
+        const distance = Math.hypot(move.clientX - last.x, move.clientY - last.y);
+        if (distance < WEEK_DRAG_THRESHOLD_PX) return;
+        dragging = true;
+        setPanning(true);
+      }
+      scroller.scrollLeft -= move.clientX - last.x;
+      scroller.scrollTop -= move.clientY - last.y;
+      last.x = move.clientX;
+      last.y = move.clientY;
+    };
+    const finish = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', finish);
+      setPanning(false);
+      if (dragging) suppressNextClickRef.current = true;
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', finish);
+  }, []);
+
+  // Жест превысил порог — порождённый им click по блоку пары гасим.
+  const onGridClickCapture = useCallback((event: React.MouseEvent) => {
+    if (!suppressNextClickRef.current) return;
+    suppressNextClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
   return (
     <>
       {/* Десктопный недельный вид (>= 768 px); на мобильном — отдельная задача */}
@@ -321,115 +404,141 @@ export function WeekView({
             </div>
           </aside>
 
-          {/* ── Сетка недели ────────────────────────────────────────────────── */}
+          {/* ── Сетка недели: скролл-контейнер (DIG-56, как в Google Calendar) ──
+              контент не уже «гуттер + N колонок × 160 px»: на 1440 с сайдбаром
+              и на 768–1023 сетка шире окна → горизонтальный drag / Shift+wheel;
+              окно 480 px при шкале 768 px → вертикальная прокрутка внутри
+              сетки, страницу колесо над ней не двигает (overscroll-contain). */}
           <div className="min-w-0 flex-1">
-            {/* шапка дней */}
             <div
-              className="grid"
-              style={{ gridTemplateColumns: `56px repeat(${days.length}, minmax(0, 1fr))` }}
-            >
-              <span aria-hidden="true" />
-              {days.map((day) => (
-                <div key={day.dateKey} className="pb-2 text-center">
-                  <span className="block text-[11px] font-medium text-muted-foreground">
-                    {day.weekdayShort}
-                  </span>
-                  <span
-                    data-today={day.isToday ? 'true' : undefined}
-                    className={cn(
-                      'mx-auto mt-1 flex size-8 items-center justify-center rounded-pill text-sm font-bold',
-                      day.isToday ? 'bg-coral-500 text-white' : 'text-foreground',
-                    )}
-                  >
-                    {day.dayNumber}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {/* тело сетки */}
-            <div
+              ref={scrollRef}
               data-testid="week-grid"
-              className="relative flex overflow-hidden rounded-card border border-border bg-card"
-              style={{ height: GRID_HEIGHT_PX }}
+              className={cn(
+                'overscroll-contain overflow-auto rounded-card border border-border bg-card',
+                '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+                panning ? 'cursor-grabbing select-none' : 'cursor-grab',
+              )}
+              style={{ height: WEEK_GRID_VIEWPORT_PX }}
+              onPointerDown={onGridPointerDown}
+              onClickCapture={onGridClickCapture}
             >
-              {/* гуттер с часами */}
-              <div className="relative w-14 shrink-0" aria-hidden="true">
-                {Array.from({ length: 12 }, (_, h) => (
-                  <span
-                    key={h}
-                    className="absolute -translate-y-1/2 pr-2 text-right text-[11px] tabular-nums text-muted-foreground"
-                    style={{ top: h * 64, right: 8 }}
-                  >
-                    {`${String(8 + h).padStart(2, '0')}:00`}
-                  </span>
-                ))}
-              </div>
-              {/* колонки дней */}
               <div
-                className="relative grid flex-1"
-                style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
+                className="flex flex-col"
+                style={{
+                  minWidth: `calc(${WEEK_GUTTER_PX}px + ${days.length} * ${WEEK_MIN_COLUMN_PX}px)`,
+                }}
               >
-                {filteredDays.map((day) => (
-                  <div
-                    key={day.dateKey}
-                    data-date-key={day.dateKey}
-                    data-today={day.isToday ? 'true' : undefined}
-                    className={cn(
-                      'relative border-l border-border',
-                      day.isToday && 'bg-coral-50/60',
-                    )}
-                  >
-                    {/* горизонтальные линии часов */}
+                {/* шапка дней: sticky top — видна при вертикальной прокрутке,
+                    по горизонтали уезжает вместе с колонками */}
+                <div
+                  className="sticky top-0 z-40 grid rounded-t-card border-b border-border bg-card pb-2"
+                  style={{
+                    gridTemplateColumns: `${WEEK_GUTTER_PX}px repeat(${days.length}, minmax(${WEEK_MIN_COLUMN_PX}px, 1fr))`,
+                  }}
+                >
+                  {/* угол над гуттером при горизонтальной прокрутке */}
+                  <span aria-hidden="true" className="sticky left-0 z-10 bg-card" />
+                  {days.map((day) => (
+                    <div key={day.dateKey} className="text-center">
+                      <span className="block text-[11px] font-medium text-muted-foreground">
+                        {day.weekdayShort}
+                      </span>
+                      <span
+                        data-today={day.isToday ? 'true' : undefined}
+                        className={cn(
+                          'mx-auto mt-1 flex size-8 items-center justify-center rounded-pill text-sm font-bold',
+                          day.isToday ? 'bg-coral-500 text-white' : 'text-foreground',
+                        )}
+                      >
+                        {day.dayNumber}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {/* тело сетки */}
+                <div className="relative flex" style={{ height: GRID_HEIGHT_PX }}>
+                  {/* гуттер с часами: sticky left — виден при горизонтальной прокрутке */}
+                  <div className="sticky left-0 z-30 w-14 shrink-0 bg-card" aria-hidden="true">
                     {Array.from({ length: 12 }, (_, h) => (
                       <span
                         key={h}
-                        aria-hidden="true"
-                        className="absolute inset-x-0 border-t border-border/70"
-                        style={{ top: h * 64 }}
-                      />
-                    ))}
-                    {day.laid.map(({ event, column, columns }) => (
-                      <LessonBlock
-                        key={event.id}
-                        event={event}
-                        column={column}
-                        columns={columns}
-                        onOpen={() => setSelected(event)}
-                      />
+                        className="absolute -translate-y-1/2 pr-2 text-right text-[11px] tabular-nums text-muted-foreground"
+                        style={{ top: h * 64, right: 8 }}
+                      >
+                        {`${String(8 + h).padStart(2, '0')}:00`}
+                      </span>
                     ))}
                   </div>
-                ))}
-                {/* красная линия текущего времени поверх блоков */}
-                {showNowLine ? (
+                  {/* колонки дней */}
                   <div
-                    aria-hidden="true"
-                    data-testid="now-line"
-                    className="pointer-events-none absolute inset-y-0 z-20"
-                    style={{ left: 0, right: 0 }}
+                    className="relative grid min-w-0 flex-1"
+                    style={{
+                      gridTemplateColumns: `repeat(${days.length}, minmax(${WEEK_MIN_COLUMN_PX}px, 1fr))`,
+                    }}
                   >
-                    <div
-                      className="relative border-t-2 border-error"
-                      style={{ top: eventTop(nowMinutes) }}
-                    >
-                      <span className="absolute -left-1 -top-[5px] size-2 rounded-full bg-error" />
-                    </div>
+                    {filteredDays.map((day) => (
+                      <div
+                        key={day.dateKey}
+                        data-date-key={day.dateKey}
+                        data-today={day.isToday ? 'true' : undefined}
+                        className={cn(
+                          'relative border-l border-border',
+                          day.isToday && 'bg-coral-50/60',
+                        )}
+                      >
+                        {/* горизонтальные линии часов */}
+                        {Array.from({ length: 12 }, (_, h) => (
+                          <span
+                            key={h}
+                            aria-hidden="true"
+                            className="absolute inset-x-0 border-t border-border/70"
+                            style={{ top: h * 64 }}
+                          />
+                        ))}
+                        {day.laid.map(({ event, column, columns }) => (
+                          <LessonBlock
+                            key={event.id}
+                            event={event}
+                            column={column}
+                            columns={columns}
+                            onOpen={() => setSelected(event)}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                    {/* красная линия текущего времени поверх блоков */}
+                    {showNowLine ? (
+                      <div
+                        aria-hidden="true"
+                        data-testid="now-line"
+                        className="pointer-events-none absolute inset-y-0 z-20"
+                        style={{ left: 0, right: 0 }}
+                      >
+                        <div
+                          className="relative border-t-2 border-error"
+                          style={{ top: eventTop(nowMinutes) }}
+                        >
+                          <span className="absolute -left-1 -top-[5px] size-2 rounded-full bg-error" />
+                        </div>
+                      </div>
+                    ) : null}
+                    {/* пустая неделя или всё скрыто фильтрами */}
+                    {totalEvents === 0 ? (
+                      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                        <EmptyState
+                          icon={CalendarOff}
+                          title="На этой неделе пар нет"
+                          description={
+                            teacher === 'ALL' && Object.values(visibleKinds).every(Boolean)
+                              ? 'Листайте недели стрелками или нажмите «Сегодня».'
+                              : 'Попробуйте включить фильтры типов занятий или «Все преподаватели».'
+                          }
+                          className="pointer-events-auto w-72 border-none shadow-none"
+                        />
+                      </div>
+                    ) : null}
                   </div>
-                ) : null}
-                {/* пустая неделя или всё скрыто фильтрами */}
-                {totalEvents === 0 ? (
-                  <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-                    <EmptyState
-                      icon={CalendarOff}
-                      title="На этой неделе пар нет"
-                      description={
-                        teacher === 'ALL' && Object.values(visibleKinds).every(Boolean)
-                          ? 'Листайте недели стрелками или нажмите «Сегодня».'
-                          : 'Попробуйте включить фильтры типов занятий или «Все преподаватели».'
-                      }
-                      className="pointer-events-auto w-72 border-none shadow-none"
-                    />
-                  </div>
-                ) : null}
+                </div>
               </div>
             </div>
           </div>
