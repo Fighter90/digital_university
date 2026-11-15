@@ -7,7 +7,8 @@
 // чужая заявка неотличима от несуществующей, отказ в аудите).
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryDataDb, type MemoryDataDb } from '@/server/data/memory-db';
-import { toDataCtx, type DataCtx } from '@/server/data/context';
+import { toDataCtx } from '@/server/data/context';
+import type { DataCtx } from '@/server/data/types';
 import {
   createCanonicalRequest,
   getCanonicalRequestByNumber,

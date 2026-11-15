@@ -117,7 +117,7 @@ function certificateStyledLines(
   const surname = student.fullName.split(' ')[0] ?? student.fullName;
   push(`Настоящая справка выдана ${student.fullName},`, 'body');
   push(`студенту(ке) ${student.course} курса группы ${student.groupName},`, 'body');
-  push(`обучающемуся(ейся) по программе «${student.program}» (${student.studyForm} форма),`, 'body');
+  push(`обучающемуся(ейся) по программе ${student.program} (${student.studyForm} форма),`, 'body');
   push(`факультет ${student.faculty}, номер зачётной книжки ${student.gradebookNumber},`, 'body');
   push(`в том, что ${surname} действительно является студентом`, 'body');
   push('демонстрационного вуза по состоянию на текущую дату.', 'body');

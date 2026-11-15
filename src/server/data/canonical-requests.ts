@@ -173,19 +173,22 @@ export type TransitionCanonicalRequestResult =
   | { kind: 'ok'; request: CanonicalRequestRow }
   | {
       kind: 'error';
-      code:
-        | 'NOT_FOUND'
-        | 'FORBIDDEN'
-        | 'INVALID_TRANSITION'
-        | 'REASON_REQUIRED'
-        | 'ROLE_MISMATCH';
+      code: TransitionErrorCode;
       message: string;
     };
 
-const err = (
-  code: TransitionCanonicalRequestResult extends { kind: 'error'; code: infer C } ? C : never,
-  message: string,
-): TransitionCanonicalRequestResult => ({ kind: 'error', code, message });
+export type TransitionErrorCode =
+  | 'NOT_FOUND'
+  | 'FORBIDDEN'
+  | 'INVALID_TRANSITION'
+  | 'REASON_REQUIRED'
+  | 'ROLE_MISMATCH';
+
+const err = (code: TransitionErrorCode, message: string): TransitionCanonicalRequestResult => ({
+  kind: 'error',
+  code,
+  message,
+});
 
 /**
  * Кто выполняет переход над найденной строкой. Студент — только владелец;
