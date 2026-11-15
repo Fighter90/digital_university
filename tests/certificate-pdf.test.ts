@@ -21,7 +21,7 @@ const data: CertificateData = {
   title: 'Справка об обучении',
   number: 'SR-2026-A1B2C',
   issuedAt: NOW,
-  code: 'ABCD-EFGH-JKL M-NOPQ'.replaceAll(' ', '-'),
+  code: 'ABCD-EFGH-JKLM-NOPQ',
   student: {
     fullName: 'Анна Ковалёва',
     groupName: 'ПИ-21',
@@ -75,7 +75,7 @@ describe('certificate-pdf: сборка файла', () => {
   });
 
   it('имя файла ASCII с номером заявки (кириллица в Content-Disposition запрещена)', () => {
-    const name = certificateFilename('SR-2026-A1B2C', NOW);
+    const name = certificateFilename('SR-2026-A1B2C');
     expect(name).toBe('certificate-SR-2026-A1B2C.pdf');
     expect(/^[\x20-\x7e]+$/.test(name)).toBe(true);
   });
