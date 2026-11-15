@@ -39,7 +39,7 @@ describe('demo seed: канонические заявки (DIG-30)', () => {
     await seedDemoData(db, stubAuthStore);
 
     const anna = await db.listCanonicalRequestsByStudent('st-anna');
-    expect(anna.length).toBeGreaterThanOrEqual(2);
+    expect(anna.length).toBeGreaterThanOrEqual(3); // DIG-32: + «для военкомата» в NEEDS_FIX
 
     const numbers = anna.map((r) => r.number);
     for (const number of numbers) {
@@ -47,9 +47,13 @@ describe('demo seed: канонические заявки (DIG-30)', () => {
     }
     expect(new Set(numbers).size).toBe(numbers.length);
 
-    const cert = anna.find((r) => r.typeCode === 'CERT_ENROLLMENT')!;
+    const cert = anna.find((r) => r.title === 'Справка об обучении · для банка')!;
     expect(cert.status).toBe('READY'); // мгновенный тип — сразу готов
     expect(cert.title).toBe('Справка об обучении · для банка');
+
+    // DIG-32 — «Нужна доработка» для пилюли «Нужно действие» и закрепления наверху.
+    const fix = anna.find((r) => r.title === 'Справка об обучении · для военкомата')!;
+    expect(fix.status).toBe('NEEDS_FIX');
 
     const diploma = anna.find((r) => r.typeCode === 'DIPLOMA_COPY')!;
     expect(diploma.status).toBe('SUBMITTED');
@@ -58,8 +62,11 @@ describe('demo seed: канонические заявки (DIG-30)', () => {
     for (const request of anna) {
       const events = await db.listCanonicalRequestEvents(request.id);
       expect(events.length, request.number).toBeGreaterThanOrEqual(1);
+      // История начинается с создания (подача или мгновенная READY)
+      // и заканчивается текущим статусом.
       expect(events[0]!.fromStatus).toBeNull();
-      expect(events[0]!.toStatus).toBe(request.status);
+      expect(events[0]!.toStatus).toBe(request.status === 'NEEDS_FIX' ? 'SUBMITTED' : request.status);
+      expect(events[events.length - 1]!.toStatus).toBe(request.status);
     }
   });
 });

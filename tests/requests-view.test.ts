@@ -36,6 +36,7 @@ const card = (overrides: Partial<RequestCardView> & Pick<RequestCardView, 'id' |
   action: null,
   pipelineStep: 1,
   nextAction: 'Ожидает приёма деканатом',
+  reason: null,
   isFix: false,
   ...overrides,
 });

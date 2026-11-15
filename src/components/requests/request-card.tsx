@@ -25,18 +25,12 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-import {
-  REQUEST_PIPELINE_STEPS,
-  requestPipelineStep,
-  requestStepperStates,
-  type RequestCardView,
-  type RequestIconKind,
-  type RequestStepperStepState,
-} from '@/lib/requests-view';
+import { cancelRequestAction } from '@/server/actions/requests';
+import { type RequestCardView, type RequestIconKind } from '@/lib/requests-view';
 import { REQUEST_STATUS_LABELS, REQUEST_STATUS_TONES } from '@/lib/request-labels';
-import { Stepper } from '@/components/ui/stepper';
 import { Icon } from '@/components/ui/icon';
-import { CancelRequestButton } from './cancel-request-button';
+import { RequestStepper } from './request-stepper';
+import { RequestTransitionButton } from './request-transition-button';
 
 const ICONS: Record<RequestIconKind, LucideIcon> = {
   certificate: FileText,
@@ -47,51 +41,6 @@ const ICONS: Record<RequestIconKind, LucideIcon> = {
   dormitory: Building2,
   other: MessageSquareText,
 };
-
-const DOT_STYLES: Record<RequestStepperStepState, string> = {
-  done: 'bg-success',
-  ready: 'bg-success',
-  current: 'bg-accent ring-2 ring-accent/30 ring-offset-1',
-  pending: 'bg-border',
-};
-
-function StepperLine({ status }: { status: RequestCardView['status'] }) {
-  const step = requestPipelineStep(status);
-  if (step === null) return null;
-  const states = requestStepperStates(status);
-  const currentLabel = REQUEST_PIPELINE_STEPS[step - 1]?.label ?? '';
-
-  return (
-    <>
-      {/* Полный степпер с подписями — от 640 px. */}
-      <div className="mt-3 hidden sm:block" data-testid="request-stepper">
-        <Stepper
-          steps={REQUEST_PIPELINE_STEPS.map((s) => ({ label: s.label }))}
-          states={states}
-        />
-      </div>
-      {/* Компактный степпер на 360 px: точки + подпись текущего шага. */}
-      <div
-        className="mt-3 flex items-center gap-2.5 sm:hidden"
-        data-testid="request-stepper-compact"
-        aria-label={`Шаг ${step} из ${REQUEST_PIPELINE_STEPS.length}: ${currentLabel}`}
-      >
-        <span aria-hidden="true" className="flex items-center gap-1.5">
-          {states.map((state, index) => (
-            <span
-              key={REQUEST_PIPELINE_STEPS[index]?.status ?? index}
-              className={`size-2 rounded-full ${DOT_STYLES[state]}`}
-            />
-          ))}
-        </span>
-        <span className="text-xs font-medium text-muted-foreground">
-          Шаг {step} из {REQUEST_PIPELINE_STEPS.length}
-          {currentLabel ? ` · ${currentLabel}` : ''}
-        </span>
-      </div>
-    </>
-  );
-}
 
 export function RequestCard({ request }: { request: RequestCardView }) {
   const IconCmp = ICONS[request.iconKind];
@@ -146,7 +95,9 @@ export function RequestCard({ request }: { request: RequestCardView }) {
         </div>
       </div>
 
-      <StepperLine status={request.status} />
+      <div className="mt-3">
+        <RequestStepper status={request.status} />
+      </div>
 
       <p
         className={`mt-3 flex items-start gap-1.5 text-sm ${
@@ -180,7 +131,14 @@ export function RequestCard({ request }: { request: RequestCardView }) {
             </Link>
           ) : null}
           {request.action === 'CANCEL' ? (
-            <CancelRequestButton requestId={request.id} />
+            <RequestTransitionButton
+              action={cancelRequestAction}
+              requestId={request.id}
+              label="Отменить"
+              pendingLabel="Отменяем…"
+              confirmText="Отменить заявку? Действие нельзя отменить."
+              testid="request-action-cancel"
+            />
           ) : null}
         </div>
       ) : null}
