@@ -354,7 +354,26 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 function NoteEditor({ eventId, note }: { eventId: string; note: string | null }) {
   const [saveState, saveAction, savePending] = useActionState(saveEventNoteAction, null);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteEventNoteAction, null);
-  // key пересоздаёт textarea после revalidate — поле показывает сохранённое.
+  // Управляемое поле: истина о тексте — сервер (note из RSC после
+  // revalidate + результат actions), DOM всегда отражает состояние, а не
+  // ввод неуправляемого defaultValue. Неуправляемое поле не очищалось
+  // после «Удалить» (поймано e2e DIG-24). Синхронизация — документированный
+  // паттерн «adjust state during render» (react-hooks/set-state-in-effect
+  // запрещает setState в эффектах).
+  const [text, setText] = useState(note ?? '');
+  const [syncedNote, setSyncedNote] = useState(note ?? '');
+  const [syncedDelete, setSyncedDelete] = useState(deleteState);
+  // сравниваем НОРМАЛИЗОВАННОЕ значение: raw note=null никогда не равен
+  // syncedNote='' — иначе рендер зацикливается (SSR «Too many re-renders»)
+  const serverNote = note ?? '';
+  if (serverNote !== syncedNote) {
+    setSyncedNote(serverNote);
+    setText(serverNote);
+  }
+  if (deleteState !== syncedDelete) {
+    setSyncedDelete(deleteState);
+    if (deleteState?.ok) setText('');
+  }
   const error =
     saveState?.ok === false
       ? saveState.error
@@ -374,9 +393,9 @@ function NoteEditor({ eventId, note }: { eventId: string; note: string | null })
       <form action={saveAction} className="flex flex-col gap-2">
         <input type="hidden" name="eventId" value={eventId} />
         <textarea
-          key={`${eventId}:${note ?? ''}`}
           name="text"
-          defaultValue={note ?? ''}
+          value={text}
+          onChange={(event) => setText(event.target.value)}
           maxLength={NOTE_MAX_LENGTH}
           rows={3}
           placeholder="Например: принести ноутбук, спросить про зачёт…"
