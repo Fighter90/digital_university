@@ -182,7 +182,8 @@ function buildRequests(): {
       'st-anna',
       'CERTIFICATE',
       'Справка об обучении для налоговой',
-      'COMPLETED',
+      // DIG-32: карта миграции DIG-49 — COMPLETED → ISSUED (единый словарь).
+      'ISSUED',
       -9,
       'Мария Петрова',
       'Справка готова, можно забрать в деканате (каб. 214)',
@@ -237,7 +238,8 @@ function buildRequests(): {
       actorRole: 'STAFF',
       actorName: 'Мария Петрова',
       statusFrom: 'SUBMITTED',
-      statusTo: 'COMPLETED',
+      // DIG-32: карта миграции DIG-49 — COMPLETED → ISSUED (единый словарь).
+      statusTo: 'ISSUED',
       message: 'Справка оформлена, ожидайте выдачи',
       createdAt: day(-7, 14, 30),
     },
@@ -1045,6 +1047,8 @@ function buildCanonicalRequests(): {
 
   const certCreated = day(0, 9, 5); // сегодня утром — окно 24 ч активно
   const diplomaCreated = day(-3, 11, 40);
+  const deferCreated = day(-2, 11, 20);
+  const deferFixAt = day(-1, 10, 5);
 
   const requests: CanonicalRequestRow[] = [
     {
@@ -1071,6 +1075,20 @@ function buildCanonicalRequests(): {
       createdAt: diplomaCreated,
       updatedAt: diplomaCreated,
     },
+    // DIG-32 — «Нужна доработка» для пилюли «Нужно действие» и закрепления
+    // наверху списка: сотрудник вернул справку с причиной из задачи.
+    {
+      id: 'creq-demo-defer',
+      number: formatCanonicalRequestNumber(deferCreated.getFullYear(), 3),
+      studentId: 'st-anna',
+      typeCode: 'CERT_ENROLLMENT',
+      typeName: 'Справка об обучении',
+      title: 'Справка об обучении · для военкомата',
+      params: { purpose: 'для военкомата' },
+      status: 'NEEDS_FIX',
+      createdAt: deferCreated,
+      updatedAt: deferFixAt,
+    },
   ];
 
   const events: CanonicalRequestEventRow[] = [
@@ -1095,6 +1113,28 @@ function buildCanonicalRequests(): {
       toStatus: 'SUBMITTED',
       comment: null,
       createdAt: diplomaCreated,
+    },
+    {
+      id: 'cev-demo-defer-submit',
+      requestId: 'creq-demo-defer',
+      actorUserId: 'auth-anna',
+      actorRole: 'STUDENT',
+      actorName: 'Анна Ковалёва',
+      fromStatus: null,
+      toStatus: 'SUBMITTED',
+      comment: null,
+      createdAt: deferCreated,
+    },
+    {
+      id: 'cev-demo-defer-fix',
+      requestId: 'creq-demo-defer',
+      actorUserId: 'auth-dean',
+      actorRole: 'STAFF',
+      actorName: 'Мария Петрова',
+      fromStatus: 'SUBMITTED',
+      toStatus: 'NEEDS_FIX',
+      comment: 'Укажите ФИО латиницей',
+      createdAt: deferFixAt,
     },
   ];
   return { types, requests, events };

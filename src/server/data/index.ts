@@ -159,6 +159,8 @@ export type {
   TransitionCanonicalRequestResult,
 } from './canonical-requests';
 export type { DataDb, SchedulePeriod, ScheduleChangePatch } from './port';
+export { getRequestsScreen } from './requests-screen';
+export type { RequestsScreenData } from './requests-screen';
 export {
   type DataCtx,
   type Role,
