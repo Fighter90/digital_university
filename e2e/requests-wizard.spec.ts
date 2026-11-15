@@ -130,10 +130,11 @@ test('черновик не теряется при случайном закр�
     'false',
   );
 
-  await page.getByTestId('wizard-next').click();
-  await expect(page.getByTestId('wizard-step-label')).toContainText('Шаг 1 из 3');
+  // Без выбора типа «Далее» недоступен (шаг 1 не пропускается).
+  await expect(page.getByTestId('wizard-next')).toBeDisabled();
   await page.getByTestId('wizard-type-option-GRADES_EXTRACT').click();
   await page.getByTestId('wizard-next').click();
+  await expect(page.getByTestId('wizard-step-label')).toContainText('Шаг 2 из 3');
   await page.getByTestId('wizard-comment').fill('черновик выписки');
 
   // Esc при заполненном черновике открывает подтверждение, а не закрывает.
