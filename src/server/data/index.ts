@@ -110,12 +110,7 @@ export type {
   RequestTransitionInput,
   RequestTransitionCheck,
 } from '../../lib/request-machine';
-export {
-  slaReadyDate,
-  addWorkingDays,
-  formatReadyBy,
-  isWeekend,
-} from '../../lib/request-sla';
+export { slaReadyDate, addWorkingDays, formatReadyBy, isWeekend } from '../../lib/request-sla';
 export {
   defaultSettingsFor,
   getOwnProfile,
@@ -135,6 +130,7 @@ export { ensureAppData } from './bootstrap';
 export {
   newRequestNumber,
   normalizeRequestNumber,
+  decodeRequestNumberParam,
   isValidRequestNumber,
   REQUEST_NUMBER_PATTERN,
 } from './request-number';

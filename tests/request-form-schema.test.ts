@@ -46,9 +46,7 @@ describe('parseRequestFormSchema: разбор JSON (DIG-30)', () => {
       parseRequestFormSchema({ fields: [{ key: 'a', label: 'А', type: 'mystic' }] }),
     ).toBeNull();
     expect(parseRequestFormSchema({ fields: [{ key: 'a', label: 'А', type: 'enum' }] })).toBeNull();
-    expect(
-      parseRequestFormSchema({ fields: [{ key: 'a', label: '', type: 'text' }] }),
-    ).toBeNull();
+    expect(parseRequestFormSchema({ fields: [{ key: 'a', label: '', type: 'text' }] })).toBeNull();
     expect(parseRequestFormSchema({ keyField: 'ghost', fields: [] })).toBeNull();
   });
 });
@@ -118,6 +116,27 @@ describe('validateRequestForm: zod на сервере (DIG-30)', () => {
     if (!badDate.ok) expect(badDate.error).toContain('Дата начала');
   });
 
+  it('date: несуществующие календарные даты отклоняются, високосный день принимается (ревью DIG-30)', () => {
+    for (const bad of ['2026-13-45', '2026-02-30', '2025-02-29', '2026-04-31']) {
+      const result = validateRequestForm(LEAVE_SCHEMA, {
+        period: '1',
+        reason: 'x',
+        from: bad,
+      });
+      expect(result.ok, bad).toBe(false);
+      if (!result.ok) expect(result.error).toContain('Дата начала');
+    }
+    const leap = validateRequestForm(LEAVE_SCHEMA, {
+      period: '1',
+      reason: 'x',
+      from: '2024-02-29',
+    });
+    expect(leap).toEqual({
+      ok: true,
+      data: { period: '1', reason: 'x', comment: '', from: '2024-02-29' },
+    });
+  });
+
   it('сломанная схема формы — явная ошибка, а не исключение', () => {
     const result = validateRequestForm('мусор', {});
     expect(result.ok).toBe(false);
@@ -127,9 +146,9 @@ describe('validateRequestForm: zod на сервере (DIG-30)', () => {
 
 describe('requestTitleFromParams: «тип · ключевой параметр» (DIG-30)', () => {
   it('ключевой параметр попадает в название', () => {
-    expect(requestTitleFromParams('Справка об обучении', CERT_SCHEMA, { purpose: 'для банка' })).toBe(
-      'Справка об обучении · для банка',
-    );
+    expect(
+      requestTitleFromParams('Справка об обучении', CERT_SCHEMA, { purpose: 'для банка' }),
+    ).toBe('Справка об обучении · для банка');
     expect(
       requestTitleFromParams('Справка об обучении', CERT_SCHEMA, { purpose: 'для военкомата' }),
     ).toBe('Справка об обучении · для военкомата');
@@ -137,17 +156,19 @@ describe('requestTitleFromParams: «тип · ключевой параметр�
 
   it('без ключевого поля (или без значения) название — просто тип', () => {
     expect(requestTitleFromParams('Выписка оценок', null, {})).toBe('Выписка оценок');
-    expect(
-      requestTitleFromParams('Выписка оценок', { fields: [] }, { anything: 'x' }),
-    ).toBe('Выписка оценок');
-    expect(
-      requestTitleFromParams('Справка об обучении', CERT_SCHEMA, { purpose: '  ' }),
-    ).toBe('Справка об обучении');
+    expect(requestTitleFromParams('Выписка оценок', { fields: [] }, { anything: 'x' })).toBe(
+      'Выписка оценок',
+    );
+    expect(requestTitleFromParams('Справка об обучении', CERT_SCHEMA, { purpose: '  ' })).toBe(
+      'Справка об обучении',
+    );
   });
 
   it('слишком длинное название обрезается с многоточием', () => {
     const longValue = 'п'.repeat(300);
-    const title = requestTitleFromParams('Справка об обучении', CERT_SCHEMA, { purpose: longValue });
+    const title = requestTitleFromParams('Справка об обучении', CERT_SCHEMA, {
+      purpose: longValue,
+    });
     expect(title.length).toBeLessThanOrEqual(140);
     expect(title.endsWith('…')).toBe(true);
     expect(title.startsWith('Справка об обучении · ')).toBe(true);

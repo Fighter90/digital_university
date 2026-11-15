@@ -302,9 +302,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       );
     },
     async findCanonicalRequestByStudentAndId(studentId, id) {
-      return clone(
-        canonicalRequests.find((r) => r.studentId === studentId && r.id === id) ?? null,
-      );
+      return clone(canonicalRequests.find((r) => r.studentId === studentId && r.id === id) ?? null);
     },
     async listCanonicalRequestsByStudent(studentId) {
       return canonicalRequests
@@ -347,13 +345,21 @@ export function createMemoryDataDb(): MemoryDataDb {
       });
       return clone(row);
     },
-    async findLatestCanonicalRequestByStudentAndType(studentId, typeCode, createdAfter) {
+    async findLatestCanonicalRequestByStudentAndType(
+      studentId,
+      typeCode,
+      createdAfter,
+      keyField,
+      keyValue,
+    ) {
       const candidates = canonicalRequests
         .filter(
           (r) =>
             r.studentId === studentId &&
             r.typeCode === typeCode &&
-            r.createdAt.getTime() >= createdAfter.getTime(),
+            r.createdAt.getTime() >= createdAfter.getTime() &&
+            // Дубликат = тот же документ: совпадает и ключевой параметр.
+            (keyField == null || (r.params[keyField] ?? '') === (keyValue ?? '')),
         )
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       return candidates.length > 0 ? clone(candidates[0]!) : null;

@@ -136,12 +136,16 @@ export interface DataDb {
   ): Promise<CanonicalRequestRow | null>;
   /**
    * Последняя заявка студента данного типа, созданная позже `createdAfter`
-   * (окно повторного заказа DIG-30 — 24 часа).
+   * (окно повторного заказа DIG-30 — 24 часа). Дубликат — тот же ДОКУМЕНТ:
+   * совпадает и тип, и значение ключевого поля формы (keyField/keyValue):
+   * справка «для банка» не блокирует заказ «для военкомата».
    */
   findLatestCanonicalRequestByStudentAndType(
     studentId: string,
     typeCode: string,
     createdAfter: Date,
+    keyField?: string | null,
+    keyValue?: string | null,
   ): Promise<CanonicalRequestRow | null>;
   /** Следующий порядковый номер года (в PostgreSQL — request_number_seq). */
   nextCanonicalRequestSeq(year: number): Promise<number>;

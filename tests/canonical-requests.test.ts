@@ -315,6 +315,36 @@ describe('повторный заказ за 24 часа (приёмка DIG-30)
     });
     expect(mine.kind).toBe('created');
   });
+
+  it('тот же тип с другим назначением — новая заявка: дубликат = тип + ключевой параметр (ревью DIG-30)', async () => {
+    await createCanonicalRequest(db, anna, {
+      typeCode: 'CERT_ENROLLMENT',
+      params: { purpose: 'для банка' },
+      now: NOW,
+    });
+
+    // Готовая справка «для банка» не блокирует заказ «для военкомата» —
+    // это другой документ, хоть и того же типа.
+    const other = await createCanonicalRequest(db, anna, {
+      typeCode: 'CERT_ENROLLMENT',
+      params: { purpose: 'для военкомата' },
+      now: LATER_1H,
+    });
+    expect(other.kind).toBe('created');
+    if (other.kind === 'created') {
+      expect(other.request.title).toBe('Справка об обучении · для военкомата');
+    }
+
+    // Повтор того же назначения внутри окна — по-прежнему дубликат.
+    const same = await createCanonicalRequest(db, anna, {
+      typeCode: 'CERT_ENROLLMENT',
+      params: { purpose: 'для банка' },
+      now: LATER_1H,
+    });
+    expect(same.kind).toBe('duplicate');
+    if (same.kind !== 'duplicate') return;
+    expect(same.title).toBe('Справка об обучении · для банка');
+  });
 });
 
 describe('переходы через сервис: события и уведомления (DIG-30)', () => {
@@ -323,8 +353,20 @@ describe('переходы через сервис: события и уведо
     if (created.kind !== 'created') return expect.fail('created');
     const id = created.request.id;
 
-    expect((await transitionCanonicalRequest(db, maria, { requestId: id, to: 'ACCEPTED', now: LATER_1H })).kind).toBe('ok');
-    const step2 = await transitionCanonicalRequest(db, maria, { requestId: id, to: 'IN_PROGRESS', now: LATER_1H });
+    expect(
+      (
+        await transitionCanonicalRequest(db, maria, {
+          requestId: id,
+          to: 'ACCEPTED',
+          now: LATER_1H,
+        })
+      ).kind,
+    ).toBe('ok');
+    const step2 = await transitionCanonicalRequest(db, maria, {
+      requestId: id,
+      to: 'IN_PROGRESS',
+      now: LATER_1H,
+    });
     expect(step2.kind).toBe('ok');
 
     const events = await listCanonicalRequestEvents(db, anna, id);
@@ -345,6 +387,40 @@ describe('переходы через сервис: события и уведо
     expect(progress!.body).toContain('Готовность до');
     expect(progress!.body).toContain(formatReadyBy(slaReadyDate(NOW, 5)!));
     expect(progress!.link).toBe('/requests');
+  });
+
+  it('дата готовности в уведомлении считается от момента перехода, а не от подачи (ревью DIG-30)', async () => {
+    const created = await createDiploma(anna, NOW); // пт 13 ноября, SLA 5 рабочих дней
+    if (created.kind !== 'created') return expect.fail('created');
+    const id = created.request.id;
+    const LATER_10D = new Date(NOW.getTime() + 10 * 24 * 3600_000); // пн 23 ноября
+
+    await transitionCanonicalRequest(db, maria, { requestId: id, to: 'ACCEPTED', now: LATER_10D });
+    const accepted = (await db.listNotificationsByStudent('st-anna')).find((n) =>
+      n.body.includes('Подана → Принята'),
+    );
+    expect(accepted).toBeDefined();
+    expect(accepted!.body).toContain(`Готовность до ${formatReadyBy(slaReadyDate(LATER_10D, 5)!)}`);
+    // Прошлая логика считала SLA от createdAt и обещала «до 20 ноября» —
+    // дату в прошлом, когда заявку приняли спустя 10 дней.
+    expect(accepted!.body).not.toContain(formatReadyBy(slaReadyDate(NOW, 5)!));
+
+    // Возврат после доработки: «исправлена и подана повторно» обещает SLA
+    // от момента повторной подачи, а не от изначальной.
+    await transitionCanonicalRequest(db, maria, {
+      requestId: id,
+      to: 'NEEDS_FIX',
+      comment: 'исправьте формулировку',
+      now: LATER_10D,
+    });
+    await transitionCanonicalRequest(db, anna, { requestId: id, to: 'SUBMITTED', now: LATER_10D });
+    const resubmitted = (await db.listNotificationsByStudent('st-anna')).find((n) =>
+      n.body.includes('исправлена и подана повторно'),
+    );
+    expect(resubmitted).toBeDefined();
+    expect(resubmitted!.body).toContain(
+      `Готовность до ${formatReadyBy(slaReadyDate(LATER_10D, 5)!)}`,
+    );
   });
 
   it('READY → ISSUED финализирует заявку', async () => {
@@ -388,7 +464,9 @@ describe('переходы через сервис: события и уведо
 
     const events = await listCanonicalRequestEvents(db, anna, id);
     expect(events!.at(-1)!.comment).toBe('Не хватает подписи на заявлении');
-    const [notification] = await db.listNotificationsByStudent('st-anna').then((list) => list.slice(-1));
+    const [notification] = await db
+      .listNotificationsByStudent('st-anna')
+      .then((list) => list.slice(-1));
     expect(notification!.body).toContain('Причина: Не хватает подписи на заявлении');
 
     const resubmitted = await transitionCanonicalRequest(db, anna, {
@@ -409,8 +487,16 @@ describe('права и владение (IDOR, DIG-30)', () => {
     // Заявку сначала доводим до IN_PROGRESS (сотрудник), чтобы пара
     // «→ READY» существовала в таблице — и всё равно студенту отказано
     // по роли (FORBIDDEN, а не «недопустимый переход»).
-    await transitionCanonicalRequest(db, maria, { requestId: created.request.id, to: 'ACCEPTED', now: LATER_1H });
-    await transitionCanonicalRequest(db, maria, { requestId: created.request.id, to: 'IN_PROGRESS', now: LATER_1H });
+    await transitionCanonicalRequest(db, maria, {
+      requestId: created.request.id,
+      to: 'ACCEPTED',
+      now: LATER_1H,
+    });
+    await transitionCanonicalRequest(db, maria, {
+      requestId: created.request.id,
+      to: 'IN_PROGRESS',
+      now: LATER_1H,
+    });
 
     const result = await transitionCanonicalRequest(db, anna, {
       requestId: created.request.id,
@@ -490,8 +576,14 @@ describe('права и владение (IDOR, DIG-30)', () => {
     expect(await getCanonicalRequestByNumber(db, anna, 'ЗД-2026-999999')).toBeNull();
 
     const audit = db.auditEvents();
-    expect(audit.some((e) => e.reason === 'OWNERSHIP_DENIED' && e.resourceRef === annaRequest.request.id)).toBe(true);
-    expect(audit.some((e) => e.reason === 'NOT_FOUND' && e.resourceRef === 'ЗД-2026-999999')).toBe(true);
+    expect(
+      audit.some(
+        (e) => e.reason === 'OWNERSHIP_DENIED' && e.resourceRef === annaRequest.request.id,
+      ),
+    ).toBe(true);
+    expect(audit.some((e) => e.reason === 'NOT_FOUND' && e.resourceRef === 'ЗД-2026-999999')).toBe(
+      true,
+    );
     // Уведомления Анны никто не тронул.
     expect(await db.listNotificationsByStudent('st-anna')).toHaveLength(1);
   });
@@ -522,7 +614,11 @@ describe('права и владение (IDOR, DIG-30)', () => {
 
     const b = await createDiploma(anna, LATER_1H);
     if (b.kind !== 'created') return expect.fail('created b');
-    await transitionCanonicalRequest(db, maria, { requestId: b.request.id, to: 'ACCEPTED', now: LATER_1H });
+    await transitionCanonicalRequest(db, maria, {
+      requestId: b.request.id,
+      to: 'ACCEPTED',
+      now: LATER_1H,
+    });
     const cancelledAccepted = await transitionCanonicalRequest(db, anna, {
       requestId: b.request.id,
       to: 'CANCELLED',
@@ -532,8 +628,16 @@ describe('права и владение (IDOR, DIG-30)', () => {
 
     const c = await createDiploma(anna, LATER_1H);
     if (c.kind !== 'created') return expect.fail('created c');
-    await transitionCanonicalRequest(db, maria, { requestId: c.request.id, to: 'ACCEPTED', now: LATER_1H });
-    await transitionCanonicalRequest(db, maria, { requestId: c.request.id, to: 'IN_PROGRESS', now: LATER_1H });
+    await transitionCanonicalRequest(db, maria, {
+      requestId: c.request.id,
+      to: 'ACCEPTED',
+      now: LATER_1H,
+    });
+    await transitionCanonicalRequest(db, maria, {
+      requestId: c.request.id,
+      to: 'IN_PROGRESS',
+      now: LATER_1H,
+    });
     const late = await transitionCanonicalRequest(db, anna, {
       requestId: c.request.id,
       to: 'CANCELLED',

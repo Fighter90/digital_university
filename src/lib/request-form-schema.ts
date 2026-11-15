@@ -39,12 +39,29 @@ export interface RequestFormSchema {
   fields: RequestFormFieldSchema[];
 }
 
-/** О洛граничение длины названия заявки (анти-абуз: гигантские значения). */
+/** Ограничение длины названия заявки (анти-абуз: гигантские значения). */
 export const MAX_REQUEST_TITLE_LENGTH = 140;
 
 const FIELD_KEY_PATTERN = /^[a-zA-Z][a-zA-Z0-9_]{0,31}$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const DEFAULT_TEXT_MAX_LENGTH = 200;
+
+/**
+ * Реальная календарная дата: «2026-02-30» и «2026-13-45» проходят формат
+ * ГГГГ-ММ-ДД, но не существуют (ревью DIG-30). Год 0001–9999 — Date
+ * отсекает крайние значения, проверяем обратным разбором.
+ */
+function isCalendarDate(value: string): boolean {
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return (
+    year >= 1 &&
+    year <= 9999 &&
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  );
+}
 
 const fieldSchemaZ = z
   .object({
@@ -65,9 +82,13 @@ const formSchemaZ = z
     keyField: z.string().regex(FIELD_KEY_PATTERN).optional(),
     fields: z.array(fieldSchemaZ).max(30),
   })
-  .refine((schema) => schema.keyField === undefined || schema.fields.some((f) => f.key === schema.keyField), {
-    message: 'keyField не найден среди полей формы',
-  });
+  .refine(
+    (schema) =>
+      schema.keyField === undefined || schema.fields.some((f) => f.key === schema.keyField),
+    {
+      message: 'keyField не найден среди полей формы',
+    },
+  );
 
 /** Разобрать JSON-схему формы; null — схема сломана (тип не готов к приёму заявок). */
 export function parseRequestFormSchema(json: unknown): RequestFormSchema | null {
@@ -78,15 +99,21 @@ export function parseRequestFormSchema(json: unknown): RequestFormSchema | null 
 function buildFieldZod(field: RequestFormFieldSchema): z.ZodType<string> {
   if (field.type === 'enum') {
     const options = field.options ?? [];
-    const enumZ = z.enum(options as [string, ...string[]], `Выберите значение поля «${field.label}»`);
+    const enumZ = z.enum(
+      options as [string, ...string[]],
+      `Выберите значение поля «${field.label}»`,
+    );
     return field.required
       ? enumZ
       : z.union([z.literal(''), enumZ], `Проверьте поле «${field.label}»`);
   }
   if (field.type === 'date') {
+    const dateMessage = `Некорректная дата в поле «${field.label}» (формат ГГГГ-ММ-ДД)`;
     const dateZ = z
       .string()
-      .regex(DATE_PATTERN, `Некорректная дата в поле «${field.label}» (формат ГГГГ-ММ-ДД)`);
+      .regex(DATE_PATTERN, dateMessage)
+      // Формат есть — дата может не существовать («2026-02-30»).
+      .refine(isCalendarDate, dateMessage);
     return field.required ? dateZ : z.union([z.literal(''), dateZ]);
   }
   const max = field.maxLength ?? DEFAULT_TEXT_MAX_LENGTH;
@@ -94,14 +121,11 @@ function buildFieldZod(field: RequestFormFieldSchema): z.ZodType<string> {
     .string()
     .trim()
     .max(max, `Слишком длинное значение в поле «${field.label}» (максимум ${max} символов)`);
-  return field.required
-    ? textZ.min(1, `Заполните поле «${field.label}»`)
-    : textZ;
+  return field.required ? textZ.min(1, `Заполните поле «${field.label}»`) : textZ;
 }
 
 export type RequestFormValidation =
-  | { ok: true; data: Record<string, string> }
-  | { ok: false; error: string };
+  { ok: true; data: Record<string, string> } | { ok: false; error: string };
 
 /**
  * Валидация ввода студента по JSON-схеме типа. Схема null/undefined —
@@ -109,12 +133,11 @@ export type RequestFormValidation =
  * Чужие ключи отбрасываются, строки триммируются; ответ — первое
  * нарушение человеческим языком.
  */
-export function validateRequestForm(
-  schemaJson: unknown,
-  data: unknown,
-): RequestFormValidation {
+export function validateRequestForm(schemaJson: unknown, data: unknown): RequestFormValidation {
   const schema =
-    schemaJson === null || schemaJson === undefined ? { fields: [] } : parseRequestFormSchema(schemaJson);
+    schemaJson === null || schemaJson === undefined
+      ? { fields: [] }
+      : parseRequestFormSchema(schemaJson);
   if (!schema) return { ok: false, error: 'Некорректная схема формы заявки' };
   if (data === null || typeof data !== 'object' || Array.isArray(data)) {
     return { ok: false, error: 'Некорректные параметры формы' };

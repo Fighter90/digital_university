@@ -43,9 +43,7 @@ export const REQUEST_DUPLICATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 // ── словарь типов ─────────────────────────────────────────────────────────────
 
-export async function listCanonicalRequestTypes(
-  db: DataDb,
-): Promise<CanonicalRequestTypeRow[]> {
+export async function listCanonicalRequestTypes(db: DataDb): Promise<CanonicalRequestTypeRow[]> {
   return db.listCanonicalRequestTypes();
 }
 
@@ -84,7 +82,11 @@ export async function createCanonicalRequest(
       resourceRef: input.typeCode,
       reason: 'ROLE_MISMATCH',
     });
-    return { kind: 'error', code: 'ROLE_MISMATCH', message: 'Заявки подаются из кабинета студента' };
+    return {
+      kind: 'error',
+      code: 'ROLE_MISMATCH',
+      message: 'Заявки подаются из кабинета студента',
+    };
   }
 
   const type = await db.findCanonicalRequestTypeByCode(input.typeCode);
@@ -98,13 +100,19 @@ export async function createCanonicalRequest(
     return { kind: 'error', code: 'INVALID_FORM', message: form.error };
   }
 
-  // Повторный заказ за 24 часа: если заявка того же типа уже готова
-  // (READY) или выдана (ISSUED) — дубликат не заводим, предлагаем скачать.
+  // Повторный заказ за 24 часа: если заявка того же ДОКУМЕНТА (тот же
+  // тип и то же значение ключевого поля формы — «справка для банка» и
+  // «для военкомата» это разные документы) уже готова (READY) или выдана
+  // (ISSUED) — дубликат не заводим, предлагаем скачать.
   const windowStart = new Date(now.getTime() - REQUEST_DUPLICATE_WINDOW_MS);
+  const keyField = schema?.keyField ?? null;
+  const keyValue = keyField ? (form.data[keyField] ?? '').trim() : null;
   const existing = await db.findLatestCanonicalRequestByStudentAndType(
     ctx.studentId,
     type.code,
     windowStart,
+    keyField,
+    keyValue,
   );
   if (existing && (existing.status === 'READY' || existing.status === 'ISSUED')) {
     return {
@@ -178,11 +186,7 @@ export type TransitionCanonicalRequestResult =
     };
 
 export type TransitionErrorCode =
-  | 'NOT_FOUND'
-  | 'FORBIDDEN'
-  | 'INVALID_TRANSITION'
-  | 'REASON_REQUIRED'
-  | 'ROLE_MISMATCH';
+  'NOT_FOUND' | 'FORBIDDEN' | 'INVALID_TRANSITION' | 'REASON_REQUIRED' | 'ROLE_MISMATCH';
 
 const err = (code: TransitionErrorCode, message: string): TransitionCanonicalRequestResult => ({
   kind: 'error',
@@ -324,9 +328,12 @@ export async function transitionCanonicalRequest(
       parseRequestFormSchema(type?.formSchema ?? null),
       request.params,
     );
+  // SLA обещаем от МОМЕНТА перехода: при позднем ACCEPTED или возврате
+  // NEEDS_FIX → SUBMITTED дата, посчитанная от createdAt, оказалась бы
+  // в прошлом (ревью DIG-30 — «ложное обещание»).
   const readyBy =
     input.to === 'ACCEPTED' || input.to === 'IN_PROGRESS' || input.to === 'SUBMITTED'
-      ? slaReadyDate(request.createdAt, type?.etaDays ?? null)
+      ? slaReadyDate(now, type?.etaDays ?? null)
       : null;
   await db.appendNotificationToStudent(request.studentId, {
     type: 'REQUEST',

@@ -13,6 +13,7 @@ import {
   getGradebook,
   getOwnProfile,
   normalizeRequestNumber,
+  decodeRequestNumberParam,
   uniformNotFoundResponse,
   CANONICAL_REQUEST_NUMBER_PATTERN,
 } from '@/server/data';
@@ -35,7 +36,9 @@ const DOCUMENT_TYPES = new Set(['CERT_ENROLLMENT', 'GRADES_EXTRACT']);
 
 export async function GET(_request: Request, { params }: { params: Promise<{ number: string }> }) {
   const { number: rawNumber } = await params;
-  const number = normalizeRequestNumber(decodeURIComponent(rawNumber));
+  // Безопасное декодирование: «сырой» % в сегменте не должен ронять роут
+  // с 500 — мусор дальше отсеется проверкой формата и даст единый 404.
+  const number = normalizeRequestNumber(decodeRequestNumberParam(rawNumber));
   const ctx = await requireDataCtx(`/api/requests/${rawNumber}/document`);
 
   // Номера мира сидов (SR-…) документов не имеют — тот же единый 404.
