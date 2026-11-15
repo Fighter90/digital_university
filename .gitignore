@@ -55,3 +55,6 @@ openspec/.cache/
 src/generated/
 .next-dev/
 node_modules
+
+# runtime lock каталог build-lock.mjs (DIG-55) — не мусорит рабочий старт
+.next-build.lock/
