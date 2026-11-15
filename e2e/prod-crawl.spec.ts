@@ -67,6 +67,32 @@ const MORE_ITEMS = [
 ] as const;
 const SETTINGS_TAB_ITEMS = ['Уведомления', 'Безопасность', 'Вид', 'Настройка MCP'] as const;
 
+// Метка пункта меню → целевой адрес (для маркера целевого экрана).
+const SIDE_MENU_TARGET: Record<string, string> = {
+  Главная: '/dashboard',
+  Расписание: '/schedule',
+  Успеваемость: '/grades',
+  'Заявки и справки': '/requests',
+  Уведомления: '/notifications',
+  'Связь с деканатом': '/deanery',
+  'AI-ассистент': '/ai-assistant',
+  Профиль: '/profile',
+};
+const TAB_BAR_TARGET: Record<string, string> = {
+  Главная: '/dashboard',
+  Расписание: '/schedule',
+  Оценки: '/grades',
+  Заявки: '/requests',
+  Ещё: '/more',
+};
+const MORE_TARGET: Record<string, string> = {
+  Уведомления: '/notifications',
+  'Связь с деканатом': '/deanery',
+  'AI-ассистент': '/ai-assistant',
+  Профиль: '/profile',
+  Настройки: '/settings',
+};
+
 // Общее состояние serial-воркера: контексты гостя и студента, аудит.
 let guestCtx: BrowserContext;
 let userCtx: BrowserContext;
@@ -175,12 +201,11 @@ async function crawlExternalLinks(page: Page, sourcePage: string) {
 }
 
 /**
- * Клик по ссылке: URL сменился, сеть утихла, main отрисовал целевой экран.
- * Скоуп обязателен (меню / таб-бар / main), чтобы не поймать одноимённые
- * ссылки хедера. RSC-переход обновляет URL оптимистично, а контент приходит
- * позже — поэтому ждём networkidle и непустой main; затем убеждаемся, что
- * не отрендерился вход («Вход в кабинет» — симптом потерянной сессии/гонки
- * клиентского роутера).
+ * Клик по ссылке: URL сменился и отрисовалСЯ ЦЕЛЕВОЙ экран (маркер — текст,
+ * который есть только на целевой странице). RSC-переход обновляет URL
+ * оптимистично, а контент приходит позже: без маркера можно «проверить»
+ * предыдущую страницу. Локатор обязан быть скоупнут (меню / таб-бар / main),
+ * чтобы не поймать одноимённые ссылки хедера.
  */
 async function clickLink(
   page: Page,
@@ -188,14 +213,17 @@ async function clickLink(
   urlPattern: RegExp,
   from: string,
   label: string,
+  marker: RegExp,
 ) {
   await expect(locator.first(), `«${label}» кликабельна на ${from}`).toBeEnabled();
   await locator.first().click();
   await page.waitForURL(urlPattern, { timeout: 20_000 });
-  await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
+  await expect(
+    page.locator('main').getByText(marker).first(),
+    `после клика «${label}» отрисовался целевой экран (${marker})`,
+  ).toBeVisible({ timeout: 20_000 });
   const main = page.locator('main');
-  await expect(main, `после клика «${label}» есть <main>`).toBeVisible();
-  await expect.poll(async () => main.innerText(), { timeout: 20_000 }).toMatch(/\S/);
+  expect(await main.innerText(), `после клика «${label}» не белый экран`).toMatch(/\S/);
   expect(await main.innerText(), `после клика «${label}» не страница входа`).not.toContain(
     'Вход в кабинет',
   );
@@ -203,6 +231,20 @@ async function clickLink(
   report.push({ page: from, element: `клик: ${label}`, href: page.url(), status: 'ok' });
   expect(violations, `после клика «${label}» нет ошибок: ${violations.join('; ')}`).toEqual([]);
 }
+
+// Маркеры целевых экранов: текст, который есть только на этой странице.
+const PAGE_MARKER: Record<string, RegExp> = {
+  '/dashboard': /^Ваша неделя/,
+  '/schedule': /^Расписание/,
+  '/grades': /^Успеваемость/,
+  '/requests': /^Мои заявки/,
+  '/notifications': /^Уведомления/,
+  '/deanery': /^Связь с деканатом/,
+  '/ai-assistant': /^AI-ассистент/,
+  '/profile': /^Профиль/,
+  '/more': /^Ещё/,
+  '/settings': /^Настройки/,
+};
 
 const escapeRe = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -256,6 +298,9 @@ test.describe('DIG-60: полный обход сайта', () => {
     await expect(cta, 'на лендинге есть CTA «Войти» → /login').toBeVisible();
     await cta.click();
     await p.waitForURL(/\/login/, { timeout: 20_000 });
+    await expect(p.getByRole('heading', { name: 'Вход в кабинет' })).toBeVisible({
+      timeout: 20_000,
+    });
     report.push({ page: '/', element: 'клик: CTA «Войти»', href: '/login', status: 'ok' });
 
     await auditPage(p, '/login');
@@ -264,6 +309,9 @@ test.describe('DIG-60: полный обход сайта', () => {
     await expect(forgot, 'на входе есть «Забыли пароль?»').toBeVisible();
     await forgot.click();
     await p.waitForURL(/\/forgot-password/, { timeout: 20_000 });
+    await expect(p.getByRole('heading', { name: 'Восстановление пароля' })).toBeVisible({
+      timeout: 20_000,
+    });
     report.push({
       page: '/login',
       element: 'клик: «Забыли пароль?»',
@@ -277,6 +325,9 @@ test.describe('DIG-60: полный обход сайта', () => {
     await expect(back, 'есть возврат «Назад ко входу»').toBeVisible();
     await back.click();
     await p.waitForURL(/\/login/, { timeout: 20_000 });
+    await expect(p.getByRole('heading', { name: 'Вход в кабинет' })).toBeVisible({
+      timeout: 20_000,
+    });
     report.push({
       page: '/forgot-password',
       element: 'клик: «Назад ко входу»',
@@ -326,12 +377,14 @@ test.describe('DIG-60: полный обход сайта', () => {
     await expect(menu).toBeVisible();
     for (const label of SIDE_MENU_ITEMS) {
       const link = menu.getByRole('link', { name: new RegExp(`^${escapeRe(label)}`) });
+      const target = SIDE_MENU_TARGET[label];
       await clickLink(
         userPage,
         link,
-        /\/(dashboard|schedule|grades|requests|notifications|deanery|ai-assistant|profile)$/,
+        new RegExp(`${target.replace(/\//g, '\\/')}$`),
         userPage.url(),
         label,
+        PAGE_MARKER[target],
       );
       await crawlInternalLinks(userPage, `сайдбар → ${label}`);
     }
@@ -348,12 +401,14 @@ test.describe('DIG-60: полный обход сайта', () => {
     await expect(tabBar).toBeVisible();
     for (const label of TAB_BAR_ITEMS) {
       const link = tabBar.getByRole('link', { name: new RegExp(`^${escapeRe(label)}$`) });
+      const target = TAB_BAR_TARGET[label];
       await clickLink(
         userPage,
         link,
-        /\/(dashboard|schedule|grades|requests|more)$/,
+        new RegExp(`${target.replace(/\//g, '\\/')}$`),
         userPage.url(),
         label,
+        PAGE_MARKER[target],
       );
     }
     await crawlInternalLinks(userPage, 'таб-бар (финал)');
@@ -367,12 +422,14 @@ test.describe('DIG-60: полный обход сайта', () => {
     const main = p.locator('main');
     for (const label of MORE_ITEMS) {
       const link = main.getByRole('link', { name: new RegExp(`^${escapeRe(label)}$`) });
+      const target = MORE_TARGET[label];
       await clickLink(
         p,
         link,
-        /\/(notifications|deanery|ai-assistant|profile|settings)$/,
+        new RegExp(`${target.replace(/\//g, '\\/')}$`),
         p.url(),
         `«Ещё» → ${label}`,
+        PAGE_MARKER[target],
       );
       await auditPage(p, '/more'); // назад к меню для следующего пункта
     }
@@ -386,7 +443,14 @@ test.describe('DIG-60: полный обход сайта', () => {
     await expect(tabsNav).toBeVisible();
     for (const label of SETTINGS_TAB_ITEMS) {
       const link = tabsNav.getByRole('link', { name: new RegExp(`^${escapeRe(label)}$`) });
-      await clickLink(p, link, /\/settings\?tab=/, '/settings', `вкладка настроек «${label}»`);
+      await clickLink(
+        p,
+        link,
+        /\/settings\?tab=/,
+        '/settings',
+        `вкладка настроек «${label}»`,
+        PAGE_MARKER['/settings'],
+      );
     }
     await crawlInternalLinks(p, '/settings');
 
@@ -524,7 +588,8 @@ test.describe('DIG-60: полный обход сайта', () => {
     const number = (await detail.getAttribute('href'))!.split('/').pop()!;
     await detail.click();
     await p.waitForURL(new RegExp(`/requests/${escapeRe(number)}$`), { timeout: 20_000 });
-    await expect(p.locator('main')).toBeVisible();
+    // Деталь заявки: номер присутствует на странице (font-mono подпись).
+    await expect(p.getByText(number).first()).toBeVisible({ timeout: 20_000 });
     expect(await p.locator('main').innerText()).toMatch(/\S/);
     report.push({
       page: '/requests',
@@ -578,7 +643,14 @@ test.describe('DIG-60: полный обход сайта', () => {
       const radio = switcher
         .first()
         .getByRole('radio', { name: new RegExp(`^${escapeRe(view)}$`) });
-      await clickLink(p, radio, /\/schedule/, '/schedule', `вид расписания «${view}»`);
+      await clickLink(
+        p,
+        radio,
+        /\/schedule/,
+        '/schedule',
+        `вид расписания «${view}»`,
+        PAGE_MARKER['/schedule'],
+      );
     }
 
     if (isDesktop) {
@@ -591,6 +663,7 @@ test.describe('DIG-60: полный обход сайта', () => {
         /\/schedule/,
         '/schedule',
         'вид расписания «Неделя» (для деталей пары)',
+        PAGE_MARKER['/schedule'],
       );
 
       // Стрелка «Следующая неделя» и «Сегодня» — кликабельны.
@@ -646,6 +719,7 @@ test.describe('DIG-60: полный обход сайта', () => {
         /\/schedule/,
         '/schedule',
         'вид расписания «День» (для ленты дат)',
+        PAGE_MARKER['/schedule'],
       );
       const ribbon = p.locator('main [data-testid^="ribbon-item-"]');
       await expect(ribbon.first()).toBeAttached({ timeout: 15_000 });
@@ -665,25 +739,27 @@ test.describe('DIG-60: полный обход сайта', () => {
     await crawlInternalLinks(p, '/services');
     await crawlExternalLinks(p, '/services');
 
-    // Каждая карточка услуги — кнопка «Заказать/Открыть» со своим href.
-    const cards = p.locator('main article a[href^="/"]');
+    // Каждая карточка услуги — кнопка «Заказать/Открыть» со своим href;
+    // в отчёт пишем название услуги (h3 карточки), а не текст кнопки.
+    const cards = p.locator('main article:has(a[href^="/"])');
     const cardCount = await cards.count();
     expect(cardCount, 'в каталоге есть карточки услуг с кнопками').toBeGreaterThan(0);
     const seen = new Set<string>();
     for (let i = 0; i < cardCount; i += 1) {
       const card = cards.nth(i);
-      const href = (await card.getAttribute('href')) ?? '';
-      const label = ((await card.textContent()) ?? '').trim() || href;
-      if (seen.has(href)) continue;
+      const link = card.locator('a[href^="/"]').first();
+      const href = (await link.getAttribute('href')) ?? '';
+      const title = ((await card.locator('h3').first().textContent()) ?? '').trim() || href;
+      if (!href || seen.has(href)) continue;
       seen.add(href);
       const response = await p.request.get(href);
       expect(
         response.status(),
-        `карточка услуги «${label}» (${href}) отвечает без ошибки`,
+        `карточка услуги «${title}» (${href}) отвечает без ошибки`,
       ).toBeLessThan(400);
       report.push({
         page: '/services',
-        element: `карточка услуги: ${label}`,
+        element: `карточка услуги: ${title}`,
         href,
         status: response.status(),
       });
