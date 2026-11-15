@@ -51,7 +51,13 @@ export interface MobileScheduleProps {
 
 const SWIPE_THRESHOLD = 48;
 
-export function MobileSchedule({ mode, days, initialDateKey, nextStudy, voiceEnabled = true }: MobileScheduleProps) {
+export function MobileSchedule({
+  mode,
+  days,
+  initialDateKey,
+  nextStudy,
+  voiceEnabled = true,
+}: MobileScheduleProps) {
   const [selectedKey, setSelectedKey] = useState(initialDateKey);
   const ribbonRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);

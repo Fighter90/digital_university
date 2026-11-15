@@ -53,7 +53,13 @@ import {
   semesterBounds,
 } from '@/lib/schedule-time';
 import { dataDb } from '@/server/data/db';
-import { getMonth, getNextStudyDay, getOwnSettings, getSchedule, requireDataCtx } from '@/server/data';
+import {
+  getMonth,
+  getNextStudyDay,
+  getOwnSettings,
+  getSchedule,
+  requireDataCtx,
+} from '@/server/data';
 
 export const metadata = { title: 'Расписание — Цифровой деканат' };
 

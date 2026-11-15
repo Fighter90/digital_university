@@ -12,8 +12,6 @@ import type { ScheduleEventCard } from '@/lib/schedule-cards';
 
 // ── Моки Web Speech API ──────────────────────────────────────────────────────
 
-type UtteranceHandler = 'onend' | 'onerror';
-
 class FakeUtterance {
   text: string;
   lang = '';
@@ -119,7 +117,10 @@ describe('ListenDayButton (DIG-65)', () => {
       <ListenDayButton
         title="Среда, 11 ноября"
         isToday
-        events={[card(), card({ id: 'ev-2', discipline: 'Физика', status: 'CANCELLED', isCancelled: true })]}
+        events={[
+          card(),
+          card({ id: 'ev-2', discipline: 'Физика', status: 'CANCELLED', isCancelled: true }),
+        ]}
         enabled
       />,
     );
@@ -164,9 +165,7 @@ describe('ListenDayButton (DIG-65)', () => {
   });
 
   it('выключенная настройка: кнопка не отрисовывается', () => {
-    render(
-      <ListenDayButton title="Среда, 11 ноября" isToday events={[card()]} enabled={false} />,
-    );
+    render(<ListenDayButton title="Среда, 11 ноября" isToday events={[card()]} enabled={false} />);
     expect(screen.queryByRole('button', { name: /Прослушать/ })).toBeNull();
     expect(screen.queryByTestId('listen-day')).toBeNull();
   });

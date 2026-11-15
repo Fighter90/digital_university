@@ -250,9 +250,7 @@ describe('голосовой ввод в AiGuide (DIG-65)', () => {
     });
     render(<AiGuide userName="Анна Смирнова" role="STUDENT" voiceEnabled />);
     await screen.findByTestId('ai-guide-panel');
-    expect(screen.getByTestId('ai-guide-form')).toContainElement(
-      screen.getByTestId('voice-input'),
-    );
+    expect(screen.getByTestId('ai-guide-form')).toContainElement(screen.getByTestId('voice-input'));
   });
 
   it('микрофона нет при voiceEnabled=false, поле вопроса и «Спросить» остаются', async () => {
@@ -271,6 +269,9 @@ describe('голосовой ввод в AiGuide (DIG-65)', () => {
   });
 
   it('без поддержки SpeechRecognition микрофона нет и при включённой настройке', async () => {
+    // Мок из предыдущего теста не должен «протекать»: убираем поддержку.
+    Reflect.deleteProperty(window, 'SpeechRecognition');
+    Reflect.deleteProperty(window, 'webkitSpeechRecognition');
     render(<AiGuide userName="Анна Смирнова" role="STUDENT" voiceEnabled />);
     await screen.findByTestId('ai-guide-panel');
     expect(screen.queryByTestId('voice-input')).toBeNull();

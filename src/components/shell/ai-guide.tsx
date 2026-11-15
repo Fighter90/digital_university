@@ -215,7 +215,9 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
                         выключенной настройке или без поддержки браузера. */}
                     {voiceEnabled ? (
                       <VoiceInputButton
-                        onResult={(text) => setQuestion((current) => (current ? `${current} ${text}` : text))}
+                        onResult={(text) =>
+                          setQuestion((current) => (current ? `${current} ${text}` : text))
+                        }
                       />
                     ) : null}
                     <button

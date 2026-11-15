@@ -50,7 +50,11 @@ describe('buildDaySpeechText — день с парами (DIG-65)', () => {
   });
 
   it('не-сегодняшний день: интро — просто заголовок дня без «Сегодня»', () => {
-    const text = buildDaySpeechText({ title: 'Четверг, 12 ноября', isToday: false, events: [ev()] });
+    const text = buildDaySpeechText({
+      title: 'Четверг, 12 ноября',
+      isToday: false,
+      events: [ev()],
+    });
     expect(text.startsWith('Четверг, 12 ноября.')).toBe(true);
     expect(text).not.toContain('Сегодня');
   });

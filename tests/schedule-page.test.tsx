@@ -120,6 +120,15 @@ vi.mock('@/server/data', async () => {
 
 vi.mock('@/server/data/db', () => ({ dataDb: {} }));
 
+// DIG-65: в Node-прендере speechSynthesis нет — детектор вернул бы false и
+// кнопка не отрисовалась бы вовсе. Тест контракта страницы мокает детектор
+// (сам интерактив кнопки с моками Web Speech API — в
+// tests/voice-assistant-components.test.tsx).
+vi.mock('@/lib/voice-assistant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/voice-assistant')>();
+  return { ...actual, isSpeechSynthesisSupported: vi.fn(() => true) };
+});
+
 // В юнит-прендере нет App Router — отдаём стаб роутера (поведение листания
 // без перезагрузки проверяет e2e schedule.spec на реальном сервере).
 vi.mock('next/navigation', () => ({
@@ -341,15 +350,15 @@ describe('/schedule (DIG-22) — неделя в стиле Google Calendar', ()
 });
 
 // DIG-65 — «Прослушать день»: страница «дня» отрисовывает кнопку озвучки
-// (и в десктопном DayView, и в мобильном MobileSchedule), когда настройка
-// «Озвучка и голосовой ввод» включена, и не отрисовывает, когда выключена.
+// в обоих местах монтирования (десктопный DayView и мобильный MobileSchedule
+// скрыты классами, но оба есть в SSR-HTML), когда настройка «Озвучка и
+// голосовой ввод» включена, и не отрисовывает, когда выключена.
 describe('/schedule?view=day — «Прослушать день» (DIG-65)', () => {
-  it('кнопка озвучки присутствует при включённой настройке', async () => {
+  it('кнопка озвучки присутствует при включённой настройке (десктоп и мобильный)', async () => {
     const html = await renderPage({ view: 'day' });
-    expect(html).toContain('data-testid="listen-day"');
+    const mounts = html.split('data-testid="listen-day"').length - 1;
+    expect(mounts, 'кнопка в DayView и в MobileSchedule').toBeGreaterThanOrEqual(2);
     expect(html).toContain('Прослушать день');
-    // aria-pressed="false" — озвучка не идёт.
-    expect(html).toMatch(/aria-pressed="false"[^>]*data-testid="listen-day"|data-testid="listen-day"[^>]*aria-pressed="false"/);
   });
 
   it('кнопки нет, когда настройка выключена (voiceAssistant=false)', async () => {
