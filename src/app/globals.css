@@ -304,6 +304,23 @@
       animation-delay: var(--du-rise-delay, 0ms);
     }
   }
+  /* DIG-57: появление секций лендинга по IntersectionObserver, каскад через
+     --du-reveal-delay. Правила живут только внутри no-preference: базовое
+     состояние .reveal — видимым, при reduced-motion контент никогда не скрыт. */
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+      transition:
+        opacity 640ms var(--du-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+        transform 640ms var(--du-ease, cubic-bezier(0.22, 1, 0.36, 1));
+      transition-delay: var(--du-reveal-delay, 0ms);
+    }
+    .reveal-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
   /* «перенос» занятия: штриховка + пунктирная граница */
   .hatch-rescheduled {
     background-image: repeating-linear-gradient(
