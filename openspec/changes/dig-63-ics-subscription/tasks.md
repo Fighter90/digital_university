@@ -65,3 +65,32 @@
 - [x] `node scripts/swarm/gates.mjs` — GATES_SUMMARY: green.
 - [x] e2e `calendar-subscription` + `session` + `prod-crawl` на
   desktop-1440 и mobile-360 — зелёные.
+
+## Round 2 (ревью: гейты красные — typecheck=fail)
+
+- [x] Сброс ревью воспроизведён 1-в-1: устаревшие сгенерированные типы
+  `.next/types` (созданы на ветке DIG-63) поверх чекаута, где маршрута
+  `/api/calendar/ics` нет, дают ровно ошибки ревью — TS2307
+  «Cannot find module …/src/app/api/calendar/ics/route.js» в
+  `.next/types/app/api/calendar/ics/route.ts` (×2) и
+  `.next/types/validator.ts`. Код DIG-63 тут ни при чём: ветка
+  typecheck-ится чисто; падает сам контракт «tsc включает
+  `.next/types/**/*.ts`» при рассинхроне дерева и артефактов сборки
+  (общий чекаут роя: переключение ветки между раундами).
+- [x] Red-first `tests/clean-next-types.test.mjs` (по образцу
+  `tests/build-lock.test.mjs` DIG-55 round 2): чистка устаревших
+  `.next/types` и `.next-dev/types` с сохранением остальных артефактов
+  `.next`, идемпотентность на свежем чекауте, оба distDir (DIG-12), CLI.
+  Падало красным (скрипта не существовало).
+- [x] `scripts/clean-next-types.mjs` — удаляет только сгенерированные
+  папки типов, кэши `.next` не трогает; вне `scripts/swarm/` (та же
+  политика, что у `build-lock.mjs`).
+- [x] `package.json`: `typecheck` = `node scripts/clean-next-types.mjs
+  && tsc --noEmit`. Проверка валидации не теряется: следующий шаг гейтов
+  `npm run build` регенерирует и валидирует типы маршрутов от текущего
+  дерева.
+- [x] Red→green на реальном сценарии: засеянный устаревший артефакт —
+  `npx tsc --noEmit` даёт TS2307 как в ревью, `npm run typecheck`
+  подчищает и проходит зелёным.
+- [x] Delta-спека не требуется: фикс инфраструктуры сборки, поведение
+  продукта не меняется.
