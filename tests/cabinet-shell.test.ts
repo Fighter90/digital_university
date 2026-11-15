@@ -126,6 +126,20 @@ vi.mock('@/server/data', () => ({
     requests: { ok: true, value: { inWork: 1, total: 1 } },
   })),
   listDeaneryNews: vi.fn(() => []),
+  // DIG-66 (ревью r2): экран «Успеваемость» читает агрегат успеваемости,
+  // сессии группы и инсайт динамики. До r2 их отсутствие в этом моке
+  // «работало» случайно: страница целиком уходила в ErrorState и
+  // layout-проверка не видела настоящий рендер экрана.
+  getPerformance: vi.fn(async () => ({
+    studentId: 's_test',
+    disciplines: [],
+    gpa: null,
+    credits: { earned: 0, required: 240 },
+    rating: null,
+    debts: [],
+  })),
+  listExams: vi.fn(async () => []),
+  getGradeInsight: vi.fn(async () => null),
 }));
 import { Readable } from 'node:stream';
 import {

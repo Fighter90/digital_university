@@ -256,8 +256,12 @@ vi.mock('@/server/data', () => ({
 }));
 
 /**
- * DIG-66 — фикстура инсайта «Что изменилось» для контракта рендера:
- * две работы месяца, направление «new» (окно открывает семестр).
+ * DIG-66 — фикстура инсайта «Что изменилось» для контракта рендера.
+ * Числа согласованы с richPerformance по формулам GPA-кольца (ревью r2:
+ * приёмка «данные совпадают с успеваемостью» закреплена и в юните):
+ * INFO 48,9 (4 кр) → с PROG 14 (6 кр) среднее 27,96 → с DB 25,5 (5 кр)
+ * среднее 27,14 — как у кольца сводки. Три работы месяца, направление
+ * «new» (окно открывает семестр).
  */
 const demoInsight: GradeInsight = {
   semesterLabel: 'Осенний семестр 2026/27',
@@ -278,8 +282,8 @@ const demoInsight: GradeInsight = {
     },
     {
       dateISO: '2026-11-01T12:00:00.000Z',
-      average: 30.26,
-      delta: -18.64,
+      average: 27.96,
+      delta: -20.94,
       works: [
         {
           disciplineName: 'Программирование',
@@ -297,11 +301,46 @@ const demoInsight: GradeInsight = {
         },
       ],
     },
+    {
+      dateISO: '2026-11-05T12:00:00.000Z',
+      average: 27.14,
+      delta: -0.82,
+      works: [
+        {
+          disciplineName: 'Базы данных',
+          elementName: 'Проект',
+          score: 85,
+          maxScore: 100,
+          dateISO: '2026-11-05T12:00:00.000Z',
+        },
+        {
+          disciplineName: 'Программирование',
+          elementName: 'Лабораторная 2',
+          score: 92,
+          maxScore: 100,
+          dateISO: '2026-11-01T12:00:00.000Z',
+        },
+        {
+          disciplineName: 'Информатика',
+          elementName: 'Тест 1',
+          score: 88,
+          maxScore: 100,
+          dateISO: '2026-10-28T12:00:00.000Z',
+        },
+      ],
+    },
   ],
-  current: 30.26,
+  current: 27.14,
   month: {
     direction: 'new',
     works: [
+      {
+        disciplineName: 'Базы данных',
+        elementName: 'Проект',
+        score: 85,
+        maxScore: 100,
+        dateISO: '2026-11-05T12:00:00.000Z',
+      },
       {
         disciplineName: 'Программирование',
         elementName: 'Лабораторная 2',
@@ -320,9 +359,9 @@ const demoInsight: GradeInsight = {
     baseline: null,
     delta: null,
   },
-  headline: 'За месяц появились 2 новые работы — средний балл достиг 30,3 из 100',
+  headline: 'За месяц появились 3 новые работы — средний балл достиг 27,1 из 100',
   detail:
-    'Сильнее всего средний снизила «Лабораторная 2» (Программирование, 92 из 100): 18,6 пункта.',
+    'Сильнее всего средний снизила «Лабораторная 2» (Программирование, 92 из 100): 20,9 пункта.',
 };
 
 import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
@@ -341,6 +380,8 @@ async function renderWith(overrides: {
   performance?: PerformanceData;
   exams?: ExamSessionRow[];
   insight?: GradeInsight | null;
+  /** Ревью r2: инсайт упал — проверяем деградацию, а не ErrorState экрана. */
+  insightReject?: boolean;
   reject?: boolean;
   searchParams?: Record<string, string>;
 }): Promise<string> {
@@ -350,25 +391,33 @@ async function renderWith(overrides: {
   const getPerformance = vi.mocked(dataModule.getPerformance);
   const listExams = vi.mocked(dataModule.listExams);
   const getGradeInsight = vi.mocked(dataModule.getGradeInsight);
+  const searchProps = overrides.searchParams
+    ? { searchParams: Promise.resolve(overrides.searchParams) }
+    : undefined;
   if (ctx.role === 'STAFF') {
     // Сотрудник получает заглушку до обращения к данным — очереди Once
     // не наполняются «лишними» значениями, которые могли бы протечь
     // в следующий тест.
     return renderPage(GradesPage);
   }
+  // Ревью r2: очередь Once наполняется РОВНО тем, что тест сам проверяет.
+  // В сценарии ошибки БД моки listExams/getGradeInsight не ставятся вовсе —
+  // несъеденное значение больше не может остаться в очереди и «зеленить»
+  // следующий тест случайно.
   if (overrides.reject) {
     getPerformance.mockRejectedValueOnce(new Error('db down'));
-  } else {
-    getPerformance.mockResolvedValueOnce(overrides.performance ?? richPerformance);
+    return renderPage(GradesPage, searchProps);
   }
+  getPerformance.mockResolvedValueOnce(overrides.performance ?? richPerformance);
   listExams.mockResolvedValueOnce(overrides.exams ?? examSessions);
-  getGradeInsight.mockResolvedValueOnce(
-    overrides.insight !== undefined ? overrides.insight : demoInsight,
-  );
-  return renderPage(
-    GradesPage,
-    overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined,
-  );
+  if (overrides.insightReject) {
+    getGradeInsight.mockRejectedValueOnce(new Error('insight down'));
+  } else {
+    getGradeInsight.mockResolvedValueOnce(
+      overrides.insight !== undefined ? overrides.insight : demoInsight,
+    );
+  }
+  return renderPage(GradesPage, searchProps);
 }
 
 describe('/grades (DIG-26) — «Успеваемость: сводка»', () => {
@@ -530,12 +579,19 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
     expect(html).toContain('AI-анализ');
     expect(html).toContain('без внешних сервисов');
     expect(html).toContain('data-testid="grade-insight-headline"');
-    expect(html).toContain('За месяц появились 2 новые работы');
+    expect(html).toContain('За месяц появились 3 новые работы');
     // Разбор активной (последней) точки: работы, повлиявшие на средний.
     expect(html).toContain('data-testid="insight-point"');
     expect(html).toContain('Лабораторная 2');
     expect(html).toContain('92 из 100');
     expect(html).toContain('aria-pressed="true"');
+    // Три работы идущего семестра фикстуры — три строки разбора последней точки
+    // (зеркало e2e: столько же, сколько точек графика).
+    expect(html.match(/data-testid="insight-work"/g)?.length).toBe(3);
+    // «Данные совпадают с успеваемостью» на уровне контракта рендера:
+    // current карточки — то же число, что у GPA-кольца сводки (27,1).
+    const current = html.slice(html.indexOf('data-testid="grade-insight-current"'));
+    expect(current.slice(0, 200)).toContain('27,1');
     // Текущий средний карточки имеет testid для сверки с кольцом (e2e).
     expect(html).toContain('data-testid="grade-insight-current"');
   });
@@ -543,6 +599,17 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
   it('DIG-66 — без инсайта (нет оценок) карточка не рендерится', async () => {
     const html = await renderWith({ insight: null });
     expect(html).not.toContain('data-testid="grade-insight"');
+  });
+
+  it('DIG-66 (ревью r2) — сбой инсайта не роняет экран: сводка жива, карточки нет', async () => {
+    // Карточка вспомогательная: падение её агрегата (временная ошибка
+    // хранилища) не должно превращать весь экран в ErrorState.
+    const html = await renderWith({ insightReject: true });
+    expect(html).not.toContain('role="alert"');
+    expect(html).not.toContain('data-testid="grade-insight"');
+    // Остальной экран отрисован как обычно: кольцо среднего на месте.
+    expect(html).toMatch(/aria-label="Средний балл семестра"/);
+    expect(html).toContain('27,1');
   });
 
   it('страница живёт в main-регионе Shell и не заводит собственный <main>', async () => {

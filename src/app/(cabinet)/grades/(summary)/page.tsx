@@ -81,34 +81,53 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
 
   let data: PerformanceData;
   let exams: Awaited<ReturnType<typeof listExams>>;
-  let insight: GradeInsight | null;
-  try {
+  let insight: GradeInsight | null = null;
+  {
     // Один fetch-цикл: агрегат успеваемости + сессии группы (подсказка
     // «первая контрольная» для пустого семестра) + AI-инсайт динамики
     // (DIG-66). ctx.studentId — единственный ключ выборки, из URL не
     // приходит (IDOR невозможен по построению).
-    [data, exams, insight] = await Promise.all([
+    //
+    // Ревью r2: основа экрана (успеваемость + сессии) и вспомогательный
+    // инсайт разделены — падение расчёта карточки не роняет сводку.
+    const [perfResult, examResult, insightResult] = await Promise.allSettled([
       getPerformance(dataDb, ctx),
       listExams(dataDb, ctx),
       getGradeInsight(dataDb, ctx),
     ]);
-  } catch (error) {
-    // не глотаем: без лога «Успеваемость не загрузилась» недиагностируемо
-    console.error('[grades] render failed', error);
-    return (
-      <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Успеваемость</h1>
-        <ErrorState
-          title="Успеваемость не загрузилась"
-          description="Обновите страницу — если ошибка повторится, сообщите в деканат."
-        />
-        <div className="flex justify-center">
-          <Link href="/grades" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
-            Повторить
-          </Link>
-        </div>
-      </section>
-    );
+    if (perfResult.status === 'rejected' || examResult.status === 'rejected') {
+      const error =
+        perfResult.status === 'rejected'
+          ? perfResult.reason
+          : examResult.status === 'rejected'
+            ? examResult.reason
+            : null;
+      // не глотаем: без лога «Успеваемость не загрузилась» недиагностируемо
+      console.error('[grades] render failed', error);
+      return (
+        <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-8">
+          <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Успеваемость</h1>
+          <ErrorState
+            title="Успеваемость не загрузилась"
+            description="Обновите страницу — если ошибка повторится, сообщите в деканат."
+          />
+          <div className="flex justify-center">
+            <Link href="/grades" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
+              Повторить
+            </Link>
+          </div>
+        </section>
+      );
+    }
+    if (insightResult.status === 'fulfilled') {
+      insight = insightResult.value;
+    } else {
+      // Деградация без ErrorState: карточка не рендерится, экран жив
+      // (спека: карточка — необязательный блок «Что изменилось»).
+      console.error('[grades] grade insight skipped', insightResult.reason);
+    }
+    data = perfResult.value;
+    exams = examResult.value;
   }
   return <GradesView data={data} exams={exams} insight={insight} semesterRaw={semesterRaw} />;
 }
