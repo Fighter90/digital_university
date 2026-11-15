@@ -125,6 +125,13 @@ export interface StudentSettingsRow {
   fontSize: FontSizePreference;
   /** DIG-44 — «Уменьшить анимацию». */
   reduceMotion: boolean;
+  /**
+   * DIG-65 — «Озвучка и голосовой ввод»: кнопка «Прослушать день» на
+   * расписании и микрофон в AI-гиде (Web Speech API браузера, без внешних
+   * ключей). По умолчанию включена; выключение скрывает голосовые функции
+   * во всём кабинете.
+   */
+  voiceAssistant: boolean;
   /** DIG-58 — статусы подключения демо MCP-серверов (по каталогу lib/mcp-servers). */
   mcpConnections: McpServerState[];
   /** DIG-64 — персональный токен MCP-сервера деканата (хранится только хэш). */
@@ -341,6 +348,7 @@ export type StoredStudentSettingsRow = Omit<
   | 'language'
   | 'fontSize'
   | 'reduceMotion'
+  | 'voiceAssistant'
   | 'mcpConnections'
   | 'mcpToken'
 > &
@@ -352,6 +360,7 @@ export type StoredStudentSettingsRow = Omit<
       | 'language'
       | 'fontSize'
       | 'reduceMotion'
+      | 'voiceAssistant'
       | 'mcpConnections'
       | 'mcpToken'
     >

@@ -76,6 +76,7 @@ export function defaultSettingsFor(studentId: string, now: Date = new Date()): S
     language: 'RU',
     fontSize: 'NORMAL',
     reduceMotion: false,
+    voiceAssistant: true,
     mcpConnections: DEFAULT_MCP_CONNECTIONS.map((state) => ({ ...state })),
     mcpToken: null,
     updatedAt: now,
@@ -103,6 +104,7 @@ export function normalizeSettings(
     language: row.language ?? defaults.language,
     fontSize: row.fontSize ?? defaults.fontSize,
     reduceMotion: row.reduceMotion ?? defaults.reduceMotion,
+    voiceAssistant: row.voiceAssistant ?? defaults.voiceAssistant,
     mcpConnections: normalizeMcpConnections(row.mcpConnections),
     mcpToken: normalizeMcpToken(row.mcpToken),
   };
@@ -311,6 +313,26 @@ export async function updateOwnReduceMotion(
   return db.saveSettingsByStudent(ctx.studentId!, {
     ...settings,
     reduceMotion,
+    updatedAt: new Date(),
+  });
+}
+
+/**
+ * DIG-65 — persists «Озвучка и голосовой ввод» (кнопка «Прослушать день»
+ * на расписании и микрофон в AI-гиде). The ctx scoping keeps it owner-only
+ * (staff → audited null), same contract as the other appearance prefs.
+ */
+export async function updateOwnVoiceAssistant(
+  db: DataDb,
+  ctx: DataCtx,
+  voiceAssistant: boolean,
+): Promise<StudentSettingsRow | null> {
+  if (typeof voiceAssistant !== 'boolean') return null;
+  const settings = await resolveSettings(db, ctx);
+  if (!settings) return null;
+  return db.saveSettingsByStudent(ctx.studentId!, {
+    ...settings,
+    voiceAssistant,
     updatedAt: new Date(),
   });
 }
