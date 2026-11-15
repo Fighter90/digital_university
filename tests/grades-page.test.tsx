@@ -206,8 +206,10 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-DB',
     disciplineName: 'Базы данных',
     kind: 'CREDIT',
-    date: new Date(2026, 10, 14, 10, 0),
-    startsAt: new Date(2026, 10, 14, 10, 0),
+    // Всегда в будущем (now + 3 дня): тест «первой контрольной» не зависит
+    // от календаря (урок 2026-11-15: фикстура «14 ноября» устарела за сутки).
+    date: new Date(Date.now() + 3 * 86_400_000),
+    startsAt: new Date(Date.now() + 3 * 86_400_000),
     room: '212',
     note: null,
   },
@@ -412,7 +414,12 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
       expect(html).toContain('Оценок пока нет');
       expect(html).toContain('Первая контрольная');
       expect(html).toContain('Базы данных');
-      expect(html).toContain('14 ноября');
+      // Дата первой контрольной — из always-future фикстуры (ru-RU, «д месяц»).
+      expect(html).toContain(
+        new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(
+          new Date(Date.now() + 3 * 86_400_000),
+        ),
+      );
       // карточек дисциплин нет — только пустое состояние
       expect(html).not.toContain('data-testid="discipline-card"');
       // светофор честно нейтрален: долгов нет, оценок нет
