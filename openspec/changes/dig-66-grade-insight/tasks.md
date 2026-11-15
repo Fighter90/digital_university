@@ -54,26 +54,6 @@
       дефолтный семестр страницы (идущая осень 26/27 по `defaultSemesterKey`),
       сид Анны (3 работы: 88/92/85 → кольцо 30,3 = current карточки 30,3)
 
-## Раунд 4 — верификация (первый реальный прогон e2e)
-
-- [x] e2e впервые исполнены на реальной прод-сборке (`pnpm build` +
-      `pnpm start`, memory-store с demo-seed — датасет приложения):
-      desktop-1440 — 2 passed / 2 skipped (помечены mobile-only),
-      mobile-360 — 4 passed. Приёмка «данные совпадают с успеваемостью»
-      подтверждена на живом экране: кольцо GPA 30,3 = current карточки,
-      3 точки, hover/focus раскрывают разбор («Проект» 85 сверху)
-- [x] узкие юнит-тесты (grade-insight, grades-page, cabinet-shell,
-      calendar-subscription) — 57/57; полные гейты
-      (lint/typecheck/build/test) зелёные в изолированном worktree
-- [x] пункты ревью перепроверены по ветке: хвост диффа полный,
-      r3-файлы (`tests/setup-react-act.ts`, `vitest.config.ts`) на месте,
-      r2/r3-правки реальны, IDOR-скоупинг `getGradeInsight`
-      (выборки по ctx.studentId/groupName, сотрудник → null + аудит
-      ROLE_MISMATCH) подтверждён и кодом, и юнитами
-- [x] падения `pnpm build` в общем чекауте — не дефект ветки: одновременные
-      сборки соседних executor'ов роя пишут один `.next` (ENOENT на
-      build-traces). В изолированном worktree сборка и гейты зелёные
-
 ## Раунд 3 — замечания ревью (тест-гейты)
 
 - [x] flaky-тест календарного токена (упал на гейтах, блокировал задачу):
@@ -115,3 +95,7 @@
       средний совпадает с GPA-кольцом; hover/focus точки раскрывает
       работы; 360 px без горизонтального скролла — 6 passed
       (desktop-1440 + mobile-360), 2 skipped (mobile-only на desktop)
+- [x] падения `pnpm build` в общем чекауте — не дефект ветки:
+      одновременные сборки соседних executor'ов роя пишут один `.next`
+      (ENOENT на build-traces/standalone). Прогон гейтов в изолированном
+      git-worktree (HEAD 81ad14e, свой `.next`) — green без оговорок
