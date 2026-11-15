@@ -143,7 +143,9 @@ async function auditPage(page: Page, url: string) {
   expect(status, `страница ${url} отвечает 200`).toBe(200);
   const main = page.locator('main');
   await expect(main, `на ${url} есть <main>`).toBeVisible();
-  expect(await main.innerText(), `${url} не белый экран`).toMatch(/\S/);
+  // Стриминг RSC: goto возвращается по заголовкам, контент доезжает позже —
+  // ждём непустой текст в <main>, а не читаем его мгновенно (DIG-60, flake).
+  await expect(main, `${url} не белый экран`).toContainText(/\S/, { timeout: 20_000 });
   await expect(
     page.getByRole('note', { name: 'Концепт для конкурса' }),
     `на ${url} видна плашка «Концепт для конкурса»`,
@@ -223,7 +225,9 @@ async function clickLink(
     `после клика «${label}» отрисовался целевой экран (${marker})`,
   ).toBeVisible({ timeout: 20_000 });
   const main = page.locator('main');
-  expect(await main.innerText(), `после клика «${label}» не белый экран`).toMatch(/\S/);
+  await expect(main, `после клика «${label}» не белый экран`).toContainText(/\S/, {
+    timeout: 20_000,
+  });
   expect(await main.innerText(), `после клика «${label}» не страница входа`).not.toContain(
     'Вход в кабинет',
   );
@@ -527,7 +531,7 @@ test.describe('DIG-60: полный обход сайта', () => {
       await discipline.click();
       await p.waitForURL(new RegExp(`${escapeRe(href)}$`), { timeout: 20_000 });
       await expect(p.locator('main')).toBeVisible();
-      expect(await p.locator('main').innerText()).toMatch(/\S/);
+      await expect(p.locator('main')).toContainText(/\S/, { timeout: 20_000 });
       report.push({
         page: '/grades/gradebook',
         element: 'клик: карточка дисциплины',
@@ -590,7 +594,7 @@ test.describe('DIG-60: полный обход сайта', () => {
     await p.waitForURL(new RegExp(`/requests/${escapeRe(number)}$`), { timeout: 20_000 });
     // Деталь заявки: номер присутствует на странице (font-mono подпись).
     await expect(p.getByText(number).first()).toBeVisible({ timeout: 20_000 });
-    expect(await p.locator('main').innerText()).toMatch(/\S/);
+    await expect(p.locator('main')).toContainText(/\S/, { timeout: 20_000 });
     report.push({
       page: '/requests',
       element: `клик: заявка ${number}`,
@@ -700,7 +704,9 @@ test.describe('DIG-60: полный обход сайта', () => {
         await expect(details, 'после клика по паре открылись детали').toBeVisible({
           timeout: 15_000,
         });
-        expect(await details.innerText(), 'в деталях пары есть досье').toMatch(/Тип|Преподаватель/);
+        await expect(details, 'в деталях пары есть досье').toContainText(/Тип|Преподаватель/, {
+          timeout: 15_000,
+        });
         report.push({
           page: '/schedule',
           element: 'клик: пара → «Детали пары»',
@@ -791,7 +797,7 @@ test.describe('DIG-60: полный обход сайта', () => {
       expect(res1?.status(), 'неизвестный адрес — честный 404').toBe(404);
       const main = p.locator('main');
       await expect(main).toBeVisible();
-      expect(await main.innerText()).toMatch(/\S/);
+      await expect(main).toContainText(/\S/, { timeout: 20_000 });
       await expect(p.getByRole('note', { name: 'Концепт для конкурса' })).toBeVisible();
       const back = p.locator('main a[href^="/"]').first();
       await expect(back, 'на 404 есть живая ссылка обратно').toBeVisible();
@@ -807,7 +813,7 @@ test.describe('DIG-60: полный обход сайта', () => {
       const res2 = await p.goto('/requests/SR-0000-ZZZZZ');
       expect(res2?.status(), 'несуществующая заявка — 404').toBe(404);
       await expect(p.locator('main')).toBeVisible();
-      expect(await p.locator('main').innerText()).toMatch(/\S/);
+      await expect(p.locator('main')).toContainText(/\S/, { timeout: 20_000 });
       report.push({
         page: '(404)',
         element: 'страница',
