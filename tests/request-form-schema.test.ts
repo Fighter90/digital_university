@@ -68,7 +68,8 @@ describe('validateRequestForm: zod на сервере (DIG-30)', () => {
       expect(result.ok, JSON.stringify(data)).toBe(false);
       if (!result.ok) {
         expect(result.error).toContain('Назначение');
-        expect(result.error).toContain('Заполните');
+        // Обязательность: для enum — «Выберите…», для text — «Заполните…».
+        expect(result.error).toMatch(/Заполните|Выберите/);
       }
     }
   });

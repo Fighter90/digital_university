@@ -7,7 +7,13 @@
 // @prisma/client: the data layer must compile and test without it (DIG-11
 // convention), the mapping enum↔union is a pure function in the adapter.
 
+import type { CanonicalRequestStatus, RequestActor } from '../../lib/request-machine';
+
 export type Role = 'STUDENT' | 'STAFF';
+
+// Канонический мир заявок DIG-30: статусы (8 значений enum канона) и роли
+// актёров переиспользуются из чистой машины состояний (lib/request-machine.ts).
+export type { CanonicalRequestStatus, RequestActor };
 
 export type RequestType = 'CERTIFICATE' | 'STATEMENT' | 'PRACTICE' | 'DORMITORY' | 'OTHER';
 
@@ -183,6 +189,57 @@ export interface RequestEventRow {
   statusFrom: RequestStatus | null;
   statusTo: RequestStatus;
   message: string;
+  createdAt: Date;
+}
+
+/**
+ * DIG-30 — канонический мир заявок (модель Request схемы DIG-9, номер
+ * «ЗД-ГГГГ-NNNNNN»). Существует ПАРАЛЛЕЛЬНО миру сидов (ServiceRequest,
+ * номера SR-…) — оба мира заявки deliberately живут в слое данных
+ * (см. reconcile DIG-49). Название заявки — «тип · ключевой параметр»
+ * («Справка об обучении · для банка»), строится сервисом при подаче.
+ */
+export interface CanonicalRequestTypeRow {
+  id: string;
+  /** «CERT_ENROLLMENT», «GRADES_EXTRACT», «DIPLOMA_COPY»… */
+  code: string;
+  name: string;
+  /** Срок готовности в РАБОЧИХ днях (выходные пропускаются, request-sla.ts). */
+  etaDays: number | null;
+  format: 'ELECTRONIC' | 'PAPER' | 'HYBRID';
+  /** Мгновенный тип: при подаче сразу READY и PDF готов к скачиванию. */
+  isInstant: boolean;
+  /** JSON-схема полей формы (request-form-schema.ts валидирует zod'ом). */
+  formSchema: unknown;
+}
+
+export interface CanonicalRequestRow {
+  id: string;
+  /** «ЗД-2026-000123» — публичный ключ, уникален. */
+  number: string;
+  studentId: string;
+  typeCode: string;
+  /** Денормализация имени типа (для списков без join по словарю). */
+  typeName: string;
+  /** Название «тип · ключевой параметр»; вычисляется при подаче. */
+  title: string;
+  params: Record<string, string>;
+  status: CanonicalRequestStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CanonicalRequestEventRow {
+  id: string;
+  requestId: string;
+  /** null = автоматика (создание мгновенной заявки сервисом). */
+  actorUserId: string | null;
+  actorRole: RequestActor | null;
+  actorName: string;
+  fromStatus: CanonicalRequestStatus | null;
+  toStatus: CanonicalRequestStatus;
+  /** Причина доработки/отказа или комментарий перехода. */
+  comment: string | null;
   createdAt: Date;
 }
 

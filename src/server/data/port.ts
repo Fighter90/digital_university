@@ -20,7 +20,9 @@ import type {
   AuditLogRow,
   CalendarSubscriptionRow,
   CertificateRow,
-  DisciplineElementRow,
+  CanonicalRequestEventRow,
+  CanonicalRequestRow,
+  CanonicalRequestTypeRow,  DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
@@ -93,6 +95,56 @@ export interface DataDb {
       actorName: string;
     },
   ): Promise<ServiceRequestRow>;
+
+  // ── DIG-30: canonical requests «Заявки и справки» (owner-scoped) ────────
+  /** Словарь типов заявок (RequestType): SLA, мгновенность, форма. */
+  listCanonicalRequestTypes(): Promise<CanonicalRequestTypeRow[]>;
+  findCanonicalRequestTypeByCode(code: string): Promise<CanonicalRequestTypeRow | null>;
+
+  /** Probe по публичному номеру/id БЕЗ владельца — только для аудита отказа. */
+  probeCanonicalRequestByNumber(number: string): Promise<CanonicalRequestRow | null>;
+  probeCanonicalRequestById(id: string): Promise<CanonicalRequestRow | null>;
+
+  findCanonicalRequestByStudentAndNumber(
+    studentId: string,
+    number: string,
+  ): Promise<CanonicalRequestRow | null>;
+  findCanonicalRequestByStudentAndId(
+    studentId: string,
+    id: string,
+  ): Promise<CanonicalRequestRow | null>;
+  listCanonicalRequestsByStudent(studentId: string): Promise<CanonicalRequestRow[]>;
+  listCanonicalRequestEvents(requestId: string): Promise<CanonicalRequestEventRow[]>;
+
+  /**
+   * Атомарное создание: строка заявки + первое событие («Подана» /
+   * «Документ сформирован»). id строки и события назначает адаптер.
+   * Нарушение UNIQUE номера — ошибка адаптера (приёмка DIG-30).
+   */
+  insertCanonicalRequest(
+    row: Omit<CanonicalRequestRow, 'id'>,
+    event: Omit<CanonicalRequestEventRow, 'id' | 'requestId'>,
+  ): Promise<CanonicalRequestRow>;
+  /**
+   * Переход статуса: патч строки + событие истории одним вызовом.
+   * null — заявки нет (событие не пишется в никуда).
+   */
+  saveCanonicalRequestStatus(
+    requestId: string,
+    patch: { status: CanonicalRequestRow['status']; updatedAt: Date },
+    event: Omit<CanonicalRequestEventRow, 'id' | 'requestId'>,
+  ): Promise<CanonicalRequestRow | null>;
+  /**
+   * Последняя заявка студента данного типа, созданная позже `createdAfter`
+   * (окно повторного заказа DIG-30 — 24 часа).
+   */
+  findLatestCanonicalRequestByStudentAndType(
+    studentId: string,
+    typeCode: string,
+    createdAfter: Date,
+  ): Promise<CanonicalRequestRow | null>;
+  /** Следующий порядковый номер года (в PostgreSQL — request_number_seq). */
+  nextCanonicalRequestSeq(year: number): Promise<number>;
 
   // ── grades / notifications / appeals (owner-scoped) ───────────────────────
   listGradesByStudent(studentId: string): Promise<GradeRow[]>;

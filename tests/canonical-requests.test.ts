@@ -387,7 +387,7 @@ describe('переходы через сервис: события и уведо
 
     const events = await listCanonicalRequestEvents(db, anna, id);
     expect(events!.at(-1)!.comment).toBe('Не хватает подписи на заявлении');
-    const [notification] = await db.listNotificationsByStudent('st-anna');
+    const [notification] = await db.listNotificationsByStudent('st-anna').then((list) => list.slice(-1));
     expect(notification!.body).toContain('Причина: Не хватает подписи на заявлении');
 
     const resubmitted = await transitionCanonicalRequest(db, anna, {
@@ -405,6 +405,12 @@ describe('права и владение (IDOR, DIG-30)', () => {
     const created = await createDiploma(anna, NOW);
     if (created.kind !== 'created') return expect.fail('created');
 
+    // Заявку сначала доводим до IN_PROGRESS (сотрудник), чтобы пара
+    // «→ READY» существовала в таблице — и всё равно студенту отказано
+    // по роли (FORBIDDEN, а не «недопустимый переход»).
+    await transitionCanonicalRequest(db, maria, { requestId: created.request.id, to: 'ACCEPTED', now: LATER_1H });
+    await transitionCanonicalRequest(db, maria, { requestId: created.request.id, to: 'IN_PROGRESS', now: LATER_1H });
+
     const result = await transitionCanonicalRequest(db, anna, {
       requestId: created.request.id,
       to: 'READY',
@@ -414,9 +420,9 @@ describe('права и владение (IDOR, DIG-30)', () => {
     if (result.kind === 'error') expect(result.code).toBe('FORBIDDEN');
 
     const events = await listCanonicalRequestEvents(db, anna, created.request.id);
-    expect(events).toHaveLength(1); // только «Подана»
+    expect(events).toHaveLength(3); // подана, принята, в работе — READY не добавился
     const after = await getCanonicalRequestByNumber(db, anna, created.request.number);
-    expect(after!.status).toBe('SUBMITTED');
+    expect(after!.status).toBe('IN_PROGRESS');
   });
 
   it('студент не может выполнить сотруднические переходы (ACCEPTED и др.)', async () => {
@@ -484,7 +490,7 @@ describe('права и владение (IDOR, DIG-30)', () => {
 
     const audit = db.auditEvents();
     expect(audit.some((e) => e.reason === 'OWNERSHIP_DENIED' && e.resourceRef === annaRequest.request.id)).toBe(true);
-    expect(audit.some((e) => e.reason === 'NOT_FOUND' && e.resourceRef === annaRequest.request.number)).toBe(true);
+    expect(audit.some((e) => e.reason === 'NOT_FOUND' && e.resourceRef === 'ЗД-2026-999999')).toBe(true);
     // Уведомления Анны никто не тронул.
     expect(await db.listNotificationsByStudent('st-anna')).toHaveLength(1);
   });
