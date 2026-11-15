@@ -94,6 +94,7 @@ export {
   getOwnProfile,
   getOwnSettings,
   updateOwnContacts,
+  updateOwnMcpConnection,
   updateOwnNotificationChannel,
   updateOwnTheme,
   createNotificationForStudent,

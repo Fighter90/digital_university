@@ -108,6 +108,7 @@ const settings: StudentSettingsRow[] = [
     language: 'RU',
     fontSize: 'NORMAL',
     reduceMotion: false,
+    mcpConnections: defaultSettingsFor('st-anna').mcpConnections,
     updatedAt: new Date(),
   },
   {
@@ -122,6 +123,7 @@ const settings: StudentSettingsRow[] = [
     language: 'RU',
     fontSize: 'NORMAL',
     reduceMotion: false,
+    mcpConnections: defaultSettingsFor('st-ilya').mcpConnections,
     updatedAt: new Date(),
   },
 ];
