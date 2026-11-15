@@ -11,6 +11,7 @@ import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
 import type { PerformanceData, DisciplinePerformance } from '@/server/data/performance';
+import type { GradeInsight } from '@/lib/grade-insight';
 import type { DataCtx, ExamSessionRow } from '@/server/data/types';
 
 const studentCtx: DataCtx = {
@@ -251,7 +252,78 @@ vi.mock('@/server/data', () => ({
   requireDataCtx: vi.fn(async () => studentCtx),
   getPerformance: vi.fn(async () => richPerformance),
   listExams: vi.fn(async () => examSessions),
+  getGradeInsight: vi.fn(async () => demoInsight),
 }));
+
+/**
+ * DIG-66 — фикстура инсайта «Что изменилось» для контракта рендера:
+ * две работы месяца, направление «new» (окно открывает семестр).
+ */
+const demoInsight: GradeInsight = {
+  semesterLabel: 'Осенний семестр 2026/27',
+  points: [
+    {
+      dateISO: '2026-10-28T12:00:00.000Z',
+      average: 48.9,
+      delta: null,
+      works: [
+        {
+          disciplineName: 'Информатика',
+          elementName: 'Тест 1',
+          score: 88,
+          maxScore: 100,
+          dateISO: '2026-10-28T12:00:00.000Z',
+        },
+      ],
+    },
+    {
+      dateISO: '2026-11-01T12:00:00.000Z',
+      average: 30.26,
+      delta: -18.64,
+      works: [
+        {
+          disciplineName: 'Программирование',
+          elementName: 'Лабораторная 2',
+          score: 92,
+          maxScore: 100,
+          dateISO: '2026-11-01T12:00:00.000Z',
+        },
+        {
+          disciplineName: 'Информатика',
+          elementName: 'Тест 1',
+          score: 88,
+          maxScore: 100,
+          dateISO: '2026-10-28T12:00:00.000Z',
+        },
+      ],
+    },
+  ],
+  current: 30.26,
+  month: {
+    direction: 'new',
+    works: [
+      {
+        disciplineName: 'Программирование',
+        elementName: 'Лабораторная 2',
+        score: 92,
+        maxScore: 100,
+        dateISO: '2026-11-01T12:00:00.000Z',
+      },
+      {
+        disciplineName: 'Информатика',
+        elementName: 'Тест 1',
+        score: 88,
+        maxScore: 100,
+        dateISO: '2026-10-28T12:00:00.000Z',
+      },
+    ],
+    baseline: null,
+    delta: null,
+  },
+  headline: 'За месяц появились 2 новые работы — средний балл достиг 30,3 из 100',
+  detail:
+    'Сильнее всего средний снизила «Лабораторная 2» (Программирование, 92 из 100): 18,6 пункта.',
+};
 
 import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
 
@@ -268,6 +340,7 @@ async function renderWith(overrides: {
   ctx?: DataCtx;
   performance?: PerformanceData;
   exams?: ExamSessionRow[];
+  insight?: GradeInsight | null;
   reject?: boolean;
   searchParams?: Record<string, string>;
 }): Promise<string> {
@@ -276,6 +349,7 @@ async function renderWith(overrides: {
   vi.mocked(dataModule.requireDataCtx).mockResolvedValueOnce(ctx);
   const getPerformance = vi.mocked(dataModule.getPerformance);
   const listExams = vi.mocked(dataModule.listExams);
+  const getGradeInsight = vi.mocked(dataModule.getGradeInsight);
   if (ctx.role === 'STAFF') {
     // Сотрудник получает заглушку до обращения к данным — очереди Once
     // не наполняются «лишними» значениями, которые могли бы протечь
@@ -288,6 +362,9 @@ async function renderWith(overrides: {
     getPerformance.mockResolvedValueOnce(overrides.performance ?? richPerformance);
   }
   listExams.mockResolvedValueOnce(overrides.exams ?? examSessions);
+  getGradeInsight.mockResolvedValueOnce(
+    overrides.insight !== undefined ? overrides.insight : demoInsight,
+  );
   return renderPage(
     GradesPage,
     overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined,
@@ -388,7 +465,10 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
     expect(html).toContain('Отлично');
     expect(html).toContain('Хорошо');
     expect(html).not.toMatch(/data-testid="gpa-delta"/);
-    expect(html).not.toContain('48,9'); // осенние карточки не показаны
+    // DIG-26: осенние КАРТОЧКИ не показаны. Проверяем по «из возможных 88,9» —
+    // маркеру карточки осени: голое «48,9» с DIG-66 легитимно встречается в
+    // подписи точки AI-графика (тренд идущего семестра не зависит от ?semester).
+    expect(html).not.toContain('из возможных 88,9');
   });
 
   it('мусорный ?semester= откатывается к дефолту', async () => {
@@ -439,6 +519,30 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
     const html = await renderWith({ ctx: staffCtx });
     expect(html).toContain('Экран доступен студентам');
     expect(html).not.toContain('data-testid="discipline-card"');
+    // DIG-66: инсайт динамики — студенческий блок, сотруднику не рендерится.
+    expect(html).not.toContain('data-testid="grade-insight"');
+  });
+
+  it('DIG-66 — карточка «Что изменилось»: объяснение месяца и разбор работ', async () => {
+    const html = await renderWith({});
+    expect(html).toContain('data-testid="grade-insight"');
+    expect(html).toContain('Что изменилось');
+    expect(html).toContain('AI-анализ');
+    expect(html).toContain('без внешних сервисов');
+    expect(html).toContain('data-testid="grade-insight-headline"');
+    expect(html).toContain('За месяц появились 2 новые работы');
+    // Разбор активной (последней) точки: работы, повлиявшие на средний.
+    expect(html).toContain('data-testid="insight-point"');
+    expect(html).toContain('Лабораторная 2');
+    expect(html).toContain('92 из 100');
+    expect(html).toContain('aria-pressed="true"');
+    // Текущий средний карточки имеет testid для сверки с кольцом (e2e).
+    expect(html).toContain('data-testid="grade-insight-current"');
+  });
+
+  it('DIG-66 — без инсайта (нет оценок) карточка не рендерится', async () => {
+    const html = await renderWith({ insight: null });
+    expect(html).not.toContain('data-testid="grade-insight"');
   });
 
   it('страница живёт в main-регионе Shell и не заводит собственный <main>', async () => {

@@ -42,8 +42,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { Tooltip } from '@/components/ui/tooltip';
+import { GradeInsightCard } from '@/components/performance/grade-insight-card';
 import { dataDb } from '@/server/data/db';
-import { getPerformance, listExams, requireDataCtx } from '@/server/data';
+import { getGradeInsight, getPerformance, listExams, requireDataCtx } from '@/server/data';
+import type { GradeInsight } from '@/lib/grade-insight';
 import type { PerformanceData } from '@/server/data/performance';
 import type { SemesterKey } from '@/lib/performance-math';
 
@@ -79,11 +81,17 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
 
   let data: PerformanceData;
   let exams: Awaited<ReturnType<typeof listExams>>;
+  let insight: GradeInsight | null;
   try {
     // Один fetch-цикл: агрегат успеваемости + сессии группы (подсказка
-    // «первая контрольная» для пустого семестра). ctx.studentId — единственный
-    // ключ выборки, из URL не приходит (IDOR невозможен по построению).
-    [data, exams] = await Promise.all([getPerformance(dataDb, ctx), listExams(dataDb, ctx)]);
+    // «первая контрольная» для пустого семестра) + AI-инсайт динамики
+    // (DIG-66). ctx.studentId — единственный ключ выборки, из URL не
+    // приходит (IDOR невозможен по построению).
+    [data, exams, insight] = await Promise.all([
+      getPerformance(dataDb, ctx),
+      listExams(dataDb, ctx),
+      getGradeInsight(dataDb, ctx),
+    ]);
   } catch (error) {
     // не глотаем: без лога «Успеваемость не загрузилась» недиагностируемо
     console.error('[grades] render failed', error);
@@ -102,7 +110,7 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
       </section>
     );
   }
-  return <GradesView data={data} exams={exams} semesterRaw={semesterRaw} />;
+  return <GradesView data={data} exams={exams} insight={insight} semesterRaw={semesterRaw} />;
 }
 
 /** Какой семестр открыт по умолчанию (без валидного ?semester=). */
@@ -127,10 +135,12 @@ function defaultSemesterKey(data: PerformanceData): SemesterKey {
 function GradesView({
   data,
   exams,
+  insight,
   semesterRaw,
 }: {
   data: PerformanceData;
   exams: Awaited<ReturnType<typeof listExams>>;
+  insight: GradeInsight | null;
   semesterRaw?: string;
 }) {
   const now = new Date();
@@ -200,7 +210,7 @@ function GradesView({
       >
         <div className="flex items-center gap-5">
           <ProgressRing value={semesterGpa ?? 0} label="Средний балл семестра" size={80} stroke={7}>
-            <span className="text-base font-extrabold">
+            <span data-testid="gpa-ring-value" className="text-base font-extrabold">
               {semesterGpa === null ? '—' : formatScore(semesterGpa)}
             </span>
           </ProgressRing>
@@ -274,6 +284,9 @@ function GradesView({
         ) : null}
       </div>
 
+      {/* ── AI-инсайт «Что изменилось» (DIG-66): динамика среднего + график ── */}
+      {insight ? <GradeInsightCard insight={insight} /> : null}
+
       {/* ── Светофор состояния ────────────────────────────────────────────── */}
       <div
         data-testid="traffic-light"
@@ -301,11 +314,7 @@ function GradesView({
       {hasGrades ? (
         <ul className="flex flex-col gap-3">
           {cards.map((card, cardIndex) => (
-            <DisciplineCardItem
-              key={card.disciplineCode}
-              card={card}
-              index={cardIndex}
-            />
+            <DisciplineCardItem key={card.disciplineCode} card={card} index={cardIndex} />
           ))}
         </ul>
       ) : (
