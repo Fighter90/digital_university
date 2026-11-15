@@ -1,0 +1,101 @@
+# DIG-66 — задачи
+
+## Спека и чистый модуль
+
+- [x] delta-спека `specs/grade-insight/spec.md` (карточка, интерактивный
+      график, скоупинг)
+- [x] `src/lib/grade-insight.ts`: временные срезы среднего (формулы как у
+      GPA-кольца: накопленная по плану × кредиты), дельта месяца с базой,
+      направление (up/down/flat/new/none), детерминированные тексты,
+      сериализуемый DTO (ISO-даты) для клиентского компонента
+
+## Сервер
+
+- [x] `src/server/data/grade-insight.ts` — `getGradeInsight(db, ctx)`:
+      выборки только по ctx (studentId/groupName), сотрудник — null +
+      аудит ROLE_MISMATCH; экспорт в `src/server/data/index.ts`
+
+## UI
+
+- [x] `src/components/performance/grade-insight-card.tsx` (client):
+      карточка «Что изменилось» (заголовок + пояснение + бейдж AI-анализа),
+      SVG-график с точками-кнопками (hover/focus/click), разбор работ
+      активной точки (aria-live), подключение на `/grades` после сводки,
+      `data-testid` на кольце GPA для сверки e2e
+
+## Тесты (red-first)
+
+- [x] tests/grade-insight.test.ts — срезы среднего и дельты (fixture как в
+      демо-сиде), тексты всех направлений, скоуп семестра, сотрудник
+      (null + аудит), чужие оценки не попадают, пустые оценки → null
+- [x] e2e/grade-insight.spec.ts — карточка рендерится и совпадает с
+      GPA-кольцом; hover/focus точки показывает работы; 360 px без
+      горизонтального скролла
+- [x] tests/grades-page.test.tsx — мок `getGradeInsight` + пин карточки в
+      контракте рендера страницы (студент/сотрудник/нет оценок); уточнено
+      проверкой «осенние карточки не показаны» (маркер карточки, не голое
+      число — оно легитимно в подписи точки AI-графика)
+
+## Раунд 2 — замечания ревью
+
+- [x] мок `getGradeInsight` в `renderWith` больше не ставится безусловно:
+      в сценарии ошибки БД очереди Once не наполняются (несъеденное значение
+      не может протечь в следующий тест); новый флаг `insightReject` ставит
+      мок ровно под проверяемый сценарий
+- [x] red-first: тест «сбой инсайта не роняет экран» — падение агрегата
+      карточки показывало ErrorState всего экрана; страница переведена на
+      `Promise.allSettled` (основа экрана — жёсткий путь, карточка —
+      деградация без рендера, лог в консоль)
+- [x] фикстура `demoInsight` согласована с `richPerformance` по формулам
+      GPA-кольца (3 точки: 48,9 → 27,96 → 27,14; кольцо 27,1) — юнит
+      закрепляет приёмку «данные совпадают с успеваемостью»
+- [x] delta-спека: сценарий «Сбой расчёта инсайта не роняет экран»
+- [x] перепроверены зоны ревью: проект `mobile-360` в playwright.config,
+      дефолтный семестр страницы (идущая осень 26/27 по `defaultSemesterKey`),
+      сид Анны (3 работы: 88/92/85 → кольцо 30,3 = current карточки 30,3)
+
+## Раунд 3 — замечания ревью (тест-гейты)
+
+- [x] flaky-тест календарного токена (упал на гейтах, блокировал задачу):
+      «подделка» подписи слепой заменой первого символа на 'x' в ~1/64
+      запусков совпадала с настоящей base64url-подписью → валидный токен,
+      падение теста. Замена гарантированно-отличимым символом +
+      инвариант `tamperedSig !== sig` (tests/calendar-subscription.test.ts)
+- [x] шум stderr на гейтах: act-окружение React объявлено в общем
+      setup-файле (tests/setup-react-act.ts + vitest.config.ts
+      `setupFiles`) — предупреждение
+      «not configured to support act(...)» больше не засоряет вывод;
+      WARN «DATABASE_URL не задан» не тронут — это контракт DIG-50
+      (memory-store обязан предупреждать явно, ассерт в
+      tests/store-selection.test.ts), в юнит-тестах БД нет по дизайну
+
+## Верификация ветки (после ревью с оборванным диффом)
+
+Ревью не дошло до ACCEPT: дифф в сообщении обрывался, проверка шла
+по ветке и прервалась на полуслове («Что подтверждено: IDOR-скоупинг
+по …»). Ни одного нового дефекта не заявлено — ветка перепроверена
+по всем зонам ревью, код не менялся:
+
+- [x] все файлы из этого tasks.md существуют в ветке
+      (`tests/setup-react-act.ts`, `vitest.config.ts` с `setupFiles`,
+      `src/lib/grade-insight.ts`, `src/server/data/grade-insight.ts`,
+      `src/components/performance/grade-insight-card.tsx`, e2e)
+- [x] IDOR: на `/grades` ctx строится `requireDataCtx('/grades')`
+      (живая сессия), идентификаторов из URL нет; `getGradeInsight`
+      фильтрует по `ctx.studentId`/`ctx.groupName`, сотрудник —
+      null + аудит ROLE_MISMATCH (как в performance.ts/grades.ts)
+- [x] узкие тесты зелёные: grade-insight (34), grades-page (18),
+      calendar-subscription, cabinet-shell (57 суммарно)
+- [x] гейты в каноническом порядке green:
+      `GATES: lint=pass typecheck=pass build=pass test=pass`
+      (build ДО test — тест-санити next-env.d.ts требует артефактов
+      сборки; ручной порядок typecheck → vitest даёт ложное падение
+      build-hermetic, это артефакт запуска, не ветки)
+- [x] e2e `grade-insight.spec.ts` зелёное: карточка рендерится и
+      средний совпадает с GPA-кольцом; hover/focus точки раскрывает
+      работы; 360 px без горизонтального скролла — 6 passed
+      (desktop-1440 + mobile-360), 2 skipped (mobile-only на desktop)
+- [x] падения `pnpm build` в общем чекауте — не дефект ветки:
+      одновременные сборки соседних executor'ов роя пишут один `.next`
+      (ENOENT на build-traces/standalone). Прогон гейтов в изолированном
+      git-worktree (HEAD 81ad14e, свой `.next`) — green без оговорок

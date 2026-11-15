@@ -8,6 +8,8 @@ export default defineConfig({
     testTimeout: 30_000,
     hookTimeout: 30_000,
     environment: 'node',
+    // React-тесты: объявляем act-окружение до загрузки React (см. сам файл).
+    setupFiles: ['./tests/setup-react-act.ts'],
     include: ['tests/**/*.test.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
     exclude: ['e2e/**', 'node_modules/**'],
   },

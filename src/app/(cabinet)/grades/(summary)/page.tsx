@@ -42,8 +42,10 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { Tooltip } from '@/components/ui/tooltip';
+import { GradeInsightCard } from '@/components/performance/grade-insight-card';
 import { dataDb } from '@/server/data/db';
-import { getPerformance, listExams, requireDataCtx } from '@/server/data';
+import { getGradeInsight, getPerformance, listExams, requireDataCtx } from '@/server/data';
+import type { GradeInsight } from '@/lib/grade-insight';
 import type { PerformanceData } from '@/server/data/performance';
 import type { SemesterKey } from '@/lib/performance-math';
 
@@ -79,30 +81,55 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
 
   let data: PerformanceData;
   let exams: Awaited<ReturnType<typeof listExams>>;
-  try {
+  let insight: GradeInsight | null = null;
+  {
     // Один fetch-цикл: агрегат успеваемости + сессии группы (подсказка
-    // «первая контрольная» для пустого семестра). ctx.studentId — единственный
-    // ключ выборки, из URL не приходит (IDOR невозможен по построению).
-    [data, exams] = await Promise.all([getPerformance(dataDb, ctx), listExams(dataDb, ctx)]);
-  } catch (error) {
-    // не глотаем: без лога «Успеваемость не загрузилась» недиагностируемо
-    console.error('[grades] render failed', error);
-    return (
-      <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Успеваемость</h1>
-        <ErrorState
-          title="Успеваемость не загрузилась"
-          description="Обновите страницу — если ошибка повторится, сообщите в деканат."
-        />
-        <div className="flex justify-center">
-          <Link href="/grades" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
-            Повторить
-          </Link>
-        </div>
-      </section>
-    );
+    // «первая контрольная» для пустого семестра) + AI-инсайт динамики
+    // (DIG-66). ctx.studentId — единственный ключ выборки, из URL не
+    // приходит (IDOR невозможен по построению).
+    //
+    // Ревью r2: основа экрана (успеваемость + сессии) и вспомогательный
+    // инсайт разделены — падение расчёта карточки не роняет сводку.
+    const [perfResult, examResult, insightResult] = await Promise.allSettled([
+      getPerformance(dataDb, ctx),
+      listExams(dataDb, ctx),
+      getGradeInsight(dataDb, ctx),
+    ]);
+    if (perfResult.status === 'rejected' || examResult.status === 'rejected') {
+      const error =
+        perfResult.status === 'rejected'
+          ? perfResult.reason
+          : examResult.status === 'rejected'
+            ? examResult.reason
+            : null;
+      // не глотаем: без лога «Успеваемость не загрузилась» недиагностируемо
+      console.error('[grades] render failed', error);
+      return (
+        <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-8">
+          <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Успеваемость</h1>
+          <ErrorState
+            title="Успеваемость не загрузилась"
+            description="Обновите страницу — если ошибка повторится, сообщите в деканат."
+          />
+          <div className="flex justify-center">
+            <Link href="/grades" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
+              Повторить
+            </Link>
+          </div>
+        </section>
+      );
+    }
+    if (insightResult.status === 'fulfilled') {
+      insight = insightResult.value;
+    } else {
+      // Деградация без ErrorState: карточка не рендерится, экран жив
+      // (спека: карточка — необязательный блок «Что изменилось»).
+      console.error('[grades] grade insight skipped', insightResult.reason);
+    }
+    data = perfResult.value;
+    exams = examResult.value;
   }
-  return <GradesView data={data} exams={exams} semesterRaw={semesterRaw} />;
+  return <GradesView data={data} exams={exams} insight={insight} semesterRaw={semesterRaw} />;
 }
 
 /** Какой семестр открыт по умолчанию (без валидного ?semester=). */
@@ -127,10 +154,12 @@ function defaultSemesterKey(data: PerformanceData): SemesterKey {
 function GradesView({
   data,
   exams,
+  insight,
   semesterRaw,
 }: {
   data: PerformanceData;
   exams: Awaited<ReturnType<typeof listExams>>;
+  insight: GradeInsight | null;
   semesterRaw?: string;
 }) {
   const now = new Date();
@@ -200,7 +229,7 @@ function GradesView({
       >
         <div className="flex items-center gap-5">
           <ProgressRing value={semesterGpa ?? 0} label="Средний балл семестра" size={80} stroke={7}>
-            <span className="text-base font-extrabold">
+            <span data-testid="gpa-ring-value" className="text-base font-extrabold">
               {semesterGpa === null ? '—' : formatScore(semesterGpa)}
             </span>
           </ProgressRing>
@@ -274,6 +303,9 @@ function GradesView({
         ) : null}
       </div>
 
+      {/* ── AI-инсайт «Что изменилось» (DIG-66): динамика среднего + график ── */}
+      {insight ? <GradeInsightCard insight={insight} /> : null}
+
       {/* ── Светофор состояния ────────────────────────────────────────────── */}
       <div
         data-testid="traffic-light"
@@ -301,11 +333,7 @@ function GradesView({
       {hasGrades ? (
         <ul className="flex flex-col gap-3">
           {cards.map((card, cardIndex) => (
-            <DisciplineCardItem
-              key={card.disciplineCode}
-              card={card}
-              index={cardIndex}
-            />
+            <DisciplineCardItem key={card.disciplineCode} card={card} index={cardIndex} />
           ))}
         </ul>
       ) : (

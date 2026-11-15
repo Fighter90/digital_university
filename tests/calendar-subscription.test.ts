@@ -231,7 +231,14 @@ describe('calendar-token: HMAC-подписанная ссылка подпис�
   it('подделка любой части и чужой секрет → null (до обращения к БД)', () => {
     const token = mintCalendarToken(SECRET, newCalendarTokenId());
     const [, tokenId, sig] = token.split('.');
-    expect(parseCalendarToken(SECRET, `v1.${tokenId}.x${sig.slice(1)}`)).toBeNull();
+    // Подмена ПЕРВОГО символа подписи гарантированно-другим. Раньше здесь
+    // была слепая замена на 'x': base64url-алфавит содержит 'x', и в ~1/64
+    // запусков настоящая подпись начиналась с 'x' — «подделка» совпадала с
+    // оригиналом, валидный токен возвращался, и тест падал (flaky, урок
+    // r3 DIG-66). Теперь tamper всегда отличим от настоящей подписи.
+    const tamperedSig = `${sig[0] === 'x' ? 'y' : 'x'}${sig.slice(1)}`;
+    expect(tamperedSig).not.toBe(sig);
+    expect(parseCalendarToken(SECRET, `v1.${tokenId}.${tamperedSig}`)).toBeNull();
     expect(parseCalendarToken(SECRET, `v2.${tokenId}.${sig}`)).toBeNull();
     expect(parseCalendarToken('another-secret', token)).toBeNull();
     expect(parseCalendarToken(SECRET, 'garbage')).toBeNull();
