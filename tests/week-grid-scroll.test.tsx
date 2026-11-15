@@ -201,6 +201,32 @@ describe('WeekView — сетка-скроллконтейнер (DIG-56)', () =
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('жест, отпущенный вне сетки, гасит только «свой» click — следующий клик по паре открывает детали', () => {
+    // click после отпускания кнопки вне сетки диспатчится на общего предка
+    // pointerdown/pointerup и в обработчики сетки не попадает: подавление
+    // не должно «залипать» до следующего честного клика по паре
+    renderWeek();
+    const grid = screen.getByTestId('week-grid');
+    grid.scrollLeft = 100;
+
+    fireEvent.pointerDown(grid, {
+      button: 0,
+      pointerType: 'mouse',
+      clientX: 300,
+      clientY: 200,
+    });
+    fireEvent.pointerMove(window, { clientX: 400, clientY: 200 });
+    // отпустили кнопку над левой колонкой (вне сетки)
+    fireEvent.pointerUp(window, { clientX: 40, clientY: 20 });
+    // click жеста приземлился на общего предка (вне сетки) — детали не открылись
+    fireEvent.click(document.body);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // следующий честный клик по паре ДОЛЖЕН открыть детали
+    fireEvent.click(lesson());
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
   it(`микро-сдвиг меньше ${WEEK_DRAG_THRESHOLD_PX}px сетку не двигает и клик не глушит — детали открываются`, () => {
     renderWeek();
     const grid = screen.getByTestId('week-grid');

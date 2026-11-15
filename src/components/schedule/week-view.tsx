@@ -21,7 +21,8 @@
 // колонка дня имеет минимальную ширину, контент шире окна. Вертикаль:
 // шкала 08:00–20:00 прокручивается внутри окна сетки, не двигая страницу
 // (overflow-auto + overscroll-contain). Drag и клик разделены порогом 5 px —
-// перетаскивание, начатое на паре, не открывает панель деталей. Шапка дней
+// перетаскивание, начатое на паре, не открывает панель деталей (порождённый
+// жестом click гасится один раз на window — см. finish()). Шапка дней
 // прилипает к верху окна, гуттер часов — к левому краю.
 //
 // Клавиатура: ←/→ листают недели (router.push — URL ?week=2026-W46 меняется
@@ -198,8 +199,10 @@ export function WeekView({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   /** Жест-прокрутка мыши идёт: курсор grabbing, выделение текста выключено. */
   const [panning, setPanning] = useState(false);
-  /** Следующий после drag-жеста click гасится (жест не должен открыть пару). */
-  const suppressNextClickRef = useRef(false);
+  /** Активная жест-сессия (pointer-слушатели на window) — снимается при unmount. */
+  const dragDetachRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => () => dragDetachRef.current?.(), []);
 
   // Shift+колесо и горизонтальный жест трекпада скроллят сетку по горизонтали.
   // Вертикальное колесо НЕ перехватываем: сетка скроллится нативно
@@ -246,23 +249,34 @@ export function WeekView({
       last.y = move.clientY;
     };
     const finish = () => {
+      detach();
+      setPanning(false);
+      if (!dragging) return;
+      // Жест превысил порог — порождённый им click гасим РОВНО ОДИН раз,
+      // на window. Гасить на сетке (onClickCapture) нельзя: если кнопку
+      // отпустили вне сетки, click диспатчится на общего предка
+      // pointerdown/pointerup, в обработчики сетки не попадает — «залипшее»
+      // подавление съело бы следующий честный клик по паре (и Enter с
+      // клавиатуры). click диспатчится синхронно следом за pointerup,
+      // страховка от жеста без click (отпускание за окном, pointercancel) —
+      // снятие слушателя следующим макротиком.
+      const swallowClick = (click: MouseEvent) => {
+        click.preventDefault();
+        click.stopPropagation();
+      };
+      window.addEventListener('click', swallowClick, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener('click', swallowClick, true), 0);
+    };
+    const detach = () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', finish);
       window.removeEventListener('pointercancel', finish);
-      setPanning(false);
-      if (dragging) suppressNextClickRef.current = true;
+      dragDetachRef.current = null;
     };
+    dragDetachRef.current = detach;
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', finish);
     window.addEventListener('pointercancel', finish);
-  }, []);
-
-  // Жест превысил порог — порождённый им click по блоку пары гасим.
-  const onGridClickCapture = useCallback((event: React.MouseEvent) => {
-    if (!suppressNextClickRef.current) return;
-    suppressNextClickRef.current = false;
-    event.preventDefault();
-    event.stopPropagation();
   }, []);
 
   return (
@@ -420,7 +434,6 @@ export function WeekView({
               )}
               style={{ height: WEEK_GRID_VIEWPORT_PX }}
               onPointerDown={onGridPointerDown}
-              onClickCapture={onGridClickCapture}
             >
               <div
                 className="flex flex-col"

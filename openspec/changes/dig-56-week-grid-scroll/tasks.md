@@ -65,3 +65,24 @@
   пре-существующие, `npm run lint` = голый eslint без `--max-warnings`,
   гейт не валят; файлы вне скоупа задачи не тронуты.
 
+## Раунд 3 — «залипшее» подавление клика после жеста вне сетки
+
+- [x] Red-first: `tests/week-grid-scroll.test.tsx` — сценарий «жест,
+  отпущенный вне сетки, гасит только „свой“ click»: click после
+  отпускания кнопки вне сетки диспатчится на общего предка
+  pointerdown/pointerup и в `onClickCapture` сетки не попадает, флаг
+  `suppressNextClickRef` оставался `true` и съедал следующий честный
+  клик по паре (и Enter с клавиатуры). Тест падал → фикса нет → красный.
+- [x] `src/components/schedule/week-view.tsx` — подавление клика
+  переехало с флага на одноразовый window-capture-слушатель в `finish()`
+  (`once: true` + снятие следующим макротиком — страховка от жеста без
+  click: отпускание за окном, pointercancel). Попутная robustness того
+  же жеста: pointer-слушатели сессии снимаются при unmount
+  (`dragDetachRef` + cleanup-effect) — раньше переход на другой вид
+  во время жеста оставлял слушатели на window.
+- [x] Delta-спека: сценарий «жест, отпущенный вне сетки, не глушит
+  следующий клик» (Requirement «Drag-скролл не ломает клик по паре»).
+- [x] Проверка: юнит 8/8, соседние schedule-тесты 149 зелёных, lint
+  (0 ошибок), typecheck, e2e desktop-1440 `schedule-week-scroll` +
+  `schedule`, mobile-360 `schedule` — зелёные.
+
