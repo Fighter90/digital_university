@@ -90,7 +90,6 @@ test('securityFailureFeedback: retries within round budget, fails at the end', (
 
 test('acquireLock: fresh file, stale pid reclaimed, live pid refused', () => {
   const { mkdtempSync, writeFileSync, readFileSync, rmSync } = fsMod;
-  const { spawnSync } = cpMod;
   const dir = mkdtempSync('/tmp/swarm-lock-');
   const lockPath = `${dir}/lock`;
   // fresh lock

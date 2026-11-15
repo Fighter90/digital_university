@@ -10,10 +10,12 @@ if (!url) {
   );
 }
 
-export default {
+const prismaConfig = {
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
   },
   datasource: { url },
 };
+
+export default prismaConfig;
