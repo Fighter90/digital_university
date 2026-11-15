@@ -38,9 +38,10 @@ test.describe('DIG-29: каталог сервисов', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Каталог сервисов' })).toBeVisible();
 
     // Карточка документной услуги (в сетке каталога): срок, формат, «Заказать».
+    // DIG-31: справка об обучении — мгновенная (PDF сразу после заказа).
     const cert = page.getByTestId('services-grid').getByTestId('service-card-cert-enrollment');
     await expect(cert).toBeVisible();
-    await expect(cert).toContainText('2–3 дня');
+    await expect(cert).toContainText('Мгновенно');
     await expect(cert).toContainText('PDF');
     await expect(cert.getByRole('link', { name: 'Заказать' })).toHaveAttribute(
       'href',

@@ -79,6 +79,10 @@ export interface DataDb {
    * DIG-28 — заявка, созданная студентом через кабинет (первое событие
    * SUBMITTED пишется тем же вызовом, атомарно с заявкой). Публичный номер
    * генерирует слой данных и передаёт готовым.
+   *
+   * DIG-31 — опциональные status/resultNote: мгновенная справка из мастера
+   * заказа рождается сразу COMPLETED с результат-заметкой. По умолчанию —
+   * прежнее поведение (SUBMITTED, без заметки).
    */
   appendRequestByStudent(
     studentId: string,
@@ -89,6 +93,8 @@ export interface DataDb {
       createdAt: Date;
       eventMessage: string;
       actorName: string;
+      status?: ServiceRequestRow['status'];
+      resultNote?: string | null;
     },
   ): Promise<ServiceRequestRow>;
 

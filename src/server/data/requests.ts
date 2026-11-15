@@ -6,8 +6,21 @@
 // The distinction (OWNERSHIP_DENIED vs NOT_FOUND) exists only in the audit log.
 
 import { denyAccess } from './access';
+import { newRequestNumber } from './request-number';
 import type { DataDb } from './port';
-import type { DataCtx, RequestEventRow, ServiceRequestRow } from './types';
+import type { DataCtx, RequestEventRow, ServiceRequestRow, StudentRow } from './types';
+
+import {
+  buildOrderSummary,
+  normalizeDraft,
+  validateWizardInput,
+  wizardDocFor,
+  formatWizardDate,
+  expectedDateFor,
+  type WizardDelivery,
+  type WizardDraftInput,
+  type WizardLanguage,
+} from '@/lib/request-wizard';
 
 const RESOURCE = 'request';
 
@@ -81,4 +94,107 @@ export async function listRequestEvents(
     return null;
   }
   return db.listRequestEvents(requestId);
+}
+
+// ── DIG-31 — мастер заказа справки/заявления ────────────────────────────────
+
+/** Данные страницы «Мои заявки»: список владельца + профиль для мастера. */
+export interface RequestsPageData {
+  requests: ServiceRequestRow[];
+  /** Профиль владельца (префикс мастера «Данные студента»); сотрудник — null. */
+  student: StudentRow | null;
+}
+
+export async function getRequestsPage(db: DataDb, ctx: DataCtx): Promise<RequestsPageData> {
+  const requests = await listRequests(db, ctx);
+  const student = ctx.studentId === null ? null : await db.findStudentById(ctx.studentId);
+  return { requests, student };
+}
+
+/** Вход мастера: id сервиса каталога + поля шагов 2–3 (имена вложений). */
+export interface WizardRequestInput {
+  serviceId: string;
+  destination: string;
+  language: WizardLanguage;
+  copies: number;
+  delivery: WizardDelivery;
+  comment: string;
+  consent: boolean;
+  /** Имена вложений (сами файлы в прототипе не сохраняются — DIG-31). */
+  attachmentNames: string[];
+}
+
+export interface CreateWizardRequestOptions {
+  now?: Date;
+  random?: () => number;
+}
+
+/**
+ * Заявка из мастера заказа. Контракт DIG-12: контекст — единственный ключ
+ * владельца; сотрудник получает отказ с аудитом ROLE_MISMATCH; неизвестный
+ * или не-ORDER сервис — null без записи (некорректный ввод). Валидатор
+ * вызывается ЗДЕСЬ ещё раз: обход клиентской проверки невозможен.
+ * Мгновенный документ рождается COMPLETED с результат-заметкой (PDF готов).
+ */
+export async function createWizardRequest(
+  db: DataDb,
+  ctx: DataCtx,
+  input: WizardRequestInput,
+  options: CreateWizardRequestOptions = {},
+): Promise<ServiceRequestRow | null> {
+  const now = options.now ?? new Date();
+
+  if (ctx.studentId === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: input.serviceId,
+      reason: 'ROLE_MISMATCH',
+    });
+    return null;
+  }
+
+  const doc = wizardDocFor(input.serviceId);
+  if (!doc) return null; // не-ORDER/неизвестный id — ввод, не доступ-попытка
+
+  const draft: WizardDraftInput = {
+    destination: input.destination,
+    language: input.language,
+    copies: input.copies,
+    delivery: input.delivery,
+    comment: input.comment,
+    consent: input.consent,
+    // Размеры уже проверил server action; здесь проверяются количество,
+    // имена и запрет вложений у справок.
+    attachments: input.attachmentNames.map((name) => ({ name, size: 0 })),
+  };
+  const clean = normalizeDraft(doc, draft);
+  const errors = validateWizardInput(doc, clean);
+  if (Object.keys(errors).length > 0) return null;
+
+  const number = newRequestNumber(options.random, now);
+  const instant = doc.instant;
+  const request = await db.appendRequestByStudent(ctx.studentId, {
+    type: doc.config.requestType,
+    title: doc.title,
+    number,
+    createdAt: now,
+    eventMessage: buildOrderSummary(doc, clean),
+    actorName: ctx.login,
+    status: instant ? 'COMPLETED' : 'SUBMITTED',
+    resultNote: instant ? 'Документ готов — PDF доступен в кабинете' : null,
+  });
+
+  const expected = expectedDateFor(doc.eta, now);
+  await db.appendNotificationToStudent(ctx.studentId, {
+    type: 'REQUEST',
+    title: instant ? 'Справка готова' : 'Заявка принята',
+    body: instant
+      ? `«${doc.title}» (${number}) готова — скачайте PDF в кабинете.`
+      : `Заявка ${number} «${doc.title}» принята. Ожидаемая дата: ${formatWizardDate(expected)}.`,
+    createdAt: now,
+    link: `/requests/${number}`,
+  });
+
+  return request;
 }

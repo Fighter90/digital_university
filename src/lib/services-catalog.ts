@@ -74,7 +74,9 @@ export const SERVICES: ServiceEntry[] = [
     title: 'Справка об обучении',
     benefit: 'Для банка, визы и работы',
     category: 'CERTIFICATES',
-    eta: 'DAYS_2_3',
+    // DIG-31: электронная справка формируется сразу после заказа —
+    // «мгновенная справка об обучении» (PDF-документ — тоже DIG-31/47).
+    eta: 'INSTANT',
     format: 'PDF',
     action: 'ORDER',
     href: '/requests?order=cert-enrollment',

@@ -231,9 +231,10 @@ export function createMemoryDataDb(): MemoryDataDb {
         number: input.number,
         type: input.type,
         title: input.title,
-        status: 'SUBMITTED',
+        // DIG-31: мгновенная заявка рождается COMPLETED; по умолчанию SUBMITTED.
+        status: input.status ?? 'SUBMITTED',
         assignee: null,
-        resultNote: null,
+        resultNote: input.resultNote ?? null,
         createdAt: input.createdAt,
         updatedAt: input.createdAt,
       };

@@ -94,7 +94,8 @@ describe('/services — студент', () => {
       /<article[^>]*data-testid="service-card-cert-enrollment"[\s\S]*?<\/article>/,
     );
     expect(docCard).not.toBeNull();
-    expect(docCard![0]).toContain('2–3 дня');
+    // DIG-31: справка об обучении стала мгновенной (PDF сразу после заказа).
+    expect(docCard![0]).toContain('Мгновенно');
     expect(docCard![0]).toContain('PDF');
     expect(docCard![0]).toContain('Заказать');
     expect(docCard![0]).toContain('href="/requests?order=cert-enrollment"');

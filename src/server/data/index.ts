@@ -4,7 +4,14 @@
 
 export { toDataCtx, requireDataCtx } from './context';
 export { resolveShellUser } from './shell-user';
-export { listRequests, getRequestByNumber, listRequestEvents } from './requests';
+export {
+  getRequestsPage,
+  listRequests,
+  getRequestByNumber,
+  listRequestEvents,
+  createWizardRequest,
+} from './requests';
+export type { RequestsPageData, WizardRequestInput } from './requests';
 export { listGrades } from './grades';
 export { getPerformance, needForTarget } from './performance';
 export type {
