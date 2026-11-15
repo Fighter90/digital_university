@@ -414,6 +414,15 @@ export function createMemoryDataDb(): MemoryDataDb {
       return students.filter((s) => s.faculty === faculty).map(clone);
     },
 
+    // ── DIG-64: персональный MCP-токен (lookup по хэшу — см. port.ts) ─────
+    async findStudentByMcpTokenHash(tokenHash) {
+      const row = settings.find((s) => s.mcpToken?.tokenHash === tokenHash);
+      if (!row) return null;
+      const student = students.find((s) => s.id === row.studentId);
+      if (!student) return null;
+      return { student: clone(student), userId: row.mcpToken!.userId };
+    },
+
     async appendAudit(event) {
       auditSeq += 1;
       const row: AuditLogRow = {

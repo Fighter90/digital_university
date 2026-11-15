@@ -127,7 +127,22 @@ export interface StudentSettingsRow {
   reduceMotion: boolean;
   /** DIG-58 — статусы подключения демо MCP-серверов (по каталогу lib/mcp-servers). */
   mcpConnections: McpServerState[];
+  /** DIG-64 — персональный токен MCP-сервера деканата (хранится только хэш). */
+  mcpToken: McpTokenRecord | null;
   updatedAt: Date;
+}
+
+/**
+ * DIG-64 — персональный демо-MCP-токен студента: plaintext никогда не
+ * сохраняется (только SHA-256-хэш, как у сессий DIG-11), превью — для
+ * показа на вкладке «Настройка MCP». userId — auth-пользователь, выпустивший
+ * токен (нужен, чтобы resolve строил ctx с честным actorUserId для аудита).
+ */
+export interface McpTokenRecord {
+  tokenHash: string;
+  tokenPreview: string;
+  userId: string;
+  createdAt: Date;
 }
 
 export interface StaffRow {
@@ -321,12 +336,24 @@ export interface CertificateRow {
  */
 export type StoredStudentSettingsRow = Omit<
   StudentSettingsRow,
-  'widgets' | 'quietHours' | 'language' | 'fontSize' | 'reduceMotion' | 'mcpConnections'
+  | 'widgets'
+  | 'quietHours'
+  | 'language'
+  | 'fontSize'
+  | 'reduceMotion'
+  | 'mcpConnections'
+  | 'mcpToken'
 > &
   Partial<
     Pick<
       StudentSettingsRow,
-      'widgets' | 'quietHours' | 'language' | 'fontSize' | 'reduceMotion' | 'mcpConnections'
+      | 'widgets'
+      | 'quietHours'
+      | 'language'
+      | 'fontSize'
+      | 'reduceMotion'
+      | 'mcpConnections'
+      | 'mcpToken'
     >
   >;
 

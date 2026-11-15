@@ -13,6 +13,13 @@ const PUBLIC_EXACT_PATHS = new Set([
   '/login',
   '/forgot-password',
   '/api/health',
+  // DIG-64: демо-MCP-сервер — публичный эндпоинт с собственной
+  // аутентификацией по персональному Bearer-токену (не cookie) и собственным
+  // rate limit'ом. CSRF-правило (same-origin Origin) на него не действует:
+  // у запроса нет ambient-авторитета (cookie), внешний MCP-клиент работает
+  // server-to-server без Origin; перебор токенов бессмысленно дорог
+  // (192 бита энтропии) и ограничен лимитером роута.
+  '/api/mcp',
   '/favicon.ico',
 ]);
 // DIG-47: /verify/<код> — публичная проверка подлинности справок (без входа);
@@ -94,7 +101,8 @@ export interface AccessInput {
 
 /**
  * Order of checks:
- *  1. mutating API calls must be same-origin (CSRF defence for API routes);
+ *  1. mutating API calls must be same-origin (CSRF defence for API routes),
+ *     EXCEPT the Bearer-token MCP endpoint (see below);
  *  2. public paths stay open;
  *  3. everything else requires the session cookie → /login?next=…;
  *  4. /staff additionally requires the STAFF role (signed hint; the page
@@ -107,8 +115,15 @@ export function decideAccess(input: AccessInput): AccessDecision {
   //    Origin header is required and must match Host (fail closed: a mutating
   //    API request without Origin is rejected, browsers always send it on
   //    cross-origin and fetch/form POSTs; see docs/security.md).
+  //
+  //    DIG-64 exception — /api/mcp: аутентификация персональным Bearer-токеном,
+  //    а не cookie, поэтому ambient-авторитета нет и CSRF невозможен; внешние
+  //    MCP-клиенты (ChatGPT/Claude/curl) работают server-to-server без Origin.
+  //    Перебор токенов ограничен rate limit'ом роута, данные скоуплены
+  //    владельцем токена (см. src/app/api/mcp/route.ts).
   const method = input.method ?? 'GET';
-  if (pathname.startsWith('/api/') && method !== 'GET' && method !== 'HEAD') {
+  const isMcpEndpoint = pathname === '/api/mcp';
+  if (pathname.startsWith('/api/') && !isMcpEndpoint && method !== 'GET' && method !== 'HEAD') {
     const origin = input.originHeader;
     if (!origin || !isTrustedOrigin(origin, input.hostHeader ?? null)) {
       return { kind: 'forbidden' };

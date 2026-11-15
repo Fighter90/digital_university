@@ -201,6 +201,18 @@ export interface DataDb {
     requestId: string,
   ): Promise<CertificateRow | null>;
   /**
+   * DIG-64 — поиск студента по SHA-256-хэшу персонального MCP-токена —
+   * ОСОЗНАННОЕ исключение из owner-scope, как findCertificateByCode выше:
+   * lookup возможен только по хэшу случайного токена с ≥128 битами
+   * энтропии, а вызывать его разрешено ТОЛЬКО resolveMcpDemoToken из
+   * src/server/data/mcp.ts, который тут же превращает результат в
+   * скоупленный DataCtx владельца. Наружу из слоя данных студенческие поля
+   * не уходят; userId берётся из записи токена (для аудита).
+   */
+  findStudentByMcpTokenHash(
+    tokenHash: string,
+  ): Promise<{ student: StudentRow; userId: string } | null>;
+  /**
    * Выдача справки владельцу: код/номер генерирует вызывающий
    * (certificates.ts), адаптер обязан записать строку атомарно.
    */

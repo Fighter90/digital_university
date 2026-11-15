@@ -9,6 +9,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ExternalLink } from 'lucide-react';
+import { headers } from 'next/headers';
 import { NotificationSettings } from '@/components/profile/notification-settings';
 import { ThemePicker } from '@/components/profile/theme-picker';
 import { SettingsTabs } from '@/components/settings/settings-tabs';
@@ -18,11 +19,14 @@ import { PasswordForm } from '@/components/settings/password-form';
 import { SessionsList } from '@/components/settings/sessions-list';
 import { AppearanceSettings } from '@/components/settings/appearance-settings';
 import { McpSettings } from '@/components/settings/mcp-settings';
+import { McpDeaneryServer } from '@/components/settings/mcp-deanery-server';
 import { getAuthSession, listActiveUserSessions } from '@/server/auth/session';
 import { normalizeSettings } from '@/server/data/profile';
 import { getOwnSettings, requireDataCtx } from '@/server/data';
+import { getOwnMcpTokenView } from '@/server/data/mcp';
 import { dataDb } from '@/server/data/db';
 import { resolveSettingsTab } from '@/lib/settings-tabs';
+import { buildMcpServerUrl } from '@/lib/mcp-protocol';
 import {
   MCP_FAQ,
   MCP_HELP_HOW,
@@ -61,6 +65,14 @@ export default async function SettingsPage({
   const auth = await getAuthSession();
   const sessions = tab === 'security' && auth ? await listActiveUserSessions(auth.user.id) : [];
   const currentSessionId = auth?.session.id ?? null;
+
+  // DIG-64 — абсолютный URL демо-MCP-сервера из заголовков запроса
+  // (x-forwarded-host / x-forwarded-proto — реверс-прокси Caddy на deploy)
+  // и состояние персонального токена владельца (наружу — только превью).
+  const headerList = await headers();
+  const mcpHost = headerList.get('x-forwarded-host') ?? headerList.get('host') ?? 'localhost:3000';
+  const mcpServerUrl = buildMcpServerUrl(mcpHost, headerList.get('x-forwarded-proto'));
+  const mcpToken = await getOwnMcpTokenView(dataDb, ctx);
 
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
@@ -211,6 +223,22 @@ export default async function SettingsPage({
 
       {tab === 'mcp' && settings && (
         <>
+          {/* DIG-64 — живой демо-MCP-сервер деканата: URL, персональный
+              токен и инструкции подключения к ChatGPT/Claude. */}
+          <Card>
+            <CardHeader>
+              <CardTitle>MCP-сервер деканата</CardTitle>
+              <CardDescription>
+                Подключите кабинет как источник данных к внешнему ассистенту (ChatGPT, Claude): «моё
+                расписание на сегодня», «мои оценки», «мои непрочитанные». Доступ — по персональному
+                токену, сервер отдаёт только ваши данные.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-3">
+              <McpDeaneryServer url={mcpServerUrl} token={mcpToken} />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>MCP-серверы ассистента</CardTitle>

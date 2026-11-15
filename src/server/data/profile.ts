@@ -77,6 +77,7 @@ export function defaultSettingsFor(studentId: string, now: Date = new Date()): S
     fontSize: 'NORMAL',
     reduceMotion: false,
     mcpConnections: DEFAULT_MCP_CONNECTIONS.map((state) => ({ ...state })),
+    mcpToken: null,
     updatedAt: now,
   };
 }
@@ -85,8 +86,9 @@ export function defaultSettingsFor(studentId: string, now: Date = new Date()): S
  * DIG-44 — fills missing DIG-44 fields of a stored row with defaults
  * (rows written before DIG-44 have no widgets/quietHours/language/fontSize/
  * reduceMotion). DIG-58: the mcpConnections list is rebuilt against the
- * catalog the same way. Also normalizes the widget list. Pure; null
- * passes through.
+ * catalog the same way. DIG-64: mcpToken is validated shape-wise (garbage
+ * from older/manual rows becomes null). Also normalizes the widget list.
+ * Pure; null passes through.
  */
 export function normalizeSettings(
   row: StoredStudentSettingsRow | null | undefined,
@@ -102,6 +104,40 @@ export function normalizeSettings(
     fontSize: row.fontSize ?? defaults.fontSize,
     reduceMotion: row.reduceMotion ?? defaults.reduceMotion,
     mcpConnections: normalizeMcpConnections(row.mcpConnections),
+    mcpToken: normalizeMcpToken(row.mcpToken),
+  };
+}
+
+/**
+ * DIG-64 — shape-валидация записи персонального MCP-токена: битые/чужие
+ * значения превращаются в null (легаси-строки и мусор читаются без падения).
+ * Чистая функция; plaintext-токена в записи нет и быть не может (только хэш).
+ */
+export function normalizeMcpToken(value: unknown): StudentSettingsRow['mcpToken'] {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as {
+    tokenHash?: unknown;
+    tokenPreview?: unknown;
+    userId?: unknown;
+    createdAt?: unknown;
+  };
+  if (
+    typeof record.tokenHash !== 'string' ||
+    !/^[0-9a-f]{64}$/.test(record.tokenHash) ||
+    typeof record.tokenPreview !== 'string' ||
+    record.tokenPreview.length === 0 ||
+    record.tokenPreview.length > 40 ||
+    typeof record.userId !== 'string' ||
+    record.userId.length === 0 ||
+    !(record.createdAt instanceof Date)
+  ) {
+    return null;
+  }
+  return {
+    tokenHash: record.tokenHash,
+    tokenPreview: record.tokenPreview,
+    userId: record.userId,
+    createdAt: record.createdAt,
   };
 }
 
