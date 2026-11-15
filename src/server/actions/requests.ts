@@ -63,7 +63,25 @@ export async function createRequestAction(
     }
   }
 
-  const result = await createCanonicalRequest(dataDb, ctx, { typeCode, params });
+  // DIG-31 — мета мастера заказа (язык, экземпляры, способ получения,
+  // комментарий, метаданные вложений): отдельное поле FormData «wizard»
+  // (JSON). Правила проверяет сервис (validateWizardMeta) — те же, что
+  // и на клиенте; файлы в прототипе не передаются, только метаданные.
+  let wizardMeta: unknown;
+  const rawWizard = formData.get('wizard');
+  if (typeof rawWizard === 'string' && rawWizard.trim() !== '') {
+    try {
+      const parsedWizard: unknown = JSON.parse(rawWizard);
+      if (!parsedWizard || typeof parsedWizard !== 'object' || Array.isArray(parsedWizard)) {
+        throw new Error('not an object');
+      }
+      wizardMeta = parsedWizard;
+    } catch {
+      return { ok: false, error: 'Некорректные параметры заказа' };
+    }
+  }
+
+  const result = await createCanonicalRequest(dataDb, ctx, { typeCode, params, meta: wizardMeta });
   if (result.kind === 'error') {
     return { ok: false, error: result.message };
   }

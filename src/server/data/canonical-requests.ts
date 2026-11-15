@@ -25,6 +25,7 @@ import {
   requestTitleFromParams,
   validateRequestForm,
 } from '../../lib/request-form-schema';
+import { validateWizardMeta } from '../../lib/request-wizard-schema';
 import { formatReadyBy, slaReadyDate } from '../../lib/request-sla';
 import { formatCanonicalRequestNumber } from './canonical-request-number';
 import { denyAccess } from './access';
@@ -52,6 +53,13 @@ export async function listCanonicalRequestTypes(db: DataDb): Promise<CanonicalRe
 export interface CreateCanonicalRequestInput {
   typeCode: string;
   params?: Record<string, unknown>;
+  /**
+   * DIG-31 — мета мастера заказа (язык, куда предоставляется, экземпляры,
+   * способ получения, комментарий, метаданные вложений). Валидируется
+   * повторно validateWizardMeta (клиент валидирует те же правила) и
+   * сохраняется в params под ключом «wizard» JSON-строкой.
+   */
+  meta?: unknown;
   now?: Date;
 }
 
@@ -100,6 +108,18 @@ export async function createCanonicalRequest(
     return { kind: 'error', code: 'INVALID_FORM', message: form.error };
   }
 
+  // DIG-31 — мета мастера: повторная серверная валидация (защита в
+  // глубину поверх action) и JSON-строка в params.wizard — тип params
+  // (Record<string, string>) не меняется.
+  let wizardJson: string | null = null;
+  if (input.meta !== undefined) {
+    const meta = validateWizardMeta(input.meta);
+    if (!meta.ok) {
+      return { kind: 'error', code: 'INVALID_FORM', message: meta.error };
+    }
+    wizardJson = JSON.stringify(meta.data);
+  }
+
   // Повторный заказ за 24 часа: если заявка того же ДОКУМЕНТА (тот же
   // тип и то же значение ключевого поля формы — «справка для банка» и
   // «для военкомата» это разные документы) уже готова (READY) или выдана
@@ -138,7 +158,10 @@ export async function createCanonicalRequest(
       typeCode: type.code,
       typeName: type.name,
       title,
-      params: form.data,
+      // Мета мастера «wizard» — рядом с полями формы; если в JSON-схеме
+      // типа объявлено своё поле «wizard», его значение не затирается.
+      params:
+        wizardJson && !('wizard' in form.data) ? { ...form.data, wizard: wizardJson } : form.data,
       status,
       createdAt: now,
       updatedAt: now,
