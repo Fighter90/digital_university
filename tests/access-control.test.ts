@@ -24,6 +24,7 @@ describe('route guard: public vs protected paths', () => {
     ['/api/health', true],
     ['/verify/ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-6777', true], // DIG-47: публичная проверка справок
     ['/verify/abc', true],
+    ['/api/mcp', true], // DIG-64: демо-MCP-сервер — Bearer-токен вместо cookie-сессии
     ['/dashboard', false],
     ['/dashboard/sub', false],
     ['/staff', false],
@@ -129,6 +130,34 @@ describe('middleware decision (decideAccess)', () => {
     expect(post('https://evil.example')).toEqual({ kind: 'forbidden' });
     expect(post('http://ostrovok.store')).toEqual({ kind: 'forbidden' }); // scheme downgrade
 
+    // DIG-64: /api/mcp — исключение из CSRF-правила (осознанное): эндпоинт
+    // аутентифицируется Bearer-токеном, а не cookie, поэтому ambient-авторитет
+    // отсутствует и CSRF невозможен; внешние MCP-клиенты (ChatGPT/Claude/curl)
+    // — server-to-server без Origin. Перебор токенов ограничен rate limit'ом
+    // самого роута, данные скоуплены владельцем токена.
+    expect(
+      decideAccess({
+        pathname: '/api/mcp',
+        search: '',
+        method: 'POST',
+        hostHeader: 'ostrovok.store',
+        originHeader: null, // curl / MCP-клиент — без Origin
+        hasSessionCookie: false,
+        roleHint: null,
+      }),
+    ).toEqual(OK);
+    expect(
+      decideAccess({
+        pathname: '/api/mcp',
+        search: '',
+        method: 'POST',
+        hostHeader: 'ostrovok.store',
+        originHeader: 'https://evil.example', // даже кросс-доменный — аутентификация по токену
+        hasSessionCookie: false,
+        roleHint: null,
+      }),
+    ).toEqual(OK);
+
     expect(
       decideAccess({
         pathname: '/api/health',
@@ -222,10 +251,14 @@ describe('cache-control for protected screens (DIG-55)', () => {
     expect(NO_STORE_CACHE_CONTROL).toContain('no-store');
   });
 
-  it.each(['/', '/login', '/forgot-password', '/api/health', '/_next/static/chunk.js', '/verify/x'])(
-    'public %s keeps the framework default (no explicit header)',
-    (pathname) => {
-      expect(cacheControlFor(pathname)).toBeNull();
-    },
-  );
+  it.each([
+    '/',
+    '/login',
+    '/forgot-password',
+    '/api/health',
+    '/_next/static/chunk.js',
+    '/verify/x',
+  ])('public %s keeps the framework default (no explicit header)', (pathname) => {
+    expect(cacheControlFor(pathname)).toBeNull();
+  });
 });

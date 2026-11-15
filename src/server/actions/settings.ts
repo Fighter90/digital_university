@@ -21,6 +21,8 @@ import {
 } from '@/server/data/profile';
 import { DASHBOARD_WIDGETS, isDashboardWidgetId, normalizeWidgets } from '@/lib/dashboard-widgets';
 import { isMcpServerId } from '@/lib/mcp-servers';
+import { generateMcpDemoToken } from '@/server/mcp/token';
+import { rotateOwnMcpToken } from '@/server/data/mcp';
 
 /** Revalidates every layout/page of the cabinet — appearance prefs apply at once. */
 function revalidateAll(): void {
@@ -156,6 +158,31 @@ export async function setMcpServerConnectionAction(
   if (!saved) return false;
   revalidatePath('/settings');
   return true;
+}
+
+// ── Вкладка «Настройка MCP»: персональный токен сервера деканата ────────────
+
+export interface RotateMcpTokenResult {
+  ok: boolean;
+  /** Полный токен — возвращается ТОЛЬКО сразу после выпуска (показ один раз). */
+  token?: string;
+  /** Превью для списка (без секретной части). */
+  preview?: string;
+}
+
+/**
+ * DIG-64 — выпуск/перевыпуск персонального демо-MCP-токена владельца
+ * сессии. staff → { ok: false }. Прежний токен отзывается (в настройках
+ * живёт ровно один хэш); plaintext показывается один раз и не сохраняется.
+ */
+export async function rotateMcpTokenAction(): Promise<RotateMcpTokenResult> {
+  const ctx = await requireStudentCtx();
+  if (!ctx) return { ok: false };
+  const generated = generateMcpDemoToken(new Date());
+  const saved = await rotateOwnMcpToken(dataDb, ctx, generated);
+  if (!saved) return { ok: false };
+  revalidatePath('/settings');
+  return { ok: true, token: generated.token, preview: saved.tokenPreview };
 }
 
 // ── Вкладка «Безопасность»: пароль и сеансы ─────────────────────────────────

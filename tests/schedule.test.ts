@@ -175,6 +175,7 @@ function seedScheduleDb(): MemoryDataDb {
         fontSize: 'NORMAL',
         reduceMotion: false,
         mcpConnections: [],
+        mcpToken: null,
         updatedAt: NOW,
       },
     ],

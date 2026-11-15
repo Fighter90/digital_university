@@ -17,6 +17,15 @@ vi.mock('@/server/auth/session', () => ({
   getAuthSession: vi.fn(async () => null),
   listActiveUserSessions: vi.fn(async () => []),
 }));
+// DIG-64 — страница настроек читает заголовки запроса (URL MCP-сервера) и
+// персональный токен: в prerender-тестах оба заменяются стабами.
+vi.mock('next/headers', () => ({
+  headers: vi.fn(async () => new Headers({ host: 'localhost:3000' })),
+  cookies: vi.fn(async () => new Map()),
+}));
+vi.mock('@/server/data/mcp', () => ({
+  getOwnMcpTokenView: vi.fn(async () => null),
+}));
 vi.mock('@/server/data', () => ({
   requireDataCtx: vi.fn(async () => ({
     userId: 'u_test',
