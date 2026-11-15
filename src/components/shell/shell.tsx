@@ -6,6 +6,7 @@ import { TopBar } from './top-bar';
 import { SideNav } from './side-nav';
 import { TabBar } from './tab-bar';
 import { AiFab } from './ai-fab';
+import { AiGuide } from './ai-guide';
 import { SearchPalette } from './search-palette';
 
 type ShellProps = {
@@ -65,6 +66,9 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
 
       <TabBar />
       <AiFab />
+      {/* DIG-62: AI-гид — вне <main>, чтобы краулер DIG-60 и геометрия
+          контента не видели его ссылки; только роль студента. */}
+      <AiGuide userName={user.name} role={user.role} />
       <SearchPalette
         open={searchOpen}
         onClose={closeSearch}
