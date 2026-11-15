@@ -43,3 +43,25 @@
   пре-существующий датозависимый фейл DIG-26, воспроизводится на ветке
   ДО изменений DIG-56 (проверено git stash); остальные 880 тестов зелёные.
 
+## Раунд 2 — замечания ревью (красные гейты)
+
+- [x] `tests/cabinet-shell.test.ts` — lint-гейт падал «Parsing error:
+  Merge conflict marker encountered»: в рабочем дереве остался
+  незавершённый конфликт stash-pop (маркеры `<<<<<<< Updated upstream` /
+  `>>>>>>> Stashed changes`, unmerged-записи в индексе). Разрешён в пользу
+  HEAD-версии (8 разделов меню — ровно то, что в `nav-items.ts`; сторона
+  «Stashed changes» с `/people` и `/help` — salvage чужих DIG-38/39, этих
+  роутов в ветке нет). Файл стал байт-в-байт равен HEAD, коммит не нужен.
+- [x] `tests/grades-page.test.tsx` — тест «семестр без оценок» сгнил по
+  календарю: `nextAssessment` фильтрует `date > now`, зачёт «Базы данных»
+  (14.11.2026 10:00) стал прошлым 15.11.2026, подсказка переключилась на
+  «Информатика» 24 декабря. Фикс теста (без прод-кода): `vi.useFakeTimers({
+  toFake: ['Date'] })` + `vi.setSystemTime(13.11.2026)` внутри теста —
+  подсказка детерминирована, prerender живёт на реальном event loop.
+- [x] `node scripts/swarm/gates.mjs` — GATES_SUMMARY: green
+  (lint=pass typecheck=pass build=pass test=pass, 896 тестов).
+  10 eslint-warnings в чужих файлах (orchestrator, grades/session,
+  gradebook, transcript-pdf, memory-db, settings-page, swarm-тест) —
+  пре-существующие, `npm run lint` = голый eslint без `--max-warnings`,
+  гейт не валят; файлы вне скоупа задачи не тронуты.
+
