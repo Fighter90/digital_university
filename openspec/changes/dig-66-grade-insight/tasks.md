@@ -68,3 +68,30 @@
       WARN «DATABASE_URL не задан» не тронут — это контракт DIG-50
       (memory-store обязан предупреждать явно, ассерт в
       tests/store-selection.test.ts), в юнит-тестах БД нет по дизайну
+
+## Верификация ветки (после ревью с оборванным диффом)
+
+Ревью не дошло до ACCEPT: дифф в сообщении обрывался, проверка шла
+по ветке и прервалась на полуслове («Что подтверждено: IDOR-скоупинг
+по …»). Ни одного нового дефекта не заявлено — ветка перепроверена
+по всем зонам ревью, код не менялся:
+
+- [x] все файлы из этого tasks.md существуют в ветке
+      (`tests/setup-react-act.ts`, `vitest.config.ts` с `setupFiles`,
+      `src/lib/grade-insight.ts`, `src/server/data/grade-insight.ts`,
+      `src/components/performance/grade-insight-card.tsx`, e2e)
+- [x] IDOR: на `/grades` ctx строится `requireDataCtx('/grades')`
+      (живая сессия), идентификаторов из URL нет; `getGradeInsight`
+      фильтрует по `ctx.studentId`/`ctx.groupName`, сотрудник —
+      null + аудит ROLE_MISMATCH (как в performance.ts/grades.ts)
+- [x] узкие тесты зелёные: grade-insight (34), grades-page (18),
+      calendar-subscription, cabinet-shell (57 суммарно)
+- [x] гейты в каноническом порядке green:
+      `GATES: lint=pass typecheck=pass build=pass test=pass`
+      (build ДО test — тест-санити next-env.d.ts требует артефактов
+      сборки; ручной порядок typecheck → vitest даёт ложное падение
+      build-hermetic, это артефакт запуска, не ветки)
+- [x] e2e `grade-insight.spec.ts` зелёное: карточка рендерится и
+      средний совпадает с GPA-кольцом; hover/focus точки раскрывает
+      работы; 360 px без горизонтального скролла — 6 passed
+      (desktop-1440 + mobile-360), 2 skipped (mobile-only на desktop)
