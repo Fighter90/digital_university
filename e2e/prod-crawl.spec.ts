@@ -381,7 +381,7 @@ test.describe('DIG-60: полный обход сайта', () => {
 
   test('гость: защищённые маршруты отдают ожидаемый редирект на вход', async () => {
     const p = guestPage;
-    for (const path of ['/dashboard', '/schedule', '/design', '/api/session/ics']) {
+    for (const path of ['/dashboard', '/schedule', '/design']) {
       const response = await p.request.get(path, { maxRedirects: 0 });
       const status = response.status();
       expect(
@@ -582,18 +582,26 @@ test.describe('DIG-60: полный обход сайта', () => {
       await crawlInternalLinks(p, `дисциплина ${href}`);
     }
 
-    // Сессия: расписание сессии + выгрузка ICS + подсказка AI-ассистента.
+    // Сессия: расписание сессии + живая ICS-подписка + подсказка AI-ассистента.
     await auditPage(p, '/grades/session');
     await crawlInternalLinks(p, '/grades/session');
-    const ics = await p.request.get('/api/session/ics');
-    expect(ics.status(), 'выгрузка ICS отвечает 200').toBe(200);
+    // DIG-63: персональная подписка — ссылка из карточки отвечает календарём.
+    const feedUrl = await p.getByTestId('calendar-subscribe-url').inputValue();
+    expect(feedUrl, 'персональная ICS-ссылка показана студенту').toMatch(
+      /^https?:\/\/.+\/api\/calendar\/ics\?token=v1\./,
+    );
+    const ics = await p.request.get(feedUrl);
+    expect(ics.status(), 'ICS-подписка отвечает 200').toBe(200);
     expect(ics.headers()['content-type'] ?? '', 'ICS отдаётся календарём').toContain(
       'text/calendar',
     );
+    const icsBody = await ics.text();
+    expect(icsBody).toContain('BEGIN:VCALENDAR');
+    expect(icsBody).toContain('BEGIN:VEVENT');
     report.push({
       page: '/grades/session',
-      element: 'кнопка: ICS-календарь',
-      href: '/api/session/ics',
+      element: 'карточка: ICS-подписка календаря',
+      href: '/api/calendar/ics?token=…',
       status: 200,
     });
 

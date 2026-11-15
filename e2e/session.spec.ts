@@ -21,12 +21,13 @@ test.describe('DIG-28: сессия — студент', () => {
     await expect(page).toHaveURL(/\/grades\/session$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Сессия' })).toBeVisible();
 
-    // Шапка: название сезона выводится из дат (не хардкод) + отсчёт + календарь.
+    // Шапка: название сезона выводится из дат (не хардкод) + отсчёт + подписка календаря.
     await expect(page.getByTestId('session-title')).toContainText(/сессия/i);
     await expect(page.getByTestId('session-countdown')).toBeVisible();
-    const ics = page.getByTestId('session-ics');
-    await expect(ics).toBeVisible();
-    await expect(ics).toHaveAttribute('href', '/api/session/ics');
+    // DIG-63: вместо скачивания файла — живая подписка по персональной ссылке.
+    const feedUrl = page.getByTestId('calendar-subscribe-url');
+    await expect(feedUrl).toBeVisible();
+    await expect(feedUrl).toHaveValue(/\/api\/calendar\/ics\?token=v1\./);
 
     // Таймлайн: зачёт «Базы данных» не допущен с причиной и действием.
     const item = page.getByTestId('exam-item-exm-pi21-3');
@@ -84,7 +85,7 @@ test.describe('DIG-28: сессия — студент', () => {
     await expect(retakeAgain.getByTestId('retake-signup')).toHaveCount(0);
   });
 
-  test('консультации и экспорт всей сессии в календарь', async ({ page }) => {
+  test('консультации и живая ICS-подписка календаря', async ({ page }) => {
     await signIn(page, 'anna.smirnova', 'anna-demo-2026', '/grades/session');
 
     // Консультации из расписания (kind CONSULTATION).
@@ -93,16 +94,17 @@ test.describe('DIG-28: сессия — студент', () => {
     await expect(consult).toContainText('Консультации');
     await expect(consult).toContainText('Программирование');
 
-    // ICS: текстовый календарь с событиями сессии.
-    const response = await page.request.get('/api/session/ics');
+    // DIG-63: вместо скачивания файла — живая подписка по персональной
+    // ссылке: фид отвечает календарём, события сессии внутри.
+    const url = await page.getByTestId('calendar-subscribe-url').inputValue();
+    expect(url).toMatch(/^https?:\/\/.+\/api\/calendar\/ics\?token=v1\./);
+    const response = await page.request.get(url);
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toContain('text/calendar');
     const body = await response.text();
     expect(body).toContain('BEGIN:VCALENDAR');
     expect(body).toContain('BEGIN:VEVENT');
     expect(body).toContain('DTSTART:');
-    const disposition = response.headers()['content-disposition'] ?? '';
-    expect(disposition).toContain('attachment');
   });
 
   test('360 px: все блоки сессии читаются на мобильном', async ({ page }) => {
@@ -139,14 +141,12 @@ test.describe('DIG-28: сессия — статусы и роли', () => {
     await expect(econ).not.toContainText('Не допущен');
   });
 
-  test('сотруднику: страница-заглушка и единый 404 на ICS', async ({ page }) => {
+  test('сотруднику: страница-заглушка без карточки подписки', async ({ page }) => {
     await signIn(page, 'dean.kovaleva', 'dean-demo-2026', '/grades/session');
     await expect(page.getByRole('heading', { level: 1, name: 'Сессия' })).toBeVisible();
     await expect(page.getByText('Экран доступен студентам')).toBeVisible();
     await expect(page.getByTestId('session-timeline')).toHaveCount(0);
-
-    const ics = await page.request.get('/api/session/ics');
-    expect(ics.status()).toBe(404);
+    await expect(page.getByTestId('calendar-subscribe')).toHaveCount(0);
   });
 
   test('аноним — редирект на вход', async ({ page }) => {

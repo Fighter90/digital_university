@@ -20,6 +20,9 @@ const PUBLIC_EXACT_PATHS = new Set([
   // server-to-server без Origin; перебор токенов бессмысленно дорог
   // (192 бита энтропии) и ограничен лимитером роута.
   '/api/mcp',
+  // DIG-63: живая ICS-подписка расписания — Google/Apple Calendar ходят
+  // без cookies; доступ держится на HMAC-подписанном bearer-токене ссылки.
+  '/api/calendar/ics',
   '/favicon.ico',
 ]);
 // DIG-47: /verify/<код> — публичная проверка подлинности справок (без входа);
