@@ -14,6 +14,14 @@ export const resolveDistDir = (nodeEnv: string | undefined): string =>
 const nextConfig: NextConfig = {
   // DIG-7: standalone — самодостаточный сервер для Docker-образа (deploy/)
   output: 'standalone',
+  // DIG-31: вложения мастера заказа — до 5 файлов по 10 МБ (валидацию
+  // делает и клиент, и server action); лимит транспорта с запасом на
+  // multipart-накладные. Другие действия укладываются в лимит по умолчанию.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '12mb',
+    },
+  },
   // DIG-50: сгенерированный клиент Prisma доставляется в образ явной COPY
   // (deploy/Dockerfile, runner-стадия). outputFileTracingIncludes НЕ
   // используется: в Next 15.5.29 + Turbopack любая конфигурация этой опции

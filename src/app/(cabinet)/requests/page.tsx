@@ -1,16 +1,33 @@
-// DIG-12 — «Мои заявки». All data comes from the isolated data layer scoped
-// by requireDataCtx(): the list contains the session owner's requests only —
-// there is physically no way to render someone else's row here.
+// DIG-12/DIG-31 — «Мои заявки» + вход в мастер заказа. All data comes from
+// the isolated data layer scoped by requireDataCtx(): the list contains the
+// session owner's requests only — there is physically no way to render
+// someone else's row here.
+//
+// DIG-31: ?order=<serviceId каталога> открывает мастер заказа справки/
+// заявления (модал на десктопе, полноэкранный лист на мобильном); CTA
+// открывает мастер без предвыбора. Сотруднику ни CTA, ни мастера нет.
 import Link from 'next/link';
 import { FolderOpen } from 'lucide-react';
-import { requireDataCtx, listRequests } from '@/server/data';
+import { requireDataCtx, getRequestsPage } from '@/server/data';
+import { wizardDocFor } from '@/lib/request-wizard';
 import { dataDb } from '@/server/data/db';
 import { RequestStatusBadge } from '@/components/request-status-badge';
 import { REQUEST_TYPE_LABELS, formatRequestDate } from '@/lib/request-labels';
+import { OrderWizardEntry } from '@/components/requests/order-wizard';
 
-export default async function RequestsPage() {
+export default async function RequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ order?: string }>;
+}) {
   const ctx = await requireDataCtx('/requests');
-  const requests = await listRequests(dataDb, ctx);
+  const { requests, student } = await getRequestsPage(dataDb, ctx);
+
+  // ?order= — только валидный id каталога мастера (kebab-case); мусорный
+  // параметр просто не открывает мастер (публичный параметр, аудита не требует).
+  const params = await searchParams;
+  const order = typeof params?.order === 'string' ? params.order.trim() : '';
+  const initialServiceId = wizardDocFor(order) !== null ? order : null;
 
   return (
     <section className="mx-auto max-w-3xl px-4 py-8">
@@ -39,6 +56,22 @@ export default async function RequestsPage() {
           </span>
         </span>
       </Link>
+
+      {/* DIG-31 — мастер заказа: CTA + авто-открытие по ?order=<id каталога>. */}
+      <OrderWizardEntry
+        initialServiceId={initialServiceId}
+        student={
+          student
+            ? {
+                fullName: student.fullName,
+                groupName: student.groupName,
+                course: student.course,
+                program: student.program,
+                gradebookNumber: student.gradebookNumber,
+              }
+            : null
+        }
+      />
 
       {requests.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-neutral-300 p-8 text-center">

@@ -68,6 +68,35 @@ vi.mock('@/server/data', () => ({
       updatedAt: new Date('2026-11-01T10:00:00Z'),
     },
   ]),
+  // DIG-31: страница заявок читает агрегат getRequestsPage (список + профиль
+  // для мастера заказа); CTA мастера рендерится только студенту.
+  getRequestsPage: vi.fn(async () => ({
+    requests: [
+      {
+        id: 'req-1',
+        number: 'ЗД-2026-000001',
+        type: 'SPRAVKA' as const,
+        status: 'NEW' as const,
+        title: 'Справка об обучении',
+        createdAt: new Date('2026-11-01T10:00:00Z'),
+        updatedAt: new Date('2026-11-01T10:00:00Z'),
+      },
+    ],
+    student: {
+      id: 's_test',
+      login: 'student1',
+      fullName: 'Анна Ковалёва',
+      email: 'anna@example.edu',
+      groupName: 'ПИ-21',
+      course: 2,
+      faculty: 'ИТ',
+      program: 'Прикладная информатика',
+      programCode: '09.03.04',
+      studyForm: 'очная',
+      funding: 'бюджет',
+      gradebookNumber: '20231234',
+    },
+  })),
   // DIG-20: главная кабинета читает агрегат getDashboard и новости деканата.
   getDashboard: vi.fn(async () => ({
     firstName: 'Анна',

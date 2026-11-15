@@ -12,7 +12,6 @@
 // номер заявки, ожидаемая дата, «Следить за статусом».
 
 import { useActionState, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import Link from 'next/link';
 import { FileCheck2, X } from 'lucide-react';
@@ -56,7 +55,6 @@ export interface OrderWizardEntryProps {
 
 /** CTA + точка монтирования мастера на странице «Мои заявки». */
 export function OrderWizardEntry({ initialServiceId, student }: OrderWizardEntryProps) {
-  const router = useRouter();
   const [open, setOpen] = useState(initialServiceId !== null);
 
   if (!student) return null;
@@ -68,7 +66,8 @@ export function OrderWizardEntry({ initialServiceId, student }: OrderWizardEntry
     setOpen(false);
     if (initialServiceId !== null) {
       // Чистим параметр авто-открытия, чтобы F5 не поднимал мастер заново.
-      router.replace('/requests');
+      // history вместо router: перерисовка списка не нужна, RSC не дёргаем.
+      window.history.replaceState(null, '', '/requests');
     }
   };
 
@@ -262,7 +261,7 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
 
   const stepperStates: Array<'done' | 'current' | 'pending'> = [
     step === 1 ? 'current' : 'done',
-    step === 2 ? 'current' : 'done',
+    step === 2 ? 'current' : step === 1 ? 'pending' : 'done',
     step === 3 ? 'current' : 'pending',
   ];
 
@@ -311,7 +310,7 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
               <p className="mt-1 text-sm text-muted-foreground">
                 {success.instant
                   ? 'Документ сформирован — скачайте PDF в кабинете.'
-                  : `Деканат принял заявку. Ожидаемая дата: ${formatWizardDate(new Date(success.expectedDateISO))}.`}
+                  : 'Деканат принял заявку — статус виден в карточке заявки.'}
               </p>
               <p className="mt-4 text-sm text-muted-foreground">
                 Номер заявки:{' '}
@@ -387,7 +386,7 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
                               setServiceId(entry.serviceId);
                               setErrors({});
                             }}
-                            className="mt-1 size-4 accent-[var(--coral-600,currentColor)]"
+                            className="mt-1 size-4 accent-coral-600"
                           />
                           <span className="min-w-0">
                             <span className="block text-sm font-bold text-foreground">{entry.title}</span>
@@ -720,23 +719,33 @@ function OrderWizard({ student, initialServiceId, onClosed }: OrderWizardProps) 
             </>
           )}
 
-          <Dialog
-            open={confirmClose}
-            onOpenChange={(open) => setConfirmClose(open)}
-            title="Выйти без сохранения?"
-            description="Введённые данные будут потеряны. Черновик также стирается."
-            className="w-[min(400px,calc(100vw-2rem))]"
-            footer={
-              <>
-                <Button variant="ghost" data-testid="wizard-confirm-leave" onClick={closeNow}>
-                  Выйти
-                </Button>
-                <Button data-testid="wizard-confirm-stay" onClick={() => setConfirmClose(false)}>
-                  Продолжить заполнение
-                </Button>
-              </>
-            }
-          />
+          {/* Подтверждение закрытия с черновиком (поверх мастера, z-60). */}
+          {confirmClose ? (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="wizard-confirm-title"
+              data-testid="wizard-confirm"
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/40 p-4"
+            >
+              <div className="w-[min(400px,calc(100vw-2rem))] rounded-block border border-border bg-card p-6 shadow-hover">
+                <h2 id="wizard-confirm-title" className="text-lg font-extrabold tracking-heading">
+                  Выйти без сохранения?
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Введённые данные будут потеряны, черновик сотрётся.
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                  <Button variant="ghost" data-testid="wizard-confirm-leave" onClick={closeNow}>
+                    Выйти
+                  </Button>
+                  <Button data-testid="wizard-confirm-stay" autoFocus onClick={() => setConfirmClose(false)}>
+                    Продолжить заполнение
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </BaseDialog.Popup>
       </BaseDialog.Portal>
     </BaseDialog.Root>
