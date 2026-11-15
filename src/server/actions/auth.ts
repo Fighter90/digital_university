@@ -78,12 +78,18 @@ export async function signInAction(
   redirect(safeNextPath(String(formData.get('next') ?? '')) ?? '/dashboard');
 }
 
+// DIG-55: both sign-out actions land on /login?signedOut=1 — the login screen
+// renders a role="status" success notice for that param. The session row and
+// BOTH cookies (`__Host-session`, `__Host-role`) are cleared inside
+// signOutCurrentSession/signOutAllDevices (server/auth/session.ts); the
+// middleware never re-issues cookies on POSTs, so the cleared state reaches
+// the browser uncontested.
 export async function signOutAction(): Promise<void> {
   await signOutCurrentSession();
-  redirect('/login');
+  redirect('/login?signedOut=1');
 }
 
 export async function signOutAllDevicesAction(): Promise<void> {
   await signOutAllDevices();
-  redirect('/login');
+  redirect('/login?signedOut=1');
 }

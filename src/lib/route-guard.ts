@@ -49,12 +49,37 @@ export function safeNextPath(value: string | null | undefined): string | null {
  * Only a plain `allow` for a cookie-bearing browser qualifies: redirects
  * and CSRF rejections end the exchange, and without a session cookie there
  * is nothing to renew.
+ *
+ * DIG-55: mutating requests (server actions) are excluded. A sign-out action
+ * sets the CLEARED cookies on its POST response; the middleware re-issue of
+ * `__Host-session` on the same response would compete with that cleared
+ * cookie for the same name — RFC 6265 makes the LAST Set-Cookie win and the
+ * order between the middleware and handler layers is not guaranteed, so the
+ * logout could end up re-issuing a live cookie behind the action's back.
+ * Page navigations are GET/HEAD and never clear auth cookies, so renewal
+ * stays safe there.
  */
 export function shouldSlideAuthCookies(
   decision: AccessDecision,
   hasSessionCookie: boolean,
+  method: string = 'GET',
 ): boolean {
-  return decision.kind === 'allow' && hasSessionCookie;
+  const isReadNavigation = method === 'GET' || method === 'HEAD';
+  return decision.kind === 'allow' && hasSessionCookie && isReadNavigation;
+}
+
+/**
+ * DIG-55: cache policy per request path. Protected screens must never be
+ * served from any cache — without an explicit `no-store` the browser may
+ * restore the cabinet from the back/forward cache even after sign-out
+ * (cookies cleared), so «Back» would reveal stale personal data. Public
+ * paths keep the framework defaults (static assets keep their immutable
+ * caching untouched).
+ */
+export const NO_STORE_CACHE_CONTROL = 'no-store, max-age=0, must-revalidate';
+
+export function cacheControlFor(pathname: string): string | null {
+  return isPublicPath(pathname) ? null : NO_STORE_CACHE_CONTROL;
 }
 
 export interface AccessInput {

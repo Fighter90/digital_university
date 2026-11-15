@@ -24,7 +24,6 @@ import { ErrorState } from '@/components/ui/error-state';
 import { ConsultationList } from '@/components/session/consultation-list';
 import { ExamTimeline } from '@/components/session/exam-timeline';
 import { RetakeList } from '@/components/session/retake-list';
-import { SessionSkeleton } from '@/components/session/session-skeleton';
 
 export const metadata = { title: 'Сессия — Цифровой деканат' };
 
@@ -63,7 +62,10 @@ async function SessionContent() {
           description="Обновите страницу — если ошибка повторится, сообщите в деканат."
         />
         <div className="flex justify-center">
-          <Link href="/grades/session" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
+          <Link
+            href="/grades/session"
+            className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+          >
             Повторить
           </Link>
         </div>
@@ -145,8 +147,8 @@ function SessionView({ data }: { data: SessionData }) {
             AI-ассистент
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Составьте план подготовки заранее — ассистент соберёт темы, формулы и
-            материалы по дисциплине.
+            Составьте план подготовки заранее — ассистент соберёт темы, формулы и материалы по
+            дисциплине.
           </p>
           <Link
             data-testid="ai-hint"
@@ -170,7 +172,9 @@ function SessionView({ data }: { data: SessionData }) {
       {data.retakes.length > 0 ? <RetakeList retakes={data.retakes} /> : null}
 
       {/* ── Консультации перед экзаменами ────────────────────────────────── */}
-      {data.consultations.length > 0 ? <ConsultationList consultations={data.consultations} /> : null}
+      {data.consultations.length > 0 ? (
+        <ConsultationList consultations={data.consultations} />
+      ) : null}
     </section>
   );
 }

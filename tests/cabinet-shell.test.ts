@@ -74,7 +74,10 @@ vi.mock('@/server/data', () => ({
     greeting: 'Добрый день',
     headingDate: 'среда, 11 ноября',
     summary: 'Сегодня 2 пары.',
-    today: { ok: true, value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null } },
+    today: {
+      ok: true,
+      value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null },
+    },
     deadlines: { ok: true, value: [] },
     progress: {
       ok: true,
