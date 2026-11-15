@@ -65,7 +65,41 @@ const MORE_ITEMS = [
   'Профиль',
   'Настройки',
 ] as const;
-const SETTINGS_TAB_ITEMS = ['Уведомления', 'Безопасность', 'Вид', 'Настройка MCP'] as const;
+// Ревью DIG-60 (раунд 3, п.3): вкладок настроек ровно 5 — добавлена «Главная»
+// (?tab=home; раньше была покрыта только базовым аудитом /settings).
+const SETTINGS_TAB_ITEMS = [
+  'Главная',
+  'Уведомления',
+  'Безопасность',
+  'Вид',
+  'Настройка MCP',
+] as const;
+
+// Ревью DIG-60 (раунд 3, п.1): каждая вкладка — точный ожидаемый адрес
+// (?tab=<id>) и маркер КОНТЕНТА вкладки. Старая проверка
+// waitForURL(/\/settings\?tab=/) совпадала с уже открытым URL (паттерн не
+// различал вкладки), из-за чего клики «Безопасность»/«Вид»/«Настройка MCP»
+// записывались в отчёт с URL предыдущей вкладки — утверждения были пустыми.
+// Маркеры — видимые тексты, существующие только на своей вкладке.
+const SETTINGS_TAB_TARGET: Record<
+  (typeof SETTINGS_TAB_ITEMS)[number],
+  { tabId: string; marker: RegExp }
+> = {
+  Главная: { tabId: 'home', marker: /Виджеты главной/ },
+  Уведомления: { tabId: 'notifications', marker: /Каналы уведомлений/ },
+  Безопасность: { tabId: 'security', marker: /Активные сеансы/ },
+  Вид: { tabId: 'appearance', marker: /Язык, шрифт и анимация/ },
+  'Настройка MCP': { tabId: 'mcp', marker: /MCP-серверы ассистента/ },
+};
+
+// Ревью DIG-60 (раунд 3, п.2): клик по виду расписания обязан ждать именно
+// свой ?view=<вид>&… (обобщённый /\/schedule/ совпадал с уже открытым URL,
+// а строки отчёта были верны только из-за гонки чтения page.url()).
+const SCHEDULE_VIEW_URL: Record<string, RegExp> = {
+  День: /[?&]view=day&date=/,
+  Неделя: /[?&]view=week&week=/,
+  Месяц: /[?&]view=month&month=/,
+};
 
 // Метка пункта меню → целевой адрес (для маркера целевого экрана).
 const SIDE_MENU_TARGET: Record<string, string> = {
@@ -447,15 +481,22 @@ test.describe('DIG-60: полный обход сайта', () => {
     await expect(tabsNav).toBeVisible();
     for (const label of SETTINGS_TAB_ITEMS) {
       const link = tabsNav.getByRole('link', { name: new RegExp(`^${escapeRe(label)}$`) });
+      const { tabId, marker } = SETTINGS_TAB_TARGET[label];
+      // Точный адрес вкладки + её контентный маркер (ревью DIG-60, раунд 3):
+      // навигация обязана сменить URL на ?tab=<id> и отрисовать контент
+      // именно этой вкладки — иначе клик не засчитывается.
       await clickLink(
         p,
         link,
-        /\/settings\?tab=/,
+        new RegExp(`\\?tab=${tabId}$`),
         '/settings',
         `вкладка настроек «${label}»`,
-        PAGE_MARKER['/settings'],
+        marker,
       );
     }
+    // Ревью DIG-60 (раунд 3, п.5): вкладка «Настройка MCP» — полный аудит
+    // рендера (main непустой, плашка концепта), а не только GET-статус.
+    await auditPage(p, '/settings?tab=mcp');
     await crawlInternalLinks(p, '/settings');
 
     // Вид: переключатель темы — безопасная мутация (демо-аккаунт): щёлкаем
@@ -647,10 +688,12 @@ test.describe('DIG-60: полный обход сайта', () => {
       const radio = switcher
         .first()
         .getByRole('radio', { name: new RegExp(`^${escapeRe(view)}$`) });
+      // Точный паттерн ?view=<вид>&… (ревью DIG-60, раунд 3): обобщённый
+      // /\/schedule/ совпадал с уже открытым URL и не ждал навигацию.
       await clickLink(
         p,
         radio,
-        /\/schedule/,
+        SCHEDULE_VIEW_URL[view],
         '/schedule',
         `вид расписания «${view}»`,
         PAGE_MARKER['/schedule'],
@@ -664,7 +707,7 @@ test.describe('DIG-60: полный обход сайта', () => {
       await clickLink(
         p,
         weekRadio,
-        /\/schedule/,
+        SCHEDULE_VIEW_URL['Неделя'],
         '/schedule',
         'вид расписания «Неделя» (для деталей пары)',
         PAGE_MARKER['/schedule'],
@@ -722,7 +765,7 @@ test.describe('DIG-60: полный обход сайта', () => {
       await clickLink(
         p,
         dayRadio,
-        /\/schedule/,
+        SCHEDULE_VIEW_URL['День'],
         '/schedule',
         'вид расписания «День» (для ленты дат)',
         PAGE_MARKER['/schedule'],
