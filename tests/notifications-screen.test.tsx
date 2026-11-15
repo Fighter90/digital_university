@@ -79,6 +79,10 @@ const ITEMS: NotificationFeedItem[] = [
 
 beforeEach(() => {
   vi.useFakeTimers({ now: NOW.getTime() });
+  // RTL waitFor при включённых fake timers требует глобальный jest-шейм
+  // (jestFakeTimersAreEnabled: typeof jest + setTimeout.clock). В vitest с
+  // globals:false его нет — waitFor зависает на фейковом setInterval.
+  vi.stubGlobal('jest', vi);
   markOneMock.mockClear();
   markAllMock.mockClear();
   pushMock.mockClear();
@@ -88,6 +92,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('NotificationsScreen — структура', () => {

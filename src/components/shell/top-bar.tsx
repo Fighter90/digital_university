@@ -6,7 +6,7 @@ import type { ShellUser } from '@/lib/user';
 import type { NotificationFeedItem } from '@/lib/notification-view';
 import { cn } from '@/lib/utils';
 import { UserMenu } from './user-menu';
-import { NotificationsBell } from './notifications-bell';
+import { NotificationsBell } from '@/components/notifications/notifications-bell';
 
 type TopBarProps = {
   user: ShellUser;

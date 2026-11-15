@@ -89,9 +89,9 @@ export interface NotificationDayGroup {
 
 const startOfDay = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-/** Локальный календарный день: 0 — сегодня, 1 — вчера, больше — ранее. */
-function dayDiff(from: Date, to: Date): number {
-  const diff = startOfDay(from).getTime() - startOfDay(to).getTime();
+/** Сколько КАЛЕНДАРНЫХ дней прошло с `from` до `to` (может быть 0 и отрицательным). */
+function calendarDaysBetween(from: Date, to: Date): number {
+  const diff = startOfDay(to).getTime() - startOfDay(from).getTime();
   return Math.round(diff / 86_400_000);
 }
 
@@ -110,9 +110,10 @@ export function groupNotificationsByDay(
   };
   for (const item of items) {
     const created = new Date(item.createdAt);
-    const diff = dayDiff(created, now);
-    if (diff <= 0) buckets.today.push(item);
-    else if (diff === 1) buckets.yesterday.push(item);
+    const daysAgo = calendarDaysBetween(created, now);
+    // Будущие даты (смещённые часы сервера) показываем как «сегодня».
+    if (daysAgo <= 0) buckets.today.push(item);
+    else if (daysAgo === 1) buckets.yesterday.push(item);
     else buckets.earlier.push(item);
   }
   const byNewestFirst = (a: NotificationFeedItem, b: NotificationFeedItem) =>
@@ -129,7 +130,7 @@ export function groupNotificationsByDay(
 export function formatNotificationTime(createdAt: string | Date, now: Date): string {
   const created = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
   const hhmm = `${String(created.getHours()).padStart(2, '0')}:${String(created.getMinutes()).padStart(2, '0')}`;
-  if (dayDiff(created, now) <= 1) return hhmm;
+  if (calendarDaysBetween(created, now) <= 1) return hhmm;
   const dd = String(created.getDate()).padStart(2, '0');
   const mm = String(created.getMonth() + 1).padStart(2, '0');
   return `${dd}.${mm}`;

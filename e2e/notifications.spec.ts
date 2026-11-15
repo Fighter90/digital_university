@@ -86,10 +86,15 @@ test.describe('desktop 1440 — центр уведомлений', () => {
     await expect(bell).toBeFocused();
     await expect(bell).toHaveAttribute('aria-expanded', 'false');
   });
+});
 
-  test('сотруднику центр уведомлений недоступен — пустое состояние без данных', async ({
-    page,
-  }) => {
+// Сотрудник — БЕЗ общего beforeEach: beforeEach входит за Анну, а /login
+// для уже аутентифицированной сессии редиректит на /dashboard (чипа
+// сотрудника на странице не будет).
+test.describe('desktop 1440 — сотруднику центр уведомлений недоступен', () => {
+  test.skip(({ viewport }) => viewport?.width !== 1440, 'desktop-1440 only');
+
+  test('пустое состояние без данных', async ({ page }) => {
     await signIn(page, STAFF);
     await page.goto('/notifications');
     await expect(page.getByTestId('notifications-empty')).toBeVisible();

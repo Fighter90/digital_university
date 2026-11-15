@@ -16,6 +16,7 @@ import {
   markAllNotificationsReadAction,
   markNotificationReadAction,
 } from '@/server/actions/notifications';
+import { useSafeRouter } from './use-safe-router';
 import { NotificationItemRow } from './notification-item-row';
 
 type NotificationsScreenProps = {
@@ -27,6 +28,7 @@ type NotificationsScreenProps = {
 // Лента перечитывается раз в 60 секунд (polling recent-эндпоинта, скоуп
 // владельца сессии — на сервере), отметки идут через server actions.
 export function NotificationsScreen({ initialItems }: NotificationsScreenProps) {
+  const router = useSafeRouter();
   const [items, setItems] = useState(initialItems);
   const [filter, setFilter] = useState<NotificationFilter>('ALL');
 
@@ -58,21 +60,28 @@ export function NotificationsScreen({ initialItems }: NotificationsScreenProps) 
   const groups = useMemo(() => groupNotificationsByDay(filtered, new Date()), [filtered]);
 
   /** Клик по строке (или её действию): отметка + переход к объекту. */
-  const openItem = useCallback((item: NotificationFeedItem) => {
-    setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, isRead: true } : row)));
-    if (item.link) window.location.assign(item.link);
-    void markNotificationReadAction(item.id).then((state) => {
-      // Отметка не применилась (чужой/несуществующий id) — вернём правду.
-      if (!state.ok) window.location.reload();
-    });
-  }, []);
+  const openItem = useCallback(
+    (item: NotificationFeedItem) => {
+      setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, isRead: true } : row)));
+      // Мягкий переход (client-side): push перечитывает и шапку — счётчик
+      // непрочитанных обновляется без полной перезагрузки страницы.
+      if (item.link) router?.push(item.link);
+      void markNotificationReadAction(item.id).then((state) => {
+        // Отметка не применилась (чужой/несуществующий id) — вернём правду
+        // обновлением серверных частей.
+        if (!state.ok) router?.refresh();
+      });
+    },
+    [router],
+  );
 
   const markAll = useCallback(() => {
     setItems((prev) => prev.map((row) => ({ ...row, isRead: true })));
     void markAllNotificationsReadAction();
-    // Синхронизируем серверные части (счётчик в шапке, бейдж в меню) сразу.
-    window.location.reload();
-  }, []);
+    // Серверные части (счётчик в шапке, бейдж в меню) обновляем без
+    // перезагрузки: refresh перечитывает каркас с новым initialCount.
+    router?.refresh();
+  }, [router]);
 
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-8">

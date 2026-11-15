@@ -102,22 +102,24 @@ export function NotificationItemRow({
     </span>
   );
 
-  // ── compact: одна кнопка на всю строку (панель колокольчика) ──────────────
+  // ── compact: обёртка строки + одна кнопка на всю площадь (панель) ─────────
   if (compact) {
     return (
-      <button
-        type="button"
-        data-testid={`notification-item-${itemId}`}
-        onClick={onOpen}
-        className="flex w-full items-start gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-coral-600"
-      >
-        {iconBadge}
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          {titleRow}
-          <span className="truncate text-xs text-neutral-600">{body}</span>
-        </span>
-        {meta}
-      </button>
+      <div data-testid={`notification-item-${itemId}`}>
+        <button
+          type="button"
+          data-testid="notification-item"
+          onClick={onOpen}
+          className="flex w-full items-start gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-coral-600"
+        >
+          {iconBadge}
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            {titleRow}
+            <span className="truncate text-xs text-neutral-600">{body}</span>
+          </span>
+          {meta}
+        </button>
+      </div>
     );
   }
 

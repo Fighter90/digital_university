@@ -9,7 +9,8 @@ import {
   type NotificationFeedItem,
 } from '@/lib/notification-view';
 import { markNotificationReadAction } from '@/server/actions/notifications';
-import { UnreadBadge } from './unread-badge';
+import { useSafeRouter } from './use-safe-router';
+import { UnreadBadge } from '@/components/shell/unread-badge';
 import { NotificationItemRow } from './notification-item-row';
 
 type NotificationsBellProps = {
@@ -24,6 +25,7 @@ type NotificationsBellProps = {
 // /api/notifications/count раз в 60 с, DIG-14); лента панели перечитывается
 // из /api/notifications/recent (скоуп владельца сессии — на сервере).
 export function NotificationsBell({ initialItems, initialCount }: NotificationsBellProps) {
+  const router = useSafeRouter();
   const [items, setItems] = useState(initialItems);
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -108,14 +110,22 @@ export function NotificationsBell({ initialItems, initialCount }: NotificationsB
   };
 
   /** Клик по строке панели: отметка прочитанной + переход + закрытие. */
-  const openItem = useCallback((item: NotificationFeedItem) => {
-    setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, isRead: true } : row)));
-    setOpen(false);
-    if (item.link) window.location.assign(item.link);
-    void markNotificationReadAction(item.id).then((state) => {
-      if (!state.ok) window.location.reload();
-    });
-  }, []);
+  const openItem = useCallback(
+    (item: NotificationFeedItem) => {
+      setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, isRead: true } : row)));
+      setOpen(false);
+      // Переход мягкий (client-side): push на другой маршрут перечитывает и
+      // шапку — счётчик обновляется без перезагрузки. Урок DIG-23 касается
+      // только soft-nav между search-вариантами ОДНОЙ страницы.
+      if (item.link) router?.push(item.link);
+      void markNotificationReadAction(item.id).then((state) => {
+        // Отметка не применилась (чужой/несуществующий id) — вернём правду
+        // обновлением серверных частей (без полной перезагрузки).
+        if (!state.ok) router?.refresh();
+      });
+    },
+    [router],
+  );
 
   return (
     <div className="relative shrink-0">
