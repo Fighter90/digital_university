@@ -10,10 +10,7 @@ import { resolve } from 'node:path';
 import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
-import type {
-  PerformanceData,
-  DisciplinePerformance,
-} from '@/server/data/performance';
+import type { PerformanceData, DisciplinePerformance } from '@/server/data/performance';
 import type { DataCtx, ExamSessionRow } from '@/server/data/types';
 
 const studentCtx: DataCtx = {
@@ -202,6 +199,16 @@ const freshSemesterPerformance: PerformanceData = {
   debts: [],
 };
 
+// Сессия всегда в будущем относительно реальных часов (страница берёт
+// new Date() сама): абсолютные даты устарели 14.11.2026 и «ближайшая
+// контрольная» уехала в прошлое — тест стал бомбой замедленного действия.
+const examInDays = (days: number, hours = 10): Date => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  date.setHours(hours, 0, 0, 0);
+  return date;
+};
+
 const examSessions: ExamSessionRow[] = [
   {
     id: 'exm-credit-db',
@@ -209,8 +216,8 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-DB',
     disciplineName: 'Базы данных',
     kind: 'CREDIT',
-    date: new Date(2026, 10, 14, 10, 0),
-    startsAt: new Date(2026, 10, 14, 10, 0),
+    date: examInDays(1),
+    startsAt: examInDays(1),
     room: '212',
     note: null,
   },
@@ -220,8 +227,8 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-INFO',
     disciplineName: 'Информатика',
     kind: 'EXAM',
-    date: new Date(2026, 11, 24, 10, 0),
-    startsAt: new Date(2026, 11, 24, 10, 0),
+    date: examInDays(30),
+    startsAt: examInDays(30),
     room: '305',
     note: null,
   },
@@ -231,8 +238,8 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-PROG',
     disciplineName: 'Программирование',
     kind: 'RETAKE',
-    date: new Date(2026, 10, 20, 9, 0),
-    startsAt: new Date(2026, 10, 20, 9, 0),
+    date: examInDays(7, 9),
+    startsAt: examInDays(7, 9),
     room: '405',
     note: null,
   },
@@ -240,7 +247,11 @@ const examSessions: ExamSessionRow[] = [
 
 vi.mock('@/server/auth/session', () => ({
   getAuthSession: vi.fn(async () => null),
-  requireUser: vi.fn(async () => ({ id: 'auth-anna', login: 'anna.smirnova', role: 'STUDENT' as const })),
+  requireUser: vi.fn(async () => ({
+    id: 'auth-anna',
+    login: 'anna.smirnova',
+    role: 'STUDENT' as const,
+  })),
   requireStaff: vi.fn(async () => ({ id: 'x', login: 'x', role: 'STAFF' as const })),
 }));
 
@@ -254,10 +265,7 @@ vi.mock('@/server/data', () => ({
 
 import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
 
-async function renderPage(
-  Page: ComponentType,
-  props?: Record<string, unknown>,
-): Promise<string> {
+async function renderPage(Page: ComponentType, props?: Record<string, unknown>): Promise<string> {
   const { prelude } = await prerenderToNodeStream(createElement(Page, props));
   let html = '';
   for await (const chunk of prelude) {
@@ -290,7 +298,10 @@ async function renderWith(overrides: {
     getPerformance.mockResolvedValueOnce(overrides.performance ?? richPerformance);
   }
   listExams.mockResolvedValueOnce(overrides.exams ?? examSessions);
-  return renderPage(GradesPage, overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined);
+  return renderPage(
+    GradesPage,
+    overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined,
+  );
 }
 
 describe('/grades (DIG-26) — «Успеваемость: сводка»', () => {
@@ -403,7 +414,11 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
     expect(html).toContain('Оценок пока нет');
     expect(html).toContain('Первая контрольная');
     expect(html).toContain('Базы данных');
-    expect(html).toContain('14 ноября');
+    // «14 ноября»-стиль: ближайшая контрольная — завтра (фикстура всегда
+    // в будущем), дата в подсказке совпадает с днём+месяцем словом.
+    expect(html).toContain(
+      new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(examInDays(1)),
+    );
     // карточек дисциплин нет — только пустое состояние
     expect(html).not.toContain('data-testid="discipline-card"');
     // светофор честно нейтрален: долгов нет, оценок нет
