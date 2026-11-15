@@ -128,6 +128,56 @@ export type RequestFormValidation =
   { ok: true; data: Record<string, string> } | { ok: false; error: string };
 
 /**
+ * По-полевая валидация (DIG-31, клиент мастера): карта ошибок
+ * «ключ поля → человеческое сообщение» вместо первого нарушения.
+ * Сервер продолжает пользоваться агрегатной validateRequestForm —
+ * правила одни и те же (один buildFieldZod).
+ */
+export type RequestFormFieldsValidation =
+  | { ok: true; data: Record<string, string>; errors: Record<string, string> }
+  /** Полевые нарушения: карта «ключ поля → сообщение» (клиент DIG-31). */
+  | { ok: false; errors: Record<string, string> }
+  /** Сломанная схема формы или некорректный ввод — общий текст. */
+  | { ok: false; error: string };
+
+export function validateRequestFormFields(
+  schemaJson: unknown,
+  data: unknown,
+): RequestFormFieldsValidation {
+  const schema =
+    schemaJson === null || schemaJson === undefined
+      ? { fields: [] }
+      : parseRequestFormSchema(schemaJson);
+  if (!schema) return { ok: false, error: 'Некорректная схема формы заявки' };
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+    return { ok: false, error: 'Некорректные параметры формы' };
+  }
+
+  const input = data as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+  const prepared: Record<string, string> = {};
+  for (const field of schema.fields) {
+    const raw = input[field.key];
+    const value = typeof raw === 'string' ? raw : '';
+    prepared[field.key] = value;
+    const check = buildFieldZod(field).safeParse(value);
+    if (!check.success) {
+      errors[field.key] = check.error.issues[0]?.message ?? `Проверьте поле «${field.label}»`;
+    }
+  }
+  if (Object.keys(errors).length > 0) return { ok: false, errors };
+  // Неизвестные ключи отбрасываются тем же правилом, что и на сервере.
+  const parsed = z.object(
+    Object.fromEntries(schema.fields.map((field) => [field.key, buildFieldZod(field)])),
+  );
+  const result = parsed.safeParse(prepared);
+  if (!result.success) {
+    return { ok: false, error: result.error.issues[0]?.message ?? 'Проверьте поля формы' };
+  }
+  return { ok: true, data: result.data as Record<string, string>, errors: {} };
+}
+
+/**
  * Валидация ввода студента по JSON-схеме типа. Схема null/undefined —
  * «форма без полей» (типу заявки нечего спрашивать), а не ошибка.
  * Чужие ключи отбрасываются, строки триммируются; ответ — первое

@@ -23,6 +23,11 @@ vi.mock('next/headers', () => ({
   headers: vi.fn(async () => new Headers({ host: 'localhost:3000' })),
   cookies: vi.fn(async () => new Map()),
 }));
+// DIG-31 — мастер заказа на /requests использует useRouter (router.replace
+// при закрытии): в prerender-тестах роутер заменяется стабом.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+}));
 vi.mock('@/server/data/mcp', () => ({
   getOwnMcpTokenView: vi.fn(async () => null),
 }));
@@ -63,6 +68,8 @@ vi.mock('@/server/data', () => ({
     theme: 'SYSTEM' as const,
     updatedAt: new Date('2026-11-11T10:00:00Z'),
   })),
+  // DIG-31: страница /requests передаёт мастеру заказа словарь типов.
+  listCanonicalRequestTypes: vi.fn(async () => []),
   // DIG-32: страница /requests читает агрегат getRequestsScreen (виды-
   // карточки уже с каноническими статусами единого словаря).
   getRequestsScreen: vi.fn(async () => ({

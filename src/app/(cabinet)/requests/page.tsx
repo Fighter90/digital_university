@@ -3,29 +3,78 @@
 // Архив), поиск по номеру/названию, карточки с единым словарём статусов,
 // степпером конвейера и кнопками действий; «Нужна доработка» всегда наверху.
 //
+// DIG-31 — параметр заказа из каталога: ссылки /requests?order=<id> (каталог
+// сервисов, FAQ, поиск) и CTA «Заказать справку» открывают мастер заказа —
+// модальное окно на десктопе, полноэкранный лист на мобильном. Типы словаря
+// и профиль студента передаются из серверных слоёв (словарь публичен,
+// профиль — только владелец через getOwnProfile); сотруднику мастера нет.
+//
 // Данные — одним агрегатом getRequestsScreen(dataDb, ctx): оба списка
 // (канон «ЗД-…» DIG-30 и legacy «SR-…» DIG-12) читаются owner-scoped
 // функциями слоя; контекст строится из живой сессии (requireDataCtx),
 // сотруднику — пустое состояние, а его чтения аудируются слоем.
-// Фильтр заказа из каталога (/requests?order=…) обрабатывает мастер
-// заказа DIG-31 — здесь параметр не читается.
 import Link from 'next/link';
 import { FileText } from 'lucide-react';
 
-import { requireDataCtx, getRequestsScreen } from '@/server/data';
+import {
+  requireDataCtx,
+  getRequestsScreen,
+  listCanonicalRequestTypes,
+  getOwnProfile,
+} from '@/server/data';
 import { dataDb } from '@/server/data/db';
+import { createRequestAction } from '@/server/actions/requests';
 import { RequestsBrowser } from '@/components/requests/requests-browser';
 import { EmptyState } from '@/components/ui/empty-state';
+import { OrderWizard, type WizardProfileDto, type WizardTypeDto } from '@/components/requests/order-wizard';
+import { orderTargetForService } from '@/lib/request-order-map';
 
 export const metadata = { title: 'Мои заявки — Цифровой деканат' };
 
-export default async function RequestsPage() {
+export default async function RequestsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
   const ctx = await requireDataCtx('/requests');
   const { cards } = await getRequestsScreen(dataDb, ctx);
 
+  // DIG-31 — мастер только студенту: параметр (строка или первый элемент
+  // массива дублей) читается безопасно; чужие типы игнорируются.
+  const rawOrderValue = Array.isArray(params.order) ? params.order[0] : params.order;
+  const rawOrder = typeof rawOrderValue === 'string' ? rawOrderValue : null;
+  const orderParam = ctx.role === 'STUDENT' ? rawOrder : null;
+  const autoTarget = orderTargetForService(orderParam);
+
+  let wizardTypes: WizardTypeDto[] = [];
+  let wizardProfile: WizardProfileDto | null = null;
+  if (ctx.role === 'STUDENT') {
+    const [types, profile] = await Promise.all([
+      listCanonicalRequestTypes(dataDb),
+      getOwnProfile(dataDb, ctx),
+    ]);
+    wizardTypes = types.map((type) => ({
+      code: type.code,
+      name: type.name,
+      etaDays: type.etaDays,
+      format: type.format,
+      isInstant: type.isInstant,
+      formSchema: type.formSchema,
+    }));
+    if (profile) {
+      wizardProfile = {
+        fullName: profile.fullName,
+        groupName: profile.groupName,
+        course: profile.course,
+        faculty: profile.faculty,
+      };
+    }
+  }
+
   const orderCta = (testid: string) => (
     <Link
-      href="/services"
+      href="/requests?order=new"
       data-testid={testid}
       className="inline-flex items-center gap-1.5 rounded-button bg-coral-600 px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
     >
@@ -35,37 +84,60 @@ export default async function RequestsPage() {
   );
 
   return (
-    <section className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold sm:text-2xl">Мои заявки</h1>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Справки и заявления в одном месте: видно, на каком шаге каждая заявка и что от вас ждут
-            дальше.
-          </p>
+    <>
+      <section className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold sm:text-2xl">Мои заявки</h1>
+            <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+              Справки и заявления в одном месте: видно, на каком шаге каждая заявка и что от вас
+              ждут дальше.
+            </p>
+          </div>
+          {ctx.role === 'STUDENT' && cards.length > 0 ? orderCta('requests-order-cta') : null}
         </div>
-        {ctx.role === 'STUDENT' && cards.length > 0 ? orderCta('requests-order-cta') : null}
-      </div>
 
-      {ctx.role === 'STAFF' ? (
-        <EmptyState
-          className="mt-8"
-          title="Заявки студентов"
-          description="Раздел показывает заявки студента: у сотрудника он пуст. Чтение списков сотрудником фиксируется в журнале доступа."
-        />
-      ) : cards.length === 0 ? (
-        <EmptyState
-          className="mt-8"
-          icon={FileText}
-          title="Заявок пока нет"
-          description="Закажите справку или напишите заявление — заявка появится здесь вместе со сроком готовности."
-          action={orderCta('requests-empty-order-cta')}
-        />
-      ) : (
-        <div className="mt-5">
-          <RequestsBrowser cards={cards} />
+        {ctx.role === 'STAFF' ? (
+          <EmptyState
+            className="mt-8"
+            title="Заявки студентов"
+            description="Раздел показывает заявки студента: у сотрудника он пуст. Чтение списков сотрудником фиксируется в журнале доступа."
+          />
+        ) : cards.length === 0 ? (
+          <EmptyState
+            className="mt-8"
+            icon={FileText}
+            title="Заявок пока нет"
+            description="Закажите справку или напишите заявление — заявка появится здесь вместе со сроком готовности."
+            action={orderCta('requests-empty-order-cta')}
+          />
+        ) : (
+          <div className="mt-5">
+            <RequestsBrowser cards={cards} />
+          </div>
+        )}
+      </section>
+
+      {ctx.role === 'STUDENT' ? (
+        <div
+          data-testid="order-wizard-root"
+          data-order-param={orderParam ?? ''}
+          data-auto-open={orderParam !== null}
+          data-auto-type={autoTarget?.typeCode ?? ''}
+          data-wizard-types={wizardTypes.map((type) => type.code).join(',')}
+          data-wizard-profile={wizardProfile?.fullName ?? ''}
+          className="contents"
+        >
+          <OrderWizard
+            key={orderParam ?? 'closed'}
+            types={wizardTypes}
+            profile={wizardProfile}
+            orderParam={orderParam}
+            autoTarget={autoTarget}
+            action={createRequestAction}
+          />
         </div>
-      )}
-    </section>
+      ) : null}
+    </>
   );
 }

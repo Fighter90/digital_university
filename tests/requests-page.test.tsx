@@ -28,11 +28,25 @@ const state = vi.hoisted(() => ({
   screen: null as unknown,
 }));
 
+const replaceMock = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
+}));
+
 vi.mock('@/server/data/db', () => ({ dataDb: {} }));
 
 vi.mock('@/server/data', () => ({
   requireDataCtx: vi.fn(async () => state.ctx),
   getRequestsScreen: vi.fn(async () => state.screen),
+  listCanonicalRequestTypes: vi.fn(async () => []),
+  getOwnProfile: vi.fn(async () => null),
+}));
+
+vi.mock('@/server/actions/requests', () => ({
+  createRequestAction: vi.fn(async () => null),
+  cancelRequestAction: vi.fn(async () => null),
+  resubmitRequestAction: vi.fn(async () => null),
 }));
 
 import RequestsPage from '@/app/(cabinet)/requests/page';
@@ -142,25 +156,26 @@ describe('/requests — студент с заявками', () => {
 });
 
 describe('/requests — студент без заявок', () => {
-  it('пустое состояние: «Заявок пока нет» + «Заказать справку» → каталог', async () => {
+  it('пустое состояние: «Заявок пока нет» + «Заказать справку» → мастер заказа (DIG-31)', async () => {
     state.ctx = studentCtx;
     state.screen = { cards: [] } satisfies RequestsScreenData;
     const html = await renderPage();
     expect(html).toContain('Заявок пока нет');
     expect(html).toContain('requests-empty-order-cta');
-    expect(html).toContain('href="/services"');
+    expect(html).toContain('href="/requests?order=new"');
     expect(html).not.toContain('requests-filters');
   });
 });
 
 describe('/requests — сотрудник', () => {
-  it('список недоступен: пустое состояние без фильтров и CTA', async () => {
+  it('список недоступен: пустое состояние без фильтров, CTA и мастера заказа (DIG-31)', async () => {
     state.ctx = staffCtx;
     state.screen = { cards: [] } satisfies RequestsScreenData;
     const html = await renderPage();
     expect(html).toContain('Заявки студентов');
     expect(html).not.toContain('requests-filters');
     expect(html).not.toContain('requests-order-cta');
+    expect(html).not.toContain('order-wizard-root');
     expect(html).not.toContain('Заявок пока нет');
   });
 });
