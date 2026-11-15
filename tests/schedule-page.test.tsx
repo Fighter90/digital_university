@@ -34,6 +34,9 @@ const studentCtx: DataCtx = {
 
 const staffCtx: DataCtx = { ...studentCtx, role: 'STAFF', studentId: null, groupName: null };
 
+/** Настройки Анны: голосовые функции включены (дефолт продукта). */
+const annaSettings = { studentId: 'st-anna', voiceAssistant: true, updatedAt: new Date() };
+
 /** Понедельник текущей (реальной «сегодня») недели. */
 const monday = startOfMoscowWeek(new Date());
 const day = (offset: number, hour: number, minute = 0): Date => {
@@ -108,6 +111,8 @@ vi.mock('@/server/data', async () => {
     // DIG-23: страница «дня» при пустом выбранном дне спрашивает ближайший
     // учебный день — в тестах недели он не нужен, отдаём null.
     getNextStudyDay: vi.fn(async () => null),
+    // DIG-65: страница «дня» читает настройку «Озвучка и голосовой ввод».
+    getOwnSettings: vi.fn(async () => annaSettings),
     // schedule/page.tsx импортирует только эти имена из barrel
     __types: actualTypes,
   };
@@ -332,5 +337,29 @@ describe('/schedule (DIG-22) — неделя в стиле Google Calendar', ()
     const html = await renderPage({ week: nextWeekKey });
     expect(html).toContain('На этой неделе пар нет');
     expect(html).toContain(`week=${thisWeekKey}`);
+  });
+});
+
+// DIG-65 — «Прослушать день»: страница «дня» отрисовывает кнопку озвучки
+// (и в десктопном DayView, и в мобильном MobileSchedule), когда настройка
+// «Озвучка и голосовой ввод» включена, и не отрисовывает, когда выключена.
+describe('/schedule?view=day — «Прослушать день» (DIG-65)', () => {
+  it('кнопка озвучки присутствует при включённой настройке', async () => {
+    const html = await renderPage({ view: 'day' });
+    expect(html).toContain('data-testid="listen-day"');
+    expect(html).toContain('Прослушать день');
+    // aria-pressed="false" — озвучка не идёт.
+    expect(html).toMatch(/aria-pressed="false"[^>]*data-testid="listen-day"|data-testid="listen-day"[^>]*aria-pressed="false"/);
+  });
+
+  it('кнопки нет, когда настройка выключена (voiceAssistant=false)', async () => {
+    const { getOwnSettings } = await import('@/server/data');
+    vi.mocked(getOwnSettings as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ...annaSettings,
+      voiceAssistant: false,
+    });
+    const html = await renderPage({ view: 'day' });
+    expect(html).not.toContain('data-testid="listen-day"');
+    expect(html).not.toContain('Прослушать день');
   });
 });

@@ -25,6 +25,7 @@ import {
   type ScheduleEventCard,
 } from '@/lib/schedule-cards';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ListenDayButton } from '@/components/schedule/listen-day-button';
 import { EventCard } from './event-card';
 
 export interface MobileDayView {
@@ -44,11 +45,13 @@ export interface MobileScheduleProps {
   initialDateKey: string;
   /** Ближайший учебный день за пределами окна (для пустых дней). */
   nextStudy: { dateKey: string; label: string } | null;
+  /** DIG-65 — «Озвучка и голосовой ввод» (настройка студента). */
+  voiceEnabled?: boolean;
 }
 
 const SWIPE_THRESHOLD = 48;
 
-export function MobileSchedule({ mode, days, initialDateKey, nextStudy }: MobileScheduleProps) {
+export function MobileSchedule({ mode, days, initialDateKey, nextStudy, voiceEnabled = true }: MobileScheduleProps) {
   const [selectedKey, setSelectedKey] = useState(initialDateKey);
   const ribbonRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -169,6 +172,17 @@ export function MobileSchedule({ mode, days, initialDateKey, nextStudy }: Mobile
         </h2>
         <span className="text-xs text-muted-foreground">{pairsLabel(selected.events.length)}</span>
       </div>
+
+      {/* DIG-65 — «Прослушать день» для выбранного в ленте дня: озвучка идёт
+          вслед за свайпом (события берутся из выбранного дня, не из «сегодня»).
+          Отдельная строка — предсказуемая раскладка на 360 px. */}
+      <ListenDayButton
+        title={formatDayTitleFromKey(selected.dateKey)}
+        isToday={selected.isToday}
+        events={selected.events}
+        enabled={voiceEnabled}
+        className="self-start"
+      />
 
       {selected.events.length === 0 ? (
         <div data-testid="mobile-day-empty">

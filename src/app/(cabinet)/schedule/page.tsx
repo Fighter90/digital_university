@@ -53,7 +53,7 @@ import {
   semesterBounds,
 } from '@/lib/schedule-time';
 import { dataDb } from '@/server/data/db';
-import { getMonth, getNextStudyDay, getSchedule, requireDataCtx } from '@/server/data';
+import { getMonth, getNextStudyDay, getOwnSettings, getSchedule, requireDataCtx } from '@/server/data';
 
 export const metadata = { title: 'Расписание — Цифровой деканат' };
 
@@ -108,6 +108,11 @@ async function ScheduleContent({
   const mobileView = resolveScheduleView(view, 'day');
 
   try {
+    // DIG-65 — «Озвучка и голосовой ввод» (voiceAssistant) читается только
+    // для студента: сотрудник уходит раньше (ветка STAFF), поэтому аудит
+    // denyAccess не засоряется. Сбой слоя данных падает в общий catch.
+    const settings = ctx.role === 'STUDENT' ? await getOwnSettings(dataDb, ctx) : null;
+    const voiceEnabled = settings?.voiceAssistant ?? true;
     if (desktopView === 'month') {
       return await MonthContent({ ctx, now, bounds, todayKey, monthParam: month, currentQuery });
     }
@@ -122,6 +127,7 @@ async function ScheduleContent({
       desktopView,
       mobileView,
       currentQuery,
+      voiceEnabled,
     });
   } catch (error) {
     // не глотаем: без лога «Расписание не загрузилось» недиагностируемо
@@ -153,6 +159,8 @@ interface DayWeekProps {
   mobileView: ScheduleView;
   /** Query URL для ViewSwitcher/WeekView (см. ScheduleContent). */
   currentQuery: string;
+  /** DIG-65 — настройка «Озвучка и голосовой ввод» владельца сессии. */
+  voiceEnabled: boolean;
 }
 
 async function DayWeekContent({
@@ -166,6 +174,7 @@ async function DayWeekContent({
   desktopView,
   mobileView,
   currentQuery,
+  voiceEnabled,
 }: DayWeekProps) {
   // Страховка типов: ветка «месяца» уже отработала в ScheduleContent.
   const desktopMode: 'day' | 'week' = desktopView === 'week' ? 'week' : 'day';
@@ -293,6 +302,7 @@ async function DayWeekContent({
               nextHref={next ? dayHref(moscowDateKey(next)) : null}
               todayHref="/schedule?view=day"
               nextStudy={nextStudy}
+              voiceEnabled={voiceEnabled}
             />
           </>
         )}
@@ -316,6 +326,7 @@ async function DayWeekContent({
             days={mobileDays}
             initialDateKey={selectedKey}
             nextStudy={nextStudy}
+            voiceEnabled={voiceEnabled}
           />
         )}
       </div>

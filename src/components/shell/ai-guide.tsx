@@ -13,11 +13,17 @@ import {
   matchAiGuideScenario,
   type AiGuideScenario,
 } from '@/lib/ai-guide';
+import { VoiceInputButton } from '@/components/shell/voice-input';
 
 type AiGuideProps = {
   /** Имя из шапки кабинета — для личного приветствия («Привет, Анна!»). */
   userName: string;
   role: ShellUserRole;
+  /**
+   * DIG-65 — настройка «Озвучка и голосовой ввод»: false прячет микрофон
+   * голосового ввода. Дефолт true (включено) — как в настройках студента.
+   */
+  voiceEnabled?: boolean;
 };
 
 type GuideView =
@@ -41,7 +47,7 @@ type GuideView =
 //  - фокус: открытие панели переводит фокус в диалог (скринридер анонсирует
 //    его имя), закрытие возвращает фокус на пилюлю; смена вида (ответ,
 //    шаг экскурсии) анонсируется через aria-live-область.
-export function AiGuide({ userName, role }: AiGuideProps) {
+export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<GuideView>({ kind: 'welcome' });
   const [question, setQuestion] = useState('');
@@ -204,6 +210,14 @@ export function AiGuide({ userName, role }: AiGuideProps) {
                       onChange={(event) => setQuestion(event.target.value)}
                       className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus-visible:outline-2 focus-visible:outline-coral-600"
                     />
+                    {/* DIG-65 — голосовой ввод (Web Speech API браузера): финальная
+                        расшифровка дописывается в поле вопроса. Скрыт при
+                        выключенной настройке или без поддержки браузера. */}
+                    {voiceEnabled ? (
+                      <VoiceInputButton
+                        onResult={(text) => setQuestion((current) => (current ? `${current} ${text}` : text))}
+                      />
+                    ) : null}
                     <button
                       type="submit"
                       className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"

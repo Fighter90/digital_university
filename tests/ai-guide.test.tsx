@@ -236,3 +236,43 @@ describe('компонент AiGuide (DIG-62)', () => {
     expect(live).toContainElement(screen.getByTestId('ai-guide-answer-cta'));
   });
 });
+
+// DIG-65 — голосовой ввод в AI-гиде: микрофон в форме свободного ввода
+// зависит от настройки «Озвучка и голосовой ввод» и поддержки браузером
+// Web Speech API (в jsdom поддержка появляется только с моком).
+describe('голосовой ввод в AiGuide (DIG-65)', () => {
+  it('микрофон в форме есть при voiceEnabled=true и поддержке браузера', async () => {
+    Object.defineProperty(window, 'SpeechRecognition', {
+      configurable: true,
+      value: function FakeRec(this: Record<string, unknown>) {
+        return this;
+      },
+    });
+    render(<AiGuide userName="Анна Смирнова" role="STUDENT" voiceEnabled />);
+    await screen.findByTestId('ai-guide-panel');
+    expect(screen.getByTestId('ai-guide-form')).toContainElement(
+      screen.getByTestId('voice-input'),
+    );
+  });
+
+  it('микрофона нет при voiceEnabled=false, поле вопроса и «Спросить» остаются', async () => {
+    Object.defineProperty(window, 'SpeechRecognition', {
+      configurable: true,
+      value: function FakeRec(this: Record<string, unknown>) {
+        return this;
+      },
+    });
+    markGuideSeen();
+    render(<AiGuide userName="Анна Смирнова" role="STUDENT" voiceEnabled={false} />);
+    fireEvent.click(screen.getByRole('button', { name: /открыть ai-гида/i }));
+    await screen.findByTestId('ai-guide-panel');
+    expect(screen.queryByTestId('voice-input')).toBeNull();
+    expect(screen.getByTestId('ai-guide-input')).toBeVisible();
+  });
+
+  it('без поддержки SpeechRecognition микрофона нет и при включённой настройке', async () => {
+    render(<AiGuide userName="Анна Смирнова" role="STUDENT" voiceEnabled />);
+    await screen.findByTestId('ai-guide-panel');
+    expect(screen.queryByTestId('voice-input')).toBeNull();
+  });
+});

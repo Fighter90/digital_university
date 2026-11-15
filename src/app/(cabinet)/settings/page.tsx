@@ -18,6 +18,7 @@ import { QuietHoursSettings } from '@/components/settings/quiet-hours-settings';
 import { PasswordForm } from '@/components/settings/password-form';
 import { SessionsList } from '@/components/settings/sessions-list';
 import { AppearanceSettings } from '@/components/settings/appearance-settings';
+import { VoiceSettings } from '@/components/settings/voice-settings';
 import { McpSettings } from '@/components/settings/mcp-settings';
 import { McpDeaneryServer } from '@/components/settings/mcp-deanery-server';
 import { getAuthSession, listActiveUserSessions } from '@/server/auth/session';
@@ -196,6 +197,23 @@ export default async function SettingsPage({
 
       {tab === 'appearance' && (
         <>
+          {/* DIG-65 — «Озвучка и голосовой ввод»: скрывает/показывает кнопку
+              «Прослушать день» на расписании и микрофон в AI-гиде. Синтез и
+              распознавание выполняет браузер (Web Speech API), без внешних
+              ключей; настройка переживает перезагрузку (строка настроек). */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Голосовой ассистент</CardTitle>
+              <CardDescription>
+                Синтез речи и распознавание выполняет браузер (Web Speech API) — без внешних
+                сервисов. Полезно на мобильном и для доступности.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-3">
+              {settings && <VoiceSettings voiceAssistant={settings.voiceAssistant} />}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Тема</CardTitle>
