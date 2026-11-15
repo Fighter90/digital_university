@@ -8,6 +8,7 @@
 // страницы, вид/тема — и root layout (классы на <html>).
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ExternalLink } from 'lucide-react';
 import { NotificationSettings } from '@/components/profile/notification-settings';
 import { ThemePicker } from '@/components/profile/theme-picker';
 import { SettingsTabs } from '@/components/settings/settings-tabs';
@@ -29,6 +30,7 @@ import {
   MCP_INSTALL_STEPS,
   MCP_SERVERS,
 } from '@/lib/mcp-servers';
+import { ASSISTANT_DOC_URL, DOCS_LINKS } from '@/lib/docs-links';
 
 export const metadata = { title: 'Настройки — Цифровой деканат' };
 
@@ -74,18 +76,56 @@ export default async function SettingsPage({
       </div>
 
       {tab === 'home' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Виджеты главной</CardTitle>
-            <CardDescription>
-              Выберите, какие блоки показывать на главной и в каком порядке. Порядок меняется
-              перетаскиванием или кнопками «вверх/вниз».
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="mt-3">
-            {settings && <WidgetsSettings initial={settings.widgets} />}
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Виджеты главной</CardTitle>
+              <CardDescription>
+                Выберите, какие блоки показывать на главной и в каком порядке. Порядок меняется
+                перетаскиванием или кнопками «вверх/вниз».
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-3">
+              {settings && <WidgetsSettings initial={settings.widgets} />}
+            </CardContent>
+          </Card>
+
+          {/* DIG-59 — перекрёстные ссылки кабинета на документацию проекта. */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Справка и документация</CardTitle>
+              <CardDescription>
+                Подробные инструкции и устройство прототипа — в документации проекта. Открывается на
+                GitHub в новой вкладке.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="mt-1 grid gap-2">
+              {DOCS_LINKS.map((doc) => (
+                <a
+                  key={doc.id}
+                  href={doc.href}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  data-testid={`docs-link-${doc.id}`}
+                  className="flex items-start gap-2 rounded-card border border-border bg-muted px-3 py-2.5 transition-colors hover:border-coral-200 hover:bg-coral-50 focus-visible:outline-2 focus-visible:outline-coral-600"
+                >
+                  <span className="flex-1">
+                    <span className="block text-sm font-semibold text-neutral-900">
+                      {doc.title}
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-neutral-600">
+                      {doc.description}
+                    </span>
+                  </span>
+                  <ExternalLink
+                    className="mt-0.5 size-4 shrink-0 text-neutral-400"
+                    aria-hidden="true"
+                  />
+                </a>
+              ))}
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {tab === 'notifications' && (
@@ -274,6 +314,18 @@ export default async function SettingsPage({
                   ))}
                 </dl>
               </section>
+
+              {/* DIG-59 — ссылка на полную справку по ассистенту (docs/assistant.md). */}
+              <a
+                href={ASSISTANT_DOC_URL}
+                target="_blank"
+                rel="noreferrer noopener"
+                data-testid="docs-link-assistant-mcp"
+                className="flex items-center gap-2 rounded-card border border-border bg-muted px-3 py-2.5 text-sm font-semibold text-neutral-900 transition-colors hover:border-coral-200 hover:bg-coral-50 focus-visible:outline-2 focus-visible:outline-coral-600"
+              >
+                Полная справка: цифровой ассистент и MCP
+                <ExternalLink className="size-4 shrink-0 text-neutral-400" aria-hidden="true" />
+              </a>
             </CardContent>
           </Card>
         </>

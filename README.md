@@ -8,6 +8,25 @@
 С современного телефона и с компьютера. Код пишут ИИ-агенты (рои OpenCode),
 человек ставит задачи и принимает merge.
 
+## Скриншоты
+
+| Десктоп 1440 | Мобильный 360 |
+|---|---|
+| [![Десктоп 1440](docs/design/screenshots/design-full-desktop-1440.png)](docs/design/screenshots/design-full-desktop-1440.png) | [![Мобильный 360](docs/design/screenshots/design-full-mobile-360.png)](docs/design/screenshots/design-full-mobile-360.png) |
+
+## Документация — быстрые ссылки
+
+| Раздел | Для кого |
+|---|---|
+| [`docs/help.md`](docs/help.md) | Студент: вход, расписание, оценки, заявки, уведомления, справки с QR |
+| [`docs/assistant.md`](docs/assistant.md) | Цифровой ассистент: возможности, примеры запросов, ограничения, MCP-интеграции (Product Hunt и др.) |
+| [`docs/architecture.md`](docs/architecture.md) | Разработчику: Next.js 15, Prisma, слои данных, схема БД |
+| [`docs/security.md`](docs/security.md) | Безопасность простыми словами: IDOR, пароли, ключи |
+| [`docs/deploy.md`](docs/deploy.md) | Деплой: Docker Compose, Caddy, прод |
+| [`docs/figma-screens.md`](docs/figma-screens.md) | Карта «экран ↔ задача ↔ фрейм Figma» |
+| [`docs/sdd/SDD-GUIDE.md`](docs/sdd/SDD-GUIDE.md) | Spec-driven процесс (OpenSpec) |
+| [`CHANGELOG.md`](CHANGELOG.md) · [`docs/ai-log/`](docs/ai-log/) | Что и когда делал рой |
+
 ## Обязательное ядро
 
 | Раздел | Задача Linear | Экран Figma |
@@ -95,7 +114,7 @@ https://ostrovok.store — Timeweb Cloud VM + Docker Compose + Caddy (авто-T
 - Секреты — в окружении, `.env` не в git; в браузер не попадают.
 - Простыми словами: [`docs/security.md`](docs/security.md).
 
-## Документы
+## Документы (для агентов)
 
-`docs/architecture.md` · `docs/sdd/SDD-GUIDE.md` (OpenSpec) · `CHANGELOG.md` ·
-вики GitHub. Вопросы по правилам для агентов — `AGENTS.md`.
+`docs/sdd/SDD-GUIDE.md` (OpenSpec) · правила для агентов — `AGENTS.md`.
+Вопросы по продукту — раздел «Документация — быстрые ссылки» выше.
