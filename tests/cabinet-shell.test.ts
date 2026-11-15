@@ -63,6 +63,30 @@ vi.mock('@/server/data', () => ({
     theme: 'SYSTEM' as const,
     updatedAt: new Date('2026-11-11T10:00:00Z'),
   })),
+  // DIG-32: страница /requests читает агрегат getRequestsScreen (виды-
+  // карточки уже с каноническими статусами единого словаря).
+  getRequestsScreen: vi.fn(async () => ({
+    cards: [
+      {
+        id: 'creq-1',
+        number: 'ЗД-2026-000001',
+        title: 'Справка об обучении · для банка',
+        typeName: 'Справка об обучении',
+        iconKind: 'certificate',
+        status: 'READY',
+        createdAtISO: '2026-11-01T10:00:00.000Z',
+        createdAtLabel: '1 ноября, 13:00',
+        readyByISO: null,
+        readyByLabel: null,
+        updatedAtISO: '2026-11-01T10:00:00.000Z',
+        action: 'DOWNLOAD',
+        pipelineStep: 4,
+        nextAction: 'Документ готов к скачиванию',
+        reason: null,
+        isFix: false,
+      },
+    ],
+  })),
   listRequests: vi.fn(async () => [
     {
       // id обязателен: RequestsPage строит <li key={request.id}> — без него

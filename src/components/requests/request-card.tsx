@@ -26,7 +26,11 @@ import {
 import type { LucideIcon } from 'lucide-react';
 
 import { cancelRequestAction } from '@/server/actions/requests';
-import { type RequestCardView, type RequestIconKind } from '@/lib/requests-view';
+import {
+  type RequestCardView,
+  type RequestIconKind,
+  unifyRequestStatus,
+} from '@/lib/requests-view';
 import { REQUEST_STATUS_LABELS, REQUEST_STATUS_TONES } from '@/lib/request-labels';
 import { Icon } from '@/components/ui/icon';
 import { RequestStepper } from './request-stepper';
@@ -45,11 +49,16 @@ const ICONS: Record<RequestIconKind, LucideIcon> = {
 export function RequestCard({ request }: { request: RequestCardView }) {
   const IconCmp = ICONS[request.iconKind];
   const isFix = request.isFix;
+  // Единый словарь на входе в экран: даже если вид приехал с легаси-
+  // значением (нарушение контракта агрегатора), пилюля и степпер
+  // покажут только канонические метки — «Выполнена/Требует правок»
+  // на экране «Мои заявки» невозможны.
+  const status = unifyRequestStatus(request.status);
 
   return (
     <article
       data-testid="request-card"
-      data-request-status={request.status}
+      data-request-status={status}
       className={`relative rounded-card border bg-card p-4 shadow-soft sm:p-5 ${
         isFix ? 'border-warning/60 bg-warning-soft/40' : 'border-border'
       }`}
@@ -81,10 +90,10 @@ export function RequestCard({ request }: { request: RequestCardView }) {
             <span
               data-testid="request-status-pill"
               className={`inline-block shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                REQUEST_STATUS_TONES[request.status]
+                REQUEST_STATUS_TONES[status]
               }`}
             >
-              {REQUEST_STATUS_LABELS[request.status]}
+              {REQUEST_STATUS_LABELS[status]}
             </span>
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
@@ -96,7 +105,7 @@ export function RequestCard({ request }: { request: RequestCardView }) {
       </div>
 
       <div className="mt-3">
-        <RequestStepper status={request.status} />
+        <RequestStepper status={status} />
       </div>
 
       <p

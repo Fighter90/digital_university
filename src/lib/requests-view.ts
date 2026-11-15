@@ -92,9 +92,12 @@ export const REQUEST_PIPELINE_STEPS: ReadonlyArray<{
   { status: 'ISSUED', label: 'Выдана' },
 ];
 
-/** Текущий шаг конвейера «Подана → Принята → В работе → Готова → Выдана». */
-export function requestPipelineStep(status: UnifiedRequestStatus): number | null {
-  switch (status) {
+/**
+ * Текущий шаг конвейера «Подана → Принята → В работе → Готова → Выдана».
+ * Вход сужается unify'ом: легаси-значение никогда не даёт «undefined»-шаг.
+ */
+export function requestPipelineStep(status: RequestStatus): number | null {
+  switch (unifyRequestStatus(status)) {
     case 'SUBMITTED':
     case 'NEEDS_FIX': // вернулась к студенту: после исправления снова «Подана»
       return 1;
@@ -114,21 +117,25 @@ export function requestPipelineStep(status: UnifiedRequestStatus): number | null
 
 const PENDING_STEPS: readonly RequestStepperStepState[] = ['pending', 'pending', 'pending', 'pending', 'pending'];
 
-/** Состояния пяти шагов степпера для статуса. */
-export function requestStepperStates(status: UnifiedRequestStatus): RequestStepperStepState[] {
+/**
+ * Состояния пяти шагов степпера для статуса. Защита от утечки легаси-
+ * значения во время выполнения: шаг считается по КАНОНУ (unify внутри),
+ * вне конвейера — все шаги неактивны.
+ */
+export function requestStepperStates(status: RequestStatus): RequestStepperStepState[] {
   const step = requestPipelineStep(status);
   if (step === null) return [...PENDING_STEPS];
   const states = [...PENDING_STEPS] as RequestStepperStepState[];
   for (let i = 0; i < step - 1; i += 1) states[i] = 'done';
   // READY: шаг «Готова» подсвечен состоянием ready (иконка скачивания).
-  states[step - 1] = status === 'READY' ? 'ready' : 'current';
+  states[step - 1] = unifyRequestStatus(status) === 'READY' ? 'ready' : 'current';
   if (status === 'ISSUED') states[4] = 'done';
   return states;
 }
 
 /** Кнопка действия карточки — только то, что разрешает машина состояний DIG-30. */
-export function requestAction(status: UnifiedRequestStatus): RequestCardAction | null {
-  switch (status) {
+export function requestAction(status: RequestStatus): RequestCardAction | null {
+  switch (unifyRequestStatus(status)) {
     case 'READY':
       return 'DOWNLOAD';
     case 'NEEDS_FIX':
@@ -149,13 +156,14 @@ const issuedAtFormatter = new Intl.DateTimeFormat('ru-RU', {
 });
 
 export function nextActionLine(input: {
-  status: UnifiedRequestStatus;
+  status: RequestStatus;
   readyBy: Date | null;
   reason: string | null;
   updatedAt: Date;
 }): string {
+  // Единый словарь на входе: легаси-значение не даёт «undefined»-строки.
   const { status, readyBy, reason, updatedAt } = input;
-  switch (status) {
+  switch (unifyRequestStatus(status)) {
     case 'NEEDS_FIX':
       return reason ? `Нужна доработка: ${reason}` : 'Нужна доработка';
     case 'REJECTED':

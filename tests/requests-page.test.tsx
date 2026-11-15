@@ -72,7 +72,19 @@ describe('/requests — студент с заявками', () => {
       cards: [
         card({ id: 'fix', status: 'NEEDS_FIX', title: 'Справка об обучении · для военкомата', number: 'ЗД-2026-000003', nextAction: 'Нужна доработка: Укажите ФИО латиницей', isFix: true, action: 'FIX', createdAtISO: '2026-10-20T10:00:00.000Z', createdAtLabel: '20 октября, 13:00' }),
         card({ id: 'ready', status: 'READY', number: 'ЗД-2026-000001', nextAction: 'Документ готов к скачиванию', action: 'DOWNLOAD', createdAtISO: '2026-11-12T06:00:00.000Z', createdAtLabel: '12 ноября, 09:00' }),
-        card({ id: 'old', status: 'COMPLETED', title: 'Справка об обучении для налоговой', number: 'SR-2026-AB1C2', typeName: 'CERTIFICATE', iconKind: 'certificate', createdAtISO: '2026-11-01T10:00:00.000Z', createdAtLabel: '1 ноября, 13:00' }),
+        card({
+          // Легаси-значение «как из старого хранилища» (нарочно с нарушением
+          // контракта вида): экран обязан показать канон «Выдана», а не
+          // «Выполнена» — защита на входе в экран (unifyRequestStatus).
+          id: 'old',
+          status: 'COMPLETED' as RequestCardView['status'],
+          title: 'Справка об обучении для налоговой',
+          number: 'SR-2026-AB1C2',
+          typeName: 'CERTIFICATE',
+          iconKind: 'certificate',
+          createdAtISO: '2026-11-01T10:00:00.000Z',
+          createdAtLabel: '1 ноября, 13:00',
+        }),
       ] satisfies RequestCardView[],
     } satisfies RequestsScreenData;
   });
@@ -112,11 +124,14 @@ describe('/requests — студент с заявками', () => {
 
   it('статусы — только из единого словаря: легаси-метки не рендерятся', async () => {
     const html = await renderPage();
-    // Legacy-заявка SR- с COMPLETED показана как «Выдана» (unifyRequestStatus).
+    // Legacy-заявка SR- с легаси-статусом показана как «Выдана» (unify).
     expect(html).toContain('Выдана');
     expect(html).not.toContain('Выполнена');
     expect(html).not.toContain('Требует правок');
     expect(html).not.toContain('Завершён');
+    // Степпер легаси-статуса тоже считается по канону (не «Шаг из 5»).
+    expect(html).not.toContain('Шаг undefined');
+    expect(html).toContain('Шаг 5 из 5 · Выдана');
   });
 
   it('компактный и полный степперы присутствуют в разметке', async () => {
