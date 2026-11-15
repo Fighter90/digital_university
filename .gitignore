@@ -24,6 +24,9 @@ dist/
 # swarm runtime (логи циклов, lock, тела PR)
 .task-board/
 
+# локальный lock параллельных next build (PID-артефакт, только runtime)
+.next-build.lock/
+
 # testing
 /coverage
 /playwright-report/
