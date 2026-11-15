@@ -62,8 +62,28 @@
   отказ на чужие данные и на «погоду», «Новый диалог», «Сообщить о неверном
   ответе» → обращение, панель по FAB из /dashboard: на 360 px весь экран,
   поле ввода видно. Падало до реализации.
-- [ ] 13. Зелёные гейты: узкие vitest-прогоны, полный `pnpm test`,
+- [x] 13. Зелёные гейты: узкие vitest-прогоны, полный `pnpm test`,
   `pnpm lint`, `pnpm typecheck`, `node scripts/swarm/gates.mjs`,
   e2e `e2e/assistant.spec.ts` (оба вьюпорта) + старые спеки не сломаны.
+  Попутный ремонт сломанных гейтов (не считался с задачей, но блокирует
+  зелёную линию): build-ошибка «FaqArticlePage is not a valid Page
+  export field» (named export файла страницы — Next 15 запрещает),
+  date-drift фикстуры «14 ноября» в tests/grades-page.test.tsx
+  (hardcode стал прошлым 15.11 — переведена на always-future по смыслу
+  собственного комментария теста), hookTimeout флака eslint-изоляции.
+  Раунд 2 (2026-11-15): e2e-дожим поймал 3 продуктовых дефекта и 2 дефекта
+  самих тестов — (а) цепочка тиков стрима обрывалась после первого тика
+  (флаги found/finished читались снаружи setDialogs-updater, который React
+  вызывает позже) — переписана на эффект по состоянию dialogs
+  (regression-тест tests/assistant-chat-stream.test.tsx, jsdom+fake timers);
+  (б) id ответа аллоцировался раньше id вопроса — «Сообщить о неверном
+  ответе» уходил с пустым вопросом («Некорректный текст вопроса»),
+  + findLast для цитаты своего вопроса; (в) доступное имя панели задаёт
+  Dialog.Title («AI-ассистент») и перекрывает aria-label — тест выверен по
+  реальному accessibility-дереву; (г) test.skip(колбэк) в теле теста
+  запрещён — булев флаг; (д) 22 автологина за прогон упирались в IP-лимит
+  входа 30/15 мин (DIG-11) — один вход на воркер через storageState, лимит
+  не ослаблялся. Гейты зелёные: e2e 22 passed / 2 skipped
+  (вьюпорт-зависимые), vitest 756/756, lint 0 errors, typecheck ok.
 - [x] 14. Change-папка openspec/changes/dig-46-ai-assistant-screen
   (proposal, tasks, delta-спека assistant) — задачи отмечаются по ходу.

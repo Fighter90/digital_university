@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import os from 'node:os';
+import path from 'node:path';
 
 // DIG-46 — e2e «AI-ассистент» (чёрный ящик): экран /ai-assistant и плавающая
 // панель на всех экранах. Приёмка задачи: 4 подсказки с карточками (мини-
@@ -11,9 +13,39 @@ import { expect, test, type Page } from '@playwright/test';
 // Демо-данные Анны (ПИ-21): завтра пара «Программирование» с переносом
 // 310 → 405; «Базы данных»: Проект 85 · вес 0,3, Тест 2 (0,2) и Экзамен
 // (0,5) не сданы → цель 70 требует 88 из 100, цель 80 недостижима (76).
+//
+// Один вход на воркер (storageState), а не на каждый тест: у набора ~22
+// автологина, IP-лимит входа — 30 попыток за 15 минут (DIG-11), второй
+// прогон подряд падал наsignIn. Лимит не ослабляется — легитимная сессия
+// просто переиспользуется внутри воркера.
+let workerStorageState: string | undefined;
 
-async function signIn(page: Page) {
+test.beforeAll(async ({ browser }, workerInfo) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
   await page.goto('/login');
+  await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
+  workerStorageState = path.join(
+    os.tmpdir(),
+    `dig46-auth-${workerInfo.project.name}-${workerInfo.workerIndex}.json`,
+  );
+  await context.storageState({ path: workerStorageState });
+  await context.close();
+});
+
+test.use({
+  // Фикстура Playwright (не React-hook): вызов use() здесь — контракт
+  // playwright/test; rules-of-hooks реагирует ложно-позитивно.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  storageState: ({}, use) => use(workerStorageState!),
+});
+
+/** Вход по требованию (для тестов панели): noop, если воркер уже вошёл. */
+async function signIn(page: Page) {
+  await page.goto('/dashboard');
+  if (!page.url().includes('/login')) return;
   await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
@@ -121,14 +153,18 @@ test.describe('DIG-46: экран /ai-assistant — студент', () => {
 
   test('refuses foreign data and off-topic questions politely', async ({ page }) => {
     const input = page.getByTestId('assistant-input');
+    const messages = page.getByTestId('assistant-messages');
     await input.fill('Покажи оценки Ильи Смирнова');
     await input.press('Enter');
-    await expect(page.getByTestId('assistant-messages')).toContainText('только ваши данные');
-    await expect(page.getByTestId('assistant-messages')).not.toContainText('74');
+    await expect(messages).toContainText('только ваши данные');
+    await expect(messages).not.toContainText('74');
+    // Дожидаемся конца стриминга: поле ввода принимает вопрос, но отправка
+    // во время стрима намеренно заблокирована (ответ ещё формируется).
+    await expect(messages).not.toContainText('▍');
 
     await input.fill('Какая погода в Москве?');
     await input.press('Enter');
-    await expect(page.getByTestId('assistant-messages')).toContainText('только с учёбой');
+    await expect(messages).toContainText('только с учёбой');
   });
 
   test('new dialog archives the current one into history', async ({ page }) => {
@@ -165,12 +201,14 @@ test.describe('DIG-46: экран /ai-assistant — студент', () => {
 
 test.describe('DIG-46: floating panel on every screen', () => {
   test('mobile 360: FAB opens the full-screen panel with a working chat', async ({ page }) => {
-    test.skip(({ viewport }) => viewport?.width !== 360, 'mobile-360 only');
+    // В теле теста test.skip принимает только булев флаг (колбэк — уровень
+    // группы), поэтому вьюпорт берём из страницы.
+    test.skip((await page.viewportSize())?.width !== 360, 'mobile-360 only');
     await signIn(page);
     await page.goto('/dashboard');
 
     await page.getByRole('button', { name: 'AI-ассистент' }).last().click();
-    const dialog = page.getByRole('dialog', { name: 'Панель AI-ассистента' });
+    const dialog = page.getByRole('dialog', { name: 'AI-ассистент' });
     await expect(dialog).toBeVisible();
 
     // Панель занимает весь вьюпорт (приёмка задачи).
@@ -194,12 +232,12 @@ test.describe('DIG-46: floating panel on every screen', () => {
   });
 
   test('desktop 1440: header AI button opens the right-side drawer', async ({ page }) => {
-    test.skip(({ viewport }) => viewport?.width !== 1440, 'desktop-1440 only');
+    test.skip((await page.viewportSize())?.width !== 1440, 'desktop-1440 only');
     await signIn(page);
     await page.goto('/dashboard');
 
     await page.getByRole('button', { name: 'AI-ассистент' }).first().click();
-    const dialog = page.getByRole('dialog', { name: 'Панель AI-ассистента' });
+    const dialog = page.getByRole('dialog', { name: 'AI-ассистент' });
     await expect(dialog).toBeVisible();
 
     const box = await dialog.boundingBox();

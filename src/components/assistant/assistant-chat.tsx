@@ -131,18 +131,46 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
   const [historyOpen, setHistoryOpen] = useState(false);
   const [draft, setDraft] = useState('');
 
-  const timerRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const active = dialogs.find((dialog) => dialog.id === activeId) ?? dialogs[0]!;
   const streaming = active.messages.some((message) => message.streaming);
 
+  // ── Стриминг ответа ────────────────────────────────────────────────────
+  // Цепочку тиков ведёт ЭФФЕКТ по состоянию dialogs, а не setTimeout-колбэк,
+  // читающий флаги из setDialogs-updater: React вызывает updater ПОСЛЕ
+  // возврата колбэка, поэтому found/finished там всегда false и цепочка
+  // обрывалась после первого тика — текст навсегда залипал с курсором ▍
+  // (поймано e2e DIG-46). Каждый рендер с активным стримом планирует ровно
+  // один следующий тик; cleanup гасит таймер при размонтировании/смене
+  // состояния. prefers-reduced-motion: текст появляется целиком за один тик.
   useEffect(() => {
+    if (!streaming) return;
+    const chunk = prefersReducedMotion() ? Number.POSITIVE_INFINITY : STREAM_CHARS_PER_TICK;
+    const timer = window.setTimeout(() => {
+      setDialogs((prev) =>
+        prev.map((dialog) => ({
+          ...dialog,
+          messages: dialog.messages.map((message) => {
+            if (!message.streaming) return message;
+            const nextLength = Math.min(
+              message.text.length,
+              message.displayedText.length + chunk,
+            );
+            return {
+              ...message,
+              displayedText: message.text.slice(0, nextLength),
+              streaming: nextLength < message.text.length,
+            };
+          }),
+        })),
+      );
+    }, STREAM_TICK_MS);
     return () => {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      window.clearTimeout(timer);
     };
-  }, []);
+  }, [dialogs, streaming]);
 
   // Автоскролл ленты: новое сообщение и каждый тик стрима.
   const lastDisplayedText = active.messages.at(-1)?.displayedText;
@@ -151,55 +179,15 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
     if (node) node.scrollTop = node.scrollHeight;
   }, [active.messages, lastDisplayedText]);
 
-  const startStreaming = useCallback((messageId: number) => {
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    // prefers-reduced-motion: текст появляется целиком за один тик.
-    const chunk = prefersReducedMotion() ? Number.POSITIVE_INFINITY : STREAM_CHARS_PER_TICK;
-    const step = () => {
-      let found = false;
-      let finished = false;
-      setDialogs((prev) =>
-        prev.map((dialog) => ({
-          ...dialog,
-          messages: dialog.messages.map((message) => {
-            if (message.id !== messageId || !message.streaming) return message;
-            found = true;
-            const nextLength = Math.min(message.text.length, message.displayedText.length + chunk);
-            finished = nextLength >= message.text.length;
-            return {
-              ...message,
-              displayedText: message.text.slice(0, nextLength),
-              streaming: !finished,
-            };
-          }),
-        })),
-      );
-      // Сообщение исчезло (переключили диалог) или дописали — таймер гасим.
-      if (found && !finished) {
-        timerRef.current = window.setTimeout(step, STREAM_TICK_MS);
-      } else {
-        timerRef.current = null;
-      }
-    };
-    // Первый тик — вне стека вызова эффекта (без каскада рендеров).
-    timerRef.current = window.setTimeout(step, 0);
-  }, []);
-
-  // Добираем стрим seeded-ответа после гидрации (SSR рендерит пустой текст).
-  // Эффект стоит после объявления startStreaming; запуск — раз на монтирование.
-  useEffect(() => {
-    const pending = active.messages.find((message) => message.streaming);
-    if (pending && pending.displayedText.length === 0 && pending.text.length > 0) {
-      startStreaming(pending.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const send = useCallback(
     (rawQuestion: string) => {
       const question = rawQuestion.trim();
       if (question.length === 0 || streaming || context === null) return;
       const reply = buildAssistantReply(question, context);
+      // Порядок важен: id вопроса МЕНЬШЕ id ответа — «Сообщить о неверном
+      // ответе» ищет вопрос пары по `id < message.id` (поймано e2e DIG-46:
+      // assistantId аллоцировался раньше и отчёт уходил с пустым вопросом).
+      const userId = nextId();
       const assistantId = nextId();
       setDialogs((prev) =>
         prev.map((dialog) =>
@@ -210,7 +198,7 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
                 messages: [
                   ...dialog.messages,
                   {
-                    id: nextId(),
+                    id: userId,
                     role: 'user',
                     text: question,
                     displayedText: question,
@@ -230,13 +218,12 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
         ),
       );
       setDraft('');
-      startStreaming(assistantId);
+      // Стрим нового сообщения подхватит эффект выше (streaming: true).
     },
-    [activeId, context, startStreaming, streaming],
+    [activeId, context, streaming],
   );
 
   const newDialog = useCallback(() => {
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     const dialog: Dialog = {
       id: nextId(),
       title: 'Новый диалог',
@@ -249,17 +236,11 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
     inputRef.current?.focus();
   }, [context]);
 
-  const restoreDialog = useCallback(
-    (dialogId: number) => {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-      const dialog = dialogs.find((item) => item.id === dialogId);
-      const pending = dialog?.messages.find((message) => message.streaming);
-      setActiveId(dialogId);
-      setHistoryOpen(false);
-      if (pending) startStreaming(pending.id);
-    },
-    [dialogs, startStreaming],
-  );
+  const restoreDialog = useCallback((dialogId: number) => {
+    setActiveId(dialogId);
+    setHistoryOpen(false);
+    // Недописанный стрим восстановленного диалога продолжит эффект.
+  }, []);
 
   const showHints = active.messages.every((message) => message.role === 'assistant');
 
@@ -369,7 +350,10 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
                     {!message.isGreeting ? (
                       <ReportWrongAnswer
                         question={
-                          active.messages.find(
+                          // Последний вопрос ПЕРЕД этим ответом (findLast, а
+                          // не первый попавшийся — при нескольких обменах
+                          // отчёт должен цитировать свой вопрос).
+                          active.messages.findLast(
                             (candidate) => candidate.role === 'user' && candidate.id < message.id,
                           )?.text ?? ''
                         }
