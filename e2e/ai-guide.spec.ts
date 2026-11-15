@@ -140,6 +140,47 @@ test.describe('DIG-62: AI-гид по кабинету', () => {
     await expect(page.getByTestId('ai-guide-panel')).toHaveCount(0);
   });
 
+  // Раунд 2 (ревью DIG-62): гид живёт рядом с плавающей AI-кнопкой
+  // (aria-label «AI-ассистент», тот же нижне-правый угол) — пилюля и панель
+  // не должны её перекрывать ни в открытом, ни в закрытом состоянии.
+  test('360 px: пилюля и панель гида не перекрывают плавающую AI-кнопку', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360 only');
+    await signIn(page);
+
+    // Плавающая кнопка — единственная «AI-ассистент»-ссылка с fixed-позиционированием
+    // (в шапке есть одноимённая иконка-ссылка, это не она).
+    const fab = page.locator('a[href="/ai-assistant"].fixed');
+    await expect(fab).toBeVisible();
+    const overlaps = async (
+      a: { x: number; y: number; width: number; height: number },
+      b: { x: number; y: number; width: number; height: number },
+    ) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+
+    // Панель раскрыта (первый вход): AI-кнопка остаётся видимой и не перекрыта.
+    const panel = page.getByTestId('ai-guide-panel');
+    await expect(panel).toBeVisible();
+    const panelBox = await panel.boundingBox();
+    const fabBox = await fab.boundingBox();
+    expect(panelBox).not.toBeNull();
+    expect(fabBox).not.toBeNull();
+    expect(await overlaps(panelBox!, fabBox!), 'panel covers the floating AI button').toBe(false);
+
+    // Панель закрыта: пилюля «AI-гид» тоже не наезжает на AI-кнопку.
+    await page.getByTestId('ai-guide-close').click();
+    await expect(panel).toHaveCount(0);
+    const pill = page.getByTestId('ai-guide-pill');
+    await expect(pill).toBeVisible();
+    const pillBox = await pill.boundingBox();
+    const fabBoxAfter = await fab.boundingBox();
+    expect(pillBox).not.toBeNull();
+    expect(fabBoxAfter).not.toBeNull();
+    expect(await overlaps(pillBox!, fabBoxAfter!), 'pill covers the floating AI button').toBe(
+      false,
+    );
+  });
+
   test('360 px: подсказка на первом входе видна, скролла и перекрытия таб-бара нет', async ({
     page,
   }, testInfo) => {

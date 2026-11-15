@@ -187,4 +187,52 @@ describe('компонент AiGuide (DIG-62)', () => {
     });
     expect(screen.queryByRole('button', { name: /открыть ai-гида/i })).toBeNull();
   });
+
+  // Раунд 2 (ревью DIG-62): панель — не-модальный диалог, при открытии фокус
+  // уходит в панель (скринридер анонсирует её имя), при закрытии возвращается
+  // на пилюлю; пилюля не теряется из фокуса после unmount.
+  it('авто-показ на первом входе переводит фокус в панель (role=dialog)', async () => {
+    render(<AiGuide userName="Анна Смирнова" role="STUDENT" />);
+
+    const panel = await screen.findByTestId('ai-guide-panel');
+    expect(panel).toHaveAttribute('role', 'dialog');
+    await waitFor(() => {
+      expect(panel).toHaveFocus();
+    });
+  });
+
+  it('открытие пилюлей фокусирует панель, закрытие возвращает фокус на пилюлю', async () => {
+    markGuideSeen();
+    render(<AiGuide userName="Анна Смирнова" role="STUDENT" />);
+    await waitFor(() => {
+      expect(screen.queryByTestId('ai-guide-panel')).toBeNull();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /открыть ai-гида/i }));
+    const panel = await screen.findByTestId('ai-guide-panel');
+    await waitFor(() => {
+      expect(panel).toHaveFocus();
+    });
+
+    fireEvent.click(screen.getByTestId('ai-guide-close'));
+    await waitFor(() => {
+      expect(screen.queryByTestId('ai-guide-panel')).toBeNull();
+    });
+    expect(screen.getByRole('button', { name: /открыть ai-гида/i })).toHaveFocus();
+  });
+
+  it('смена вида (ответ на сценарий) анонсируется через aria-live-область', async () => {
+    markGuideSeen();
+    render(<AiGuide userName="Анна Смирнова" role="STUDENT" />);
+    fireEvent.click(screen.getByRole('button', { name: /открыть ai-гида/i }));
+    await screen.findByTestId('ai-guide-panel');
+
+    fireEvent.click(screen.getByRole('button', { name: /где мои справки\?/i }));
+    await screen.findByTestId('ai-guide-answer-cta');
+
+    const live = screen.getByTestId('ai-guide-live');
+    expect(live).toHaveAttribute('aria-live', 'polite');
+    // Кнопка-ссылка ответа живёт внутри анонсируемой области.
+    expect(live).toContainElement(screen.getByTestId('ai-guide-answer-cta'));
+  });
 });
