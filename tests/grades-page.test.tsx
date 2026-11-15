@@ -199,6 +199,11 @@ const freshSemesterPerformance: PerformanceData = {
   debts: [],
 };
 
+// «Первая контрольная» фикстуры: всегда в будущем (+3 дня) и захвачена в
+// константу — тест пинит часы относительно ЭТОЙ ЖЕ даты (одна точка правды,
+// урок 2026-11-15: фикстура «14 ноября» устарела за сутки).
+const firstCreditDate = new Date(Date.now() + 3 * 86_400_000);
+
 const examSessions: ExamSessionRow[] = [
   {
     id: 'exm-credit-db',
@@ -206,10 +211,8 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-DB',
     disciplineName: 'Базы данных',
     kind: 'CREDIT',
-    // Всегда в будущем (now + 3 дня): тест «первой контрольной» не зависит
-    // от календаря (урок 2026-11-15: фикстура «14 ноября» устарела за сутки).
-    date: new Date(Date.now() + 3 * 86_400_000),
-    startsAt: new Date(Date.now() + 3 * 86_400_000),
+    date: firstCreditDate,
+    startsAt: firstCreditDate,
     room: '212',
     note: null,
   },
@@ -219,8 +222,10 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-INFO',
     disciplineName: 'Информатика',
     kind: 'EXAM',
-    date: new Date(2026, 11, 24, 10, 0),
-    startsAt: new Date(2026, 11, 24, 10, 0),
+    // Дальше «первой контрольной» (+30 дней против +3): подсказка пустого
+    // семестра всегда называет «Базы данных».
+    date: new Date(Date.now() + 30 * 86_400_000),
+    startsAt: new Date(Date.now() + 30 * 86_400_000),
     room: '305',
     note: null,
   },
@@ -399,13 +404,14 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
   });
 
   it('семестр без оценок: пустое состояние с подсказкой о первой контрольной', async () => {
-    // Дата-бомба: подсказка называет первую контрольную В БУДУЩЕМ относительно
-    // реального «сегодня» (grades page читает new Date() при рендере). Без пина
-    // тест детерминированно красный с 14.11.2026 (зачёт по «Базам данных»
-    // становится прошлым и подсказка перескакивает на «Информатику»).
-    // Пиним Date на день до fixture-ного зачёта; фейкуются только Date,
-    // таймеры не трогаем — prerenderToNodeStream остаётся асинхронно живым.
-    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 10, 13, 9, 0) });
+    // Часы пинятся ОТНОСИТЕЛЬНО фикстуры (первая контрольная всегда «завтра
+    // после этого момента»): подсказка гарантированно называет будущую
+    // контрольную, независимо от календаря. Фейкуются только Date, таймеры
+    // не трогаем — prerenderToNodeStream остаётся асинхронно живым.
+    vi.useFakeTimers({
+      toFake: ['Date'],
+      now: new Date(firstCreditDate.getTime() - 86_400_000),
+    });
     try {
       const html = await renderWith({
         performance: freshSemesterPerformance,
@@ -414,11 +420,9 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
       expect(html).toContain('Оценок пока нет');
       expect(html).toContain('Первая контрольная');
       expect(html).toContain('Базы данных');
-      // Дата первой контрольной — из always-future фикстуры (ru-RU, «д месяц»).
+      // Дата первой контрольной — из фикстуры (ru-RU, «д месяц»).
       expect(html).toContain(
-        new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(
-          new Date(Date.now() + 3 * 86_400_000),
-        ),
+        new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(firstCreditDate),
       );
       // карточек дисциплин нет — только пустое состояние
       expect(html).not.toContain('data-testid="discipline-card"');
