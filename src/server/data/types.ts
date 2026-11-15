@@ -17,8 +17,24 @@ export type { CanonicalRequestStatus, RequestActor };
 
 export type RequestType = 'CERTIFICATE' | 'STATEMENT' | 'PRACTICE' | 'DORMITORY' | 'OTHER';
 
+/**
+ * Статус заявки. DIG-32: единый словарь UI — канон машины состояний
+ * (lib/request-machine, 8 значений) плюс два ЛЕГАСИ-значения мира
+ * prisma-сидов DIG-10 (NEEDS_REVISION / COMPLETED), которые на входе в
+ * экран отображаются на канон функцией unifyRequestStatus
+ * (lib/requests-view.ts): NEEDS_REVISION→NEEDS_FIX, COMPLETED→ISSUED.
+ */
 export type RequestStatus =
-  'SUBMITTED' | 'IN_PROGRESS' | 'NEEDS_REVISION' | 'COMPLETED' | 'REJECTED';
+  | 'SUBMITTED'
+  | 'ACCEPTED'
+  | 'IN_PROGRESS'
+  | 'READY'
+  | 'ISSUED'
+  | 'NEEDS_FIX'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'NEEDS_REVISION'
+  | 'COMPLETED';
 
 export type ActorRole = 'STUDENT' | 'STAFF';
 

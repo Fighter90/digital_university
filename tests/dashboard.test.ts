@@ -446,7 +446,7 @@ describe('getDashboard: один параллельный агрегат', () =>
     expect(prog?.level).toBe('good');
   });
 
-  it('«Заявки в работе»: SUBMITTED/IN_PROGRESS/NEEDS_REVISION считаются, COMPLETED/REJECTED — нет', async () => {
+  it('«Заявки в работе»: SUBMITTED/ACCEPTED/IN_PROGRESS/NEEDS_FIX считаются, терминальные (ISSUED/REJECTED/CANCELLED/COMPLETED) — нет', async () => {
     const data = await getDashboard(seedDashboardDb(), annaCtx, NOW);
     expect(data.requests.ok).toBe(true);
     if (!data.requests.ok) return;

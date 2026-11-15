@@ -319,10 +319,14 @@ export function toProgressView(
   };
 }
 
+// DIG-32 — корзина «В работе» единого словаря: канон (SUBMITTED, ACCEPTED,
+// IN_PROGRESS) + NEEDS_FIX (ждёт действия студента). Легаси COMPLETED и
+// NEEDS_REVISION (мир prisma-сидов) в «работе» не считаются.
 const REQUESTS_IN_WORK: ServiceRequestRow['status'][] = [
   'SUBMITTED',
+  'ACCEPTED',
   'IN_PROGRESS',
-  'NEEDS_REVISION',
+  'NEEDS_FIX',
 ];
 
 export function toRequestsView(requests: ServiceRequestRow[]): RequestsView {
