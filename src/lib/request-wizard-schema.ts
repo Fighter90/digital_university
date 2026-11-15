@@ -1,12 +1,15 @@
 // DIG-31 — общие поля мастера заказа справки или заявления: язык, куда
 // предоставляется, количество экземпляров, способ получения, комментарий
-// и вложения. Модуль чистый (без серверных и React-импортов): один словарь
-// правил для клиента и для сервера.
+// и вложения. Модуль чистый (без серверных и React-импортов): одна zod-схема
+// правил для клиента и для сервера (тот же подход, что request-form-schema
+// из DIG-30).
 //
 // Сервер получает ТОЛЬКО метаданные вложений (имя, размер) — файлы в
 // прототипе не передаются (см. proposal DIG-31): клиент валидирует файлы
 // до отправки, сервер повторно валидирует мету validateWizardMeta
 // (защита в глубину).
+
+import { z } from 'zod';
 
 export const MAX_WIZARD_FILES = 5;
 export const MAX_WIZARD_FILE_SIZE_MB = 10;
@@ -59,104 +62,131 @@ export const DEFAULT_WIZARD_META: WizardMeta = {
   attachments: [],
 };
 
-const DELIVERIES: readonly string[] = WIZARD_DELIVERIES;
-const LANGUAGES: readonly string[] = WIZARD_LANGUAGES;
-
+/** Строки триммим, не-строки трактуем как пустые (поля необязательные). */
 function asTrimmed(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-/**
- * Строгая серверная валидация меты мастера. Ответ — первая нарушенная
- * правило человеческим языком (как validateRequestForm в DIG-30).
- */
-export type WizardMetaValidation =
-  | { ok: true; data: WizardMeta }
-  | { ok: false; error: string };
+const LANGUAGE_ERROR = 'Выберите язык справки (русский или английский)';
+const DELIVERY_ERROR = 'Выберите способ получения документа';
+const COPIES_ERROR = `Количество экземпляров — от 1 до ${MAX_WIZARD_COPIES}`;
+const NAME_ERROR = 'Некорректное имя файла вложения';
 
-export function validateWizardMeta(input: unknown): WizardMetaValidation {
-  if (input === null || typeof input !== 'object' || Array.isArray(input)) {
-    return { ok: false, error: 'Некорректные параметры заказа' };
-  }
-  const raw = input as Record<string, unknown>;
-
-  const language = raw.language;
-  if (typeof language !== 'string' || !LANGUAGES.includes(language)) {
-    return { ok: false, error: 'Выберите язык справки (русский или английский)' };
-  }
-
-  const copies = raw.copies;
-  if (
-    typeof copies !== 'number' ||
-    !Number.isInteger(copies) ||
-    copies < 1 ||
-    copies > MAX_WIZARD_COPIES
-  ) {
-    return {
-      ok: false,
-      error: `Количество экземпляров — от 1 до ${MAX_WIZARD_COPIES}`,
-    };
-  }
-
-  const delivery = raw.delivery;
-  if (typeof delivery !== 'string' || !DELIVERIES.includes(delivery)) {
-    return { ok: false, error: 'Выберите способ получения документа' };
-  }
-
-  const destination = asTrimmed(raw.destination);
-  if (destination.length > MAX_WIZARD_DESTINATION_LENGTH) {
-    return {
-      ok: false,
-      error: `Поле «Куда предоставляется» — максимум ${MAX_WIZARD_DESTINATION_LENGTH} символов`,
-    };
-  }
-
-  const comment = asTrimmed(raw.comment);
-  if (comment.length > MAX_WIZARD_COMMENT_LENGTH) {
-    return {
-      ok: false,
-      error: `Комментарий — максимум ${MAX_WIZARD_COMMENT_LENGTH} символов`,
-    };
-  }
-
-  const rawAttachments = raw.attachments;
-  if (rawAttachments !== undefined && !Array.isArray(rawAttachments)) {
-    return { ok: false, error: 'Некорректный список вложений' };
-  }
-  const list = rawAttachments ?? [];
-  if (list.length > MAX_WIZARD_FILES) {
-    return { ok: false, error: `Можно приложить не больше ${MAX_WIZARD_FILES} файлов` };
-  }
-  const attachments: WizardAttachmentMeta[] = [];
-  for (const item of list) {
-    if (item === null || typeof item !== 'object' || Array.isArray(item)) {
-      return { ok: false, error: 'Некорректное вложение' };
-    }
-    const name = asTrimmed((item as Record<string, unknown>).name);
-    if (name === '' || name.length > MAX_WIZARD_ATTACHMENT_NAME_LENGTH) {
-      return { ok: false, error: 'Некорректное имя файла вложения' };
-    }
-    const size = (item as Record<string, unknown>).size;
+// Правила вложений — отдельные zod-схемы, чтобы сообщения о размере файла
+// ссылались на имя (superRefine видит уже разобранное name) и чтобы лимит
+// количества проверялся ДО разбора элементов (нужен порядок ошибок:
+// «не больше 5 файлов» важнее ошибки конкретного файла).
+const wizardAttachmentZ = z
+  .object(
+    {
+      name: z.preprocess(
+        asTrimmed,
+        z.string().min(1, NAME_ERROR).max(MAX_WIZARD_ATTACHMENT_NAME_LENGTH, NAME_ERROR),
+      ),
+      // Размер валидирует superRefine — сообщение зависит от имени файла.
+      // .optional(): ключ может отсутствовать, superRefine даст человеческое
+      // сообщение вместо zod'овского «expected nonoptional».
+      size: z.unknown().optional(),
+    },
+    // Не-объект вместо вложения — общее сообщение (анти-мусор от клиента).
+    { error: 'Некорректное вложение' },
+  )
+  .superRefine((value, ctx) => {
+    const size = value.size;
     if (typeof size !== 'number' || !Number.isInteger(size) || size < 0) {
-      return { ok: false, error: `Некорректный размер файла «${name}»` };
+      ctx.addIssue({ code: 'custom', message: `Некорректный размер файла «${value.name}»` });
+      return;
     }
     if (size > MAX_WIZARD_FILE_SIZE_BYTES) {
-      return { ok: false, error: `Файл «${name}» больше ${MAX_WIZARD_FILE_SIZE_MB} МБ` };
+      ctx.addIssue({
+        code: 'custom',
+        message: `Файл «${value.name}» больше ${MAX_WIZARD_FILE_SIZE_MB} МБ`,
+      });
     }
-    attachments.push({ name, size });
-  }
+  })
+  .transform((value) => ({ name: value.name, size: value.size as number }));
 
-  return {
-    ok: true,
-    data: {
-      destination,
-      language: language as WizardLanguage,
-      copies,
-      delivery: delivery as WizardDelivery,
-      comment,
-      attachments,
+const wizardAttachmentsZ = z.preprocess(
+  // Вложения необязательны: отсутствует поле — пустой список.
+  (value) => (value === undefined ? [] : value),
+  z
+    .array(z.unknown(), 'Некорректный список вложений')
+    .max(MAX_WIZARD_FILES, `Можно приложить не больше ${MAX_WIZARD_FILES} файлов`)
+    .transform((list, ctx) => {
+      // Лимит количества уже проверен (.max выше) — здесь остаются элементы.
+      const parsed = z.array(wizardAttachmentZ).safeParse(list);
+      if (!parsed.success) {
+        ctx.addIssue({
+          code: 'custom',
+          message: parsed.error.issues[0]?.message ?? 'Некорректное вложение',
+        });
+        return z.NEVER;
+      }
+      return parsed.data;
+    }),
+);
+
+/**
+ * zod-схема меты мастера. Человек читает первую ошибку (как validateRequestForm
+ * в DIG-30), поэтому каждое правило несёт своё сообщение; порядок ключей —
+ * порядок первых ошибок: язык → экземпляры → способ → текстовые поля → вложения.
+ */
+const wizardMetaZ = z
+  .object(
+    {
+      language: z.enum(WIZARD_LANGUAGES as [WizardLanguage, ...WizardLanguage[]], LANGUAGE_ERROR),
+      copies: z
+        .number(COPIES_ERROR)
+        .int(COPIES_ERROR)
+        .min(1, COPIES_ERROR)
+        .max(MAX_WIZARD_COPIES, COPIES_ERROR),
+      delivery: z.enum(WIZARD_DELIVERIES as [WizardDelivery, ...WizardDelivery[]], DELIVERY_ERROR),
+      destination: z.preprocess(
+        asTrimmed,
+        z
+          .string()
+          .max(
+            MAX_WIZARD_DESTINATION_LENGTH,
+            `Поле «Куда предоставляется» — максимум ${MAX_WIZARD_DESTINATION_LENGTH} символов`,
+          ),
+      ),
+      comment: z.preprocess(
+        asTrimmed,
+        z
+          .string()
+          .max(
+            MAX_WIZARD_COMMENT_LENGTH,
+            `Комментарий — максимум ${MAX_WIZARD_COMMENT_LENGTH} символов`,
+          ),
+      ),
+      attachments: wizardAttachmentsZ,
     },
-  };
+    // Не-объект вообще (null/строка/массив) — общее сообщение.
+    { error: 'Некорректные параметры заказа' },
+  )
+  .transform((meta) => ({
+    // Результат — в порядке полей интерфейса WizardMeta: мету сохраняют в
+    // заявке строкой JSON, порядок ключей не должен зависеть от порядка
+    // схемы (он задаёт порядок первых ошибок).
+    destination: meta.destination,
+    language: meta.language,
+    copies: meta.copies,
+    delivery: meta.delivery,
+    comment: meta.comment,
+    attachments: meta.attachments,
+  }));
+
+/**
+ * Строгая серверная валидация меты мастера (zod-схема выше). Ответ — первая
+ * нарушенная правило человеческим языком (как validateRequestForm в DIG-30).
+ */
+export type WizardMetaValidation = { ok: true; data: WizardMeta } | { ok: false; error: string };
+
+export function validateWizardMeta(input: unknown): WizardMetaValidation {
+  const result = wizardMetaZ.safeParse(input);
+  return result.success
+    ? { ok: true, data: result.data }
+    : { ok: false, error: result.error.issues[0]?.message ?? 'Некорректные параметры заказа' };
 }
 
 /**
@@ -180,34 +210,32 @@ export function wizardFilesError(
 
 /**
  * Терпимый разбор значения из состояния черновика: битые поля замещаются
- * дефолтом, валидные сохраняются. Используется клиентом мастера.
+ * дефолтом (zod .catch), валидные сохраняются, вложения черновика не
+ * восстанавливаются. Используется клиентом мастера.
  */
+const wizardDraftZ = z.object({
+  destination: z.preprocess(
+    asTrimmed,
+    z.string().transform((value) => value.slice(0, MAX_WIZARD_DESTINATION_LENGTH)),
+  ),
+  language: z
+    .enum(WIZARD_LANGUAGES as [WizardLanguage, ...WizardLanguage[]])
+    .catch(DEFAULT_WIZARD_META.language),
+  copies: z.number().int().min(1).max(MAX_WIZARD_COPIES).catch(DEFAULT_WIZARD_META.copies),
+  delivery: z
+    .enum(WIZARD_DELIVERIES as [WizardDelivery, ...WizardDelivery[]])
+    .catch(DEFAULT_WIZARD_META.delivery),
+  comment: z.preprocess(
+    asTrimmed,
+    z.string().transform((value) => value.slice(0, MAX_WIZARD_COMMENT_LENGTH)),
+  ),
+});
+
 export function normalizeWizardMeta(input: unknown): WizardMeta {
   const strict = validateWizardMeta(input);
   if (strict.ok) return strict.data;
   if (input === null || typeof input !== 'object' || Array.isArray(input)) {
     return { ...DEFAULT_WIZARD_META };
   }
-  const raw = input as Record<string, unknown>;
-  const fallbackLanguage = DEFAULT_WIZARD_META.language;
-  const fallbackDelivery = DEFAULT_WIZARD_META.delivery;
-  const language = LANGUAGES.includes(String(raw.language))
-    ? (raw.language as WizardLanguage)
-    : fallbackLanguage;
-  const delivery = DELIVERIES.includes(String(raw.delivery))
-    ? (raw.delivery as WizardDelivery)
-    : fallbackDelivery;
-  const copies =
-    typeof raw.copies === 'number' && Number.isInteger(raw.copies) &&
-    raw.copies >= 1 && raw.copies <= MAX_WIZARD_COPIES
-      ? raw.copies
-      : DEFAULT_WIZARD_META.copies;
-  return {
-    destination: asTrimmed(raw.destination).slice(0, MAX_WIZARD_DESTINATION_LENGTH),
-    language,
-    copies,
-    delivery,
-    comment: asTrimmed(raw.comment).slice(0, MAX_WIZARD_COMMENT_LENGTH),
-    attachments: [],
-  };
+  return { ...wizardDraftZ.parse(input), attachments: [] };
 }

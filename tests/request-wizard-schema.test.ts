@@ -106,9 +106,92 @@ describe('validateWizardMeta: серверная валидация', () => {
     );
     // на границе — проходит
     expect(
-      validateWizardMeta(validMeta({ attachments: [{ name: 'a.pdf', size: MAX_WIZARD_FILE_SIZE_BYTES }] }))
-        .ok,
+      validateWizardMeta(
+        validMeta({ attachments: [{ name: 'a.pdf', size: MAX_WIZARD_FILE_SIZE_BYTES }] }),
+      ).ok,
     ).toBe(true);
+  });
+
+  it('порядок проверок: язык → экземпляры → способ → поля → вложения (первая ошибка)', () => {
+    // Раунд 2 DIG-31: правила выражены zod-схемой (как заявлено в tasks.md).
+    // Пин: порядок ошибок сохраняется прежним (наивный zod-объект сломал бы
+    // порядок count-лимита вложений и сообщений не-строк).
+    const languageFirst = validateWizardMeta(validMeta({ language: 'DE', copies: 0 }));
+    expect(languageFirst.ok).toBe(false);
+    if (!languageFirst.ok) {
+      expect(languageFirst.error).toContain('язык');
+    }
+
+    const copiesBeforeDestination = validateWizardMeta(
+      validMeta({ copies: 99, destination: 'д'.repeat(MAX_WIZARD_DESTINATION_LENGTH + 1) }),
+    );
+    expect(copiesBeforeDestination.ok).toBe(false);
+    if (!copiesBeforeDestination.ok) {
+      expect(copiesBeforeDestination.error).toContain('экземпляров');
+    }
+  });
+
+  it('не-строки в текстовых полях и словарях дают человеческие сообщения', () => {
+    const lang = validateWizardMeta(validMeta({ language: 42 }));
+    expect(lang.ok).toBe(false);
+    if (!lang.ok) expect(lang.error).toContain('язык');
+
+    const delivery = validateWizardMeta(validMeta({ delivery: {} }));
+    expect(delivery.ok).toBe(false);
+    if (!delivery.ok) expect(delivery.error).toContain('способ получения');
+
+    // Не-строка в необязательном текстовом поле трактуется как пустое — заявка проходит.
+    const blank = validateWizardMeta(validMeta({ destination: 123, comment: null }));
+    expect(blank.ok).toBe(true);
+  });
+
+  it('вложения: лимит количества важнее ошибок элементов; имя проверяется раньше размера', () => {
+    // 6 файлов, среди них битое — сначала ошибка лимита, не файла.
+    const countFirst = validateWizardMeta(
+      validMeta({
+        attachments: [
+          { name: 'ok.pdf', size: 1 },
+          'мусор',
+          { name: '', size: -1 },
+          { name: 'б.pdf', size: 1 },
+          { name: 'в.pdf', size: 1 },
+          { name: 'г.pdf', size: 1 },
+        ],
+      }),
+    );
+    expect(countFirst.ok).toBe(false);
+    if (!countFirst.ok) expect(countFirst.error).toContain('не больше 5');
+
+    // Внутри вложения имя раньше размера.
+    const nameFirst = validateWizardMeta(validMeta({ attachments: [{ name: '', size: -1 }] }));
+    expect(nameFirst.ok).toBe(false);
+    if (!nameFirst.ok) expect(nameFirst.error).toContain('имя файла');
+  });
+
+  it('вложение без размера и не-объект — человеческие сообщения (не «Invalid input»)', () => {
+    // Раунд 2 DIG-31: пин на zod-миграции — отсутствие size не даёт
+    // английское «expected nonoptional».
+    const noSize = validateWizardMeta(validMeta({ attachments: [{ name: 'б.pdf' }] }));
+    expect(noSize.ok).toBe(false);
+    if (!noSize.ok) expect(noSize.error).toContain('Некорректный размер файла «б.pdf»');
+
+    const garbageItem = validateWizardMeta(validMeta({ attachments: ['мусор'] }));
+    expect(garbageItem.ok).toBe(false);
+    if (!garbageItem.ok) expect(garbageItem.error).toContain('Некорректное вложение');
+  });
+
+  it('чужие ключи меты отбрасываются (анти-инъекция в params)', () => {
+    const result = validateWizardMeta(validMeta({ hack: 'x', admin: true }));
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(Object.keys(result.data).sort()).toEqual([
+        'attachments',
+        'comment',
+        'copies',
+        'delivery',
+        'destination',
+        'language',
+      ]);
   });
 
   it('ограничения длины комментария и «куда предоставляется»', () => {
@@ -169,6 +252,13 @@ describe('normalizeWizardMeta: терпимый разбор черновика 
     expect(meta.delivery).toBe('PICKUP');
     expect(meta.destination).toBe('ПАО «Банк», отделение № 2');
   });
+
+  it('массив в language не проходит в черновик (фикс String-коэрции, раунд 2)', () => {
+    // Старая ручная версия через String(raw.language) считала ['RU'] валидным
+    // языком и клала массив в состояние черновика. zod-версия — дефолт.
+    expect(normalizeWizardMeta(validMeta({ language: ['RU'] })).language).toBe('RU');
+    expect(normalizeWizardMeta(validMeta({ language: ['RU'] })).copies).toBe(2);
+  });
 });
 
 describe('validateRequestFormFields: по-полевая карта ошибок (клиент DIG-31)', () => {
@@ -194,7 +284,10 @@ describe('validateRequestFormFields: по-полевая карта ошибок
     expect(Object.keys(both.errors).sort()).toEqual(['from', 'period']);
     expect(both.errors.period).toContain('Период');
 
-    const good = validateRequestFormFields(leaveSchema, { period: 'осень 2026', from: '2026-09-01' });
+    const good = validateRequestFormFields(leaveSchema, {
+      period: 'осень 2026',
+      from: '2026-09-01',
+    });
     expect(good.ok).toBe(true);
     if (good.ok) {
       expect(good.data).toEqual({ period: 'осень 2026', from: '2026-09-01' });
