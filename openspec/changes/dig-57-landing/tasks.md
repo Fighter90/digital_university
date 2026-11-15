@@ -1,6 +1,6 @@
 # Tasks: публичный лендинг на «/» — DIG-57
 
-- [ ] 1. Red-first: `tests/landing-page.test.tsx` — контракт лендинга:
+- [x] 1. Red-first: `tests/landing-page.test.tsx` — контракт лендинга:
   hero h1 содержит «Цифровой деканат» и «Всё университетское — в одном
   окне», подзаголовок; CTA «Войти» и «Демо-доступ» — ссылки на `/login`;
   ВСЕ ссылки страницы ведут на `/login` или `#`-якоря секций; 5 карточек
@@ -9,13 +9,14 @@
   (без двойных пробелов). Отдельный блок — `Reveal`: скрыт до появления
   в вьюпорте (stub IntersectionObserver), становится видимым после
   пересечения, без IO — сразу видим.
-- [ ] 2. Red-first: `e2e/landing.spec.ts` — лендинг рендерится без
+- [x] 2. Red-first: `e2e/landing.spec.ts` — лендинг рендерится без
   авторизации (1440 и 360), секции после прокрутки получают класс
   видимости, CTA «Войти» и «Демо-доступ» кликабельны и ведут на `/login`
   с формой входа; на 360 px нет горизонтального скролла.
-- [ ] 3. Реализация: `src/components/landing/reveal.tsx` (IntersectionObserver,
+- [x] 3. Реализация: `src/components/landing/reveal.tsx` (IntersectionObserver,
   reduced-motion, деградация без IO), CSS `.reveal*` в `globals.css`,
   `src/app/page.tsx` — hero, преимущества, финальный CTA, футер
   (токены DIG-13, lucide-иконки, метаданные страницы).
-- [ ] 4. Зелёные юниты, lint, typecheck; e2e лендинга по возможности.
-- [ ] 5. Гейты `node scripts/swarm/gates.mjs`; коммит.
+- [x] 4. Зелёные юниты, lint, typecheck; e2e лендинга по возможности
+  (17 passed / 1 skipped — mobile-профиль; smoke DIG-6 тоже зелёный).
+- [x] 5. Гейты `node scripts/swarm/gates.mjs`; коммит.

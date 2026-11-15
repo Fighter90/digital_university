@@ -30,9 +30,12 @@ test.describe('лендинг «/» — анимации появления', ()
     await page.goto('/');
     const features = page.getByTestId('landing-feature').first();
     await features.scrollIntoViewIfNeeded();
-    // Reveal — прогрессивное улучшение: скрытие только под IntersectionObserver
+    // Reveal — прогрессивное улучшение: класс видимости появляется на
+    // обёртке [data-reveal] вокруг карточки после пересечения с вьюпортом.
     await expect
-      .poll(async () => features.evaluate((el) => el.className), { timeout: 5_000 })
+      .poll(async () => features.evaluate((el) => el.closest('[data-reveal]')?.className ?? ''), {
+        timeout: 5_000,
+      })
       .toContain('reveal-visible');
     await expect(features).toBeVisible();
   });
@@ -55,7 +58,8 @@ test.describe('лендинг «/» — CTA кликабельны', () => {
 });
 
 test.describe('лендинг «/» — мобильный 360', () => {
-  test('нет горизонтального скролла, CTA на месте', async ({ page }) => {
+  test('нет горизонтального скролла, CTA на месте', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile-360', 'проверка только в мобильном профиле');
     await page.goto('/');
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(scrollWidth).toBeLessThanOrEqual(360);
