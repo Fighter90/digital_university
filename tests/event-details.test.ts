@@ -195,16 +195,29 @@ describe('toEventDetailsView: преподаватель, домашка, при
   });
 });
 
-/** Структурная страховка вью-модели: всё сериализуемо (нет Date в полях). */
+/**
+ * Структурная страховка вью-модели: скалярные поля — только строки/boolean/null;
+ * время (startsAt/endsAt) — Date (RSC сериализует Date между сервером и
+ * клиентом, панель форматирует его заранее в dateLabel/timeLabel); вложенные
+ * блоки переноса/отмены — объект или null.
+ */
 describe('toEventDetailsView: сериализуемость', () => {
-  it('панель получает только строки/null/boolean — можно передать клиенту', () => {
+  it('панель получает RSC-сериализуемые поля: строки/boolean/null, Date времени, объекты блоков', () => {
     const view: EventDetailsView = toEventDetailsView(
       row({ status: 'ROOM_CHANGED', previousRoom: '214', changeAuthor: 'Мария Петрова' }),
     );
-    for (const value of Object.values(view)) {
+    for (const [key, value] of Object.entries(view)) {
+      if (key === 'startsAt' || key === 'endsAt') {
+        expect(value, `${key} должен быть Date`).toBeInstanceOf(Date);
+        continue;
+      }
+      if (key === 'move' || key === 'cancel') {
+        expect(value === null || typeof value === 'object', `${key} — объект или null`).toBe(true);
+        continue;
+      }
       expect(
-        ['string', 'boolean', 'object'].includes(typeof value) || value === null,
-        `неожиданный тип поля: ${String(typeof value)}`,
+        ['string', 'boolean'].includes(typeof value) || value === null,
+        `неожиданный тип поля ${key}: ${String(typeof value)}`,
       ).toBe(true);
     }
   });

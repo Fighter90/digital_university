@@ -48,9 +48,9 @@ export interface EventDetailsPanelProps {
 /** Лимит заметки — дублирует MAX_NOTE_LENGTH слоя данных (500). */
 const NOTE_MAX_LENGTH = 500;
 
-/** Классы попапа Sheet DIG-13 (мобильный — нижний лист, десктоп — правая панель). */
+/** Классы попапа Sheet DIG-13 (мобильный — нижний лист <768 px, десктоп — правая панель). */
 const PANEL_CLASSES =
-  'fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-block border-t border-border bg-card p-5 text-card-foreground shadow-hover outline-none sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:max-h-none sm:w-[420px] sm:rounded-t-none sm:rounded-l-block sm:border-t-0 sm:border-l';
+  'fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-block border-t border-border bg-card p-5 text-card-foreground shadow-hover outline-none md:top-0 md:bottom-0 md:left-auto md:right-0 md:max-h-none md:w-[420px] md:rounded-t-none md:rounded-l-block md:border-t-0 md:border-l';
 
 export function EventDetailsPanel({ view, note, closeHref }: EventDetailsPanelProps) {
   // Панель открыта ровно пока жив ?event=: локальный open нужен, чтобы Esc

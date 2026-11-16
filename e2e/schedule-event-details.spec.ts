@@ -256,3 +256,64 @@ test.describe('прямой URL — uniform 404 на чужую и несуще�
     await expect(page.getByTestId('event-details-panel')).toHaveCount(0);
   });
 });
+
+test.describe('ICS одной пары — роут GET /api/schedule/[id]/ics', () => {
+  test.skip(({ viewport }) => viewport?.width !== 1440, 'desktop-1440 only');
+
+  // сессия приходит из worker-scoped storageState — повторный вход не нужен
+
+  // Ревью DIG-24 r2: роут не имел поведенческих тестов (только чистый
+  // toEventIcsInput и href кнопки) — прецедент покрытия: e2e/session.spec.ts
+  // (ICS сессии: 200 + text/calendar + VEVENT + attachment; 404).
+
+  test('своя пара: 200, text/calendar, VCALENDAR с VEVENT пары, вложение', async ({ page }) => {
+    const response = await page.request.get('/api/schedule/sch-pi21-1/ics');
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain('text/calendar');
+    const body = await response.text();
+    expect(body).toContain('BEGIN:VCALENDAR');
+    expect(body).toContain('BEGIN:VEVENT');
+    expect(body).toContain('END:VEVENT');
+    expect(body).toContain('END:VCALENDAR');
+    // UID одной пары — по контракту delta-спеки
+    expect(body).toContain('UID:event-sch-pi21-1@digital-deanery');
+    expect(body).toContain('DTSTART:');
+    // SUMMARY = «<тип>: <дисциплина>» (sch-pi21-1 — лекция «Информатика»),
+    // LOCATION = аудитория
+    expect(body).toContain('SUMMARY:Лекция: Информатика');
+    expect(body).toContain('LOCATION:ауд. 301');
+    const disposition = response.headers()['content-disposition'] ?? '';
+    expect(disposition).toContain('attachment');
+    // файл персональный — не кэшируется
+    expect(response.headers()['cache-control']).toContain('no-store');
+  });
+
+  test('чужая пара (ЭК-11) и несуществующий id — единый 404 JSON', async ({ page }) => {
+    for (const id of ['sch-ek11-1', 'no-such-pair']) {
+      const response = await page.request.get(`/api/schedule/${id}/ics`);
+      expect(response.status()).toBe(404);
+      expect(await response.json()).toEqual({ error: 'not_found' });
+    }
+  });
+});
+
+test.describe('ширина 720 px (<768) — панель остаётся нижним листом', () => {
+  test.skip(({ viewport }) => viewport?.width !== 360, 'mobile-360 as runner');
+
+  test('720×800: панель во всю ширину окна, а не правая колонка 420 px', async ({ page }) => {
+    // В диапазоне 640–767 страница показывает мобильный вид (md-hidden),
+    // и по delta-спеке панель обязана оставаться нижним листом до 768 px.
+    await page.setViewportSize({ width: 720, height: 800 });
+    await page.goto('/schedule?event=sch-pi21-5');
+    const dialog = page.getByTestId('event-details-panel');
+    // 10с — гидрация панели под нагрузкой параллельного прогона двух проектов
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    const box = await dialog.boundingBox();
+    expect(box).not.toBeNull();
+    expect(
+      box!.width,
+      'панель должна быть нижним листом на всю ширину 720 px, а не правой колонкой',
+    ).toBe(720);
+    expect(box!.x).toBe(0);
+  });
+});
