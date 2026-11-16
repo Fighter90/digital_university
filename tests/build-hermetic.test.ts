@@ -71,3 +71,29 @@ describe('npm run build — герметичный прогон (без пере
     ).toBe(true);
   });
 });
+
+describe('npm run typecheck — герметичный прогон (без чужих route-types)', () => {
+  // DIG-36 (раунд 2, замечание ревью): гейт typecheck падал с TS2307 —
+  // .next/types содержал валидаторы route `src/app/api/schedule/[id]/ics`,
+  // который мерж DIG-28 перевёл на src/app/api/session/ics. tsconfig включает
+  // .next/types/**/*.ts, поэтому tsc читает типы СТАРОГО дерева. `next typegen`
+  // устаревшие файлы за удалёнными роутами НЕ чистит (проверено эмпирически),
+  // значит чистка сгенерированных типов должна быть явной, до перегенерации.
+  it('typecheck чистит route-types кроссплатформенно: node -e + fs.rmSync обеих директорий (DIG-36 р3, замечание ревью: POSIX-only `rm -rf`)', () => {
+    const typecheck = pkg().scripts.typecheck;
+    expect(typecheck).toContain('fs.rmSync');
+    expect(typecheck).toContain('.next/types');
+    expect(typecheck).toContain('.next-dev/types');
+    expect(typecheck).not.toContain('rm -rf');
+  });
+
+  it('порядок внутри скрипта: чистка (node -e) → typegen → tsc (перегенерация обязана создать routes.d.ts из next-env.d.ts, иначе TS6053)', () => {
+    const typecheck = pkg().scripts.typecheck;
+    const clean = typecheck.indexOf('node -e');
+    const typegen = typecheck.indexOf('next typegen');
+    const tsc = typecheck.indexOf('tsc --noEmit');
+    expect(clean, 'нет чистки сгенерированных route-types').toBeGreaterThanOrEqual(0);
+    expect(typegen, 'нет перегенерации типов после чистки').toBeGreaterThan(clean);
+    expect(tsc, 'tsc должен идти последним — по свежим типам').toBeGreaterThan(typegen);
+  });
+});

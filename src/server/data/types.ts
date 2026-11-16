@@ -403,9 +403,19 @@ export interface ServiceFavoriteRow {
 }
 
 /**
+ * DIG-36 — отметка «Прочитано» для новости/объявления: одна строка на пару
+ * (студент, новость), owner-scoped по studentId. Сам контент новостей —
+ * публичный вымышленный каталог (lib/news-catalog), здесь только отметки.
+ */
+export interface NewsReadRow {
+  studentId: string;
+  newsId: string;
+  readAt: Date;
+}
+
+/**
  * DIG-34 — дедлайн задания по дисциплине (система курсов; в концепте — сиды).
  * Групповая сущность: сдаёт вся группа, скоуп — `groupName`.
- */
 export interface StudyDeadlineRow {
   id: string;
   groupName: string;
@@ -415,35 +425,23 @@ export interface StudyDeadlineRow {
   title: string;
   /** Крайний срок сдачи. */
   dueAt: Date;
-}
 
-/**
  * DIG-34 — ручная задача студента (подписать документ, оплатить по договору):
  * выполняется вне кабинета и закрывается отметкой владельца. Скоуп —
  * `studentId`; отмеченные (doneAt) из открытого списка исчезают.
- */
 export interface StudentTaskRow {
-  id: string;
-  studentId: string;
   /** Глагольная формулировка: «Оплатить обучение по договору». */
-  title: string;
   /** Контекст (номер договора и т.п.); null — «Деканат». */
   note: string | null;
-  dueAt: Date;
   doneAt: Date | null;
-}
 
 
-/**
  * DIG-47 — выданная справка: строка реестра проверки подлинности.
  * Публичный ключ — verificationCode (160 бит base32): по нему публичная
  * страница /verify/<код> отвечает БЕЗ входа, поэтому наружу из слоя
  * данных уходит только минимальное представление (см. certificates.ts) —
  * studentId/полное имя/заявка через публичный контракт не проходят.
- */
 export interface CertificateRow {
-  id: string;
-  studentId: string;
   /** Заявка-основание (справки «вне заявки» — null, сид демо). */
   requestId: string | null;
   /** Тип документа, например «Справка об обучении». */
@@ -459,9 +457,7 @@ export interface CertificateRow {
   /** Отзыв сотрудником деканата; null — действует. */
   revokedAt: Date | null;
   revokedReason: string | null;
-}
 
-/**
  * DIG-63 — живая ICS-подписка студента (расписание + дедлайны в системный
  * календарь): одна активная строка на студента. tokenId — неугадываемый
  * nonce внутри HMAC-подписанной ссылки (секрет только на сервере), поэтому
@@ -469,20 +465,15 @@ export interface CertificateRow {
  * собирает слой данных при каждом чтении. Отзыв — удаление строки (выход
  * из кабинета): прежняя ссылка умирает навсегда, новый вход получает новый
  * tokenId.
- */
 export interface CalendarSubscriptionRow {
-  studentId: string;
   tokenId: string;
   createdAt: Date;
   /** Момент последней ротации (отзыв + повторная выдача); null — не ротировалась. */
   rotatedAt: Date | null;
-}
 
-/**
  * Строка настроек, как она лежит в хранилище: полная (DIG-44) или «легаси» —
  * записанная до DIG-44 без новых полей. Вход `normalizeSettings`, который
  * восстанавливает недостающее из значений по умолчанию.
- */
 export type StoredStudentSettingsRow = Omit<
   StudentSettingsRow,
   | 'widgets'
@@ -496,19 +487,8 @@ export type StoredStudentSettingsRow = Omit<
 > &
   Partial<
     Pick<
-      StudentSettingsRow,
-      | 'widgets'
-      | 'quietHours'
-      | 'language'
-      | 'fontSize'
-      | 'reduceMotion'
-      | 'voiceAssistant'
-      | 'mcpConnections'
-      | 'mcpToken'
     >
   >;
-
-/**
  * Why access was denied. `OWNERSHIP_DENIED` / `OUTSIDE_FACULTY` mean the row
  * exists but belongs to someone else; `NOT_FOUND` — no such row. The HTTP
  * answer is IDENTICAL (404) for both — the reason goes only to the audit log,
