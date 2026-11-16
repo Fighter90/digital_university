@@ -116,3 +116,23 @@
 - [x] 23. Гейты и прогон: полный spec e2e DIG-24 — 12 passed / 8
   skipped (project-gates), включая сохранение/удаление заметки;
   vitest, lint/typecheck/build/test — см. коммит 5980b21.
+
+## Раунд 1 (повторный запуск) — красный гейт pipeline «lint=fail»
+
+- [x] 24. Диагноз: красный гейт предыдущего прогона — НЕ код ветки.
+  Воспроизведён реальный гейт: `lint=pass`, а `typecheck=fail` из-за
+  stale-артефактов `.next/types/` от сборок ЧУЖИХ веток в общем рабочем
+  дереве (ссылки на несуществующие здесь роуты `api/search`,
+  `api/requests/[number]/certificate`, `api/staff/certificates/revoke`,
+  `verify/[code]`) — та же природа, что stale-`.next` раунда 2, но на
+  этапе typecheck (tsconfig включает `.next/types`). lint по свежему
+  дереву зелёный: 0 ошибок (2 warning только в scripts/swarm/ —
+  трогать запрещено). Лечение — `rm -rf .next` + чистый прогон
+  `node scripts/swarm/gates.mjs`: `GATES: lint=pass typecheck=pass
+  build=pass test=pass`, `GATES_SUMMARY: green`; код ветки не менялся.
+- [x] 25. Верификация критериев приёмки на текущей ветке: целевые vitest
+  (event-details + schedule-page 22 + schedule-screen 32) — 69/69;
+  e2e schedule-event-details.spec — 12 passed / 8 skipped: `?event=`+
+  «Назад», Esc + возврат фокуса на видимый триггер пары, чужая пара
+  (ЭК-11) и мусорный id → uniform 404, сохранение/удаление заметки,
+  ICS 200/404, нижний лист на 360 и 720 px, без гор. скролла.
