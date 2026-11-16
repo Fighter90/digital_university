@@ -178,20 +178,17 @@ export function createMemoryDataDb(): MemoryDataDb {
     // DIG-28 — probe контрольной по id без скоупа группы: различение
     // «чужая» (OWNERSHIP_DENIED) и «несуществующая» (NOT_FOUND) — только
     // для аудита; наружу из слоя данных в обоих случаях уходит null.
-    },
     async probeExamById(id) {
       return clone(by(exams, 'id', id));
     },
     // DIG-27 — probe дисциплины по коду без скоупа группы: различение
     // «чужая» (OWNERSHIP_DENIED) и «несуществующая» (NOT_FOUND) — только
     // для аудита; наружу из слоя данных в обоих случаях уходит null.
-    },
     async probeDisciplineByCode(disciplineCode) {
       return clone(by(disciplines, 'disciplineCode', disciplineCode));
     },
 
     // ── DIG-19: profile & settings (owner-scoped) ──────────────────────────
-    },
     async findStudentById(id) {
       return clone(by(students, 'id', id));
     },
@@ -269,7 +266,6 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
     // DIG-28 — заявка из кабинета: строка заявки + первое событие SUBMITTED
     // пишутся вместе (как appendAppealByStudent — атомарно в адаптере).
-    },
     async appendRequestByStudent(studentId, input) {
       requestSeq += 1;
       const row: ServiceRequestRow = {
@@ -300,7 +296,6 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
 
     // ── DIG-30: canonical requests «Заявки и справки» (owner-scoped) ──────
-    },
     async listCanonicalRequestTypes() {
       return canonicalRequestTypes.map(clone);
     },
@@ -439,7 +434,6 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
 
     // ── DIG-25: справочники успеваемости (group-scoped) ───────────────────
-    },
     async listDisciplinesByGroup(groupName) {
       return disciplines.filter((row) => row.groupName === groupName).map(clone);
     },
@@ -454,7 +448,6 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
 
     // ── DIG-21: schedule by period / notes / staff changes ────────────────
-    },
     async listScheduleByGroupRange(groupName, period) {
       const from = period.from.getTime();
       const to = period.to.getTime();
@@ -510,7 +503,6 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
 
     // ── DIG-29: избранное каталога сервисов (owner-scoped) ────────────────
-    },
     async listFavoriteServiceIdsByStudent(studentId) {
       return serviceFavorites
         .filter((f) => f.studentId === studentId)
@@ -532,7 +524,6 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
 
     // ── DIG-36: отметки «Прочитано» новостей (owner-scoped) ───────────────
-    },
     async listNewsReadIdsByStudent(studentId) {
       return newsRead
         .filter((r) => r.studentId === studentId)
@@ -544,17 +535,18 @@ export function createMemoryDataDb(): MemoryDataDb {
       if (!exists) {
         newsRead.push({ studentId, newsId, readAt: new Date() });
       }
-    // ── DIG-34: дедлайны курса (group-scoped) и ручные задачи (owner-scoped) ─
     },
+
+    // ── DIG-34: дедлайны курса (group-scoped) и ручные задачи (owner-scoped) ─
     async listStudyDeadlinesByGroup(groupName) {
       return studyDeadlines.filter((d) => d.groupName === groupName).map(clone);
     },
     async listStudentTasksByStudent(studentId) {
       return studentTasks.filter((t) => t.studentId === studentId).map(clone);
+    },
     // DIG-34 — probe ручной задачи по id без владельца: различение «чужая»
     // (OWNERSHIP_DENIED) и «несуществующая» (NOT_FOUND) — только для аудита;
     // наружу из слоя данных в обоих случаях уходит null.
-    },
     async probeStudentTaskById(taskId) {
       return clone(by(studentTasks, 'id', taskId));
     },
@@ -564,9 +556,9 @@ export function createMemoryDataDb(): MemoryDataDb {
       // Идемпотентно: повторная отметка сохраняет первый doneAt.
       row.doneAt ??= doneAt;
       return clone(row);
+    },
 
     // ── DIG-47: реестр справок (публичная проверка по коду) ────────────────
-    },
     async findCertificateByCode(code) {
       return clone(by(certificates, 'verificationCode', code));
     },
@@ -574,12 +566,16 @@ export function createMemoryDataDb(): MemoryDataDb {
       return clone(
         certificates.find((c) => c.studentId === studentId && c.requestId === requestId) ?? null,
       );
+    },
     async appendCertificateForStudent(studentId, input) {
       if (input.studentId !== studentId) {
         throw new Error('appendCertificateForStudent: input.studentId must equal the scope');
+      }
       certificateSeq += 1;
       const row: CertificateRow = { ...clone(input), id: input.id || `cert-new-${certificateSeq}` };
       certificates.push(row);
+      return clone(row);
+    },
     async revokeCertificateByStaff(faculty, code, input) {
       const row = certificates.find((c) => c.verificationCode === code);
       const owner = students.find((s) => s.id === row.studentId);
@@ -587,15 +583,16 @@ export function createMemoryDataDb(): MemoryDataDb {
       if (row.revokedAt) return clone(row); // идемпотентно: дата не перезаписывается
       row.revokedAt = input.revokedAt;
       row.revokedReason = input.reason;
+      return clone(row);
+    },
 
     // ── DIG-63: активные ICS-подписки (одна строка на студента) ─────────────
-    },
     async findCalendarSubscriptionByStudent(studentId) {
       return clone(by(calendarSubscriptions, 'studentId', studentId));
+    },
     // Поиск по tokenId без скоупа — осознанное исключение (см. port.ts):
     // публичный фид читает без входа;tokenId несёт 128 бит + HMAC-подпись,
     // которую calendar.ts проверяет до этого вызова.
-    },
     async findCalendarSubscriptionByTokenId(tokenId) {
       return clone(by(calendarSubscriptions, 'tokenId', tokenId));
     },
@@ -611,6 +608,9 @@ export function createMemoryDataDb(): MemoryDataDb {
         calendarSubscriptions.push(row);
       } else {
         calendarSubscriptions[index] = row;
+      }
+      return clone(row);
+    },
     async deleteCalendarSubscriptionByStudent(studentId) {
       const before = calendarSubscriptions.length;
       calendarSubscriptions = calendarSubscriptions.filter((s) => s.studentId !== studentId);
@@ -619,14 +619,16 @@ export function createMemoryDataDb(): MemoryDataDb {
     async deleteCalendarSubscriptionByLogin(login) {
       const owner = students.find((s) => s.login === login);
       if (!owner) return false;
-      calendarSubscriptions = calendarSubscriptions.filter((s) => s.studentId !== owner.id);    },
+      const before = calendarSubscriptions.length;
+      calendarSubscriptions = calendarSubscriptions.filter((s) => s.studentId !== owner.id);
+      return before < calendarSubscriptions.length;
+    },
 
     async listStudentsByFaculty(faculty) {
       return students.filter((s) => s.faculty === faculty).map(clone);
     },
 
     // ── DIG-64: персональный MCP-токен (lookup по хэшу — см. port.ts) ─────
-    },
     async findStudentByMcpTokenHash(tokenHash) {
       const row = settings.find((s) => s.mcpToken?.tokenHash === tokenHash);
       if (!row) return null;

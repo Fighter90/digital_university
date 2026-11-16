@@ -273,6 +273,7 @@ export interface DataDb {
   ): Promise<StudentTaskRow | null>;
 
   // ── DIG-47: реестр справок и публичная проверка подлинности ──────────────
+  /**
    * Публичный поиск по коду проверки — ОСОЗНАННОЕ исключение из
    * owner-scope: страница /verify/<код> по определению работает без
    * входа, а код несёт 160 бит энтропии. Вызов разрешён ТОЛЬКО
@@ -283,6 +284,8 @@ export interface DataDb {
   findCertificateByStudentAndRequestId(
     requestId: string,
   ): Promise<CertificateRow | null>;
+
+  /**
    * DIG-64 — поиск студента по SHA-256-хэшу персонального MCP-токена —
    * ОСОЗНАННОЕ исключение из owner-scope, как findCertificateByCode выше:
    * lookup возможен только по хэшу случайного токена с ≥128 битами
@@ -307,6 +310,7 @@ export interface DataDb {
   // ── DIG-63: живая ICS-подписка расписания и дедлайнов ────────────────────
   /** Активная подписка владельца (строка одна на студента). */
   findCalendarSubscriptionByStudent(studentId: string): Promise<CalendarSubscriptionRow | null>;
+  /**
    * Поиск подписки по tokenId БЕЗ скоупа — осознанное исключение из
    * owner-scope по образцу findCertificateByCode: публичный фид по
    * определению читает без входа, а tokenId несёт 128 бит энтропии и
@@ -320,9 +324,11 @@ export interface DataDb {
   ): Promise<CalendarSubscriptionRow>;
   /** Отзыв владельцем (ротация в кабинете); false — подписки нет. */
   deleteCalendarSubscriptionByStudent(studentId: string): Promise<boolean>;
+  /**
    * Отзыв по логину владельца — контракт выхода из кабинета (login приходит
    * из живой сессии в server action, никогда не из ввода). false — у
    * логина нет студента или активной подписки.
+   */
   deleteCalendarSubscriptionByLogin(login: string): Promise<boolean>;
   // ── staff scope ───────────────────────────────────────────────────────────
   listStudentsByFaculty(faculty: string): Promise<StudentRow[]>;
