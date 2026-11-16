@@ -1,6 +1,6 @@
 # Tasks: экран «Задачи» — DIG-34
 
-- [ ] 1. Red-first: `tests/tasks.test.ts` — контракт агрегата `getTasks`
+- [x] 1. Red-first: `tests/tasks.test.ts` — контракт агрегата `getTasks`
   (шесть источников: каноническая заявка NEEDS_FIX, дедлайн курса,
   недопуск с дедупликацией по дисциплине+причине, пересдача без заявки,
   ответ на обращение с последним сообщением сотрудника, ручные задачи;
@@ -12,47 +12,47 @@
   `listStudentTasksByStudent`, `probeStudentTaskById`,
   `markStudentTaskDoneByStudent` в memory-адаптере, чистые помощники
   `src/lib/task-format.ts` (метки источников, метки сроков).
-- [ ] 2. Red-first: `tests/tasks-page.test.tsx` — SSR-контракт
+- [x] 2. Red-first: `tests/tasks-page.test.tsx` — SSR-контракт
   `/tasks`: заголовок, группы в порядке срочности, строки задачи
   (иконка-источник, глагол, откуда, срок, кнопка действия), кнопка
   «Отметить выполненной» только у ручных, пустое состояние «Все дела
   сделаны 🎉», заглушка сотрудника, состояние ошибки.
-- [ ] 3. Red-first: расширить `tests/dashboard.test.ts` (секция `tasks`
+- [x] 3. Red-first: расширить `tests/dashboard.test.ts` (секция `tasks`
   агрегата главной: счётчик + top-3, изоляция сбоя) и
   `tests/dashboard-page.test.tsx` (фикстура DashboardData + виджет
   «Что от меня ждут» со ссылкой на /tasks), `tests/cabinet-shell.test.ts`
   (раздел /tasks в меню и «Ещё»), `tests/settings-widgets.test.ts`
   (реестр виджетов: 7 записей с «Что от меня ждут»).
-- [ ] 4. Red-first: `e2e/tasks.spec.ts` — чёрный ящик: группы и строки
+- [x] 4. Red-first: `e2e/tasks.spec.ts` — чёрный ящик: группы и строки
   у Анны, счётчик в меню, отметка ручной задачи (строка исчезает после
   перегенерации), ссылки задач ведут в свои разделы, сотрудник —
   заглушка, аноним — /login, 360 px без горизонтальной прокрутки.
-- [ ] 5. Порт DIG-12: типы `StudyDeadlineRow` / `StudentTaskRow`,
+- [x] 5. Порт DIG-12: типы `StudyDeadlineRow` / `StudentTaskRow`,
   port-методы, реализация в memory-адаптере, barrel `@/server/data`.
-- [ ] 6. `src/server/data/tasks.ts` — `getTasks` (Promise.all источников,
+- [x] 6. `src/server/data/tasks.ts` — `getTasks` (Promise.all источников,
   дедупликация допуска, группировка), `markTaskDone` (аудит отказов),
   `getTasksSummary` для главной. Источник заявок — канонические
   NEEDS_FIX через `listCanonicalRequestsByStudent` (форма доработки
   живёт только на карточке «ЗД-…»).
-- [ ] 7. `src/server/data/session.ts` — экспорт `RETAKE_TITLE_PREFIX`
+- [x] 7. `src/server/data/session.ts` — экспорт `RETAKE_TITLE_PREFIX`
   (единый контракт идемпотентности записи на пересдачу) и
   `disciplineAdmission` (правила допуска «Сессии» без оценки цели).
-- [ ] 8. Сиды: дедлайны курсов (Просрочено/Сегодня/На этой неделе/
+- [x] 8. Сиды: дедлайны курсов (Просрочено/Сегодня/На этой неделе/
   Позже) у обеих групп, ручные задачи, обращение Анны с ответом
   сотрудника, — всё вымышленное, относительно «сейчас». Заявка на
   доработке уже сидится каноном (creq-demo-defer, NEEDS_FIX).
-- [ ] 9. `src/server/actions/tasks.ts` — server action «Отметить
+- [x] 9. `src/server/actions/tasks.ts` — server action «Отметить
   выполненной» (requireDataCtx, роль студент, whitelist id,
   revalidatePath) + клиентская кнопка с pending-состоянием.
-- [ ] 10. Экран `/tasks` (+ loading-скелетон): группы в порядке
+- [x] 10. Экран `/tasks` (+ loading-скелетон): группы в порядке
   срочности, строки задач, пустое состояние, заглушка сотрудника,
   состояние ошибки; компонент строки переиспользуется виджетом главной.
-- [ ] 11. Виджет «Что от меня ждут» на главной: id `tasks` в реестре
+- [x] 11. Виджет «Что от меня ждут» на главной: id `tasks` в реестре
   DIG-44 (после «Дедлайнов»), секция агрегата `getDashboard`, top-3 +
   «Все задачи», скелетон главной.
-- [ ] 12. Счётчик в меню: раздел «Задачи» в CABINET_SECTIONS/MORE_SECTIONS,
+- [x] 12. Счётчик в меню: раздел «Задачи» в CABINET_SECTIONS/MORE_SECTIONS,
   иконка, пилюля с числом открытых задач в боковом меню (fail-soft в
   каркасе кабинета).
-- [ ] 13. Гейты: lint, typecheck, build, vitest — зелёные; e2e
+- [x] 13. Гейты: lint, typecheck, build, vitest — зелёные; e2e
   desktop-1440 и mobile-360 — зелёные; вёрстка 1440 и 360 — Shell,
   Inter, плашка «Концепт для конкурса» (описание фрейма Figma).
