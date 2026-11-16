@@ -35,7 +35,6 @@ import {
   listCanonicalRequestTypes,
   isValidCanonicalRequestNumber,
   CANONICAL_REQUEST_STATUS_LABELS,
-  isTerminalRequestStatus,
 } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import {

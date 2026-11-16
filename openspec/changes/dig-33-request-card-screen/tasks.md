@@ -48,3 +48,14 @@
 - [x] lint + typecheck.
 - [x] e2e: request-card + requests + data-isolation (desktop-1440 и
       mobile-360) зелёные.
+
+## Раунд 2 (замечания ревью)
+
+- [x] Убран неиспользуемый импорт `isTerminalRequestStatus` из
+      `src/app/(cabinet)/requests/[number]/page.tsx` (ESLint
+      no-unused-vars, предупреждение в next build).
+- [x] Сборочный флейк `ENOENT routes-manifest.json → standalone`:
+      след гонки двух параллельных сборок за один `.next`
+      (stale lock, pid мёртв); лечение — очистка `.next` и
+      одиночный прогон, гейты повторно зелёные
+      (lint/typecheck/build/test = pass).
