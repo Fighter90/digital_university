@@ -10,10 +10,7 @@ import { resolve } from 'node:path';
 import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
-import type {
-  PerformanceData,
-  DisciplinePerformance,
-} from '@/server/data/performance';
+import type { PerformanceData, DisciplinePerformance } from '@/server/data/performance';
 import type { DataCtx, ExamSessionRow } from '@/server/data/types';
 
 const studentCtx: DataCtx = {
@@ -202,6 +199,11 @@ const freshSemesterPerformance: PerformanceData = {
   debts: [],
 };
 
+// «Первая контрольная» фикстуры: всегда в будущем (+3 дня) и захвачена в
+// константу — тест пинит часы относительно ЭТОЙ ЖЕ даты (одна точка правды;
+// урок 2026-11-15 с main: фикстура «14 ноября» устарела за сутки).
+const firstCreditDate = new Date(Date.now() + 3 * 86_400_000);
+
 const examSessions: ExamSessionRow[] = [
   {
     id: 'exm-credit-db',
@@ -209,8 +211,8 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-DB',
     disciplineName: 'Базы данных',
     kind: 'CREDIT',
-    date: new Date(2026, 10, 14, 10, 0),
-    startsAt: new Date(2026, 10, 14, 10, 0),
+    date: firstCreditDate,
+    startsAt: firstCreditDate,
     room: '212',
     note: null,
   },
@@ -220,8 +222,10 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-INFO',
     disciplineName: 'Информатика',
     kind: 'EXAM',
-    date: new Date(2026, 11, 24, 10, 0),
-    startsAt: new Date(2026, 11, 24, 10, 0),
+    // Дальше «первой контрольной» (+30 дней против +3): подсказка пустого
+    // семестра всегда называет «Базы данных».
+    date: new Date(Date.now() + 30 * 86_400_000),
+    startsAt: new Date(Date.now() + 30 * 86_400_000),
     room: '305',
     note: null,
   },
@@ -240,7 +244,11 @@ const examSessions: ExamSessionRow[] = [
 
 vi.mock('@/server/auth/session', () => ({
   getAuthSession: vi.fn(async () => null),
-  requireUser: vi.fn(async () => ({ id: 'auth-anna', login: 'anna.smirnova', role: 'STUDENT' as const })),
+  requireUser: vi.fn(async () => ({
+    id: 'auth-anna',
+    login: 'anna.smirnova',
+    role: 'STUDENT' as const,
+  })),
   requireStaff: vi.fn(async () => ({ id: 'x', login: 'x', role: 'STAFF' as const })),
 }));
 
@@ -254,10 +262,7 @@ vi.mock('@/server/data', () => ({
 
 import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
 
-async function renderPage(
-  Page: ComponentType,
-  props?: Record<string, unknown>,
-): Promise<string> {
+async function renderPage(Page: ComponentType, props?: Record<string, unknown>): Promise<string> {
   const { prelude } = await prerenderToNodeStream(createElement(Page, props));
   let html = '';
   for await (const chunk of prelude) {
@@ -290,7 +295,10 @@ async function renderWith(overrides: {
     getPerformance.mockResolvedValueOnce(overrides.performance ?? richPerformance);
   }
   listExams.mockResolvedValueOnce(overrides.exams ?? examSessions);
-  return renderPage(GradesPage, overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined);
+  return renderPage(
+    GradesPage,
+    overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined,
+  );
 }
 
 describe('/grades (DIG-26) — «Успеваемость: сводка»', () => {
@@ -403,7 +411,12 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
     expect(html).toContain('Оценок пока нет');
     expect(html).toContain('Первая контрольная');
     expect(html).toContain('Базы данных');
-    expect(html).toContain('14 ноября');
+    // Дата первой контрольной — из фикстуры (ru-RU, «д месяц»); фикстура
+    // всегда в будущем относительно реального «сегодня» (now + 3 дня), так
+    // что подсказка гарантированно называет «Базы данных», а не следующий экзамен.
+    expect(html).toContain(
+      new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(firstCreditDate),
+    );
     // карточек дисциплин нет — только пустое состояние
     expect(html).not.toContain('data-testid="discipline-card"');
     // светофор честно нейтрален: долгов нет, оценок нет
