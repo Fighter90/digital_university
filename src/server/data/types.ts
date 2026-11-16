@@ -391,6 +391,38 @@ export interface ServiceFavoriteRow {
 }
 
 /**
+ * DIG-34 — дедлайн задания по дисциплине (система курсов; в концепте — сиды).
+ * Групповая сущность: сдаёт вся группа, скоуп — `groupName`.
+ */
+export interface StudyDeadlineRow {
+  id: string;
+  groupName: string;
+  disciplineCode: string;
+  disciplineName: string;
+  /** Название задания: «Тест 1 „Кинематика"». */
+  title: string;
+  /** Крайний срок сдачи. */
+  dueAt: Date;
+}
+
+/**
+ * DIG-34 — ручная задача студента (подписать документ, оплатить по договору):
+ * выполняется вне кабинета и закрывается отметкой владельца. Скоуп —
+ * `studentId`; отмеченные (doneAt) из открытого списка исчезают.
+ */
+export interface StudentTaskRow {
+  id: string;
+  studentId: string;
+  /** Глагольная формулировка: «Оплатить обучение по договору». */
+  title: string;
+  /** Контекст (номер договора и т.п.); null — «Деканат». */
+  note: string | null;
+  dueAt: Date;
+  doneAt: Date | null;
+}
+
+
+/**
  * DIG-47 — выданная справка: строка реестра проверки подлинности.
  * Публичный ключ — verificationCode (160 бит base32): по нему публичная
  * страница /verify/<код> отвечает БЕЗ входа, поэтому наружу из слоя

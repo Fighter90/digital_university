@@ -29,6 +29,8 @@ import type {
   StudentRow,
   StudentSettingsRow,
   ServiceFavoriteRow,
+  StudyDeadlineRow,
+  StudentTaskRow,
 } from './types';
 import { canonicalRequestNumberSeq } from './canonical-request-number';
 
@@ -56,6 +58,10 @@ export interface MemorySeed {
   elements?: DisciplineElementRow[];
   /** DIG-29 — закреплённые студентом сервисы каталога. */
   serviceFavorites?: ServiceFavoriteRow[];
+  /** DIG-34 — дедлайны заданий группы (система курсов, в концепте — сиды). */
+  studyDeadlines?: StudyDeadlineRow[];
+  /** DIG-34 — ручные задачи студентов (подписать/оплатить…). */
+  studentTasks?: StudentTaskRow[];
   /** DIG-47 — реестр выданных справок (проверка подлинности по коду). */
   certificates?: CertificateRow[];
   /** DIG-63 — активные ICS-подписки студентов (одна на студента). */
