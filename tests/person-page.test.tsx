@@ -204,6 +204,20 @@ describe('/people/[id] — менеджер программы (студент)'
     expect(html).toContain('Ваш менеджер');
     expect(html).not.toContain('data-testid="person-upcoming"');
   });
+
+  // Ревью DIG-37 r5: у сотрудника (менеджера программы) секции «Ближайшие
+  // пары» нет ВОВСЕ — ни заголовка с пустой оболочкой, ни пустого состояния
+  // с бессмысленным «с этим преподавателем» (сценарий спеки «карточка
+  // сотрудника»: секций «Ближайшие пары» нет).
+  it('секции «Ближайшие пары» нет вовсе: ни заголовка, ни пустого состояния', async () => {
+    state.ctx = studentCtx;
+    state.card = managerFixture();
+
+    const html = await renderPage('staff-belova');
+    expect(html).not.toContain('data-testid="person-upcoming-title"');
+    expect(html).not.toContain('Ближайшие пары');
+    expect(html).not.toContain('data-testid="person-upcoming-empty"');
+  });
 });
 
 describe('/people/[id] — сотрудник деканата', () => {
@@ -220,6 +234,7 @@ describe('/people/[id] — сотрудник деканата', () => {
     const html = await renderPage();
     expect(html).not.toContain('ваша');
     expect(html).not.toContain('data-testid="person-upcoming"');
+    expect(html).not.toContain('data-testid="person-upcoming-title"');
     // Базовые разделы на месте.
     expect(html).toContain('data-testid="person-contacts"');
   });

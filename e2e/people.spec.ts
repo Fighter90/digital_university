@@ -51,20 +51,24 @@ test.describe('DIG-37: справочник людей', () => {
     await search.fill('астронавт');
     await expect(page.getByText('Никого не нашлось')).toBeVisible();
 
-    // Фильтр «Мои преподаватели»: у Анны преподаватели группы ПИ-21.
+    // Фильтр «Мои преподаватели»: у Анны преподаватели группы ПИ-21 —
+    // ровно пять, «свои» поверх по алфавиту (сценарий спеки «фильтр
+    // „Мои преподаватели"», ревью DIG-37 r5 — точный набор, не «>= 3»).
     await search.fill('');
     await page
       .getByTestId('people-filters')
       .getByRole('button', { name: 'Мои преподаватели' })
       .click();
-    const myTeachers = list.getByTestId(/^person-card-/);
-    const teacherIds = await myTeachers.evaluateAll((els) =>
-      els.map((el) => el.getAttribute('data-testid')),
-    );
-    expect(teacherIds.length).toBeGreaterThanOrEqual(3);
-    expect(teacherIds).toContain('person-card-teacher-ivanova');
-    // Сотрудник чужого деканата не «его преподаватель».
-    expect(teacherIds).not.toContain('person-card-staff-gavrilov');
+    const teacherIds = await list
+      .getByTestId(/^person-card-/)
+      .evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
+    expect(teacherIds).toEqual([
+      'person-card-teacher-ivanova',
+      'person-card-teacher-kuznetsova',
+      'person-card-teacher-orlov',
+      'person-card-teacher-petrov',
+      'person-card-teacher-sokolov',
+    ]);
 
     // Фильтр «Мой деканат» — только деканат факультета ИТ.
     await page.getByTestId('people-filters').getByRole('button', { name: 'Мой деканат' }).click();
@@ -125,8 +129,38 @@ test.describe('DIG-37: справочник людей', () => {
       `/people/${managerId}`,
     );
     await expect(page.getByTestId('person-manager-badge')).toContainText('Ваш менеджер');
-    // У менеджера программы нет «ближайших пар».
+    // У менеджера программы секции «Ближайшие пары» нет вовсе — ни списка,
+    // ни заголовка с пустым состоянием (ревью DIG-37 r5, спека «карточка
+    // сотрудника»: секций «Ближайшие пары» нет).
     await expect(page.getByTestId('person-upcoming')).toHaveCount(0);
+    await expect(page.getByTestId('person-upcoming-title')).toHaveCount(0);
+    await expect(page.getByTestId('person-upcoming-empty')).toHaveCount(0);
+  });
+
+  // Requirement «Навигация» (ревью DIG-37 r5 — поведение обязано иметь тест):
+  // desktop — пункт бокового меню, mobile — пункт страницы «Ещё»; оба ведут
+  // на /people.
+  test('пункт меню «Справочник» ведёт на /people', async ({ page }) => {
+    const isDesktop = test.info().project.name === 'desktop-1440';
+    if (isDesktop) {
+      await signIn(page, ANNA.login, ANNA.password, '/people');
+      const link = page
+        .getByRole('navigation', { name: 'Разделы кабинета' })
+        .getByRole('link', { name: 'Справочник' });
+      await expect(link).toBeVisible();
+      await expect(link).toHaveAttribute('href', '/people');
+      await link.click();
+      await expect(page).toHaveURL(/\/people$/);
+      await expect(page.getByRole('heading', { level: 1, name: 'Справочник' })).toBeVisible();
+      return;
+    }
+    await signIn(page, ANNA.login, ANNA.password, '/more');
+    const link = page.getByRole('link', { name: 'Справочник' });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('href', '/people');
+    await link.click();
+    await expect(page).toHaveURL(/\/people$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Справочник' })).toBeVisible();
   });
 
   test('переход из карточки дисциплины в справочник', async ({ page }) => {

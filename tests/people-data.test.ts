@@ -248,6 +248,21 @@ describe('getPersonCard — карточка человека', () => {
     expect(other!.isMyManager).toBe(false);
   });
 
+  // Ревью DIG-37 r5: секция «Ближайшие пары» собирается ТОЛЬКО для
+  // преподавателей. Студент-владелец сессии на карточке сотрудника (менеджера
+  // программы) не должен получать даже пустой список — иначе страница рисует
+  // заголовок «Ближайшие пары» с текстом «с этим преподавателем», что
+  // противоречит сценарию спеки «карточка сотрудника» («секций нет»).
+  // Контракт: upcoming === null ⇔ секции на странице нет.
+  it('карточка сотрудника при студенческом скоупе: upcoming null (не [])', async () => {
+    const db = seedDb(); // в сиде есть будущие пары группы ПИ-21
+    const card = await getPersonCard(db, staffAnnaCtx, 'staff-belova');
+    expect(card).not.toBeNull();
+    expect(card!.isMyManager).toBe(true);
+    expect(card!.hasPersonalScope).toBe(true);
+    expect(card!.upcoming).toBeNull();
+  });
+
   it('сотрудник деканата: «его деканат» — по факультету сотрудника', async () => {
     const db = seedDb();
     const petrova = await getPersonCard(db, deanCtx, 'staff-petrova');

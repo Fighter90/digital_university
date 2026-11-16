@@ -43,7 +43,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 
   const card = await getPersonCard(dataDb, ctx, id);
   if (!card) notFound();
-  const { person } = card;
+  const { person, upcoming } = card;
   const isTeacher = person.kind === 'TEACHER';
 
   return (
@@ -238,13 +238,20 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         </section>
       ) : null}
 
-      {/* ── Ближайшие пары (только студенту, по его группе) ───────────────── */}
-      {card.hasPersonalScope ? (
+      {/* ── Ближайшие пары: только студенту на карточке ПРЕПОДАВАТЕЛЯ.
+          Контракт слоя данных: upcoming === null ⇔ секции нет (у сотрудника
+          null даже при студенческом скоупе — ревью DIG-37 r5), поэтому
+          предикат секции — по upcoming, не по hasPersonalScope. ──────────── */}
+      {upcoming !== null ? (
         <section aria-labelledby="person-upcoming-title">
-          <h2 id="person-upcoming-title" className="text-lg font-extrabold tracking-heading">
+          <h2
+            id="person-upcoming-title"
+            data-testid="person-upcoming-title"
+            className="text-lg font-extrabold tracking-heading"
+          >
             Ближайшие пары
           </h2>
-          {card.upcoming === null ? null : card.upcoming.length === 0 ? (
+          {upcoming.length === 0 ? (
             <p
               data-testid="person-upcoming-empty"
               className="mt-3 rounded-card border border-dashed border-border bg-card p-5 text-sm text-muted-foreground shadow-soft"
@@ -253,7 +260,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             </p>
           ) : (
             <ul data-testid="person-upcoming" className="mt-3 flex flex-col gap-2">
-              {card.upcoming.map((event) => (
+              {upcoming.map((event) => (
                 <li key={event.id}>
                   <Link
                     href={`/schedule?view=day&date=${event.dateKey}`}

@@ -14,7 +14,8 @@
 //    (менеджер программы студента) + myDisciplines для карточки списка;
 //  - getPersonCard(db, ctx, id) — карточка человека: контакты и часы
 //    консультаций из каталога, «его» дисциплины группы студента и
-//    ближайшие пары (группа студента, от «сейчас», без отменённых),
+//    ближайшие пары (группа студента, от «сейчас», без отменённых,
+//    только у преподавателей — у сотрудника upcoming === null),
 //    null для неизвестного id.
 
 import { LESSON_KIND_LABELS } from '@/lib/dashboard-format';
@@ -83,7 +84,11 @@ export interface PersonCardData {
   hasPersonalScope: boolean;
   /** Дисциплины группы студента у этого преподавателя (с кодом). */
   myDisciplines: PersonDiscipline[];
-  /** null — персонального скоупа нет (сотрудник); [] — пар впереди нет. */
+  /**
+   * null — секции «Ближайшие пары» на странице нет (нет студенческого
+   * скоупа ИЛИ человек не преподаватель — ревью DIG-37 r5); [] — скоуп есть,
+   * пар впереди нет.
+   */
   upcoming: PersonUpcomingEvent[] | null;
 }
 
@@ -215,8 +220,11 @@ export async function getPersonCard(
 
   // Ближайшие пары группы студента с этим преподавателем: от «сейчас»,
   // по границам семестра, без отменённых, максимум MAX_UPCOMING_EVENTS.
+  // ТОЛЬКО у преподавателей: карточке сотрудника секции нет (сценарий
+  // спеки «карточка сотрудника»), поэтому у сотрудника upcoming === null
+  // даже при студенческом скоупе — инвариант «null ⇔ секции нет».
   let upcoming: PersonUpcomingEvent[] | null = null;
-  if (isStudent && ctx.groupName !== null) {
+  if (isStudent && ctx.groupName !== null && person.kind === 'TEACHER') {
     const now = new Date();
     const bounds = semesterBounds(now);
     const rows =
