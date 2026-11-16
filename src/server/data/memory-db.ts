@@ -16,7 +16,6 @@ import type {
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
-  NewsReadRow,
   NotificationRow,
   RequestEventRow,
   ScheduleEventRow,
@@ -48,8 +47,6 @@ export interface MemorySeed {
   elements?: DisciplineElementRow[];
   /** DIG-29 — закреплённые студентом сервисы каталога. */
   serviceFavorites?: ServiceFavoriteRow[];
-  /** DIG-36 — отметки «Прочитано» новостей/объявлений. */
-  newsRead?: NewsReadRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -77,7 +74,6 @@ export function createMemoryDataDb(): MemoryDataDb {
   let settings: StudentSettingsRow[] = [];
   let notes: StudentNoteRow[] = [];
   let serviceFavorites: ServiceFavoriteRow[] = [];
-  let newsRead: NewsReadRow[] = [];
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
@@ -107,7 +103,6 @@ export function createMemoryDataDb(): MemoryDataDb {
       settings = seed.settings ? seed.settings.map(clone) : [];
       notes = seed.notes ? seed.notes.map(clone) : [];
       serviceFavorites = seed.serviceFavorites ? seed.serviceFavorites.map(clone) : [];
-      newsRead = seed.newsRead ? seed.newsRead.map(clone) : [];
       audit = [];
     },
 
@@ -378,20 +373,6 @@ export function createMemoryDataDb(): MemoryDataDb {
       serviceFavorites = serviceFavorites.filter(
         (f) => !(f.studentId === studentId && f.serviceId === serviceId),
       );
-    },
-
-    // ── DIG-36: отметки «Прочитано» новостей (owner-scoped) ───────────────
-    async listNewsReadIdsByStudent(studentId) {
-      return newsRead
-        .filter((r) => r.studentId === studentId)
-        .sort((a, b) => a.readAt.getTime() - b.readAt.getTime())
-        .map((r) => r.newsId);
-    },
-    async markNewsReadByStudent(studentId, newsId) {
-      const exists = newsRead.some((r) => r.studentId === studentId && r.newsId === newsId);
-      if (!exists) {
-        newsRead.push({ studentId, newsId, readAt: new Date() });
-      }
     },
 
     async listStudentsByFaculty(faculty) {

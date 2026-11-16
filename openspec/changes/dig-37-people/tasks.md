@@ -68,3 +68,25 @@
   вычисляется один раз (было дважды: проверка + `!` в JSX).
 - [x] 19. Гейты: полный `vitest run` (802 green), `npm run lint` (0
   errors), `npm run typecheck`, `node scripts/swarm/gates.mjs`.
+
+## Раунд 3 (ревью вернуло с замечаниями)
+
+- [x] 20. Вычистить из ветки чужой DIG-36: salvage-коммит (7d9b54a) принёс
+  сюда целиком экран «Новости» (страницы, компоненты, каталог, тесты, e2e,
+  public, change-папку), хотя у DIG-36 есть своя каноническая ветка
+  (origin/pochtasergeia/dig-36-…) с более поздними правками раунда 3.
+  Дубль удалён: news-файлы — `git rm`, общие файлы (news.ts, memory-db,
+  port, types, demo-seed, sections.tsx, dashboard-page тест, скриншоты)
+  возвращены к базе ветки, в index.ts оставлены только экспорты people.
+  DIG-36 доедет до main своей веткой и своим PR — без конфликтов версий.
+- [x] 21. Герметичный typecheck: `npm run typecheck` теперь чистит
+  устаревшие `.next/types` перед `next typegen` + `tsc` (тот же подход,
+  что в канонической ветке DIG-36) — иначе после удаления сегментов
+  маршрутов tsc падает на стейл-типах.
+- [x] 22. Аудит пунктов ревью: сессия (requireDataCtx на обеих страницах),
+  loading-иерархия ((list)/loading.tsx есть; [id] — без loading.tsx,
+  задокументированный контракт 404), тесты, сид — замечаний нет.
+- [x] 23. Гейты: полный `vitest run` (755 green = 801 − 46 тестов DIG-36),
+  lint (0 errors), typecheck, `node scripts/swarm/gates.mjs` — зелёные;
+  e2e people 16 passed (+2 skipped desktop-проектом), dashboard/shell e2e
+  18 passed.

@@ -281,9 +281,7 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
     expect(html).toContain('href="/ai-assistant"');
     expect(html).toContain('Новости деканата');
     expect(html).toContain('Пересдачи: расписание опубликовано');
-    // DIG-36: карточки новостей ведут на свои страницы новостей.
-    expect(html).toContain('href="/news/news-1"');
-    expect(html).not.toContain('href="/notifications"');
+    expect(html).toContain('href="/notifications"');
   });
 
   it('page stays a section inside the shell main (no own <main> landmark)', async () => {

@@ -247,17 +247,6 @@ export interface ServiceFavoriteRow {
 }
 
 /**
- * DIG-36 — отметка «Прочитано» для новости/объявления: одна строка на пару
- * (студент, новость), owner-scoped по studentId. Сам контент новостей —
- * публичный вымышленный каталог (lib/news-catalog), здесь только отметки.
- */
-export interface NewsReadRow {
-  studentId: string;
-  newsId: string;
-  readAt: Date;
-}
-
-/**
  * Why access was denied. `OWNERSHIP_DENIED` / `OUTSIDE_FACULTY` mean the row
  * exists but belongs to someone else; `NOT_FOUND` — no such row. The HTTP
  * answer is IDENTICAL (404) for both — the reason goes only to the audit log,
