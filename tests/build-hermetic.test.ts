@@ -9,8 +9,10 @@
 //      route-types, на которые ссылается next-env.d.ts — их удаление роняет
 //      следующий typecheck ошибкой TS6053).
 import { describe, expect, it } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 import nextConfig, { resolveDistDir } from '../next.config';
 
@@ -69,5 +71,51 @@ describe('npm run build — герметичный прогон (без пере
       existsSync(resolve(ROOT, ref as string)),
       `файл из next-env.d.ts отсутствует: ${ref} — прогони build или dev`,
     ).toBe(true);
+  });
+});
+
+// DIG-48, раунд 2 (ревью): два замечания про общую сборку на shared checkout.
+//   • build-lock.mjs — `finally` мёртв: process.exit() внутри try пропускает
+//     releaseBuildLock, каждая следующая сборка «ворует» lock как stale.
+//   • `npm run typecheck` (clean-next-types → next typegen → tsc) не берёт
+//     build-lock и может удалить .next/types у параллельной `next build`.
+describe('build-lock: release при выходе и сериализация typecheck (DIG-48 р2)', () => {
+  it('build-lock.mjs: lock захвачен по BUILD_LOCK_PATH на время команды и освобождён после выхода', () => {
+    // Поведенческий прогон обёртки в песочнице: BUILD_LOCK_PATH уводит lock
+    // из репозитория во временный каталог. Payload-команда выходит 3, если
+    // lock уже захвачен (обёртка обязана его взять), иначе 7.
+    const dir = mkdtempSync(resolve(tmpdir(), 'build-lock-release-'));
+    const lock = resolve(dir, 'lock');
+    const cli = resolve(ROOT, 'scripts/build-lock.mjs');
+    const probe = `process.exit(require('node:fs').existsSync(${JSON.stringify(lock)}) ? 3 : 7)`;
+    const r = spawnSync(process.execPath, [cli, 'node', '-e', probe], {
+      encoding: 'utf8',
+      env: { ...process.env, BUILD_LOCK_PATH: lock },
+    });
+    expect(r.status, `stderr: ${r.stderr?.slice(-400)}`).toBe(3);
+    expect(existsSync(lock), 'lock-каталог остался после выхода — release не выполнен').toBe(false);
+  });
+
+  it('typecheck идёт под тем же build-lock (не рвёт .next/types параллельной сборке)', () => {
+    expect(pkg().scripts.typecheck).toBe('node scripts/typecheck-locked.mjs');
+    const runner = read('scripts/typecheck-locked.mjs');
+    expect(runner).toMatch(/acquireBuildLock/);
+    expect(runner).toMatch(/releaseBuildLock/);
+    // те же шаги, что были в старом скрипте typecheck, но внутри lock
+    expect(runner).toContain('clean-next-types.mjs');
+    expect(runner).toContain("'typegen'");
+    expect(runner).toContain("'--noEmit'");
+  });
+
+  it('typecheck-locked: lock освобождён и код выхода payload проброшен', () => {
+    const dir = mkdtempSync(resolve(tmpdir(), 'typecheck-locked-'));
+    const lock = resolve(dir, 'lock');
+    const cli = resolve(ROOT, 'scripts/typecheck-locked.mjs');
+    const r = spawnSync(process.execPath, [cli, 'node', '-e', 'process.exit(5)'], {
+      encoding: 'utf8',
+      env: { ...process.env, BUILD_LOCK_PATH: lock },
+    });
+    expect(r.status, `stderr: ${r.stderr?.slice(-400)}`).toBe(5);
+    expect(existsSync(lock), 'lock-каталог остался после выхода typecheck').toBe(false);
   });
 });

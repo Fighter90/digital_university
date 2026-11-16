@@ -71,8 +71,7 @@ export function Shell({
       />
 
       <div className="mx-auto flex w-full max-w-[1440px]">
-        <SideNav unreadCount={unreadCount} tasksCount={tasksCount} />
-        <main
+        <SideNav unreadCount={unreadCount} tasksCount={tasksCount} />        <SideNav unreadCount={unreadCount} role={user.role} />        <main
           id="main-content"
           tabIndex={-1}
           className="min-w-0 flex-1 px-3 pt-4 pb-28 focus:outline-none md:px-6 md:pt-6 md:pb-12"
@@ -81,12 +80,16 @@ export function Shell({
         </main>
       </div>
 
-      <TabBar />
-      <AiFab onOpen={() => setAssistantOpen(true)} />
+      {/* DIG-48: таб-бар по роли сессии (у сотрудника — разделы деканата). */}
+      <TabBar role={user.role} />
+      {/* Плавающая кнопка ассистента — только студенту (у сотрудника свой кабинет). */}
+      {user.role === 'STUDENT' && <AiFab onOpen={() => setAssistantOpen(true)} />}
       {/* DIG-62: AI-гид — вне <main>, чтобы краулер DIG-60 и геометрия
           контента не видели его ссылки; только роль студента. DIG-65:
           флаг voiceAssistant прячет/показывает микрофон голосового ввода. */}
-      <AiGuide userName={user.name} role={user.role} voiceEnabled={user.voiceAssistant} />
+      {user.role === 'STUDENT' && (
+        <AiGuide userName={user.name} role={user.role} voiceEnabled={user.voiceAssistant} />
+      )}
       <SearchPalette
         open={searchOpen}
         onClose={closeSearch}

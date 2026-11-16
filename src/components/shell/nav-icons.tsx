@@ -2,13 +2,12 @@ import {
   Bell,
   CalendarDays,
   CircleHelp,
-  Contact,
-  Ellipsis,
+  Contact,  ClipboardList,  Ellipsis,
   FileText,
   GraduationCap,
   House,
-  ListChecks,
-  MessagesSquare,
+  ListChecks,  LayoutDashboard,
+  Megaphone,  MessagesSquare,
   Sparkles,
   UserRound,
   type LucideIcon,
@@ -29,6 +28,11 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   '/ai-assistant': Sparkles,
   '/profile': UserRound,
   '/more': Ellipsis,
+  // DIG-48 — кабинет сотрудника.
+  '/staff': LayoutDashboard,
+  '/staff/requests': ClipboardList,
+  '/staff/appeals': MessagesSquare,
+  '/staff/announcements': Megaphone,
 };
 
 export function sectionIcon(href: string): LucideIcon {

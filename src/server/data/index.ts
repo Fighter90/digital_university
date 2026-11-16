@@ -97,8 +97,28 @@ export type {
   PersonCardData,
   PersonListEntry,
   PersonUpcomingEvent,
-} from './people';
-export { getDashboard } from './dashboard';
+} from './people';export {
+  answerStaffAppeal,
+  changeStaffRequestStatus,
+  createStaffAnnouncement,
+  getStaffAppealThread,
+  getStaffAppeals,
+  getStaffQueue,
+  getStaffRequestDetail,
+  getStaffSummaryData,
+  listFacultyGroups,
+  listStaffAnnouncements,
+  resolveStaffAppeal,
+} from './staff-workflow';
+export type {
+  StaffAppealItem,
+  StaffAppealThread,
+  StaffAnnouncementResult,
+  StaffQueueItem,
+  StaffRequestDetail,
+  StaffStatusChangeResult,
+  StaffSummaryData,
+} from './staff-workflow';export { getDashboard } from './dashboard';
 export { getTasks, getTasksSummary, groupTasks, markTaskDone } from './tasks';
 export type { TaskGroupViews, TaskSource, TasksData, TasksSummary, TaskView } from './tasks';
 export type {
@@ -133,6 +153,7 @@ export type { ServicesPageData, ServiceToggleResult } from './services';
 export {
   getCertificatePdfInput,
   getOrCreateCertificateForRequest,
+  getStaffCertificatePdfInput,
   newCertificateNumber,
   revokeCertificateByCode,
   verifyCertificateByCode,
@@ -217,10 +238,17 @@ export type {
   TransitionCanonicalRequestResult,
   SendDocumentByEmailResult,
 } from './canonical-requests';
-export type { DataDb, SchedulePeriod, ScheduleChangePatch } from './port';
+export type {
+  DataDb,
+  SchedulePeriod,
+  ScheduleChangePatch,
+  StaffNotificationInput,
+  StaffRequestUpdateInput,
+  StaffAppealMessageInput,
+  StaffAnnouncementInput,
+} from './port';
 export { getRequestsScreen } from './requests-screen';
-export type { RequestsScreenData } from './requests-screen';
-export {
+export type { RequestsScreenData } from './requests-screen';export {
   type DataCtx,
   type Role,
   type RequestType,
@@ -258,4 +286,6 @@ export {
   type TicketRow,
   type TicketMessageRow,
   type TicketStatus,
-  type TicketSubject,} from './types';
+  type TicketSubject,
+  type AnnouncementRow,
+} from './types';

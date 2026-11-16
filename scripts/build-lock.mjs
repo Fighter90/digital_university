@@ -30,7 +30,7 @@ const DEFAULTS = {
 };
 
 /** Repo-local binary (works without npm/pnpm adding .bin to PATH). */
-const repoBin = (bin) => {
+export const repoBin = (bin) => {
   const p = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'node_modules', '.bin', bin);
   return existsSync(p) ? p : bin;
 };
@@ -119,7 +119,10 @@ export const releaseBuildLock = ({ lockPath } = {}) => {
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMain) {
-  const lockPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', '.next-build.lock');
+  // BUILD_LOCK_PATH redirects the lock outside the repo (tests, sandboxes).
+  const lockPath = process.env.BUILD_LOCK_PATH
+    ? resolve(process.env.BUILD_LOCK_PATH)
+    : resolve(dirname(fileURLToPath(import.meta.url)), '..', '.next-build.lock');
   const cmd = process.argv.slice(2);
   if (cmd.length === 0) cmd.push(repoBin('next'), 'build');
 
@@ -130,23 +133,31 @@ if (isMain) {
     process.exit(1);
   }
 
-  // Best-effort release on Ctrl-C / termination so the next build is not
-  // delayed by stale-lock stealing.
+  // Ctrl-C / termination: flag only. The foreground child receives the
+  // signal from the process group directly; the wrapper applies exit code
+  // 130 AFTER the lock is released. Calling process.exit() inside a signal
+  // handler would skip the release below — the same trap as the dead
+  // `finally` fixed here (DIG-55 review round 2): the old code exited
+  // straight from the handler and left the lock for the next build to
+  // "steal".
   let interrupted = false;
   for (const signal of ['SIGINT', 'SIGTERM']) {
     process.on(signal, () => {
       interrupted = true;
-      releaseBuildLock({ lockPath });
-      process.exit(130);
     });
   }
 
+  // Release must run on the straight-line path: `process.exit()` inside a
+  // try block never executes `finally`, so the old shape left the lock in
+  // place after every normal build (DIG-55 review round 2, carried in
+  // DIG-48). Compute the exit code, release, THEN exit.
+  let exitCode;
   try {
     console.log(`[build-lock] acquired, running: ${cmd.join(' ')}`);
     const result = spawnSync(cmd[0], cmd.slice(1), { stdio: 'inherit' });
-    if (interrupted) process.exit(130);
-    process.exit(result.status ?? 1);
+    exitCode = interrupted ? 130 : (result.status ?? 1);
   } finally {
     releaseBuildLock({ lockPath });
   }
+  process.exit(exitCode);
 }

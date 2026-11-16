@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { CABINET_SECTIONS, resolveActiveSection } from './nav-items';
+import { sectionsForRole, resolveActiveSection } from './nav-items';
 import { sectionIcon } from './nav-icons';
 import { UnreadBadge } from './unread-badge';
 
@@ -22,18 +22,22 @@ const DEADLINE = {
 export function SideNav({
   unreadCount,
   tasksCount = 0,
+  role = 'STUDENT',
 }: {
   unreadCount: number;
   tasksCount?: number;
+  role?: 'STUDENT' | 'STAFF';
 }) {
+  // DIG-48: разделы строятся по роли сессии (у сотрудника — кабинет деканата).
   const pathname = usePathname();
-  const active = resolveActiveSection(pathname, CABINET_SECTIONS);
+  const sections = sectionsForRole(role);
+  const active = resolveActiveSection(pathname, sections);
 
   return (
     <aside className="sticky top-18 hidden shrink-0 flex-col border-r border-neutral-200/80 bg-white md:flex md:w-16 lg:w-[212px]">
       <nav aria-label="Разделы кабинета" className="flex flex-col gap-1 overflow-y-auto px-2 py-4">
         <ul className="flex flex-col gap-1">
-          {CABINET_SECTIONS.map((section) => {
+          {sections.map((section) => {
             const Icon = sectionIcon(section.href);
             const isActive = active === section.href;
             const showBadge = section.href === '/notifications' && unreadCount > 0;
@@ -80,7 +84,9 @@ export function SideNav({
         </ul>
       </nav>
 
-      {/* Карточка «Ближайший дедлайн» — под меню (только полное меню ≥1024) */}
+      {/* Карточка «Ближайший дедлайн» — под меню (только полное меню ≥1024,
+          только студентам: у сотрудника свой кабинет без дедлайнов пар). */}
+      {role === 'STUDENT' && (
       <div className="mx-2 mt-2 mb-4 hidden rounded-2xl border border-coral-200 bg-coral-50 p-3 lg:block">
         <h2 className="text-[11px] font-semibold tracking-wide text-coral-700 uppercase">
           Ближайший дедлайн
@@ -90,6 +96,7 @@ export function SideNav({
           {DEADLINE.due} · {DEADLINE.left}
         </p>
       </div>
+      )}
     </aside>
   );
 }

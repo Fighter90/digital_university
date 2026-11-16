@@ -35,13 +35,13 @@ beforeEach(async () => {
 });
 
 describe('getRequestsScreen — демо-данные Анны', () => {
-  it('все пилюли покрыты: Все=5, В работе=2, Нужно действие=1, Готовы=1, Архив=1', async () => {
+  it('все пилюли покрыты: Все=7, В работе=5, Нужно действие=1, Готовы=1, Архив=1', async () => {
     const { cards } = await getRequestsScreen(db, anna);
-    expect(cards).toHaveLength(5);
+    expect(cards).toHaveLength(7); // 3 канонические (ЗД-) + 4 сервисные (SR-) — DIG-48 очередь
 
     const counts = requestFilterCounts(cards);
-    expect(counts.ALL).toBe(5);
-    expect(counts.IN_WORK).toBe(2); // ЗД-диплом SUBMITTED + общежитие IN_PROGRESS
+    expect(counts.ALL).toBe(7);
+    expect(counts.IN_WORK).toBe(4); // 3 SUBMITTED + 1 IN_PROGRESS
     expect(counts.NEEDS_ACTION).toBe(1); // «для военкомата» NEEDS_FIX
     expect(counts.READY).toBe(1); // «для банка» READY
     expect(counts.ARCHIVE).toBe(1); // налоговая ISSUED

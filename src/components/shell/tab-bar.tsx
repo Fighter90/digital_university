@@ -3,15 +3,17 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { TAB_SECTIONS, resolveActiveTab } from './nav-items';
+import { tabsForRole, resolveActiveTab } from './nav-items';
 import { sectionIcon } from './nav-icons';
 
 // DIG-14: нижний таб-бар мобильного (<768). Фиксированный, с отступом
 // под жест-бар iPhone через env(safe-area-inset-bottom). Активная вкладка
 // синхронизирована с боковым меню через resolveActiveTab.
-export function TabBar() {
+// DIG-48: вкладки строятся по роли сессии.
+export function TabBar({ role }: { role: 'STUDENT' | 'STAFF' }) {
   const pathname = usePathname();
-  const activeTab = resolveActiveTab(pathname);
+  const tabs = tabsForRole(role);
+  const activeTab = resolveActiveTab(pathname, role);
 
   return (
     <nav
@@ -19,7 +21,7 @@ export function TabBar() {
       className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200/80 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
       <ul className="mx-auto flex max-w-md">
-        {TAB_SECTIONS.map((tab) => {
+        {tabs.map((tab) => {
           const Icon = sectionIcon(tab.href);
           const isActive = activeTab === tab.href;
           return (
