@@ -1,6 +1,7 @@
 import {
   Bell,
   CalendarDays,
+  CircleHelp,
   Contact,
   Ellipsis,
   FileText,
@@ -23,6 +24,7 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   '/requests': FileText,
   '/notifications': Bell,
   '/deanery': MessagesSquare,
+  '/help': CircleHelp,
   '/people': Contact,
   '/ai-assistant': Sparkles,
   '/profile': UserRound,

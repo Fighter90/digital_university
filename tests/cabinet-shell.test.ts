@@ -178,7 +178,7 @@ import SettingsPage from '@/app/(cabinet)/settings/page';
 import MorePage from '@/app/(cabinet)/more/page';
 
 describe('nav config (cabinet shell)', () => {
-  it('exposes the 9 mandated cabinet sections with unique hrefs', () => {
+  it('exposes the 10 mandated cabinet sections with unique hrefs', () => {
     const expected = [
       ['/dashboard', 'Главная'],
       ['/schedule', 'Расписание'],
@@ -186,6 +186,7 @@ describe('nav config (cabinet shell)', () => {
       ['/requests', 'Заявки и справки'],
       ['/notifications', 'Уведомления'],
       ['/deanery', 'Связь с деканатом'],
+      ['/help', 'Вопросы и ответы'],
       ['/people', 'Справочник'],
       ['/ai-assistant', 'AI-ассистент'],
       ['/profile', 'Профиль'],
@@ -216,11 +217,12 @@ describe('nav config (cabinet shell)', () => {
     ]);
   });
 
-  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, Справочник, AI-ассистент, Профиль, Настройки', () => {
+  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, Вопросы и ответы, Справочник, AI-ассистент, Профиль, Настройки', () => {
     expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
       '/tasks',
       '/notifications',
       '/deanery',
+      '/help',
       '/people',
       '/ai-assistant',
       '/profile',
