@@ -120,7 +120,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             data-testid="consultation-stub-note"
           >
             Запись на консультацию появится в ближайшем обновлении кабинета — пока напишите
-            преподавателю письму или приходите в часы консультаций.
+            преподавателю письмо или приходите в часы консультаций.
           </p>
         ) : null}
       </header>

@@ -6,6 +6,7 @@
 // на сервере (getPeopleDirectory) — персональные пометки приходят
 // готовыми, клиент только фильтрует и ищет по ним.
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Search } from 'lucide-react';
 
 import {
@@ -145,13 +146,19 @@ function LinkName({
   chunks: Array<{ text: string; hit: boolean }>;
 }) {
   return (
-    <a
+    <Link
       href={`/people/${personId}`}
       className="text-sm font-bold text-foreground underline-offset-2 hover:text-coral-600 hover:underline"
     >
       {chunks.map((chunk, index) =>
-        chunk.hit ? <mark key={index}>{chunk.text}</mark> : <span key={index}>{chunk.text}</span>,
+        chunk.hit ? (
+          <mark key={index} className="rounded-sm bg-accent-soft px-0.5 text-accent-ink">
+            {chunk.text}
+          </mark>
+        ) : (
+          <span key={index}>{chunk.text}</span>
+        ),
       )}
-    </a>
+    </Link>
   );
 }

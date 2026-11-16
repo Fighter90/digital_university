@@ -48,6 +48,9 @@ export default async function DisciplineCardPage({
   const card = await getDisciplineCard(dataDb, ctx, disciplineCode);
   if (!card) notFound();
 
+  // DIG-37: href карточки преподавателя считаем один раз — и проверка, и переход.
+  const teacherHref = card.teacherName ? personHrefByFullName(card.teacherName) : null;
+
   const accumulatedLabel =
     card.accumulated === null ? '—' : card.accumulated.toFixed(1).replace('.', ',');
 
@@ -75,21 +78,19 @@ export default async function DisciplineCardPage({
                 <span className="text-muted-foreground">Преподаватель не указан</span>
               )}
             </p>
-            {card.teacherName ? (
-              personHrefByFullName(card.teacherName) ? (
-                <Link
-                  href={personHrefByFullName(card.teacherName)!}
-                  data-testid="discipline-teacher-link"
-                  className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-coral-600 transition-colors hover:text-coral-500"
-                >
-                  Профиль в справочнике
-                  <ArrowUpRight aria-hidden="true" className="size-3.5" />
-                </Link>
-              ) : (
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Профиль преподавателя появится в справочнике
-                </p>
-              )
+            {teacherHref ? (
+              <Link
+                href={teacherHref}
+                data-testid="discipline-teacher-link"
+                className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-coral-600 transition-colors hover:text-coral-500"
+              >
+                Профиль в справочнике
+                <ArrowUpRight aria-hidden="true" className="size-3.5" />
+              </Link>
+            ) : card.teacherName ? (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Профиль преподавателя появится в справочнике
+              </p>
             ) : null}
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge status="neutral">

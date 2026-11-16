@@ -50,3 +50,21 @@
   `npm run lint`, `npm run typecheck`, `node scripts/swarm/gates.mjs`.
 - [x] 13. Change-папка openspec/changes/dig-37-people (proposal, tasks,
   delta-спека people).
+
+## Раунд 2 (ревью вернуло с замечаниями)
+
+- [x] 14. Red-first `tests/people-data.test.ts`: метка «Ведёт у вас» едина
+  в списке и карточке — преподаватель с дисциплинами группы без пар в
+  расписании помечен одинаково (падало: карточка давала false).
+- [x] 15. `src/server/data/people.ts` — общий предикат `isMyTeacherMark`
+  для `getPeopleDirectory` и `getPersonCard` (было: список учитывал
+  дисциплины группы, карточка — только расписание).
+- [x] 16. `people-browser.tsx` — подсветка `<mark>` стилизована токенами
+  (как в service-card DIG-29), имя-ссылка через `next/link` вместо
+  полного `<a>`-reload.
+- [x] 17. `people/[id]/page.tsx` — опечатка в пояснении заглушки
+  («письму» → «письмо»).
+- [x] 18. `grades/[disciplineId]/page.tsx` — `personHrefByFullName`
+  вычисляется один раз (было дважды: проверка + `!` в JSX).
+- [x] 19. Гейты: полный `vitest run` (802 green), `npm run lint` (0
+  errors), `npm run typecheck`, `node scripts/swarm/gates.mjs`.

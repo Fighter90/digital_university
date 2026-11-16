@@ -94,10 +94,7 @@ const roomLabel = (room: string): string =>
   room.trim().toLowerCase() === 'онлайн' ? 'онлайн' : `ауд. ${room.trim()}`;
 
 /** Сшивка «имя преподавателя → дисциплины группы» + множество имён из пар. */
-function personalLinks(
-  db: DataDb,
-  ctx: DataCtx,
-): Promise<{ teacherToDisciplines: Map<string, string[]>; scheduleTeachers: Set<string> }> {
+function personalLinks(db: DataDb, ctx: DataCtx): Promise<Links> {
   const studentId = ctx.studentId;
   const groupName = ctx.groupName;
   if (studentId === null || groupName === null) {
@@ -136,6 +133,24 @@ function ownMarks(
   };
 }
 
+/**
+ * Метка «его/Ведёт у вас» — ОДНА на список и карточку (ревью DIG-37 r2):
+ * преподаватель группы, у которого есть дисциплины группы или пары в
+ * расписании, помечен везде одинаково.
+ */
+function isMyTeacherMark(person: PersonEntry, links: Links): boolean {
+  return (
+    person.kind === 'TEACHER' &&
+    (links.scheduleTeachers.has(person.fullName) ||
+      (links.teacherToDisciplines.get(person.fullName)?.length ?? 0) > 0)
+  );
+}
+
+interface Links {
+  teacherToDisciplines: Map<string, string[]>;
+  scheduleTeachers: Set<string>;
+}
+
 export async function getPeopleDirectory(db: DataDb, ctx: DataCtx): Promise<PeopleDirectoryData> {
   const isStudent = ctx.studentId !== null && ctx.groupName !== null;
   const [student, links] = await Promise.all([
@@ -144,10 +159,6 @@ export async function getPeopleDirectory(db: DataDb, ctx: DataCtx): Promise<Peop
   ]);
 
   const people = PEOPLE.map((person) => {
-    const isMyTeacher =
-      person.kind === 'TEACHER' &&
-      (links.scheduleTeachers.has(person.fullName) ||
-        (links.teacherToDisciplines.get(person.fullName)?.length ?? 0) > 0);
     const marks = ownMarks(ctx, person, student?.program ?? null);
     return {
       id: person.id,
@@ -157,7 +168,7 @@ export async function getPeopleDirectory(db: DataDb, ctx: DataCtx): Promise<Peop
       department: person.department,
       email: person.email,
       disciplines: person.disciplines.map((discipline) => discipline.name),
-      isMyTeacher,
+      isMyTeacher: isMyTeacherMark(person, links),
       isMyDeanery: marks.isMyDeanery,
       isMyManager: marks.isMyManager,
       myDisciplines: links.teacherToDisciplines.get(person.fullName) ?? [],
@@ -231,7 +242,7 @@ export async function getPersonCard(
   return {
     person,
     href: personHrefByFullName(person.fullName)!,
-    isMyTeacher: person.kind === 'TEACHER' && links.scheduleTeachers.has(person.fullName),
+    isMyTeacher: isMyTeacherMark(person, links),
     isMyDeanery: marks.isMyDeanery,
     isMyManager: marks.isMyManager,
     hasPersonalScope: isStudent,

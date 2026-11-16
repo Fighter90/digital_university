@@ -180,6 +180,26 @@ describe('getPeopleDirectory — полный справочник', () => {
     expect(byId.get('staff-petrova')!.isMyDeanery).toBe(true);
     expect(byId.get('staff-gavrilov')!.isMyDeanery).toBe(false);
   });
+
+  // Ревью DIG-37 r2: метка «его/Ведёт у вас» должна быть ЕДИНОЙ в списке и
+  // карточке. Преподаватель ведёт дисциплину группы, но пар в расписании
+  // сейчас нет (семестр начался не у всех потоков) — метка в списке не
+  // должна «исчезать» на карточке.
+  it('метка «Ведёт у вас» единая в списке и карточке (дисциплины без пар в расписании)', async () => {
+    const db = createMemoryDataDb();
+    db.seed({
+      students: [anna],
+      disciplines: [
+        discipline('PI21-DISC', 'Дискретная математика', 'Кузнецова Ксения Кирилловна'),
+      ],
+      schedule: [],
+    });
+    const data = await getPeopleDirectory(db, staffAnnaCtx);
+    const inList = data.people.find((p) => p.id === 'teacher-kuznetsova')!;
+    expect(inList.isMyTeacher).toBe(true);
+    const card = await getPersonCard(db, staffAnnaCtx, 'teacher-kuznetsova');
+    expect(card!.isMyTeacher).toBe(true);
+  });
 });
 
 describe('getPersonCard — карточка человека', () => {
