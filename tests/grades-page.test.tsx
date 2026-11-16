@@ -11,8 +11,7 @@ import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
 import type { PerformanceData, DisciplinePerformance } from '@/server/data/performance';
-import type { GradeInsight } from '@/lib/grade-insight';
-import type { DataCtx, ExamSessionRow } from '@/server/data/types';
+import type { GradeInsight } from '@/lib/grade-insight';import type { DataCtx, ExamSessionRow } from '@/server/data/types';
 
 const studentCtx: DataCtx = {
   userId: 'auth-anna',
@@ -202,7 +201,8 @@ const freshSemesterPerformance: PerformanceData = {
 
 // «Первая контрольная» фикстуры: всегда в будущем (+3 дня) и захвачена в
 // константу — тест пинит часы относительно ЭТОЙ ЖЕ даты (одна точка правды,
-// урок 2026-11-15: фикстура «14 ноября» устарела за сутки).
+// урок 2026-11-15: фикстура «14 ноября» устарела за сутки).// константу — тест пинит часы относительно ЭТОЙ ЖЕ даты (одна точка правды;
+// урок 2026-11-15 с main: фикстура «14 ноября» устарела за сутки).
 const firstCreditDate = new Date(Date.now() + 3 * 86_400_000);
 
 const examSessions: ExamSessionRow[] = [
@@ -424,8 +424,10 @@ async function renderWith(overrides: {
       overrides.insight !== undefined ? overrides.insight : demoInsight,
     );
   }
-  return renderPage(GradesPage, searchProps);
-}
+  return renderPage(GradesPage, searchProps);  return renderPage(
+    GradesPage,
+    overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined,
+  );}
 
 describe('/grades (DIG-26) — «Успеваемость: сводка»', () => {
   it('заголовок и пилюли семестров: по умолчанию открыт семестр с оценками', async () => {

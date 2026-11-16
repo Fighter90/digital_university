@@ -201,7 +201,10 @@ describe('/schedule (DIG-23) — вид «День» (?view=day)', () => {
     expect(html).toContain('data-testid="day-card-ev-moved"');
     expect(html).toContain('data-testid="day-card-ev-cancelled"');
     expect(html).toContain('data-testid="day-card-ev-online"');
-    expect(html).toContain('онлайн · Орлов Олег Олегович');
+    // DIG-37 — преподаватель на карточке пары ведёт в справочник.
+    expect(html).toContain('href="/people/teacher-orlov"');
+    expect(html).toContain('data-testid="event-teacher-ev-online"');
+    expect(html).toContain('Орлов Олег Олегович');
     expect(html).toContain('Программирование');
   });
 });

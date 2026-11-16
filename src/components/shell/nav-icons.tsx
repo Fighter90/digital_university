@@ -1,6 +1,7 @@
 import {
   Bell,
   CalendarDays,
+  Contact,
   Ellipsis,
   FileText,
   GraduationCap,
@@ -22,6 +23,7 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   '/requests': FileText,
   '/notifications': Bell,
   '/deanery': MessagesSquare,
+  '/people': Contact,
   '/ai-assistant': Sparkles,
   '/profile': UserRound,
   '/more': Ellipsis,

@@ -148,3 +148,37 @@ export async function markNewsRead(db: DataDb, ctx: DataCtx, id: string): Promis
   await db.markNewsReadByStudent(ctx.studentId, id);
   return true;
 }
+
+// ── Блок «Новости деканата» на главной (DIG-20): фиктивные записи ──────────
+const NEWS: DeaneryNewsItem[] = [
+  {
+    id: 'news-retake-schedule',
+    title: 'Расписание пересдач опубликовано',
+    excerpt: 'Пересдача по информатике — 18 ноября, ауд. 305. Начало в 9:00, приходите с зачёткой.',
+    publishedAt: new Date(2026, 10, 10, 12, 0),
+  },
+  {
+    id: 'news-practice-intake',
+    title: 'Приём заявлений на летнюю практику',
+    excerpt: 'Заявления принимаются до 30 ноября — подайте прямо в кабинете, раздел «Заявки».',
+    publishedAt: new Date(2026, 10, 8, 12, 0),
+  },
+  {
+    id: 'news-scholarship',
+    title: 'Повышенная стипендия: документы',
+    excerpt: 'Списки на повышенную стипендию формируются до 25 ноября. Нужна справка об оценках.',
+    publishedAt: new Date(2026, 10, 6, 12, 0),
+  },
+  {
+    id: 'news-library-hours',
+    title: 'Читальный зал: новый график',
+    excerpt: 'С 16 ноября библиотека работает до 21:00 в будние дни. Ночь библиотеки — 20 ноября.',
+    publishedAt: new Date(2026, 10, 4, 12, 0),
+  },
+  {
+    id: 'news-deanery-office-hours',
+    title: 'Деканат: часы приёма на ноябрь',
+    excerpt: 'Специалист деканата принимает по вопросам заявлений ежедневно 10:00–16:00, каб. 214.',
+    publishedAt: new Date(2026, 10, 2, 12, 0),
+  },
+];
