@@ -196,7 +196,7 @@ describe('settings defaults + mutations are per student', () => {
 });
 
 describe('DIG-44 — widgets, quiet hours and appearance preferences', () => {
-  it('defaults: six widgets enabled in canonical order, quiet hours off, RU/NORMAL/motion on', async () => {
+  it('defaults: all widgets enabled in canonical order, quiet hours off, RU/NORMAL/motion on', async () => {
     const settings = await mustSettings(anna);
     expect(settings.widgets.map((w) => w.id)).toEqual(DEFAULT_WIDGET_ORDER);
     expect(settings.widgets.every((w) => w.enabled)).toBe(true);
@@ -229,10 +229,12 @@ describe('DIG-44 — widgets, quiet hours and appearance preferences', () => {
 
   it('updateOwnWidgets persists order+visibility for the owner only', async () => {
     // Полный порядок (как его отправляет server action после normalizeWidgets):
-    // «Дедлайны» первый, «Новости» выключены.
+    // «Дедлайны» первый, «Новости» выключены. DIG-34 добавил виджет
+    // «Что от меня ждут» — список обязан покрывать ВСЕ известные id.
     const widgets = [
       { id: 'deadlines' as const, enabled: true },
       { id: 'today' as const, enabled: true },
+      { id: 'tasks' as const, enabled: true },
       { id: 'performance' as const, enabled: true },
       { id: 'requests' as const, enabled: true },
       { id: 'news' as const, enabled: false },
@@ -242,6 +244,7 @@ describe('DIG-44 — widgets, quiet hours and appearance preferences', () => {
     expect(saved?.widgets.map((w) => w.id)).toEqual([
       'deadlines',
       'today',
+      'tasks',
       'performance',
       'requests',
       'news',

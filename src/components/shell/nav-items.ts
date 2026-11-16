@@ -8,8 +8,10 @@ export type CabinetSection = {
 };
 
 // Полное меню кабинета (десктоп ≥1024, иконочный рельс 768–1023).
+// DIG-34 — «Задачи» сразу после «Главной»: задачник — actionable-инбокс.
 export const CABINET_SECTIONS: CabinetSection[] = [
   { href: '/dashboard', label: 'Главная' },
+  { href: '/tasks', label: 'Задачи' },
   { href: '/schedule', label: 'Расписание' },
   { href: '/grades', label: 'Успеваемость' },
   { href: '/requests', label: 'Заявки и справки' },
@@ -28,8 +30,10 @@ export const TAB_SECTIONS: CabinetSection[] = [
   { href: '/more', label: 'Ещё' },
 ];
 
-// Разделы, доступные через «Ещё» на мобильном.
+// Разделы, доступные через «Ещё» на мобильном. DIG-34 — «Задачи» первой:
+// экран /tasks не входит в нижний таб-бар.
 export const MORE_SECTIONS: CabinetSection[] = [
+  { href: '/tasks', label: 'Задачи' },
   { href: '/notifications', label: 'Уведомления' },
   { href: '/deanery', label: 'Связь с деканатом' },
   { href: '/ai-assistant', label: 'AI-ассистент' },

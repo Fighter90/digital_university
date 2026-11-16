@@ -16,21 +16,23 @@ import {
 import { isWithinQuietHours, isValidTime } from '@/lib/quiet-hours';
 
 describe('widget registry', () => {
-  it('lists exactly the six widgets of DIG-44, labels unique', () => {
+  it('lists the DIG-44 widgets plus DIG-34 «Что от меня ждут», labels unique', () => {
     expect(DEFAULT_WIDGET_ORDER).toEqual([
       'today',
       'deadlines',
+      'tasks',
       'performance',
       'requests',
       'news',
       'events',
     ]);
-    expect(DASHBOARD_WIDGETS).toHaveLength(6);
+    expect(DASHBOARD_WIDGETS).toHaveLength(7);
     const labels = DASHBOARD_WIDGETS.map((w) => w.label);
-    expect(new Set(labels).size).toBe(6);
+    expect(new Set(labels).size).toBe(7);
     for (const label of [
       'Сегодня',
       'Дедлайны',
+      'Что от меня ждут',
       'Успеваемость',
       'Заявки',
       'Новости',
@@ -42,7 +44,7 @@ describe('widget registry', () => {
 });
 
 describe('normalizeWidgets — legacy/partial input becomes a full ordered list', () => {
-  it('undefined → all six enabled in the default order', () => {
+  it('undefined → all widgets enabled in the default order', () => {
     expect(normalizeWidgets(undefined)).toEqual(
       DEFAULT_WIDGET_ORDER.map((id) => ({ id, enabled: true })),
     );
@@ -59,6 +61,9 @@ describe('normalizeWidgets — legacy/partial input becomes a full ordered list'
       'news',
       'today',
       'deadlines',
+      // Пропущенные дописываются в каноническом относительном порядке:
+      // DIG-34 «Что от меня ждут» стоит между «Дедлайнами» и «Успеваемостью».
+      'tasks',
       'performance',
       'requests',
       'events',
@@ -105,7 +110,7 @@ describe('setWidgetEnabled / enabledWidgetIds', () => {
     const list = normalizeWidgets([{ id: 'news', enabled: false }]);
     const next = setWidgetEnabled(list, 'news', true);
     expect(next.find((w) => w.id === 'news')?.enabled).toBe(true);
-    expect(next.filter((w) => w.enabled)).toHaveLength(6);
+    expect(next.filter((w) => w.enabled)).toHaveLength(7);
   });
 
   it('enabledWidgetIds respects the saved order', () => {
@@ -117,6 +122,7 @@ describe('setWidgetEnabled / enabledWidgetIds', () => {
     expect(enabledWidgetIds(list)).toEqual([
       'news',
       'deadlines',
+      'tasks',
       'performance',
       'requests',
       'events',

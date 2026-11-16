@@ -16,6 +16,8 @@ type ShellProps = {
   unreadCount: number;
   /** DIG-35 — последние 5 уведомлений владельца для панели колокольчика. */
   recentNotifications: NotificationFeedItem[];
+  /** DIG-34 — открытые задачи для счётчика меню; 0 — пилюля скрыта. */
+  tasksCount?: number;
   children: React.ReactNode;
 };
 
@@ -25,7 +27,13 @@ type ShellProps = {
 // skip-link «К содержимому» (доступность с клавиатуры).
 // DIG-46: AI-кнопки (плавающая и в шапке) открывают выезжающую панель
 // ассистента на любом экране; полный экран раздела — /ai-assistant.
-export function Shell({ user, unreadCount, recentNotifications, children }: ShellProps) {
+export function Shell({
+  user,
+  unreadCount,
+  recentNotifications,
+  tasksCount = 0,
+  children,
+}: ShellProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   // Кнопка поиска: ссылка нужна палитре, чтобы вернуть фокус при закрытии.
@@ -63,7 +71,7 @@ export function Shell({ user, unreadCount, recentNotifications, children }: Shel
       />
 
       <div className="mx-auto flex w-full max-w-[1440px]">
-        <SideNav unreadCount={unreadCount} />
+        <SideNav unreadCount={unreadCount} tasksCount={tasksCount} />
         <main
           id="main-content"
           tabIndex={-1}

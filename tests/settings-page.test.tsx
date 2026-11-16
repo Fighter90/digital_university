@@ -132,7 +132,7 @@ describe('/settings — tabs (DIG-44)', () => {
 });
 
 describe('/settings?tab=home — widget management', () => {
-  it('renders all six widgets with keyboard move buttons and a preview', async () => {
+  it('renders every widget with keyboard move buttons and a preview', async () => {
     const html = await renderPage('home');
     for (const label of [
       'Сегодня',

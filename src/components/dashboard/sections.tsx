@@ -5,6 +5,7 @@ import {
   FileText,
   MessagesSquare,
   Newspaper,
+  PartyPopper,
   PenLine,
   Sparkles,
 } from 'lucide-react';
@@ -13,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { ProgressRing } from '@/components/ui/progress-ring';
+import { TaskRow } from '@/components/tasks/task-row';
 import {
   debtLabel,
   daysLeftLabel,
@@ -28,6 +30,7 @@ import type {
   DeadlineView,
   ProgressView,
   RequestsView,
+  TasksSummary,
   TodayView,
 } from '@/server/data';
 import type { ScheduleKind } from '@/server/data';
@@ -511,6 +514,57 @@ export function EventsSection() {
         title="Мероприятия скоро появятся"
         description="Раздел готовится — здесь будут события и мероприятия вуза."
       />
+    </section>
+  );
+}
+
+// DIG-34 — виджет «Что от меня ждут»: счётчик открытых задач и до трёх самых
+// срочных. Строки реюзают экран /tasks; ссылка ведёт в полный список.
+export function TasksSection({ tasks }: { tasks: DashboardSection<TasksSummary> }) {
+  if (!tasks.ok) return <SectionFailure title="Что от меня ждут" error={tasks.error} />;
+  const { openCount, top } = tasks.value;
+
+  return (
+    <section aria-labelledby="dashboard-tasks-title" data-testid="dashboard-tasks">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 id="dashboard-tasks-title" className="text-lg font-extrabold tracking-heading">
+          Что от меня ждут
+        </h2>
+        {openCount > 0 ? (
+          <span
+            data-testid="dashboard-tasks-count"
+            title="Открытых задач"
+            className="rounded-pill bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-ink"
+          >
+            {openCount}
+          </span>
+        ) : null}
+      </div>
+
+      {openCount === 0 ? (
+        <EmptyState
+          className="mt-3"
+          icon={PartyPopper}
+          title="Все дела сделаны 🎉"
+          description="Сейчас от вас ничего не требуется — новые задачи появятся здесь."
+        />
+      ) : (
+        <>
+          <ol className="mt-3 flex flex-col gap-2">
+            {top.map((task) => (
+              <TaskRow key={task.id} task={task} />
+            ))}
+          </ol>
+          <Link
+            data-testid="dashboard-tasks-all"
+            href="/tasks"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-coral-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
+          >
+            Все задачи
+            <span aria-hidden="true">→</span>
+          </Link>
+        </>
+      )}
     </section>
   );
 }

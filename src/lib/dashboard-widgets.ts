@@ -7,7 +7,7 @@
 // компонентах, и в server-компонентах, и в тестах.
 
 export type DashboardWidgetId =
-  'today' | 'deadlines' | 'performance' | 'requests' | 'news' | 'events';
+  'today' | 'tasks' | 'deadlines' | 'performance' | 'requests' | 'news' | 'events';
 
 export interface DashboardWidgetMeta {
   id: DashboardWidgetId;
@@ -21,6 +21,7 @@ export interface DashboardWidgetMeta {
 export const DEFAULT_WIDGET_ORDER: DashboardWidgetId[] = [
   'today',
   'deadlines',
+  'tasks',
   'performance',
   'requests',
   'news',
@@ -30,6 +31,11 @@ export const DEFAULT_WIDGET_ORDER: DashboardWidgetId[] = [
 export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
   { id: 'today', label: 'Сегодня', description: 'Пары и изменения на текущий день' },
   { id: 'deadlines', label: 'Дедлайны', description: 'Ближайшие зачёты, экзамены и пересдачи' },
+  {
+    id: 'tasks',
+    label: 'Что от меня ждут',
+    description: 'Открытые задачи: доработки, дедлайны, допуски и пересдачи',
+  },
   { id: 'performance', label: 'Успеваемость', description: 'Средний балл, кредиты и долги' },
   { id: 'requests', label: 'Заявки', description: 'Заявки в работе и готовые к получению' },
   { id: 'news', label: 'Новости', description: 'Объявления деканата' },
@@ -62,7 +68,7 @@ export interface WidgetState {
  * Приводит сохранённый список к валидному виду: известные id — в порядке
  * пользователя, пропущенные — дописываются в конце (включённые), неизвестные
  * и дубликаты отбрасываются (первое вхождение выигрывает). `undefined`
- * (строка без DIG-44 полей) → все шесть включены в каноническом порядке.
+ * (строка без DIG-44 полей) → все виджеты включены в каноническом порядке.
  */
 export function normalizeWidgets(input: readonly WidgetState[] | undefined | null): WidgetState[] {
   const seen = new Set<DashboardWidgetId>();

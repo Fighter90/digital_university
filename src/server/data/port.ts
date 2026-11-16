@@ -35,6 +35,9 @@ import type {
   StudentNoteRow,
   StudentRow,
   StudentSettingsRow,
+  /** DIG-34 — дедлайн задания курса и ручная задача студента. */
+  StudyDeadlineRow,
+  StudentTaskRow,
 } from './types';
 
 /** DIG-21 — полуинтервал периода расписания [from, to) в инстантах времени. */
@@ -246,6 +249,20 @@ export interface DataDb {
   addFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
   /** Снимает закрепление; идемпотентно (несуществующее — no-op). */
   removeFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
+
+  // ── DIG-34: задачи студента (group-scoped дедлайны + owner-scoped ручные) ─
+  /** Дедлайны заданий группы из системы курсов (в концепте — сиды). */
+  listStudyDeadlinesByGroup(groupName: string): Promise<StudyDeadlineRow[]>;
+  /** Ручные задачи владельца (включая отмеченные — фильтрация на слое выше). */
+  listStudentTasksByStudent(studentId: string): Promise<StudentTaskRow[]>;
+  /** Probe ручной задачи по id БЕЗ владельца — только для аудита отказа. */
+  probeStudentTaskById(taskId: string): Promise<StudentTaskRow | null>;
+  /** Отмечает СВОЮ ручную задачу выполненной; null — задачи нет/чужая. */
+  markStudentTaskDoneByStudent(
+    studentId: string,
+    taskId: string,
+    doneAt: Date,
+  ): Promise<StudentTaskRow | null>;
 
   // ── DIG-47: реестр справок и публичная проверка подлинности ──────────────
   /**

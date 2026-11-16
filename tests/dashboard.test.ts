@@ -41,6 +41,16 @@ const annaCtx: DataCtx = {
   faculty: 'ИТ',
 };
 
+// DIG-34 — сотрудник: студенческих задач не имеет, сводка пустая.
+const deanCtx: DataCtx = {
+  userId: 'auth-dean',
+  login: 'dean.kovaleva',
+  role: 'STAFF',
+  studentId: null,
+  groupName: null,
+  faculty: 'ИТ',
+};
+
 const lesson = (over: Partial<ScheduleEventRow> & { id: string }): ScheduleEventRow => ({
   groupName: 'ПИ-21',
   disciplineCode: 'PI21-X',
@@ -476,5 +486,85 @@ describe('getDashboard: один параллельный агрегат', () =>
     expect(data.today.ok).toBe(true);
     expect(data.deadlines.ok).toBe(true);
     expect(data.requests.ok).toBe(true);
+  });
+});
+
+// ── DIG-34 — секция «Что от меня ждут» агрегата главной ─────────────────────
+
+describe('getDashboard: секция tasks (DIG-34)', () => {
+  it('счётчик открытых задач и до трёх самых срочных', async () => {
+    const dueAt = (offset: number, hour = 18): Date => day(offset, hour);
+    const db = seedDashboardDb();
+    db.seed({
+      studyDeadlines: [
+        {
+          id: 'dl-1',
+          groupName: 'ПИ-21',
+          disciplineCode: 'PI21-PHYS',
+          disciplineName: 'Физика',
+          title: 'Тест 1',
+          dueAt: dueAt(-1),
+        },
+        {
+          id: 'dl-2',
+          groupName: 'ПИ-21',
+          disciplineCode: 'PI21-HIST',
+          disciplineName: 'История',
+          title: 'Семинар',
+          dueAt: dueAt(2),
+        },
+      ],
+      studentTasks: [
+        {
+          id: 'task-1',
+          studentId: 'st-anna',
+          title: 'Оплатить обучение по договору',
+          note: null,
+          dueAt: dueAt(5),
+          doneAt: null,
+        },
+        // Отмеченная — в открытых не считается.
+        {
+          id: 'task-2',
+          studentId: 'st-anna',
+          title: 'Подписать договор',
+          note: null,
+          dueAt: dueAt(1),
+          doneAt: NOW,
+        },
+      ],
+    });
+    const data = await getDashboard(db, annaCtx, NOW);
+    expect(data.tasks.ok).toBe(true);
+    if (!data.tasks.ok) return;
+    expect(data.tasks.value.openCount).toBe(3);
+    // Топ-3 — по срочности: просроченный дедлайн, сегодняшний семинар, оплата
+    // (view-id строки задачи = `<источник>-<id объекта>`).
+    expect(data.tasks.value.top.map((t) => t.id)).toEqual([
+      'course-dl-1',
+      'course-dl-2',
+      'manual-task-1',
+    ]);
+  });
+
+  it('сбой секции задач изолирован: остальные блоки живы', async () => {
+    const db = seedDashboardDb();
+    db.listStudentTasksByStudent = async () => {
+      throw new Error('tasks db down');
+    };
+    const data = await getDashboard(db, annaCtx, NOW);
+    expect(data.tasks.ok).toBe(false);
+    if (!data.tasks.ok) expect(data.tasks.error).toContain('tasks db down');
+    expect(data.today.ok).toBe(true);
+    expect(data.deadlines.ok).toBe(true);
+    expect(data.requests.ok).toBe(true);
+  });
+
+  it('сотруднику: пустая сводка задач без аудита (главная сотрудника — заглушка)', async () => {
+    const data = await getDashboard(seedDashboardDb(), deanCtx, NOW);
+    expect(data.tasks.ok).toBe(true);
+    if (!data.tasks.ok) return;
+    expect(data.tasks.value.openCount).toBe(0);
+    expect(data.tasks.value.top).toEqual([]);
   });
 });

@@ -29,6 +29,8 @@ import type {
   StudentRow,
   StudentSettingsRow,
   ServiceFavoriteRow,
+  StudyDeadlineRow,
+  StudentTaskRow,
 } from './types';
 import { canonicalRequestNumberSeq } from './canonical-request-number';
 
@@ -56,6 +58,10 @@ export interface MemorySeed {
   elements?: DisciplineElementRow[];
   /** DIG-29 — закреплённые студентом сервисы каталога. */
   serviceFavorites?: ServiceFavoriteRow[];
+  /** DIG-34 — дедлайны заданий группы (система курсов, в концепте — сиды). */
+  studyDeadlines?: StudyDeadlineRow[];
+  /** DIG-34 — ручные задачи студентов (подписать/оплатить…). */
+  studentTasks?: StudentTaskRow[];
   /** DIG-47 — реестр выданных справок (проверка подлинности по коду). */
   certificates?: CertificateRow[];
   /** DIG-63 — активные ICS-подписки студентов (одна на студента). */
@@ -90,6 +96,8 @@ export function createMemoryDataDb(): MemoryDataDb {
   let settings: StudentSettingsRow[] = [];
   let notes: StudentNoteRow[] = [];
   let serviceFavorites: ServiceFavoriteRow[] = [];
+  let studyDeadlines: StudyDeadlineRow[] = [];
+  let studentTasks: StudentTaskRow[] = [];
   let certificates: CertificateRow[] = [];
   let calendarSubscriptions: CalendarSubscriptionRow[] = [];
   let audit: AuditLogRow[] = [];
@@ -130,6 +138,8 @@ export function createMemoryDataDb(): MemoryDataDb {
       settings = seed.settings ? seed.settings.map(clone) : [];
       notes = seed.notes ? seed.notes.map(clone) : [];
       serviceFavorites = seed.serviceFavorites ? seed.serviceFavorites.map(clone) : [];
+      studyDeadlines = seed.studyDeadlines ? seed.studyDeadlines.map(clone) : [];
+      studentTasks = seed.studentTasks ? seed.studentTasks.map(clone) : [];
       certificates = seed.certificates ? seed.certificates.map(clone) : [];
       calendarSubscriptions = seed.calendarSubscriptions
         ? seed.calendarSubscriptions.map(clone)
@@ -509,6 +519,27 @@ export function createMemoryDataDb(): MemoryDataDb {
       serviceFavorites = serviceFavorites.filter(
         (f) => !(f.studentId === studentId && f.serviceId === serviceId),
       );
+    },
+
+    // ── DIG-34: дедлайны курса (group-scoped) и ручные задачи (owner-scoped) ─
+    async listStudyDeadlinesByGroup(groupName) {
+      return studyDeadlines.filter((d) => d.groupName === groupName).map(clone);
+    },
+    async listStudentTasksByStudent(studentId) {
+      return studentTasks.filter((t) => t.studentId === studentId).map(clone);
+    },
+    // DIG-34 — probe ручной задачи по id без владельца: различение «чужая»
+    // (OWNERSHIP_DENIED) и «несуществующая» (NOT_FOUND) — только для аудита;
+    // наружу из слоя данных в обоих случаях уходит null.
+    async probeStudentTaskById(taskId) {
+      return clone(by(studentTasks, 'id', taskId));
+    },
+    async markStudentTaskDoneByStudent(studentId, taskId, doneAt) {
+      const row = studentTasks.find((t) => t.studentId === studentId && t.id === taskId);
+      if (!row) return null;
+      // Идемпотентно: повторная отметка сохраняет первый doneAt.
+      row.doneAt ??= doneAt;
+      return clone(row);
     },
 
     // ── DIG-47: реестр справок (публичная проверка по коду) ────────────────

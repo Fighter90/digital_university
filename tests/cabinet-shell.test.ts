@@ -136,6 +136,8 @@ vi.mock('@/server/data', () => ({
       },
     },
     requests: { ok: true, value: { inWork: 1, total: 1 } },
+    // DIG-34: главная содержит секцию «Что от меня ждут» (виджет задач).
+    tasks: { ok: true, value: { openCount: 0, top: [] } },
   })),
   listDeaneryNews: vi.fn(() => []),
   // DIG-66 (ревью r2): экран «Успеваемость» читает агрегат успеваемости,
@@ -193,6 +195,13 @@ describe('nav config (cabinet shell)', () => {
     expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 
+  it('DIG-34: раздел «Задачи» в полном меню, сразу после «Главной»', () => {
+    const tasks = CABINET_SECTIONS.find((s) => s.href === '/tasks');
+    expect(tasks?.label).toBe('Задачи');
+    // Задачник — actionable-инбокс: сразу после главной.
+    expect(CABINET_SECTIONS[1]?.href).toBe('/tasks');
+  });
+
   it('mobile tab bar is exactly: Главная, Расписание, Оценки, Заявки, Ещё', () => {
     expect(TAB_SECTIONS.map((t) => t.label)).toEqual([
       'Главная',
@@ -203,8 +212,9 @@ describe('nav config (cabinet shell)', () => {
     ]);
   });
 
-  it('«Ещё» covers Уведомления, Связь с деканатом, AI-ассистент, Профиль, Настройки', () => {
+  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, AI-ассистент, Профиль, Настройки', () => {
     expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
+      '/tasks',
       '/notifications',
       '/deanery',
       '/ai-assistant',
