@@ -50,3 +50,13 @@
   `e2e/news.spec.ts` (оба вьюпорта).
 - [x] 11. Change-папка openspec/changes/dig-36-news-screen (proposal, tasks,
   delta-спека news) — задачи отмечаются по ходу.
+- [x] 12. Раунд 2 (замечание ревью — красный гейт typecheck): tsc читал
+  устаревшие route-types из `.next/types` (валидаторы роута
+  `schedule/[id]/ics`, переведённого DIG-28 на `session/ics`) — TS2307.
+  Герметичный `npm run typecheck`: чистка `.next/types` + `.next-dev/types`,
+  перегенерация `next typegen` (пересоздаёт `routes.d.ts` из next-env.d.ts),
+  затем `tsc --noEmit`. Контракт зафиксирован в `tests/build-hermetic.test.ts`
+  (red-first). Попутно разминирован календарный тест `/grades` (пустой
+  семестр): фикстурная контрольная 14.11.2026 ушла в прошлое — время
+  зафиксировано fake-timers внутри теста. Гейты: green (lint/typecheck/
+  build/test).
