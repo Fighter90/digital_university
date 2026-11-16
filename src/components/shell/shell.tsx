@@ -2,15 +2,22 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShellUser } from '@/lib/user';
+import type { NotificationFeedItem } from '@/lib/notification-view';
 import { TopBar } from './top-bar';
 import { SideNav } from './side-nav';
 import { TabBar } from './tab-bar';
 import { AiFab } from './ai-fab';
+import { AiGuide } from './ai-guide';
 import { SearchPalette } from './search-palette';
+import { AssistantPanel } from '@/components/assistant/assistant-panel';
 
 type ShellProps = {
   user: ShellUser;
   unreadCount: number;
+  /** DIG-35 — последние 5 уведомлений владельца для панели колокольчика. */
+  recentNotifications: NotificationFeedItem[];
+  /** DIG-34 — открытые задачи для счётчика меню; 0 — пилюля скрыта. */
+  tasksCount?: number;
   children: React.ReactNode;
 };
 
@@ -18,8 +25,17 @@ type ShellProps = {
 // Десктоп: верхняя панель + меню 212 px. Планшет: иконочный рельс.
 // Мобильный (<768): таб-бар + плавающая AI-кнопка. Первая таб-стоп —
 // skip-link «К содержимому» (доступность с клавиатуры).
-export function Shell({ user, unreadCount, children }: ShellProps) {
+// DIG-46: AI-кнопки (плавающая и в шапке) открывают выезжающую панель
+// ассистента на любом экране; полный экран раздела — /ai-assistant.
+export function Shell({
+  user,
+  unreadCount,
+  recentNotifications,
+  tasksCount = 0,
+  children,
+}: ShellProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   // Кнопка поиска: ссылка нужна палитре, чтобы вернуть фокус при закрытии.
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
@@ -48,12 +64,14 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
       <TopBar
         user={user}
         unreadCount={unreadCount}
+        recentNotifications={recentNotifications}
         onOpenSearch={() => setSearchOpen(true)}
+        onOpenAssistant={() => setAssistantOpen(true)}
         searchTriggerRef={searchTriggerRef}
       />
 
       <div className="mx-auto flex w-full max-w-[1440px]">
-        <SideNav unreadCount={unreadCount} />
+        <SideNav unreadCount={unreadCount} tasksCount={tasksCount} />
         <main
           id="main-content"
           tabIndex={-1}
@@ -64,8 +82,18 @@ export function Shell({ user, unreadCount, children }: ShellProps) {
       </div>
 
       <TabBar />
-      <AiFab />
-      <SearchPalette open={searchOpen} onClose={closeSearch} returnFocusRef={searchTriggerRef} />
+      <AiFab onOpen={() => setAssistantOpen(true)} />
+      {/* DIG-62: AI-гид — вне <main>, чтобы краулер DIG-60 и геометрия
+          контента не видели его ссылки; только роль студента. DIG-65:
+          флаг voiceAssistant прячет/показывает микрофон голосового ввода. */}
+      <AiGuide userName={user.name} role={user.role} voiceEnabled={user.voiceAssistant} />
+      <SearchPalette
+        open={searchOpen}
+        onClose={closeSearch}
+        returnFocusRef={searchTriggerRef}
+        role={user.role}
+      />
+      <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} />
     </div>
   );
 }

@@ -6,14 +6,16 @@
 // из URL скоуп не приходит (IDOR невозможен по построению).
 //
 // Состав экрана: шапка с сезоном и диапазоном (выводятся из дат сессии,
-// без хардкода), обратный отсчёт до первого экзамена, экспорт всей сессии
-// в календарь (ICS), таймлайн экзаменов/зачётов со статусами допуска,
+// без хардкода), обратный отсчёт до первого экзамена, живая ICS-подписка
+// календаря (DIG-63: расписание + дедлайны по персональной подписанной
+// ссылке), таймлайн экзаменов/зачётов со статусами допуска,
 // блок пересдач с записью (заявка + уведомление), консультации из
 // расписания и подсказка AI по ближайшему несданному экзамену.
 import Link from 'next/link';
-import { CalendarPlus, Sparkles } from 'lucide-react';
+import { headers } from 'next/headers';
+import { Sparkles } from 'lucide-react';
 
-import { requireDataCtx, getSession } from '@/server/data';
+import { requireDataCtx, getSession, getOrCreateCalendarSubscription } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import type { SessionData } from '@/server/data/session';
 
@@ -24,7 +26,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { ConsultationList } from '@/components/session/consultation-list';
 import { ExamTimeline } from '@/components/session/exam-timeline';
 import { RetakeList } from '@/components/session/retake-list';
-import { SessionSkeleton } from '@/components/session/session-skeleton';
+import { CalendarSubscribeCard } from '@/components/session/calendar-subscribe-card';
 
 export const metadata = { title: 'Сессия — Цифровой деканат' };
 
@@ -63,7 +65,10 @@ async function SessionContent() {
           description="Обновите страницу — если ошибка повторится, сообщите в деканат."
         />
         <div className="flex justify-center">
-          <Link href="/grades/session" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
+          <Link
+            href="/grades/session"
+            className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+          >
             Повторить
           </Link>
         </div>
@@ -71,7 +76,34 @@ async function SessionContent() {
     );
   }
 
-  return <SessionView data={data} />;
+  return <SessionView data={data} feedUrl={await resolveFeedUrl(ctx)} />;
+}
+
+/**
+ * DIG-63 — абсолютный URL живой ICS-подписки студента. Подписка одна
+ * (стабильна между визитами), ссылка подписана HMAC-секретом сервера;
+ * origin собирается из заголовков прокси (Caddy ставит x-forwarded-proto).
+ * null — подписка не выдана (нет секрета) — карточка просто не рисуется.
+ */
+async function resolveFeedUrl(
+  ctx: Awaited<ReturnType<typeof requireDataCtx>>,
+): Promise<string | null> {
+  let subscription: Awaited<ReturnType<typeof getOrCreateCalendarSubscription>>;
+  try {
+    subscription = await getOrCreateCalendarSubscription(dataDb, ctx);
+  } catch (error) {
+    // Подписка не критична экрану: сбой не должен ронять «Сессию».
+    console.error('[session] calendar subscription failed', error);
+    return null;
+  }
+  if (!subscription) return null;
+  const headerList = await headers();
+  const host = headerList.get('host');
+  if (!host) return null;
+  const proto =
+    headerList.get('x-forwarded-proto') ??
+    (/^(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(host) ? 'http' : 'https');
+  return `${proto}://${host}/api/calendar/ics?token=${encodeURIComponent(subscription.token)}`;
 }
 
 /** Ближайший несданный экзамен — дисциплина для подсказки AI. */
@@ -79,7 +111,7 @@ function aiHintDiscipline(data: SessionData): SessionData['exams'][number] | nul
   return data.exams.find((exam) => exam.status !== 'PASSED') ?? data.exams[0] ?? null;
 }
 
-function SessionView({ data }: { data: SessionData }) {
+function SessionView({ data, feedUrl }: { data: SessionData; feedUrl: string | null }) {
   const hint = aiHintDiscipline(data);
   const isEmpty =
     data.exams.length === 0 && data.retakes.length === 0 && data.consultations.length === 0;
@@ -98,7 +130,7 @@ function SessionView({ data }: { data: SessionData }) {
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-      {/* ── Шапка: сезон · диапазон, отсчёт, экспорт в календарь ─────────── */}
+      {/* ── Шапка: сезон · диапазон, отсчёт ───────────────────────────────── */}
       <header className="flex animate-rise flex-col gap-2">
         <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Сессия</h1>
         <p
@@ -108,30 +140,19 @@ function SessionView({ data }: { data: SessionData }) {
           <span className="font-semibold text-foreground">{data.seasonTitle}</span>
           {data.rangeLabel ? <span>· {data.rangeLabel}</span> : null}
         </p>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          {data.countdown ? (
-            <Badge
-              data-testid="session-countdown"
-              status="accent"
-              title="Сколько осталось до первой контрольной сессии"
-            >
-              {data.countdown.label}
-            </Badge>
-          ) : null}
-          <a
-            data-testid="session-ics"
-            href="/api/session/ics"
-            download
-            className={
-              buttonVariants({ variant: 'secondary', size: 'sm' }) +
-              ' inline-flex items-center gap-2'
-            }
+        {data.countdown ? (
+          <Badge
+            data-testid="session-countdown"
+            status="accent"
+            title="Сколько осталось до первой контрольной сессии"
           >
-            <CalendarPlus aria-hidden="true" className="size-4" />
-            Добавить всю сессию в календарь
-          </a>
-        </div>
+            {data.countdown.label}
+          </Badge>
+        ) : null}
       </header>
+
+      {/* ── Живая подписка на календарь (DIG-63) ─────────────────────────── */}
+      {feedUrl ? <CalendarSubscribeCard url={feedUrl} /> : null}
 
       {/* ── Подсказка AI: подготовка к ближайшему несданному экзамену ────── */}
       {hint ? (
@@ -145,8 +166,8 @@ function SessionView({ data }: { data: SessionData }) {
             AI-ассистент
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Составьте план подготовки заранее — ассистент соберёт темы, формулы и
-            материалы по дисциплине.
+            Составьте план подготовки заранее — ассистент соберёт темы, формулы и материалы по
+            дисциплине.
           </p>
           <Link
             data-testid="ai-hint"
@@ -170,7 +191,9 @@ function SessionView({ data }: { data: SessionData }) {
       {data.retakes.length > 0 ? <RetakeList retakes={data.retakes} /> : null}
 
       {/* ── Консультации перед экзаменами ────────────────────────────────── */}
-      {data.consultations.length > 0 ? <ConsultationList consultations={data.consultations} /> : null}
+      {data.consultations.length > 0 ? (
+        <ConsultationList consultations={data.consultations} />
+      ) : null}
     </section>
   );
 }

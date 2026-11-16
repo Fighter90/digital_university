@@ -44,6 +44,101 @@ function row(overrides: Partial<ScheduleEventRow> = {}): ScheduleEventRow {
   };
 }
 
+// ── DIG-24: карточки пары — ссылки на панель деталей (?event=<id>) ───────────
+
+describe('EventCard — ссылка на детали пары (DIG-24)', () => {
+  it('с href карточка целиком — ссылка с data-event-id и aria-меткой', () => {
+    render(
+      <ul>
+        <EventCard
+          event={toScheduleEventCards([row()])[0]!}
+          href="/schedule?view=day&date=2026-11-11&event=ev-1"
+        />
+      </ul>,
+    );
+    const link = screen.getByRole('link', { name: /Лекция, Информатика/ });
+    expect(link).toHaveAttribute('data-event-id', 'ev-1');
+    expect(link).toHaveAttribute('href', '/schedule?view=day&date=2026-11-11&event=ev-1');
+    expect(link).toHaveAttribute('data-testid', 'day-card-ev-1');
+    // весь состав карточки остаётся внутри ссылки
+    expect(link).toHaveTextContent('Информатика');
+    expect(link).toHaveTextContent('ауд. 301 · Петров Пётр Петрович');
+  });
+
+  it('без href карточка остаётся элементом списка (не ссылка)', () => {
+    render(
+      <ul>
+        <EventCard event={toScheduleEventCards([row()])[0]!} />
+      </ul>,
+    );
+    expect(screen.queryByRole('link', { name: /Лекция, Информатика/ })).toBeNull();
+    expect(screen.getByTestId('day-card-ev-1').tagName).toBe('LI');
+  });
+});
+
+describe('DayView — карточки ведут на панель деталей (DIG-24)', () => {
+  const base = {
+    title: 'Среда, 11 ноября',
+    isToday: true,
+    prevHref: null,
+    nextHref: null,
+    todayHref: '/schedule?view=day',
+  };
+
+  it('eventQuery собирает href вида ?<eventQuery>&event=<id>', () => {
+    render(
+      <DayView
+        {...base}
+        events={toScheduleEventCards([row()])}
+        nextStudy={null}
+        eventQuery="view=day&date=2026-11-11"
+      />,
+    );
+    const link = screen.getByRole('link', { name: /Лекция, Информатика/ });
+    expect(link).toHaveAttribute('href', '/schedule?view=day&date=2026-11-11&event=ev-1');
+    expect(link).toHaveAttribute('data-event-id', 'ev-1');
+  });
+
+  it('без eventQuery ссылки на детали нет (карточки без href)', () => {
+    render(<DayView {...base} events={toScheduleEventCards([row()])} nextStudy={null} />);
+    expect(screen.queryByRole('link', { name: /Лекция, Информатика/ })).toBeNull();
+  });
+});
+
+describe('MobileSchedule — карточки ведут на панель деталей (DIG-24)', () => {
+  it('вид «день»: карточка — ссылка с контекстом вида', () => {
+    render(
+      <MobileSchedule
+        mode="day"
+        days={mobileDays()}
+        initialDateKey="2026-11-11"
+        nextStudy={null}
+        eventQuery="view=day"
+      />,
+    );
+    const link = screen.getByTestId('day-card-ev-1');
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', '/schedule?view=day&event=ev-1');
+    expect(link).toHaveAttribute('data-event-id', 'ev-1');
+  });
+
+  it('компактный вид «неделя»: ссылки тоже с контекстом', () => {
+    render(
+      <MobileSchedule
+        mode="week"
+        days={mobileDays()}
+        initialDateKey="2026-11-11"
+        nextStudy={null}
+        eventQuery="view=week"
+      />,
+    );
+    const link = screen.getByTestId('day-card-ev-1');
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', '/schedule?view=week&event=ev-1');
+    expect(link).toHaveAttribute('data-event-id', 'ev-1');
+  });
+});
+
 // ── EventTypePill ─────────────────────────────────────────────────────────────
 
 describe('EventTypePill', () => {

@@ -41,6 +41,8 @@ const studentDb = {
           faculty: 'ФКН',
         }
       : null,
+  // DIG-65: настройки по умолчанию нет — fail-soft дефолт «включено».
+  findSettingsByStudent: async () => null,
 } as unknown as DataDb;
 
 const emptyDb = {
@@ -58,6 +60,8 @@ describe('resolveShellUser (fail-soft, DIG-50)', () => {
       name: 'Анна Смирнова',
       email: 'anna.smirnova@example.edu',
       group: 'ИВТ-21',
+      role: 'STUDENT',
+      voiceAssistant: true,
     });
   });
 
@@ -66,6 +70,8 @@ describe('resolveShellUser (fail-soft, DIG-50)', () => {
       name: 'Мария Ковалёва',
       email: 'm.kovaleva@example.edu',
       group: 'менеджер курса',
+      role: 'STAFF',
+      voiceAssistant: false,
     });
   });
 
@@ -90,5 +96,34 @@ describe('resolveShellUser (fail-soft, DIG-50)', () => {
     } as unknown as DataDb;
     const shell = await resolveShellUser(mixed, stranger);
     expect(shell.name).toBe('new.user'); // студент без профиля не получает чужую должность
+  });
+
+  // DIG-65 — voiceAssistant: флаг «Озвучка и голосовой ввод» из строки
+  // настроек студента; fail-soft дефолты для легаси/мусора и staff.
+  describe('voiceAssistant (DIG-65)', () => {
+    it('выключенная студентом настройка → false', async () => {
+      const db = {
+        ...studentDb,
+        findSettingsByStudent: async () => ({ studentId: 'st-1', voiceAssistant: false }),
+      } as unknown as DataDb;
+      expect((await resolveShellUser(db, student)).voiceAssistant).toBe(false);
+    });
+
+    it('легаси-строка настроек без поля (или мусор вместо boolean) → true', async () => {
+      const legacy = {
+        ...studentDb,
+        findSettingsByStudent: async () => ({ studentId: 'st-1' }),
+      } as unknown as DataDb;
+      const garbage = {
+        ...studentDb,
+        findSettingsByStudent: async () => ({ studentId: 'st-1', voiceAssistant: 'yes' }),
+      } as unknown as DataDb;
+      expect((await resolveShellUser(legacy, student)).voiceAssistant).toBe(true);
+      expect((await resolveShellUser(garbage, student)).voiceAssistant).toBe(true);
+    });
+
+    it('студент без строки профиля (fail-soft fallback) → true', async () => {
+      expect((await resolveShellUser(emptyDb, stranger)).voiceAssistant).toBe(true);
+    });
   });
 });

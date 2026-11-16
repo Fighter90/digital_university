@@ -25,6 +25,7 @@ import {
   type ScheduleEventCard,
 } from '@/lib/schedule-cards';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ListenDayButton } from '@/components/schedule/listen-day-button';
 import { EventCard } from './event-card';
 
 export interface MobileDayView {
@@ -44,11 +45,22 @@ export interface MobileScheduleProps {
   initialDateKey: string;
   /** Ближайший учебный день за пределами окна (для пустых дней). */
   nextStudy: { dateKey: string; label: string } | null;
+  /** DIG-65 — «Озвучка и голосовой ввод» (настройка студента). */
+  voiceEnabled?: boolean;
+  /** DIG-24 — query-часть ссылки на детали (?view=…&date=…). */
+  eventQuery?: string;
 }
 
 const SWIPE_THRESHOLD = 48;
 
-export function MobileSchedule({ mode, days, initialDateKey, nextStudy }: MobileScheduleProps) {
+export function MobileSchedule({
+  mode,
+  days,
+  initialDateKey,
+  nextStudy,
+  voiceEnabled = true,
+  eventQuery,
+}: MobileScheduleProps) {
   const [selectedKey, setSelectedKey] = useState(initialDateKey);
   const ribbonRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -104,7 +116,12 @@ export function MobileSchedule({ mode, days, initialDateKey, nextStudy }: Mobile
   if (!selected) return null;
 
   if (mode === 'week') {
-    return <WeekList days={weekDays.length > 0 ? weekDays : days.slice(0, 7)} />;
+    return (
+      <WeekList
+        days={weekDays.length > 0 ? weekDays : days.slice(0, 7)}
+        eventQuery={eventQuery}
+      />
+    );
   }
 
   return (
@@ -170,6 +187,17 @@ export function MobileSchedule({ mode, days, initialDateKey, nextStudy }: Mobile
         <span className="text-xs text-muted-foreground">{pairsLabel(selected.events.length)}</span>
       </div>
 
+      {/* DIG-65 — «Прослушать день» для выбранного в ленте дня: озвучка идёт
+          вслед за свайпом (события берутся из выбранного дня, не из «сегодня»).
+          Отдельная строка — предсказуемая раскладка на 360 px. */}
+      <ListenDayButton
+        title={formatDayTitleFromKey(selected.dateKey)}
+        isToday={selected.isToday}
+        events={selected.events}
+        enabled={voiceEnabled}
+        className="self-start"
+      />
+
       {selected.events.length === 0 ? (
         <div data-testid="mobile-day-empty">
           <EmptyState
@@ -204,7 +232,11 @@ export function MobileSchedule({ mode, days, initialDateKey, nextStudy }: Mobile
           }}
         >
           {selected.events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard
+              key={event.id}
+              event={event}
+              href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
+            />
           ))}
         </ol>
       )}
@@ -232,7 +264,13 @@ function emptyDescription(
 }
 
 /** Компактный список недели (переключатель «Неделя» на мобильном). */
-function WeekList({ days }: { days: readonly MobileDayView[] }) {
+function WeekList({
+  days,
+  eventQuery,
+}: {
+  days: readonly MobileDayView[];
+  eventQuery?: string;
+}) {
   return (
     <div data-testid="mobile-week-list" className="flex flex-col gap-4">
       {days.map((day) => (
@@ -261,7 +299,12 @@ function WeekList({ days }: { days: readonly MobileDayView[] }) {
           ) : (
             <ol className="flex flex-col gap-1.5">
               {day.events.map((event) => (
-                <EventCard key={event.id} event={event} compact />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  compact
+                  href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
+                />
               ))}
             </ol>
           )}

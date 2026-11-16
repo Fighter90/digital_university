@@ -2,9 +2,11 @@ import Link from 'next/link';
 import {
   ArrowRight,
   CalendarClock,
+  CalendarDays,
   FileText,
   MessagesSquare,
   Newspaper,
+  PartyPopper,
   PenLine,
   Sparkles,
 } from 'lucide-react';
@@ -13,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { ProgressRing } from '@/components/ui/progress-ring';
+import { TaskRow } from '@/components/tasks/task-row';
 import {
   debtLabel,
   daysLeftLabel,
@@ -28,6 +31,7 @@ import type {
   DeadlineView,
   ProgressView,
   RequestsView,
+  TasksSummary,
   TodayView,
 } from '@/server/data';
 import type { ScheduleKind } from '@/server/data';
@@ -462,6 +466,116 @@ export function NewsSection({
         Все новости и объявления
         <ArrowRight aria-hidden="true" className="size-4" />
       </Link>
+    </section>
+  );
+}
+
+// ── DIG-44 — виджеты «Заявки» и «Мероприятия» ───────────────────────────────
+
+export function RequestsSection({ requests }: { requests: DashboardSection<RequestsView> }) {
+  if (!requests.ok) return <SectionFailure title="Заявки" error={requests.error} />;
+  const { inWork, total } = requests.value;
+  const ready = Math.max(0, total - inWork);
+
+  return (
+    <section aria-labelledby="dashboard-requests-title">
+      <h2 id="dashboard-requests-title" className="text-lg font-extrabold tracking-heading">
+        Заявки
+      </h2>
+      <div className="lift-hover mt-3 rounded-card border border-border bg-card p-5 shadow-soft">
+        <p className="text-sm text-neutral-600">Заявки в работе и на проверке</p>
+        <div className="mt-3 flex flex-wrap items-end gap-6">
+          <p className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold tracking-heading text-neutral-900">
+              {inWork}
+            </span>
+            <span className="text-sm text-neutral-600">
+              {pluralRu(inWork, ['заявка в работе', 'заявки в работе', 'заявок в работе'])}
+            </span>
+          </p>
+          <p className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold tracking-heading text-neutral-900">
+              {ready}
+            </span>
+            <span className="text-sm text-neutral-600">
+              {pluralRu(ready, ['готова к получению', 'готовы к получению', 'готово к получению'])}
+            </span>
+          </p>
+          <Link
+            href="/requests"
+            className="ml-auto rounded-pill border border-border px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+          >
+            Все заявки
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function EventsSection() {
+  return (
+    <section aria-labelledby="dashboard-events-title">
+      <h2 id="dashboard-events-title" className="text-lg font-extrabold tracking-heading">
+        Мероприятия
+      </h2>
+      <EmptyState
+        className="mt-3"
+        icon={CalendarDays}
+        title="Мероприятия скоро появятся"
+        description="Раздел готовится — здесь будут события и мероприятия вуза."
+      />
+    </section>
+  );
+}
+
+// DIG-34 — виджет «Что от меня ждут»: счётчик открытых задач и до трёх самых
+// срочных. Строки реюзают экран /tasks; ссылка ведёт в полный список.
+export function TasksSection({ tasks }: { tasks: DashboardSection<TasksSummary> }) {
+  if (!tasks.ok) return <SectionFailure title="Что от меня ждут" error={tasks.error} />;
+  const { openCount, top } = tasks.value;
+
+  return (
+    <section aria-labelledby="dashboard-tasks-title" data-testid="dashboard-tasks">
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 id="dashboard-tasks-title" className="text-lg font-extrabold tracking-heading">
+          Что от меня ждут
+        </h2>
+        {openCount > 0 ? (
+          <span
+            data-testid="dashboard-tasks-count"
+            title="Открытых задач"
+            className="rounded-pill bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-ink"
+          >
+            {openCount}
+          </span>
+        ) : null}
+      </div>
+
+      {openCount === 0 ? (
+        <EmptyState
+          className="mt-3"
+          icon={PartyPopper}
+          title="Все дела сделаны 🎉"
+          description="Сейчас от вас ничего не требуется — новые задачи появятся здесь."
+        />
+      ) : (
+        <>
+          <ol className="mt-3 flex flex-col gap-2">
+            {top.map((task) => (
+              <TaskRow key={task.id} task={task} />
+            ))}
+          </ol>
+          <Link
+            data-testid="dashboard-tasks-all"
+            href="/tasks"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-coral-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
+          >
+            Все задачи
+            <span aria-hidden="true">→</span>
+          </Link>
+        </>
+      )}
     </section>
   );
 }

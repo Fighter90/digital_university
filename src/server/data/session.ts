@@ -39,7 +39,8 @@ import type {
 
 const RESOURCE = 'session';
 const RETAKE_RESOURCE = 'retake-signup';
-const RETAKE_TITLE_PREFIX = 'Запись на пересдачу — ';
+/** DIG-28/34 — единый контракт идемпотентности записи на пересдачу. */
+export const RETAKE_TITLE_PREFIX = 'Запись на пересдачу — ';
 
 // ── View-типы (то, что читают экраны) ───────────────────────────────────────
 
@@ -175,10 +176,23 @@ function statusOf(info: DisciplineSessionInfo): {
   return { status: 'NOT_ADMITTED', score: null, reason: admissionReasonPhrase(info.ungradedOthers) };
 }
 
-function toExamItem(
-  exam: ExamSessionRow,
-  info: DisciplineSessionInfo,
-): SessionExamItem {
+/**
+ * DIG-34 — статус допуска по дисциплине для экрана «Задачи»: те же правила,
+ * что на «Сессии» (statusOf ∘ sessionInfoOf), но без оценки целевого
+ * элемента — задаче важны только «не допущен» и причина («Сдать: …»).
+ */
+export function disciplineAdmission(
+  disciplineCode: string,
+  grades: GradeRow[],
+  disciplines: DisciplineRow[],
+  elements: DisciplineElementRow[],
+): { status: Exclude<SessionExamStatus, 'RETAKE'>; reason: string | null } {
+  const info = sessionInfoOf(disciplineCode, grades, disciplines, elements);
+  const { status, reason } = statusOf(info);
+  return { status, reason };
+}
+
+function toExamItem(exam: ExamSessionRow, info: DisciplineSessionInfo): SessionExamItem {
   const kind = exam.kind === 'EXAM' ? 'EXAM' : 'CREDIT';
   const { status, score, reason } = statusOf(info);
   const view = examStatusView(status, score);

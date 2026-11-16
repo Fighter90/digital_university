@@ -130,6 +130,42 @@ const fullDashboard: DashboardData = {
     ],
   }),
   requests: ok({ inWork: 2, total: 3 }),
+  // DIG-34 — секция «Что от меня ждут»: счётчик и самые срочные задачи.
+  tasks: ok({
+    openCount: 8,
+    top: [
+      {
+        id: 'manual-task-pay',
+        source: 'MANUAL',
+        verb: 'Оплатить обучение по договору',
+        origin: 'Договор У-2026-114',
+        dueAt: new Date(2026, 10, 16, 18, 0),
+        daysLeft: 5,
+        href: '/tasks',
+        manual: true,
+      },
+      {
+        id: 'request-creq-1',
+        source: 'REQUEST',
+        verb: 'Доработать заявку',
+        origin: 'Справка об обучении · ЗД-2026-000003',
+        dueAt: null,
+        daysLeft: null,
+        href: '/requests/ЗД-2026-000003',
+        manual: false,
+      },
+      {
+        id: 'retake-exm-1',
+        source: 'RETAKE',
+        verb: 'Записаться на пересдачу',
+        origin: 'Информатика',
+        dueAt: new Date(2026, 10, 18, 9, 0),
+        daysLeft: 7,
+        href: '/grades/session',
+        manual: false,
+      },
+    ],
+  }),
 };
 
 const emptyDashboard: DashboardData = {
@@ -153,6 +189,7 @@ const emptyDashboard: DashboardData = {
     disciplines: [],
   }),
   requests: ok({ inWork: 0, total: 0 }),
+  tasks: ok({ openCount: 0, top: [] }),
 };
 
 const brokenDashboard: DashboardData = {
@@ -195,6 +232,7 @@ vi.mock('@/server/data', async () => {
     requireDataCtx: vi.fn(async () => studentCtx),
     getDashboard: vi.fn(async () => fullDashboard),
     listDeaneryNews,
+    getOwnSettings: vi.fn(async () => null),
   };
 });
 
@@ -337,5 +375,91 @@ describe('/dashboard (DIG-20) — «Ваша неделя»', () => {
     );
     expect(source).toContain('Кабинет сотрудника');
     expect(source).toMatch(/role === 'STAFF'/);
+  });
+});
+
+describe('/dashboard (DIG-44) — порядок и видимость виджетов из настроек', () => {
+  it('renders sections in the saved order and hides disabled ones', async () => {
+    vi.mocked(
+      (await import('@/server/data')).getOwnSettings as ReturnType<typeof vi.fn>,
+    ).mockResolvedValueOnce({
+      studentId: 'st-anna',
+      phone: null,
+      emailVisibleToStaff: true,
+      phoneVisibleToStaff: true,
+      notificationChannels: {},
+      theme: 'SYSTEM',
+      widgets: [
+        { id: 'deadlines', enabled: true },
+        { id: 'today', enabled: true },
+        { id: 'news', enabled: false },
+        { id: 'performance', enabled: true },
+        { id: 'requests', enabled: true },
+        { id: 'events', enabled: true },
+      ],
+      quietHours: { enabled: false, from: '22:00', to: '08:00' },
+      language: 'RU',
+      fontSize: 'NORMAL',
+      reduceMotion: false,
+      updatedAt: new Date('2026-11-11T10:00:00.000Z'),
+    });
+    const html = await renderPage(DashboardPage);
+    // Порядок: Дедлайны раньше Сегодня; Новости скрыты.
+    expect(html.indexOf('Ближайшие дедлайны')).toBeLessThan(html.indexOf('>Сегодня<'));
+    expect(html).not.toContain('Новости деканата');
+    expect(html).toContain('Как у меня дела');
+    // Секции «Заявки» и «Мероприятия» рендерятся своими виджетами.
+    expect(html).toContain('Заявки в работе и на проверке');
+    expect(html).toContain('Мероприятия');
+  });
+
+  it('without settings (null) renders the default order with every widget', async () => {
+    vi.mocked(
+      (await import('@/server/data')).getOwnSettings as ReturnType<typeof vi.fn>,
+    ).mockResolvedValueOnce(null);
+    const html = await renderPage(DashboardPage);
+    expect(html.indexOf('>Сегодня<')).toBeLessThan(html.indexOf('Ближайшие дедлайны'));
+    expect(html).toContain('Новости деканата');
+    expect(html).toContain('Заявки в работе и на проверке');
+    expect(html).toContain('Мероприятия');
+  });
+});
+
+describe('/dashboard (DIG-34) — виджет «Что от меня ждут»', () => {
+  it('счётчик, top-3 задачи и ссылка «Все задачи» на /tasks', async () => {
+    const html = await renderPage(DashboardPage);
+    expect(html).toContain('Что от меня ждут');
+    expect(html).toContain('Все задачи');
+    expect(html).toContain('href="/tasks"');
+    // Строки задач реюзают экран /tasks: глагол + кнопка ручной задачи.
+    expect(html).toContain('Оплатить обучение по договору');
+    expect(html).toContain('Доработать заявку');
+    expect(html).toContain('Отметить выполненной');
+    expect(html).toContain('href="/requests/ЗД-2026-000003"');
+    expect(html).toContain('href="/grades/session"');
+  });
+
+  it('нет открытых задач → «Все дела сделаны 🎉» в блоке главной', async () => {
+    vi.mocked(
+      (await import('@/server/data')).getDashboard as ReturnType<typeof vi.fn>,
+    ).mockResolvedValueOnce(emptyDashboard);
+    const html = await renderPage(DashboardPage);
+    expect(html).toContain('Что от меня ждут');
+    expect(html).toContain('Все дела сделаны 🎉');
+    expect(html).toContain('Сейчас от вас ничего не требуется');
+  });
+
+  it('сбой секции задач изолирован: остальные блоки живы', async () => {
+    vi.mocked(
+      (await import('@/server/data')).getDashboard as ReturnType<typeof vi.fn>,
+    ).mockResolvedValueOnce({
+      ...fullDashboard,
+      tasks: fail('tasks db down'),
+    });
+    const html = await renderPage(DashboardPage);
+    expect(html).toContain('Блок «Что от меня ждут» не загрузился');
+    // Остальные блоки живы.
+    expect(html).toContain('Ближайшие дедлайны');
+    expect(html).toContain('Как у меня дела');
   });
 });

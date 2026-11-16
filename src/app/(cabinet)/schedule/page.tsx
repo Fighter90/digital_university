@@ -53,13 +53,22 @@ import {
   semesterBounds,
 } from '@/lib/schedule-time';
 import { dataDb } from '@/server/data/db';
-import { getMonth, getNextStudyDay, getSchedule, requireDataCtx } from '@/server/data';
+import {
+  getMonth,
+  getNextStudyDay,
+  getOwnSettings,
+  getSchedule,
+  requireDataCtx,
+  getEventDetails,
+} from '@/server/data';
+import { EventDetailsPanel } from '@/components/schedule/event-details-panel';
+import { toEventDetailsView } from '@/lib/event-details';
 
 export const metadata = { title: 'Расписание — Цифровой деканат' };
 
 interface SchedulePageProps {
   /** Next 15 передаёт промис; рендер без пропсов (юнит-прендер) тоже валиден. */
-  searchParams?: Promise<{ view?: string; date?: string; week?: string; month?: string }>;
+  searchParams?: Promise<{ view?: string; date?: string; week?: string; month?: string; event?: string }>;
 }
 
 type Bounds = ReturnType<typeof semesterBounds>;
@@ -69,11 +78,13 @@ async function ScheduleContent({
   date,
   week,
   month,
+  event,
 }: {
   view?: string;
   date?: string;
   week?: string;
   month?: string;
+  event?: string;
 }) {
   const ctx = await requireDataCtx('/schedule');
 
@@ -108,12 +119,18 @@ async function ScheduleContent({
   const mobileView = resolveScheduleView(view, 'day');
 
   try {
+    // DIG-65 — «Озвучка и голосовой ввод» (voiceAssistant) читается только
+    // для студента: сотрудник уходит раньше (ветка STAFF), поэтому аудит
+    // denyAccess не засоряется. Сбой слоя данных падает в общий catch.
+    const settings = ctx.role === 'STUDENT' ? await getOwnSettings(dataDb, ctx) : null;
+    const voiceEnabled = settings?.voiceAssistant ?? true;
     if (desktopView === 'month') {
       return await MonthContent({ ctx, now, bounds, todayKey, monthParam: month, currentQuery });
     }
     return await DayWeekContent({
       ctx,
       now,
+      event,
       bounds,
       todayKey,
       viewParam: view,
@@ -122,6 +139,7 @@ async function ScheduleContent({
       desktopView,
       mobileView,
       currentQuery,
+      voiceEnabled,
     });
   } catch (error) {
     // не глотаем: без лога «Расписание не загрузилось» недиагностируемо
@@ -153,11 +171,16 @@ interface DayWeekProps {
   mobileView: ScheduleView;
   /** Query URL для ViewSwitcher/WeekView (см. ScheduleContent). */
   currentQuery: string;
+  /** DIG-24 — ?event=<id> пары, детали которой открываются панелью. */
+  event?: string;
+  /** DIG-65 — настройка «Озвучка и голосовой ввод» владельца сессии. */
+  voiceEnabled: boolean;
 }
 
 async function DayWeekContent({
   ctx,
   now,
+  event,
   bounds,
   todayKey,
   viewParam,
@@ -166,6 +189,7 @@ async function DayWeekContent({
   desktopView,
   mobileView,
   currentQuery,
+  voiceEnabled,
 }: DayWeekProps) {
   // Страховка типов: ветка «месяца» уже отработала в ScheduleContent.
   const desktopMode: 'day' | 'week' = desktopView === 'week' ? 'week' : 'day';
@@ -181,6 +205,10 @@ async function DayWeekContent({
     parsedDate ??
     (weekPage && !weekPage.isCurrent ? weekPage.from : resolveSelectedDate(undefined, now));
   const selectedKey = moscowDateKey(selectedDate);
+
+  // DIG-24 — детали пары для панели (?event=<id>); чужая группа/сотрудник — null.
+  const details =
+    ctx.role === 'STUDENT' && event ? await getEventDetails(dataDb, ctx, event) : null;
 
   // Окно ±2 недели вокруг фокуса (+ диапазон недели вида «неделя»):
   // один запрос слоя данных на все части экрана.
@@ -293,6 +321,8 @@ async function DayWeekContent({
               nextHref={next ? dayHref(moscowDateKey(next)) : null}
               todayHref="/schedule?view=day"
               nextStudy={nextStudy}
+              voiceEnabled={voiceEnabled}
+              eventQuery={currentQuery}
             />
           </>
         )}
@@ -316,9 +346,18 @@ async function DayWeekContent({
             days={mobileDays}
             initialDateKey={selectedKey}
             nextStudy={nextStudy}
+            voiceEnabled={voiceEnabled}
+            eventQuery={currentQuery}
           />
         )}
       </div>
+      {event && details ? (
+        <EventDetailsPanel
+          view={toEventDetailsView(details.event)}
+          note={details.note?.text ?? null}
+          closeHref={currentQuery ? `/schedule?${currentQuery}` : '/schedule'}
+        />
+      ) : null}
     </section>
   );
 }
@@ -409,6 +448,7 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
       date={params.date}
       week={params.week}
       month={params.month}
+      event={params.event}
     />
   );
 }

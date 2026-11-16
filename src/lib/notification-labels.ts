@@ -22,7 +22,7 @@ export const NOTIFICATION_SETTING_TYPES: NotificationType[] = [
 ];
 
 export const NOTIFICATION_CHANNEL_LABELS: Record<NotificationChannel, string> = {
-  PUSH: 'Push',
+  PUSH: 'В кабинете',
   EMAIL: 'Email',
   TELEGRAM: 'Telegram',
 };

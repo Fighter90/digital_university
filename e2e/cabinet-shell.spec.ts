@@ -97,7 +97,8 @@ test.describe('desktop 1440 — shell chrome', () => {
     await page.keyboard.press('ControlOrMeta+KeyK');
     const dialog = page.getByRole('dialog', { name: 'Поиск по кабинету' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('textbox')).toHaveAttribute(
+    // DIG-45: поле ввода — combobox (ARIA-паттерн с listbox-результатами).
+    await expect(dialog.getByRole('combobox')).toHaveAttribute(
       'placeholder',
       'Найти пару, преподавателя, справку…',
     );
@@ -119,7 +120,7 @@ test.describe('desktop 1440 — shell chrome', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Поиск по кабинету' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('textbox')).toBeFocused();
+    await expect(dialog.getByRole('combobox')).toBeFocused();
 
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
@@ -139,11 +140,37 @@ test.describe('desktop 1440 — shell chrome', () => {
     await expect(page.locator('main')).toHaveCount(1);
   });
 
-  test('unread badge is shown next to the bell', async ({ page }) => {
+  // DIG-54: бейдж живёт ВНУТРИ контейнера колокольчика (data-testid=
+  // "unread-badge") и не перекрывает сайдбар — на проде он «убегал» в угол
+  // сайдбара из-за absolute без relative-предка в SideNav.
+  test('unread badge is anchored inside the bell, clear of the sidebar', async ({ page }) => {
     await page.goto('/dashboard');
-    const bell = page.getByRole('link', { name: /Уведомления/ }).first();
+
+    const bell = page.getByTestId('unread-badge');
     await expect(bell).toBeVisible();
-    await expect(bell.getByTestId('unread-count')).toHaveText('3');
+    const badge = bell.getByTestId('unread-count');
+    await expect(badge).toHaveText('3');
+
+    const bellBox = await bell.boundingBox();
+    const badgeBox = await badge.boundingBox();
+    expect(bellBox, 'bell container has a box').not.toBeNull();
+    expect(badgeBox, 'badge has a box').not.toBeNull();
+    // Бейдж целиком в контейнере колокольчика (допуск 3 px на уголок -0.5).
+    const TOL = 3;
+    expect(badgeBox!.x).toBeGreaterThanOrEqual(bellBox!.x - TOL);
+    expect(badgeBox!.y).toBeGreaterThanOrEqual(bellBox!.y - TOL);
+    expect(badgeBox!.x + badgeBox!.width).toBeLessThanOrEqual(bellBox!.x + bellBox!.width + TOL);
+    expect(badgeBox!.y + badgeBox!.height).toBeLessThanOrEqual(bellBox!.y + bellBox!.height + TOL);
+
+    // Не пересекается с сайдбаром ни по одной оси.
+    const asideBox = await page.locator('aside').boundingBox();
+    expect(asideBox, 'sidebar has a box').not.toBeNull();
+    const overlaps =
+      badgeBox!.x < asideBox!.x + asideBox!.width &&
+      badgeBox!.x + badgeBox!.width > asideBox!.x &&
+      badgeBox!.y < asideBox!.y + asideBox!.height &&
+      badgeBox!.y + badgeBox!.height > asideBox!.y;
+    expect(overlaps, 'badge must not overlap the sidebar').toBe(false);
   });
 });
 
@@ -193,11 +220,33 @@ test.describe('mobile 360 — tab bar and safe area', () => {
 
   test('floating AI button is visible above the tab bar', async ({ page }) => {
     await page.goto('/dashboard');
-    const fab = page.getByRole('link', { name: 'AI-ассистент' }).last();
+    // DIG-46: плавающая кнопка — кнопка (открывает выезжающую панель),
+    // не ссылка; .last() выбирает FAB, а не кнопку AI в шапке.
+    const fab = page.getByRole('button', { name: 'AI-ассистент' }).last();
     await expect(fab).toBeVisible();
     const box = await fab.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.y).toBeGreaterThan(400);
+  });
+
+  // DIG-54: на мобильном бейдж тоже внутри колокольчика (иконка в top-bar
+  // видна на 360), не выходит за его пределы.
+  test('unread badge is anchored inside the bell at 360px', async ({ page }) => {
+    await page.goto('/dashboard');
+    const bell = page.getByTestId('unread-badge');
+    await expect(bell).toBeVisible();
+    const badge = bell.getByTestId('unread-count');
+    await expect(badge).toHaveText('3');
+
+    const bellBox = await bell.boundingBox();
+    const badgeBox = await badge.boundingBox();
+    expect(bellBox).not.toBeNull();
+    expect(badgeBox).not.toBeNull();
+    const TOL = 3;
+    expect(badgeBox!.x).toBeGreaterThanOrEqual(bellBox!.x - TOL);
+    expect(badgeBox!.y).toBeGreaterThanOrEqual(bellBox!.y - TOL);
+    expect(badgeBox!.x + badgeBox!.width).toBeLessThanOrEqual(bellBox!.x + bellBox!.width + TOL);
+    expect(badgeBox!.y + badgeBox!.height).toBeLessThanOrEqual(bellBox!.y + bellBox!.height + TOL);
   });
 
   test('unread counter updates without a page reload', async ({ page }) => {
@@ -218,6 +267,11 @@ test.describe('mobile 360 — tab bar and safe area', () => {
     count = 5;
     await page.clock.fastForward(61_000);
     await expect(badge).toHaveText('5');
+
+    // DIG-54: при нуле непрочитанных бейдж исчезает (без перезагрузки).
+    count = 0;
+    await page.clock.fastForward(61_000);
+    await expect(badge).toBeHidden();
 
     // Маркер пережил обновление счётчика — перезагрузки не было.
     const marker = await page.evaluate(

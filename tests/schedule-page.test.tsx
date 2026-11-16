@@ -34,6 +34,9 @@ const studentCtx: DataCtx = {
 
 const staffCtx: DataCtx = { ...studentCtx, role: 'STAFF', studentId: null, groupName: null };
 
+/** Настройки Анны: голосовые функции включены (дефолт продукта). */
+const annaSettings = { studentId: 'st-anna', voiceAssistant: true, updatedAt: new Date() };
+
 /** Понедельник текущей (реальной «сегодня») недели. */
 const monday = startOfMoscowWeek(new Date());
 const day = (offset: number, hour: number, minute = 0): Date => {
@@ -108,12 +111,23 @@ vi.mock('@/server/data', async () => {
     // DIG-23: страница «дня» при пустом выбранном дне спрашивает ближайший
     // учебный день — в тестах недели он не нужен, отдаём null.
     getNextStudyDay: vi.fn(async () => null),
+    // DIG-65: страница «дня» читает настройку «Озвучка и голосовой ввод».
+    getOwnSettings: vi.fn(async () => annaSettings),
     // schedule/page.tsx импортирует только эти имена из barrel
     __types: actualTypes,
   };
 });
 
 vi.mock('@/server/data/db', () => ({ dataDb: {} }));
+
+// DIG-65: в Node-прендере speechSynthesis нет — детектор вернул бы false и
+// кнопка не отрисовалась бы вовсе. Тест контракта страницы мокает детектор
+// (сам интерактив кнопки с моками Web Speech API — в
+// tests/voice-assistant-components.test.tsx).
+vi.mock('@/lib/voice-assistant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/voice-assistant')>();
+  return { ...actual, isSpeechSynthesisSupported: vi.fn(() => true) };
+});
 
 // В юнит-прендере нет App Router — отдаём стаб роутера (поведение листания
 // без перезагрузки проверяет e2e schedule.spec на реальном сервере).
@@ -332,5 +346,29 @@ describe('/schedule (DIG-22) — неделя в стиле Google Calendar', ()
     const html = await renderPage({ week: nextWeekKey });
     expect(html).toContain('На этой неделе пар нет');
     expect(html).toContain(`week=${thisWeekKey}`);
+  });
+});
+
+// DIG-65 — «Прослушать день»: страница «дня» отрисовывает кнопку озвучки
+// в обоих местах монтирования (десктопный DayView и мобильный MobileSchedule
+// скрыты классами, но оба есть в SSR-HTML), когда настройка «Озвучка и
+// голосовой ввод» включена, и не отрисовывает, когда выключена.
+describe('/schedule?view=day — «Прослушать день» (DIG-65)', () => {
+  it('кнопка озвучки присутствует при включённой настройке (десктоп и мобильный)', async () => {
+    const html = await renderPage({ view: 'day' });
+    const mounts = html.split('data-testid="listen-day"').length - 1;
+    expect(mounts, 'кнопка в DayView и в MobileSchedule').toBeGreaterThanOrEqual(2);
+    expect(html).toContain('Прослушать день');
+  });
+
+  it('кнопки нет, когда настройка выключена (voiceAssistant=false)', async () => {
+    const { getOwnSettings } = await import('@/server/data');
+    vi.mocked(getOwnSettings as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ...annaSettings,
+      voiceAssistant: false,
+    });
+    const html = await renderPage({ view: 'day' });
+    expect(html).not.toContain('data-testid="listen-day"');
+    expect(html).not.toContain('Прослушать день');
   });
 });

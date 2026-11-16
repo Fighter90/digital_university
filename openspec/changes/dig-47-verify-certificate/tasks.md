@@ -1,0 +1,24 @@
+# Tasks: DIG-47 — проверка подлинности справки (QR + PDF)
+
+- [x] 1. Delta-спека `specs/certificate-verification/spec.md` (требования с WHEN/THEN).
+- [x] 2. Red: тесты `tests/verify-core.test.ts` (формат кода, нормализация, маскирование ФИО, статусы) — падают до реализации.
+- [x] 3. Red: тесты `tests/verify-rate-limit.test.ts` (скользящее окно на страницу проверки) — падают.
+- [x] 4. Red: тесты `tests/qr-code.test.ts` (структура матрицы + round-trip декодер с синдромами RS) — падают.
+- [x] 5. Red: тесты `tests/certificate-pdf.test.ts` (строки справки, покрытие глифов, детерминизм, QR в документе) — падают.
+- [x] 6. Red: тесты `tests/verify-data.test.ts` (публичное представление без PII, выдача по заявке idемпотентно, отзыв сотрудником по факультету) — падают.
+- [x] 7. Red: `tests/access-control.test.ts` — `/verify/*` публичный префикс — падает.
+- [x] 8. Red: `tests/verify-page.test.tsx` (4 состояния страницы, маска ФИО, подсказка, плашка) — падает.
+- [x] 9. `src/lib/verify.ts` — код, нормализация, маска, статусы (crypto-генератор ≥128 бит).
+- [x] 10. `src/server/verify/rate-limit.ts` — скользящее окно + singleton.
+- [x] 11. `src/lib/pdf/qr.ts` — QR-энкодер v1–6, уровень L, 8 масок.
+- [x] 12. `src/lib/certificate-pdf.ts` — шаблон справки с QR и кодом.
+- [x] 13. Слой данных: `CertificateRow` (types/port/memory-db), `src/server/data/certificates.ts`, экспорт из index.
+- [x] 14. `route-guard.ts`: публичный префикс `/verify/`.
+- [x] 15. `GET /api/requests/[number]/certificate` — PDF владельцу заявки.
+- [x] 16. `POST /api/staff/certificates/revoke` — отзыв сотрудником (роль + факультет).
+- [x] 17. Страница `src/app/verify/[code]/page.tsx` + `src/components/verify/verify-result.tsx`.
+- [x] 18. Карточка заявки: «Скачать справку (PDF)» + «Проверить подлинность» + код.
+- [x] 19. Сид: демо-справки (действительная + отозванная), memory-адаптер.
+- [x] 20. Зелёная фаза: все unit-тесты зелёные.
+- [x] 21. e2e `e2e/verify.spec.ts`: аноним 360/1440, три статуса, PDF владельца, отзыв сотрудником → «Отозван».
+- [x] 22. Гейты: lint, typecheck, build, test — зелёные; коммит `feat(verify): ... — DIG-47`.

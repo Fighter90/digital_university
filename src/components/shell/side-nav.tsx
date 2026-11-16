@@ -17,7 +17,15 @@ const DEADLINE = {
 
 // DIG-14: боковое меню. ≥1024 — полное меню 212 px, 768–1023 — иконочный
 // рельс (подпись в title/aria-label). Активный раздел — мягкий коралловый фон.
-export function SideNav({ unreadCount }: { unreadCount: number }) {
+// DIG-34: у раздела «Задачи» — пилюля с числом открытых задач (как у
+// уведомлений; 0 — скрыта).
+export function SideNav({
+  unreadCount,
+  tasksCount = 0,
+}: {
+  unreadCount: number;
+  tasksCount?: number;
+}) {
   const pathname = usePathname();
   const active = resolveActiveSection(pathname, CABINET_SECTIONS);
 
@@ -29,6 +37,8 @@ export function SideNav({ unreadCount }: { unreadCount: number }) {
             const Icon = sectionIcon(section.href);
             const isActive = active === section.href;
             const showBadge = section.href === '/notifications' && unreadCount > 0;
+            // DIG-34 — счётчик открытых задач у раздела «Задачи».
+            const showTasksBadge = section.href === '/tasks' && tasksCount > 0;
             return (
               <li key={section.href}>
                 {section.href === '/profile' && (
@@ -46,8 +56,21 @@ export function SideNav({ unreadCount }: { unreadCount: number }) {
                   <Icon className="size-5 shrink-0" aria-hidden="true" />
                   <span className="hidden min-w-0 flex-1 truncate lg:inline">{section.label}</span>
                   {showBadge && (
+                    // DIG-54: inline-вариант бейджа — без absolute, иначе он
+                    // позиционируется относительно <aside sticky> и «уезжает»
+                    // в угол сайдбара (баг на проде).
                     <span className="ml-auto hidden lg:inline-flex">
-                      <UnreadBadge count={unreadCount} />
+                      <UnreadBadge variant="inline" count={unreadCount} />
+                    </span>
+                  )}
+                  {showTasksBadge && (
+                    <span className="ml-auto hidden lg:inline-flex">
+                      <span
+                        data-testid="tasks-count"
+                        className="rounded-pill bg-coral-500 px-2 py-0.5 text-[10px] leading-none font-semibold text-white"
+                      >
+                        {tasksCount > 99 ? '99+' : tasksCount}
+                      </span>
                     </span>
                   )}
                 </Link>

@@ -129,6 +129,21 @@ export function createMemoryAuthStore(): MemoryAuthStore {
         .sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0))
         .map((s) => ({ ...s }));
     },
+
+    // ── DIG-44 — смена пароля и завершение сеанса ────────────────────────────
+
+    async setPasswordHash(userId, passwordHash) {
+      const row = users.get(userId);
+      if (!row) return; // unknown user — silent no-op (не существующий id)
+      row.passwordHash = passwordHash;
+    },
+
+    async deleteSessionById(userId, sessionId) {
+      // Владение внутри адаптера: чужая сессия по id недостижима.
+      const row = [...sessions.values()].find((s) => s.id === sessionId && s.userId === userId);
+      if (!row) return 0;
+      return sessions.delete(row.tokenHash) ? 1 : 0;
+    },
   };
 }
 

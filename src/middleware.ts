@@ -5,7 +5,7 @@
 // - mutating API calls must be same-origin (Origin check, CSRF defence).
 // The pure decision logic lives in src/lib/route-guard.ts and is unit-tested.
 import { NextResponse, type NextRequest } from 'next/server';
-import { decideAccess, shouldSlideAuthCookies } from '@/lib/route-guard';
+import { cacheControlFor, decideAccess, shouldSlideAuthCookies } from '@/lib/route-guard';
 import {
   SESSION_COOKIE_NAME,
   buildRoleHintCookie,
@@ -37,6 +37,13 @@ export async function middleware(request: NextRequest) {
   if (decision.kind === 'allow') {
     const response = NextResponse.next();
 
+    // DIG-55: protected screens must never come from a cache. Without an
+    // explicit no-store the browser could restore the cabinet from the
+    // back/forward cache even after sign-out, so «Back» revealed stale
+    // personal data. Public paths keep the framework defaults.
+    const cacheControl = cacheControlFor(pathname);
+    if (cacheControl) response.headers.set('Cache-Control', cacheControl);
+
     // Review round 3: sliding renewal must reach the browser. While the user
     // stays active, both cookies are re-issued on every allowed request with
     // the SAME values and a fresh full Max-Age; the store-side half of the
@@ -45,7 +52,11 @@ export async function middleware(request: NextRequest) {
     // how active the user was — and staff lost the /staff gate with them.
     // The values are never changed here (no new tokens, no new authority):
     // a cookie that just failed verification is never extended.
-    if (sessionToken && shouldSlideAuthCookies(decision, true)) {
+    //
+    // DIG-55: the request method is forwarded so mutating requests (server
+    // actions — including sign-out) never re-issue the cookies: the action's
+    // cleared cookies must be the only word on that response.
+    if (sessionToken && shouldSlideAuthCookies(decision, true, request.method)) {
       response.cookies.set(buildSessionCookie(sessionToken));
       const hintValue = request.cookies.get(ROLE_COOKIE_NAME)?.value;
       if (roleHint && hintValue) response.cookies.set(buildRoleHintCookie(hintValue));

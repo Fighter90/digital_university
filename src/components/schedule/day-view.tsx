@@ -6,6 +6,7 @@ import { CalendarOff, ChevronLeft, ChevronRight } from 'lucide-react';
 // Серверный компонент: листание — ссылки (?view=day&date=…), без клиента.
 import type { ScheduleEventCard } from '@/lib/schedule-cards';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ListenDayButton } from '@/components/schedule/listen-day-button';
 import { EventCard } from './event-card';
 
 export interface NextStudyDayInfo {
@@ -22,6 +23,10 @@ export interface DayViewProps {
   nextHref: string | null;
   todayHref: string;
   nextStudy: NextStudyDayInfo | null;
+  /** DIG-24 — query-часть ссылки на детали (?view=…&date=…); без неё карточки не кликабельны. */
+  eventQuery?: string;
+  /** DIG-65 — «Озвучка и голосовой ввод» (настройка студента). */
+  voiceEnabled?: boolean;
 }
 
 const arrowClasses =
@@ -35,6 +40,8 @@ export function DayView({
   nextHref,
   todayHref,
   nextStudy,
+  voiceEnabled = true,
+  eventQuery,
 }: DayViewProps) {
   return (
     <div data-testid="desktop-day" className="flex flex-col gap-4">
@@ -78,14 +85,19 @@ export function DayView({
             ) : null}
           </h2>
         </div>
-        {!isToday ? (
-          <a
-            href={todayHref}
-            className="rounded-button border border-border bg-card px-3 py-1.5 text-sm font-semibold shadow-soft transition-colors hover:bg-muted"
-          >
-            Сегодня
-          </a>
-        ) : null}
+        {/* DIG-65 — «Прослушать день»: озвучка выбранного дня (SpeechSynthesis);
+            при выключенной настройке или без поддержки браузера кнопки нет. */}
+        <div className="flex items-center gap-2">
+          {!isToday ? (
+            <a
+              href={todayHref}
+              className="rounded-button border border-border bg-card px-3 py-1.5 text-sm font-semibold shadow-soft transition-colors hover:bg-muted"
+            >
+              Сегодня
+            </a>
+          ) : null}
+          <ListenDayButton title={title} isToday={isToday} events={events} enabled={voiceEnabled} />
+        </div>
       </div>
 
       {events.length === 0 ? (
@@ -101,7 +113,11 @@ export function DayView({
       ) : (
         <ol className="flex flex-col gap-2" aria-label={`Пары, ${title}`}>
           {events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard
+              key={event.id}
+              event={event}
+              href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
+            />
           ))}
         </ol>
       )}

@@ -71,7 +71,6 @@ const COL_NAME = 40;
 const COL_CONTROL = 12;
 const COL_CREDITS = 4;
 const COL_GRADE = 5;
-const COL_DATE = 12;
 
 type LineStyle = 'title' | 'heading' | 'body' | 'small' | 'accent';
 

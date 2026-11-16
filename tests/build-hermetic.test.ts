@@ -44,9 +44,17 @@ describe('dev и build не делят distDir (корень ENOENT pages-manife
 });
 
 describe('npm run build — герметичный прогон (без переиспользования состояния)', () => {
-  it('build — обычный webpack-прогон (прелюдия чистки .next ломала манифесты webpack)', () => {
+  it('build — сериализация через build-lock, сама сборка — прежний чистый webpack `next build`', () => {
+    // DIG-55 (раунд 2): несколько swarm-сессий строят один checkout
+    // одновременно → два `next build` гоняются за общий `.next` и падают с
+    // ENOENT copyfile edge-runtime-webpack.js на «Collecting build traces».
+    // Обёртка берёт mkdir-lock и запускает ту же команду. Инвариант DIG-12
+    // сохранён: никакой чистящей прелюдии — единственный payload обёртки —
+    // чистый `next build` (репозиторный бинарник из node_modules/.bin).
     const build = pkg().scripts.build;
-    expect(build).toBe('next build');
+    expect(build).toBe('node scripts/build-lock.mjs');
+    const wrapper = read('scripts/build-lock.mjs');
+    expect(wrapper).toMatch(/cmd\.push\(repoBin\('next'\), 'build'\)/);
   });
 
   it('.next-dev игнорируется git и eslint (артефакты, не исходники)', () => {

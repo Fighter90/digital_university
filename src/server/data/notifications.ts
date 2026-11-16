@@ -39,3 +39,31 @@ export async function markNotificationRead(db: DataDb, ctx: DataCtx, id: string)
   });
   return false;
 }
+
+/**
+ * DIG-35 — число непрочитанных владельца сессии. У сотрудника персональной
+ * ленты нет: 0 без записи в аудит — счётчик запрашивается шапкой на КАЖДОЙ
+ * странице, аудита «staff смотрит свой же колокольчик» быть не должно.
+ */
+export async function countUnreadNotifications(db: DataDb, ctx: DataCtx): Promise<number> {
+  if (ctx.studentId === null) return 0;
+  return db.countUnreadNotificationsByStudent(ctx.studentId);
+}
+
+/**
+ * DIG-35 — «Отметить все прочитанными» (owner-scoped). Сотруднику — отказ с
+ * аудитом ROLE_MISMATCH, как у прочих student-мутаций; возвращает число
+ * изменённых строк.
+ */
+export async function markAllNotificationsRead(db: DataDb, ctx: DataCtx): Promise<number> {
+  if (ctx.studentId === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: 'mark-all-read',
+      reason: 'ROLE_MISMATCH',
+    });
+    return 0;
+  }
+  return db.markAllNotificationsReadByStudent(ctx.studentId);
+}

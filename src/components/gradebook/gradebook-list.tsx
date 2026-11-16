@@ -41,12 +41,6 @@ function GradeBadge({ grade }: { grade: number | null }) {
   );
 }
 
-function fillTone(earned: number): string {
-  if (earned >= 85) return 'bg-success';
-  if (earned >= 60) return 'bg-warning';
-  return 'bg-error';
-}
-
 export function GradebookList({
   data,
   focusSemesterKey,

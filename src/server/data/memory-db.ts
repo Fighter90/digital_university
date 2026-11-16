@@ -7,12 +7,16 @@
 // Swapping to PostgreSQL later is a one-line change in src/server/data/db.ts:
 // a Prisma adapter implements the very same `DataDb` signatures.
 
-import type { DataDb, ScheduleChangePatch, SchedulePeriod } from './port';
+import type { DataDb, ScheduleChangePatch } from './port';
 import type {
   AppealMessageRow,
   AppealRow,
   AuditLogRow,
-  DisciplineElementRow,
+  CalendarSubscriptionRow,
+  CertificateRow,
+  CanonicalRequestEventRow,
+  CanonicalRequestRow,
+  CanonicalRequestTypeRow,  DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
@@ -26,13 +30,20 @@ import type {
   StudentRow,
   StudentSettingsRow,
   ServiceFavoriteRow,
+  StudyDeadlineRow,
+  StudentTaskRow,
 } from './types';
+import { canonicalRequestNumberSeq } from './canonical-request-number';
 
 export interface MemorySeed {
   students?: StudentRow[];
   staff?: StaffRow[];
   requests?: ServiceRequestRow[];
   requestEvents?: RequestEventRow[];
+  /** DIG-30 — канонические заявки «Заявки и справки» (номера ЗД-…). */
+  canonicalRequestTypes?: CanonicalRequestTypeRow[];
+  canonicalRequests?: CanonicalRequestRow[];
+  canonicalRequestEvents?: CanonicalRequestEventRow[];
   grades?: GradeRow[];
   notifications?: NotificationRow[];
   appeals?: AppealRow[];
@@ -48,8 +59,19 @@ export interface MemorySeed {
   elements?: DisciplineElementRow[];
   /** DIG-29 — закреплённые студентом сервисы каталога. */
   serviceFavorites?: ServiceFavoriteRow[];
+<<<<<<< HEAD
   /** DIG-36 — отметки «Прочитано» новостей/объявлений. */
   newsRead?: NewsReadRow[];
+=======
+  /** DIG-34 — дедлайны заданий группы (система курсов, в концепте — сиды). */
+  studyDeadlines?: StudyDeadlineRow[];
+  /** DIG-34 — ручные задачи студентов (подписать/оплатить…). */
+  studentTasks?: StudentTaskRow[];
+  /** DIG-47 — реестр выданных справок (проверка подлинности по коду). */
+  certificates?: CertificateRow[];
+  /** DIG-63 — активные ICS-подписки студентов (одна на студента). */
+  calendarSubscriptions?: CalendarSubscriptionRow[];
+>>>>>>> origin/main
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -66,6 +88,9 @@ export function createMemoryDataDb(): MemoryDataDb {
   let staff: StaffRow[] = [];
   let requests: ServiceRequestRow[] = [];
   let requestEvents: RequestEventRow[] = [];
+  let canonicalRequestTypes: CanonicalRequestTypeRow[] = [];
+  let canonicalRequests: CanonicalRequestRow[] = [];
+  let canonicalRequestEvents: CanonicalRequestEventRow[] = [];
   let grades: GradeRow[] = [];
   let notifications: NotificationRow[] = [];
   let appeals: AppealRow[] = [];
@@ -77,7 +102,14 @@ export function createMemoryDataDb(): MemoryDataDb {
   let settings: StudentSettingsRow[] = [];
   let notes: StudentNoteRow[] = [];
   let serviceFavorites: ServiceFavoriteRow[] = [];
+<<<<<<< HEAD
   let newsRead: NewsReadRow[] = [];
+=======
+  let studyDeadlines: StudyDeadlineRow[] = [];
+  let studentTasks: StudentTaskRow[] = [];
+  let certificates: CertificateRow[] = [];
+  let calendarSubscriptions: CalendarSubscriptionRow[] = [];
+>>>>>>> origin/main
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
@@ -86,7 +118,9 @@ export function createMemoryDataDb(): MemoryDataDb {
   let noteSeq = 0;
   let requestSeq = 0;
   let requestEventSeq = 0;
-
+  let certificateSeq = 0;
+  let canonicalRequestSeq = 0;
+  let canonicalEventSeq = 0;
   const by = <T, K extends keyof T>(rows: T[], key: K, value: T[K]) =>
     rows.find((row) => row[key] === value) ?? null;
 
@@ -96,6 +130,13 @@ export function createMemoryDataDb(): MemoryDataDb {
       staff = seed.staff ? seed.staff.map(clone) : [];
       requests = seed.requests ? seed.requests.map(clone) : [];
       requestEvents = seed.requestEvents ? seed.requestEvents.map(clone) : [];
+      canonicalRequestTypes = seed.canonicalRequestTypes
+        ? seed.canonicalRequestTypes.map(clone)
+        : [];
+      canonicalRequests = seed.canonicalRequests ? seed.canonicalRequests.map(clone) : [];
+      canonicalRequestEvents = seed.canonicalRequestEvents
+        ? seed.canonicalRequestEvents.map(clone)
+        : [];
       grades = seed.grades ? seed.grades.map(clone) : [];
       notifications = seed.notifications ? seed.notifications.map(clone) : [];
       appeals = seed.appeals ? seed.appeals.map(clone) : [];
@@ -107,7 +148,16 @@ export function createMemoryDataDb(): MemoryDataDb {
       settings = seed.settings ? seed.settings.map(clone) : [];
       notes = seed.notes ? seed.notes.map(clone) : [];
       serviceFavorites = seed.serviceFavorites ? seed.serviceFavorites.map(clone) : [];
+<<<<<<< HEAD
       newsRead = seed.newsRead ? seed.newsRead.map(clone) : [];
+=======
+      studyDeadlines = seed.studyDeadlines ? seed.studyDeadlines.map(clone) : [];
+      studentTasks = seed.studentTasks ? seed.studentTasks.map(clone) : [];
+      certificates = seed.certificates ? seed.certificates.map(clone) : [];
+      calendarSubscriptions = seed.calendarSubscriptions
+        ? seed.calendarSubscriptions.map(clone)
+        : [];
+>>>>>>> origin/main
       audit = [];
     },
 
@@ -257,6 +307,98 @@ export function createMemoryDataDb(): MemoryDataDb {
       return clone(row);
     },
 
+    // ── DIG-30: canonical requests «Заявки и справки» (owner-scoped) ──────
+    async listCanonicalRequestTypes() {
+      return canonicalRequestTypes.map(clone);
+    },
+    async findCanonicalRequestTypeByCode(code) {
+      return clone(by(canonicalRequestTypes, 'code', code));
+    },
+    async probeCanonicalRequestByNumber(number) {
+      return clone(by(canonicalRequests, 'number', number));
+    },
+    async probeCanonicalRequestById(id) {
+      return clone(by(canonicalRequests, 'id', id));
+    },
+    async findCanonicalRequestByStudentAndNumber(studentId, number) {
+      return clone(
+        canonicalRequests.find((r) => r.studentId === studentId && r.number === number) ?? null,
+      );
+    },
+    async findCanonicalRequestByStudentAndId(studentId, id) {
+      return clone(canonicalRequests.find((r) => r.studentId === studentId && r.id === id) ?? null);
+    },
+    async listCanonicalRequestsByStudent(studentId) {
+      return canonicalRequests
+        .filter((r) => r.studentId === studentId)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .map(clone);
+    },
+    async listCanonicalRequestEvents(requestId) {
+      return canonicalRequestEvents
+        .filter((e) => e.requestId === requestId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map(clone);
+    },
+    async insertCanonicalRequest(row, event) {
+      if (by(canonicalRequests, 'number', row.number)) {
+        // UNIQUE «number» из миграции DIG-9: дубль номера — сбой хранения.
+        throw new Error('duplicate canonical request number');
+      }
+      canonicalRequestSeq += 1;
+      const created: CanonicalRequestRow = { ...clone(row), id: `creq-${canonicalRequestSeq}` };
+      canonicalRequests.push(created);
+      canonicalEventSeq += 1;
+      canonicalRequestEvents.push({
+        ...clone(event),
+        id: `cev-${canonicalEventSeq}`,
+        requestId: created.id,
+      });
+      return clone(created);
+    },
+    async saveCanonicalRequestStatus(requestId, patch, event) {
+      const row = canonicalRequests.find((r) => r.id === requestId);
+      if (!row) return null;
+      row.status = patch.status;
+      row.updatedAt = patch.updatedAt;
+      canonicalEventSeq += 1;
+      canonicalRequestEvents.push({
+        ...clone(event),
+        id: `cev-${canonicalEventSeq}`,
+        requestId,
+      });
+      return clone(row);
+    },
+    async findLatestCanonicalRequestByStudentAndType(
+      studentId,
+      typeCode,
+      createdAfter,
+      keyField,
+      keyValue,
+    ) {
+      const candidates = canonicalRequests
+        .filter(
+          (r) =>
+            r.studentId === studentId &&
+            r.typeCode === typeCode &&
+            r.createdAt.getTime() >= createdAfter.getTime() &&
+            // Дубликат = тот же документ: совпадает и ключевой параметр.
+            (keyField == null || (r.params[keyField] ?? '') === (keyValue ?? '')),
+        )
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return candidates.length > 0 ? clone(candidates[0]!) : null;
+    },
+    async nextCanonicalRequestSeq(year) {
+      const prefix = `ЗД-${year}-`;
+      let max = 0;
+      for (const row of canonicalRequests) {
+        if (!row.number.startsWith(prefix)) continue;
+        const seq = canonicalRequestNumberSeq(row.number);
+        if (seq !== null && seq > max) max = seq;
+      }
+      return max + 1;
+    },
+
     async listGradesByStudent(studentId) {
       return grades.filter((g) => g.studentId === studentId).map(clone);
     },
@@ -269,6 +411,19 @@ export function createMemoryDataDb(): MemoryDataDb {
       if (!row) return false;
       row.isRead = true;
       return true;
+    },
+    async countUnreadNotificationsByStudent(studentId) {
+      return notifications.filter((n) => n.studentId === studentId && !n.isRead).length;
+    },
+    async markAllNotificationsReadByStudent(studentId) {
+      let marked = 0;
+      for (const row of notifications) {
+        if (row.studentId === studentId && !row.isRead) {
+          row.isRead = true;
+          marked += 1;
+        }
+      }
+      return marked;
     },
 
     async listAppealsByStudent(studentId) {
@@ -380,6 +535,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       );
     },
 
+<<<<<<< HEAD
     // ── DIG-36: отметки «Прочитано» новостей (owner-scoped) ───────────────
     async listNewsReadIdsByStudent(studentId) {
       return newsRead
@@ -392,10 +548,107 @@ export function createMemoryDataDb(): MemoryDataDb {
       if (!exists) {
         newsRead.push({ studentId, newsId, readAt: new Date() });
       }
+=======
+    // ── DIG-34: дедлайны курса (group-scoped) и ручные задачи (owner-scoped) ─
+    async listStudyDeadlinesByGroup(groupName) {
+      return studyDeadlines.filter((d) => d.groupName === groupName).map(clone);
+    },
+    async listStudentTasksByStudent(studentId) {
+      return studentTasks.filter((t) => t.studentId === studentId).map(clone);
+    },
+    // DIG-34 — probe ручной задачи по id без владельца: различение «чужая»
+    // (OWNERSHIP_DENIED) и «несуществующая» (NOT_FOUND) — только для аудита;
+    // наружу из слоя данных в обоих случаях уходит null.
+    async probeStudentTaskById(taskId) {
+      return clone(by(studentTasks, 'id', taskId));
+    },
+    async markStudentTaskDoneByStudent(studentId, taskId, doneAt) {
+      const row = studentTasks.find((t) => t.studentId === studentId && t.id === taskId);
+      if (!row) return null;
+      // Идемпотентно: повторная отметка сохраняет первый doneAt.
+      row.doneAt ??= doneAt;
+      return clone(row);
+    },
+
+    // ── DIG-47: реестр справок (публичная проверка по коду) ────────────────
+    async findCertificateByCode(code) {
+      return clone(by(certificates, 'verificationCode', code));
+    },
+    async findCertificateByStudentAndRequestId(studentId, requestId) {
+      return clone(
+        certificates.find((c) => c.studentId === studentId && c.requestId === requestId) ?? null,
+      );
+    },
+    async appendCertificateForStudent(studentId, input) {
+      if (input.studentId !== studentId) {
+        throw new Error('appendCertificateForStudent: input.studentId must equal the scope');
+      }
+      certificateSeq += 1;
+      const row: CertificateRow = { ...clone(input), id: input.id || `cert-new-${certificateSeq}` };
+      certificates.push(row);
+      return clone(row);
+    },
+    async revokeCertificateByStaff(faculty, code, input) {
+      const row = certificates.find((c) => c.verificationCode === code);
+      if (!row) return null;
+      const owner = students.find((s) => s.id === row.studentId);
+      if (!owner || owner.faculty !== faculty) return null;
+      if (row.revokedAt) return clone(row); // идемпотентно: дата не перезаписывается
+      row.revokedAt = input.revokedAt;
+      row.revokedReason = input.reason;
+      return clone(row);
+    },
+
+    // ── DIG-63: активные ICS-подписки (одна строка на студента) ─────────────
+    async findCalendarSubscriptionByStudent(studentId) {
+      return clone(by(calendarSubscriptions, 'studentId', studentId));
+    },
+    // Поиск по tokenId без скоупа — осознанное исключение (см. port.ts):
+    // публичный фид читает без входа;tokenId несёт 128 бит + HMAC-подпись,
+    // которую calendar.ts проверяет до этого вызова.
+    async findCalendarSubscriptionByTokenId(tokenId) {
+      return clone(by(calendarSubscriptions, 'tokenId', tokenId));
+    },
+    async saveCalendarSubscriptionForStudent(studentId, input) {
+      const row: CalendarSubscriptionRow = {
+        studentId,
+        tokenId: input.tokenId,
+        createdAt: input.createdAt,
+        rotatedAt: input.rotatedAt,
+      };
+      const index = calendarSubscriptions.findIndex((s) => s.studentId === studentId);
+      if (index === -1) {
+        calendarSubscriptions.push(row);
+      } else {
+        calendarSubscriptions[index] = row;
+      }
+      return clone(row);
+    },
+    async deleteCalendarSubscriptionByStudent(studentId) {
+      const before = calendarSubscriptions.length;
+      calendarSubscriptions = calendarSubscriptions.filter((s) => s.studentId !== studentId);
+      return calendarSubscriptions.length < before;
+    },
+    async deleteCalendarSubscriptionByLogin(login) {
+      const owner = students.find((s) => s.login === login);
+      if (!owner) return false;
+      const before = calendarSubscriptions.length;
+      calendarSubscriptions = calendarSubscriptions.filter((s) => s.studentId !== owner.id);
+      return calendarSubscriptions.length < before;
+>>>>>>> origin/main
     },
 
     async listStudentsByFaculty(faculty) {
       return students.filter((s) => s.faculty === faculty).map(clone);
+    },
+
+    // ── DIG-64: персональный MCP-токен (lookup по хэшу — см. port.ts) ─────
+    async findStudentByMcpTokenHash(tokenHash) {
+      const row = settings.find((s) => s.mcpToken?.tokenHash === tokenHash);
+      if (!row) return null;
+      const student = students.find((s) => s.id === row.studentId);
+      if (!student) return null;
+      return { student: clone(student), userId: row.mcpToken!.userId };
     },
 
     async appendAudit(event) {

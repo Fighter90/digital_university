@@ -1,34 +1,30 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { saveThemeAction } from '@/server/actions/profile';
 import type { ThemePreference } from '@/server/data/types';
 
 const OPTIONS: Array<{
   value: ThemePreference;
   label: string;
-  disabled?: boolean;
-  soon?: boolean;
+  description: string;
 }> = [
-  { value: 'LIGHT', label: 'Светлая' },
-  { value: 'SYSTEM', label: 'Системная' },
-  { value: 'DARK', label: 'Тёмная', disabled: true, soon: true },
+  { value: 'LIGHT', label: 'Светлая', description: 'Светлые поверхности, как в макете.' },
+  { value: 'SYSTEM', label: 'Системная', description: 'Следует настройкам системы.' },
+  { value: 'DARK', label: 'Тёмная', description: 'Тёмные поверхности для вечерних дежурств.' },
 ];
 
-// DIG-19: тема — светлая / системная. Тёмная показана, но отключена
-// («скоро», задача о тёмной теме); выбрать её нельзя ни в UI, ни со стороны
-// клиентского кода — action валидирует значение на сервере.
+// DIG-44: тема — светлая / системная / тёмная. Все три доступны и применяются
+// ко всему кабинету server-side (класс на <html> из root layout): выбрать
+// тёмную нельзя было в DIG-19 («скоро»), теперь она включена.
 export function ThemePicker({ initial }: { initial: ThemePreference }) {
-  const [theme, setTheme] = useState<ThemePreference>(
-    initial === 'DARK' ? 'SYSTEM' : initial,
-  );
+  const [theme, setTheme] = useState<ThemePreference>(initial);
   const [, startTransition] = useTransition();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const select = (index: number) => {
     const option = OPTIONS[index];
-    if (!option || option.disabled) return;
+    if (!option) return;
     setTheme(option.value);
     refs.current[index]?.focus();
     startTransition(() => {
@@ -43,7 +39,7 @@ export function ThemePicker({ initial }: { initial: ThemePreference }) {
       <div
         role="radiogroup"
         aria-label="Тема оформления"
-        className="inline-flex w-fit rounded-pill border border-border bg-card p-1"
+        className="inline-flex w-fit flex-wrap rounded-pill border border-border bg-card p-1"
       >
         {OPTIONS.map((option, index) => {
           const selected = option.value === theme;
@@ -56,8 +52,8 @@ export function ThemePicker({ initial }: { initial: ThemePreference }) {
               type="button"
               role="radio"
               aria-checked={selected}
+              aria-label={`${option.label}. ${option.description}`}
               tabIndex={index === selectedIndex ? 0 : -1}
-              disabled={option.disabled}
               onClick={() => select(index)}
               onKeyDown={(event) => {
                 if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
@@ -68,17 +64,16 @@ export function ThemePicker({ initial }: { initial: ThemePreference }) {
                   select(Math.max(0, index - 1));
                 }
               }}
-              className="flex h-8 items-center gap-1.5 rounded-pill px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 aria-selected:bg-foreground data-[selected=true]:bg-foreground data-[selected=true]:text-background"
+              className="flex h-8 items-center gap-1.5 rounded-pill px-4 text-sm font-medium transition-colors data-[selected=true]:bg-foreground data-[selected=true]:text-background"
               data-selected={selected}
             >
               {option.label}
-              {option.soon && <Badge status="neutral">скоро</Badge>}
             </button>
           );
         })}
       </div>
-      <p className="text-xs text-neutral-500">
-        Тёмная тема появится в отдельном обновлении — выбрать её пока нельзя.
+      <p aria-live="polite" role="status" className="text-xs text-neutral-500">
+        Тема применяется ко всему кабинету сразу и сохраняется в настройках.
       </p>
     </div>
   );

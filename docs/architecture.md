@@ -1,19 +1,25 @@
 # Архитектура
 
+> **Концепт для конкурса** «Цифровой деканат будущего» — прототип, данные
+> вымышленные. Смежные документы: [справка студента](help.md) ·
+> [цифровой ассистент](assistant.md) · [безопасность простыми
+> словами](security.md).
+
 ## Слои
 
 ```
 Браузер (моб. 360px / десктоп 1440px)
-   │  httpOnly cookie-сессия
+   │  httpOnly cookie-сессия (__Host-session)
    ▼
 Next.js 15 (App Router, RSC)
    ├─ src/app/(auth)/login         — вход (rate limit)
-   ├─ src/app/(app)/…              — экраны кабинета (layout = Shell)
+   ├─ src/app/(cabinet)/…          — экраны кабинета (layout = Shell)
    ├─ src/server/actions/          — мутации, каждая проверяет владельца
-   ├─ src/lib/auth.ts              — сессии, роли student|staff
-   └─ src/lib/db.ts                — Prisma client (singleton)
+   ├─ src/server/auth/             — сессии, роли STUDENT|STAFF (Prisma-стора на проде)
+   ├─ src/server/data/             — порт данных; учебные данные — in-memory демо-стора (DIG-12)
+   └─ src/app/globals.css          — дизайн-токены (CSS-переменные)
    ▼
-Prisma → PostgreSQL (docker)
+Prisma + PostgreSQL (docker) — целевой путь хранилищ (схема и миграции готовы)
 ```
 
 ## Ключевые решения
@@ -22,14 +28,36 @@ Prisma → PostgreSQL (docker)
    покидают сервер (основа защиты от IDOR).
 2. **Server actions с проверкой сессии** — одна точка контроля доступа,
    повторяемая в каждом действии и покрытая тестами.
-3. **Дизайн-токены** в `src/styles/tokens.css` — источник цветов/радиусов;
-   компоненты не хардкодят значения (соответствие Figma).
+3. **Дизайн-токены** в `src/app/globals.css` (CSS-переменные) — источник
+   цветов/радиусов; компоненты не хардкодят значения (соответствие Figma,
+   контракт закреплён тестом `tests/design-tokens.test.ts`).
 4. **Shell-компонент** — шапка+меню как в макете «Shell · Кабинет»: одно
    место правды навигации; mobile-навигация (bottom tabs) в том же компоненте.
-5. **Сиды вымышленных данных** (`prisma/seed.ts`) — детерминированные ФИО/группы;
-   два студента и один сотрудник для жюри.
+5. **Сиды вымышленных данных** — `prisma/seed.ts` (PostgreSQL) и
+   `src/server/data/demo-seed.ts` (in-memory стора): детерминированные
+   ФИО/группы; два студента и один сотрудник для жюри.
 6. **AI-ассистент** (DIG-46) — карточки действий поверх данных кабинета;
    LLM-ключ только серверный, без прокидывания в браузер.
+
+## Безопасность (кратко)
+
+Полный разбор простыми словами — [`docs/security.md`](security.md). Суть:
+
+1. **IDOR невозможен по построению**: данные читаются только через
+   `src/server/data/*`, каждая функция принимает контекст сессии
+   (`DataCtx`) с владельцем; прямой импорт Prisma вне `src/server/`
+   запрещён ESLint-правилом и закреплён тестами. Чужой и несуществующий
+   объекты отвечают одинаково (404), различие уходит в журнал аудита.
+2. **Пароли** — только argon2id-хэши (`@node-rs/argon2`, параметры OWASP);
+   сессия — случайный 256-битный токен в httpOnly-cookie `__Host-session`,
+   в БД лишь его SHA-256; скользящее продление: когда остаётся меньше
+   половины TTL, сессия продлевается снова до полных 7 дней.
+3. **Вход** ограничен: 5 неудачных попыток → блокировка на 15 минут +
+   rate limit по IP (доверенный адрес — из `X-Real-IP` обратного прокси).
+4. **Ключи** — только в окружении; `.env` не в git, в браузер секреты
+   не попадают (без `NEXT_PUBLIC_`); LLM-ключ ассистента — только серверный.
+5. Мутационные API проверяют Origin (fail-closed, 403); заголовки
+   безопасности (CSP, X-Frame-Options) не ослабляются.
 
 ## Инфраструктура
 
@@ -102,7 +130,7 @@ erDiagram
     User {
         string id PK
         string login UK
-        string passwordHash "bcrypt/argon2"
+        string passwordHash "argon2id"
         Role role "STUDENT | STAFF"
         int failedLogins "брутфорс-защита"
         datetime lockedUntil ""
@@ -118,11 +146,11 @@ erDiagram
     }
     Request {
         string id PK
-        string number UK "ЗД-2026-000123"
+        string number UK "SR-2026-A1B2C (DIG-12)"
         string studentId FK
         string typeId FK
         json params ""
-        RequestStatus status "единый словарь из 8"
+        RequestStatus status "Prisma-enum: 8 значений; в UI — 5 (request-labels)"
     }
     ScheduleEvent {
         string id PK
@@ -149,13 +177,22 @@ erDiagram
 
 `20261111135255_init` содержит и то, что Prisma-схема не выражает:
 
-1. **sequence `request_number_seq`** — нумерация заявок; приложение собирает
-   `ЗД-<год>-<6 цифр>` (формат гарантирует CHECK, уникальность — UNIQUE).
-2. **CHECK-констрейнты**: формат номера заявки `^ЗД-[0-9]{4}-[0-9]{6}$` и
-   `Grade.value` в диапазоне 0..10.
+1. **sequence `request_number_seq` + CHECK `^ЗД-[0-9]{4}-[0-9]{6}$`** —
+   фрагмент канона DIG-9 (сквозная нумерация заявок). Приложение его не
+   использует: видимый номер заявки с DIG-12 строит
+   `src/server/data/request-number.ts` — неперебираемый
+   `SR-<год>-<5 случайных A-Z0-9>`, уникальность — UNIQUE-индекс. Учебные
+   данные сейчас живут в in-memory демо-сторе, поэтому заявки через эту
+   таблицу не проходят; при переводе стора на PostgreSQL фрагмент нужно
+   согласовать с SR-форматом.
+2. **CHECK-констрейнты**: `Grade.value` в диапазоне 0..10 (формат номера
+   заявки `^ЗД-…$` из пункта 1 — legacy канона DIG-9, приложением не
+   используется).
 3. **FTS для FAQ**: генерируемая колонка `FaqArticle.search`
-   (`to_tsvector('russian', …)`, title вес A, body вес B) + GIN-индекс;
-   поиск — через `$queryRaw` и `to_tsquery('russian', :query)`.
+   (`to_tsvector('russian', …)` по title, body, question, answer) +
+   GIN-индекс — подготовлено к Prisma-сторе. Сейчас поиск по FAQ работает
+   в памяти (`src/lib/faq-catalog.ts` + матчинг в
+   `src/server/data/search.ts`); SQL-FTS включится вместе с Postgres-стора.
 
 Из-за колонки `search` Prisma считает состояние БД «drift» относительно
 схемы. Поэтому новые миграции создавать только через

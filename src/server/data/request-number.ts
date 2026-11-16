@@ -30,6 +30,24 @@ export function normalizeRequestNumber(raw: string): string {
   return raw.trim().replace(/^#/, '').toUpperCase();
 }
 
+/**
+ * Декодировать номер заявки из динамического сегмента URL.
+ *
+ * App Router отдаёт сегменты уже декодированными, но повторный
+ * decodeURIComponent нужен на случай клиентской кодировки поверх — и он
+ * ОБЯЗАН быть безопасным: «сырой» процент в сегменте (например `%` после
+ * декодирования `%25`) бросает URIError, который без catch роняет роут
+ * с 500 вместо заявленного единого 404 (DIG-12). Мусор возвращается
+ * как есть — дальше его отсеет проверка формата номера.
+ */
+export function decodeRequestNumberParam(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 export function isValidRequestNumber(value: string): boolean {
   return REQUEST_NUMBER_PATTERN.test(value);
 }

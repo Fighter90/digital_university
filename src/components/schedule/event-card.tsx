@@ -6,6 +6,12 @@ import { cn } from 'cn';
 // переноса (штриховка + warning) или отмены (зачёркнутое название + error).
 // Одна и та же карточка работает на десктопе и на мобильном (критерий
 // приёмки: перенос и отмена видны одинаково) и в компактном списке недели.
+//
+// DIG-24: с пропсом href вся карточка — нативная ссылка на панель деталей
+// (?event=<id>; обычный <a>, не next/link — soft-навигация между вариантами
+// страницы расписания ненадёжна, см. ViewSwitcher). data-event-id — цель
+// возврата фокуса при закрытии панели. Без href карточка остаётся строкой
+// списка (обратная совместимость рендеров без контекста панели).
 import { LESSON_KIND_META } from '@/lib/schedule-cards';
 import type { ScheduleEventCard } from '@/lib/schedule-cards';
 import { Badge } from '@/components/ui/badge';
@@ -15,23 +21,14 @@ export interface EventCardProps {
   event: ScheduleEventCard;
   /** Компактный режим (мобильный список недели): меньше отступы, без учителя. */
   compact?: boolean;
+  /** Ссылка на панель деталей пары (?event=<id>); без пропса карточка — <li>. */
+  href?: string;
 }
 
-export function EventCard({ event, compact = false }: EventCardProps) {
+export function EventCard({ event, compact = false, href }: EventCardProps) {
   const meta = LESSON_KIND_META[event.kind];
-  return (
-    <li
-      data-testid={`day-card-${event.id}`}
-      data-status={event.status}
-      data-compact={compact ? 'true' : undefined}
-      aria-label={event.ariaLabel}
-      className={cn(
-        'relative flex gap-3 overflow-hidden rounded-card border border-border bg-card p-3.5 shadow-soft',
-        event.isMoved && 'hatch-rescheduled border-warning',
-        event.isCancelled && 'opacity-70',
-        compact && 'p-2.5',
-      )}
-    >
+  const card = (
+    <>
       {/* цветная полоса типа занятия */}
       <span
         aria-hidden="true"
@@ -87,6 +84,41 @@ export function EventCard({ event, compact = false }: EventCardProps) {
           <p className="text-xs text-neutral-500">{event.note}</p>
         ) : null}
       </div>
+    </>
+  );
+  const cardClasses = cn(
+    'relative flex gap-3 overflow-hidden rounded-card border border-border bg-card p-3.5 shadow-soft',
+    event.isMoved && 'hatch-rescheduled border-warning',
+    event.isCancelled && 'opacity-70',
+    compact && 'p-2.5',
+    href && 'transition-shadow hover:shadow-hover focus-visible:outline-accent',
+  );
+  if (href) {
+    return (
+      <li>
+        <a
+          href={href}
+          data-testid={`day-card-${event.id}`}
+          data-event-id={event.id}
+          data-status={event.status}
+          data-compact={compact ? 'true' : undefined}
+          aria-label={event.ariaLabel}
+          className={cn(cardClasses, 'block')}
+        >
+          {card}
+        </a>
+      </li>
+    );
+  }
+  return (
+    <li
+      data-testid={`day-card-${event.id}`}
+      data-status={event.status}
+      data-compact={compact ? 'true' : undefined}
+      aria-label={event.ariaLabel}
+      className={cardClasses}
+    >
+      {card}
     </li>
   );
 }

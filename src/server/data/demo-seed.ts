@@ -12,10 +12,15 @@ import { hashPassword } from '@/server/auth/password';
 import type { AuthStore } from '@/server/auth/types';
 import type { MemoryDataDb } from './memory-db';
 import { defaultSettingsFor } from './profile';
+import { formatCanonicalRequestNumber } from './canonical-request-number';
 import { newRequestNumber } from './request-number';
 import type {
   AppealMessageRow,
   AppealRow,
+  CertificateRow,
+  CanonicalRequestEventRow,
+  CanonicalRequestRow,
+  CanonicalRequestTypeRow,
   DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
@@ -27,6 +32,9 @@ import type {
   StaffRow,
   StudentRow,
   StudentSettingsRow,
+  /** DIG-34 — дедлайны заданий курса и ручные задачи студентов. */
+  StudyDeadlineRow,
+  StudentTaskRow,
 } from './types';
 
 export const DEMO_PASSWORDS = {
@@ -102,6 +110,14 @@ const settings: StudentSettingsRow[] = [
       DEADLINE: { PUSH: true, EMAIL: false, TELEGRAM: false },
     },
     theme: 'SYSTEM',
+    widgets: defaultSettingsFor('st-anna').widgets,
+    quietHours: defaultSettingsFor('st-anna').quietHours,
+    language: 'RU',
+    fontSize: 'NORMAL',
+    reduceMotion: false,
+    voiceAssistant: true,
+    mcpConnections: defaultSettingsFor('st-anna').mcpConnections,
+    mcpToken: null,
     updatedAt: new Date(),
   },
   {
@@ -111,6 +127,14 @@ const settings: StudentSettingsRow[] = [
     phoneVisibleToStaff: false,
     notificationChannels: defaultSettingsFor('st-ilya').notificationChannels,
     theme: 'SYSTEM',
+    widgets: defaultSettingsFor('st-ilya').widgets,
+    quietHours: defaultSettingsFor('st-ilya').quietHours,
+    language: 'RU',
+    fontSize: 'NORMAL',
+    reduceMotion: false,
+    voiceAssistant: true,
+    mcpConnections: defaultSettingsFor('st-ilya').mcpConnections,
+    mcpToken: null,
     updatedAt: new Date(),
   },
 ];
@@ -162,7 +186,8 @@ function buildRequests(): {
       'st-anna',
       'CERTIFICATE',
       'Справка об обучении для налоговой',
-      'COMPLETED',
+      // DIG-32: карта миграции DIG-49 — COMPLETED → ISSUED (единый словарь).
+      'ISSUED',
       -9,
       'Мария Петрова',
       'Справка готова, можно забрать в деканате (каб. 214)',
@@ -217,7 +242,8 @@ function buildRequests(): {
       actorRole: 'STAFF',
       actorName: 'Мария Петрова',
       statusFrom: 'SUBMITTED',
-      statusTo: 'COMPLETED',
+      // DIG-32: карта миграции DIG-49 — COMPLETED → ISSUED (единый словарь).
+      statusTo: 'ISSUED',
       message: 'Справка оформлена, ожидайте выдачи',
       createdAt: day(-7, 14, 30),
     },
@@ -287,6 +313,172 @@ function buildRequests(): {
 }
 
 const { requests, requestEvents } = buildRequests();
+
+// DIG-34 — дедлайны заданий по дисциплинам (система курсов; в концепте —
+// сиды). Групповые: сдаёт вся ПИ-21/ЭК-11; сроки покрывают все группы
+// задач — Просрочено / Сегодня / На этой неделе / Позже (конец дня).
+const studyDeadlines: StudyDeadlineRow[] = [
+  {
+    id: 'dl-pi21-phys-test',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-PHYS',
+    disciplineName: 'Физика',
+    title: 'Тест 1 «Кинематика»',
+    dueAt: day(-2, 23, 59),
+  },
+  {
+    id: 'dl-pi21-hist-case',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-HIST',
+    disciplineName: 'История',
+    title: 'Кейс-семинар «Реформы Александра II»',
+    dueAt: day(0, 23, 59),
+  },
+  {
+    id: 'dl-pi21-disc-project',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-DISC',
+    disciplineName: 'Дискретная математика',
+    title: 'Индивидуальный проект «Графы»',
+    dueAt: day(3, 23, 59),
+  },
+  {
+    id: 'dl-pi21-alg-essay',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-ALG',
+    disciplineName: 'Алгоритмы и структуры данных',
+    title: 'Реферат «NP-полнота»',
+    dueAt: day(21, 23, 59),
+  },
+  {
+    id: 'dl-ek11-econ-essay',
+    groupName: 'ЭК-11',
+    disciplineCode: 'EK11-ECON',
+    disciplineName: 'Экономическая теория',
+    title: 'Эссе «Рынки труда»',
+    dueAt: day(1, 23, 59),
+  },
+  {
+    id: 'dl-ek11-math-hw',
+    groupName: 'ЭК-11',
+    disciplineCode: 'EK11-MATH',
+    disciplineName: 'Математический анализ',
+    title: 'Домашняя работа «Пределы»',
+    dueAt: day(6, 23, 59),
+  },
+];
+
+// DIG-34 — ручные задачи (подписать документ, оплатить по договору):
+// выполняются вне кабинета, закрываются отметкой «выполнено» владельцем.
+const studentTasks: StudentTaskRow[] = [
+  {
+    id: 'task-anna-sign',
+    studentId: 'st-anna',
+    title: 'Подписать согласие на обработку персональных данных',
+    note: null,
+    dueAt: day(-1, 18, 0),
+    doneAt: null,
+  },
+  {
+    id: 'task-anna-pay',
+    studentId: 'st-anna',
+    title: 'Оплатить обучение по договору',
+    note: 'Договор об образовании У-2026-114',
+    dueAt: day(5, 18, 0),
+    doneAt: null,
+  },
+  {
+    id: 'task-ilya-pay',
+    studentId: 'st-ilya',
+    title: 'Оплатить оставшуюся часть по договору',
+    note: 'Договор об образовании У-2025-407',
+    dueAt: day(9, 18, 0),
+    doneAt: null,
+  },
+];
+
+// DIG-47 — демо-реестр справок. Код проверки — НЕ секрет (страница
+// проверки публична по самому замыслу), фиксированные значения нужны для
+// стабильного демо жюри и e2e: действительная справка Анны и отозванная
+// справка Ильи. Справка заявки req-anna-1 не сеется — она выдаётся
+// лениво (код генерируется криптографически) при первом открытии
+// карточки заявки или скачивании PDF.
+export const DEMO_CERTIFICATES = {
+  annaValid: {
+    code: 'QK4W-R7X2-M5DJ-V3TH-PL6N-B2QF-UXK3-ZD6A',
+  },
+  /** Отдельные действительные справки: применяются e2e отзыва (параллельные проекты 1440/360). */
+  annaRevokeDesktop: {
+    code: 'P7QM-X3TB-K6VD-H4LN-F2RS-C5QB-W2XK-Z4MT',
+  },
+  annaRevokeMobile: {
+    code: 'T5WQ-C2XV-N7KD-M3LP-R6SF-B4QG-Y2HK-V7ZT',
+  },
+  ilyaRevoked: {
+    code: 'YT3Q-C6VB-N2KH-W5LM-R7XD-P4FS-J6GQ-Z3MT',
+  },
+} as const;
+
+const certificateExpiry = (offsetDays: number): Date => {
+  const d = day(offsetDays, 12, 0);
+  d.setFullYear(d.getFullYear() + 1);
+  return d;
+};
+
+const certificates: CertificateRow[] = [
+  {
+    id: 'cert-demo-anna',
+    studentId: 'st-anna',
+    requestId: null, // справка выдана деканатом напрямую (вне заявки)
+    documentType: 'Справка об обучении',
+    purpose: 'для предъявления по месту требования',
+    number: 'СП-2026-000412',
+    verificationCode: DEMO_CERTIFICATES.annaValid.code,
+    issuedAt: day(-5, 12, 0),
+    expiresAt: certificateExpiry(-5),
+    revokedAt: null,
+    revokedReason: null,
+  },
+  {
+    id: 'cert-demo-anna-bank',
+    studentId: 'st-anna',
+    requestId: null,
+    documentType: 'Справка об обучении',
+    purpose: 'для предъявления в банк',
+    number: 'СП-2026-000431',
+    verificationCode: DEMO_CERTIFICATES.annaRevokeDesktop.code,
+    issuedAt: day(-4, 12, 0),
+    expiresAt: certificateExpiry(-4),
+    revokedAt: null,
+    revokedReason: null,
+  },
+  {
+    id: 'cert-demo-anna-military',
+    studentId: 'st-anna',
+    requestId: null,
+    documentType: 'Справка для отсрочки от армии',
+    purpose: 'для военкомата по месту учёбы',
+    number: 'СП-2026-000442',
+    verificationCode: DEMO_CERTIFICATES.annaRevokeMobile.code,
+    issuedAt: day(-3, 12, 0),
+    expiresAt: certificateExpiry(-3),
+    revokedAt: null,
+    revokedReason: null,
+  },
+  {
+    id: 'cert-demo-ilya',
+    studentId: 'st-ilya',
+    requestId: null,
+    documentType: 'Справка об обучении',
+    purpose: 'для предъявления по месту требования',
+    number: 'СП-2026-000777',
+    verificationCode: DEMO_CERTIFICATES.ilyaRevoked.code,
+    issuedAt: day(-30, 12, 0),
+    expiresAt: certificateExpiry(-30),
+    revokedAt: day(-1, 15, 0),
+    revokedReason: 'Отозвано деканатом: выдана ошибочно',
+  },
+];
 
 const grades: GradeRow[] = [
   {
@@ -518,42 +710,165 @@ function grd(studentId: string, elementCode: string, score: number, offsetDays: 
   };
 }
 
+// DIG-35 — центр уведомлений (демо-сид): каждая строка называет объект и что
+// изменилось, все четыре категории фильтров представлены (Учёба = SCHEDULE
+// и GRADE, Заявки = REQUEST, Деканат = NEWS и SYSTEM, Финансы = DEADLINE).
+// «Важно» — только срочное: перенос/отмена пары сегодня, недопуск (долг),
+// доработка заявки, дедлайн оплаты. У Анны ровно 3 непрочитанных — контракт
+// e2e каркаса («3» на колокольчике) остаётся зелёным.
 const notifications: NotificationRow[] = [
+  // ── Анна (ПИ-21, бюджет): 8 строк, 3 непрочитанных ────────────────────────
   {
     id: 'ntf-anna-1',
     studentId: 'st-anna',
-    type: 'REQUEST',
-    title: 'Справка готова',
-    body: 'Справка об обучении готова к выдаче в деканате (каб. 214).',
+    type: 'SCHEDULE',
+    title: 'Пара «Базы данных» перенесена в ауд. Б-204',
+    body: 'Сегодня практика «Базы данных» в 12:00 пройдёт в Б-204 вместо А-312 (замена от деканата).',
     isRead: false,
-    createdAt: day(-7, 14, 35),
+    createdAt: day(0, 8, 5),
+    link: '/schedule',
+    important: true,
+    actionLabel: 'Открыть расписание',
   },
   {
     id: 'ntf-anna-2',
     studentId: 'st-anna',
-    type: 'GRADE',
-    title: 'Новая оценка: Проект (Базы данных)',
-    body: 'За проект по курсу «Базы данных» поставлено 85 из 100.',
-    isRead: true,
-    createdAt: day(-4, 12, 5),
+    type: 'REQUEST',
+    title: 'Справка для военкомата готова',
+    body: 'Справка оформлена: PDF с QR-кодом доступен в карточке заявки, забрать можно в каб. 214.',
+    isRead: false,
+    createdAt: day(0, 10, 40),
+    link: '/requests',
+    actionLabel: 'Скачать',
   },
+  {
+    id: 'ntf-anna-3',
+    studentId: 'st-anna',
+    type: 'REQUEST',
+    title: 'Заявление на общежитие принято в работу',
+    body: 'Мария Петрова проверяет свободные места; о готовности сообщим отдельным уведомлением.',
+    isRead: false,
+    createdAt: day(-1, 16, 20),
+    link: '/requests',
+  },
+  {
+    id: 'ntf-anna-4',
+    studentId: 'st-anna',
+    type: 'GRADE',
+    title: 'Новая оценка: 85/100 — проект «Базы данных»',
+    body: 'Проект по курсу «Базы данных» оценён на 85 из 100 (вес 0.3 в итоговой оценке).',
+    isRead: true,
+    createdAt: day(-1, 18, 5),
+    link: '/grades',
+  },
+  {
+    id: 'ntf-anna-5',
+    studentId: 'st-anna',
+    type: 'DEADLINE',
+    title: 'Оплата за общежитие — до 25 ноября',
+    body: 'Счёт за ноябрь выставлен: 3 450 ₽. Реквизиты и квитанция — в карточке заявления на общежитие.',
+    isRead: true,
+    createdAt: day(-3, 9, 30),
+    link: '/requests',
+    important: true,
+  },
+  {
+    id: 'ntf-anna-6',
+    studentId: 'st-anna',
+    type: 'NEWS',
+    title: 'Открыта запись на консультации перед сессией',
+    body: 'Слоты с 18 декабря; запись — через «Связь с деканатом», тема обращения «Консультация».',
+    isRead: true,
+    createdAt: day(-5, 12, 0),
+    link: '/deanery',
+  },
+  {
+    id: 'ntf-anna-7',
+    studentId: 'st-anna',
+    type: 'DEADLINE',
+    title: 'Долг по коллоквиуму «Информатика» — до начала сессии',
+    body: 'Коллоквиум сдан на 3/10: до закрытия долга нет допуска к экзамену. Пересдача 21 декабря, ауд. А-401.',
+    isRead: true,
+    createdAt: day(-7, 10, 0),
+    link: '/grades',
+    important: true,
+  },
+  {
+    id: 'ntf-anna-8',
+    studentId: 'st-anna',
+    type: 'SCHEDULE',
+    title: 'Консультация по физике в пятницу отменена',
+    body: 'Соколов С. С. уехал на конференцию; тема переносится на следующую неделю, время прежнее.',
+    isRead: true,
+    createdAt: day(-2, 8, 45),
+    link: '/schedule',
+  },
+
+  // ── Илья (ЭК-11, контракт): 6 строк, 3 непрочитанных ──────────────────────
   {
     id: 'ntf-ilya-1',
     studentId: 'st-ilya',
     type: 'SCHEDULE',
-    title: 'Пара перенесена',
-    body: 'Практика по математическому анализу перенесена на 14:00.',
+    title: 'Семинар «Математический анализ» сегодня отменён',
+    body: 'Пара в 14:00 отменена — Кузнецова К. К. болеет. Догоняющее занятие согласуют с деканатом.',
     isRead: false,
-    createdAt: day(-1, 18, 0),
+    createdAt: day(0, 9, 15),
+    link: '/schedule',
+    important: true,
+    actionLabel: 'Открыть расписание',
   },
   {
     id: 'ntf-ilya-2',
     studentId: 'st-ilya',
     type: 'DEADLINE',
-    title: 'Дедлайн по практике',
-    body: 'Заявку на летнюю практику согласуют до конца недели.',
+    title: 'Оплата по договору — до 20 ноября',
+    body: 'Платёж за ноябрь по договору обучения: 48 000 ₽. Чек об оплате прикрепите к обращению в деканат.',
     isRead: false,
-    createdAt: day(-2, 9, 0),
+    createdAt: day(0, 7, 30),
+    link: '/deanery',
+    important: true,
+  },
+  {
+    id: 'ntf-ilya-3',
+    studentId: 'st-ilya',
+    type: 'REQUEST',
+    title: 'Заявка «Перезачёт статистики» — нужна доработка',
+    body: 'Приложите скан договора об обучении и программу дисциплины (часы, темы). Срок — 5 рабочих дней.',
+    isRead: false,
+    createdAt: day(-1, 11, 20),
+    link: '/requests',
+    important: true,
+    actionLabel: 'Открыть заявку',
+  },
+  {
+    id: 'ntf-ilya-4',
+    studentId: 'st-ilya',
+    type: 'GRADE',
+    title: 'Новая оценка: 81/100 — тест «Экономическая теория»',
+    body: 'Тест 1 по «Экономической теории» оценён на 81 из 100 (вес 0.4 в итоговой оценке).',
+    isRead: true,
+    createdAt: day(-1, 19, 0),
+    link: '/grades',
+  },
+  {
+    id: 'ntf-ilya-5',
+    studentId: 'st-ilya',
+    type: 'REQUEST',
+    title: 'Заявка на летнюю практику передана на кафедру',
+    body: 'Мария Петрова передала заявку на кафедру экономики; ответ ожидается до конца месяца.',
+    isRead: true,
+    createdAt: day(-5, 10, 0),
+    link: '/requests',
+  },
+  {
+    id: 'ntf-ilya-6',
+    studentId: 'st-ilya',
+    type: 'SYSTEM',
+    title: 'Кабинет обновлён: уведомления теперь по категориям',
+    body: 'Фильтры «Учёба», «Заявки», «Деканат» и «Финансы» — в разделе «Уведомления».',
+    isRead: true,
+    createdAt: day(-8, 9, 0),
+    link: '/notifications',
   },
 ];
 
@@ -564,6 +879,15 @@ const appeals: AppealRow[] = [
     subject: 'Вопрос по зачёту по физкультуре',
     status: 'OPEN',
     createdAt: day(-2, 19, 0),
+  },
+  // DIG-34 — обращение Анны с ответом сотрудника: источник задачи
+  // «Ответить на обращение» (последнее сообщение — от деканата, не закрыто).
+  {
+    id: 'apl-anna-2',
+    studentId: 'st-anna',
+    subject: 'Перенос лабораторной по программированию',
+    status: 'ANSWERED',
+    createdAt: day(-3, 9, 30),
   },
   {
     id: 'apl-ilya-1',
@@ -591,10 +915,28 @@ const appealMessages: AppealMessageRow[] = [
     body: 'Пересдача назначена на пятницу, ауд. 12.',
     createdAt: day(-8, 10, 0),
   },
+  {
+    id: 'msg-anna-2a',
+    appealId: 'apl-anna-2',
+    authorRole: 'STUDENT',
+    authorName: 'Анна Ковалёва',
+    body: 'Здравствуйте! Возможен ли перенос лабораторной со среды?',
+    createdAt: day(-3, 9, 30),
+  },
+  {
+    id: 'msg-anna-2b',
+    appealId: 'apl-anna-2',
+    authorRole: 'STAFF',
+    authorName: 'Мария Петрова',
+    body: 'Лабораторная переносится на четверг, ауд. 305. Подтвердите, пожалуйста.',
+    createdAt: day(-1, 10, 15),
+  },
 ];
 
 const schedule: ScheduleEventRow[] = [
   {
+    // DIG-24 — обычная пара с полным составом панели: корпус, email
+    // преподавателя, домашнее задание и материалы.
     id: 'sch-pi21-1',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-INFO',
@@ -604,14 +946,19 @@ const schedule: ScheduleEventRow[] = [
     endsAt: day(0, 11, 30),
     kind: 'LECTURE',
     room: '301',
+    building: 'Главный корпус',
     teacherName: 'Петров Пётр Петрович',
+    teacherEmail: 'p.petrov@example.edu',
     status: 'SCHEDULED',
     note: null,
+    homework: 'Подготовить вопросы к коллоквиуму',
+    materials: 'Конспект лекции №7, слайды в библиотеке',
   },
   // DIG-20 — насыщенный «сегодня» для главной: 4 пары, одна перенесена
   // (214 → 305), одна отменена, одна онлайн (строка-резюме героя).
   // Пары «сегодня» — sch-pi21-4/5/6, блок ниже после sch-pi21-3.
   {
+    // DIG-24 — перенос с причиной и автором изменения (жёлтый блок панели).
     id: 'sch-pi21-2',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-PROG',
@@ -621,10 +968,14 @@ const schedule: ScheduleEventRow[] = [
     endsAt: day(1, 13, 30),
     kind: 'LAB',
     room: '405',
+    building: 'Лабораторный корпус',
     teacherName: 'Иванова Ирина Игоревна',
+    teacherEmail: 'i.ivanova@example.edu',
     status: 'ROOM_CHANGED',
     note: 'Перенесено из ауд. 310',
     previousRoom: '310',
+    changeNote: 'В ауд. 310 монтируют новое оборудование',
+    changeAuthor: 'Мария Петрова (деканат)',
   },
   {
     id: 'sch-pi21-3',
@@ -637,10 +988,12 @@ const schedule: ScheduleEventRow[] = [
     kind: 'PRACTICE',
     room: '212',
     teacherName: 'Соколов Сергей Сергеевич',
+    teacherEmail: 's.sokolov@example.edu',
     status: 'SCHEDULED',
     note: null,
   },
   {
+    // DIG-24 — перенос «сегодня» с причиной и автором (жёлтый блок панели).
     id: 'sch-pi21-4',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-PROG',
@@ -650,12 +1003,20 @@ const schedule: ScheduleEventRow[] = [
     endsAt: day(0, 13, 30),
     kind: 'LAB',
     room: '305',
+    building: 'Главный корпус',
     teacherName: 'Иванова Ирина Игоревна',
+    teacherEmail: 'i.ivanova@example.edu',
     status: 'ROOM_CHANGED',
     note: 'Пара перенесена в ауд. 305',
     previousRoom: '214',
+    previousStartsAt: day(0, 12, 0),
+    changeNote: 'Аудитория 214 занята факультетским мероприятием',
+    changeAuthor: 'Мария Петрова (деканат)',
+    homework: 'Задача 7 до следующей пары',
+    materials: 'Конспект лекции №7',
   },
   {
+    // DIG-24 — отмена с причиной и «что делать» (красный блок панели).
     id: 'sch-pi21-5',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-PHYS',
@@ -665,11 +1026,16 @@ const schedule: ScheduleEventRow[] = [
     endsAt: day(0, 15, 30),
     kind: 'LAB',
     room: '212',
+    building: 'Лабораторный корпус',
     teacherName: 'Соколов Сергей Сергеевич',
+    teacherEmail: 's.sokolov@example.edu',
     status: 'CANCELLED',
     note: 'Лаборатория закрыта',
+    changeNote: 'Занятие будет восполнено 20 ноября, ауд. 212',
+    changeAuthor: 'Мария Петрова (деканат)',
   },
   {
+    // DIG-24 — онлайн-пара со ссылкой на встречу.
     id: 'sch-pi21-6',
     groupName: 'ПИ-21',
     disciplineCode: 'PI21-HIST',
@@ -680,8 +1046,10 @@ const schedule: ScheduleEventRow[] = [
     kind: 'SEMINAR',
     room: 'Онлайн',
     teacherName: 'Орлов Олег Олегович',
+    teacherEmail: 'o.orlov@example.edu',
     status: 'SCHEDULED',
     note: null,
+    onlineUrl: 'https://meet.example.edu/hist-seminar',
   },
   {
     id: 'sch-ek11-1',
@@ -871,6 +1239,295 @@ const exams: ExamSessionRow[] = [
 ];
 
 /**
+ * DIG-30 — словарь типов канонических заявок («Заявки и справки») и пара
+ * живых заявок Анны: мгновенная справка (READY, можно скачать) и бумажный
+ * дубликат диплома в очереди. Всё вымышленное.
+ */
+function buildCanonicalRequests(): {
+  types: CanonicalRequestTypeRow[];
+  requests: CanonicalRequestRow[];
+  events: CanonicalRequestEventRow[];
+} {
+  const types: CanonicalRequestTypeRow[] = [
+    {
+      id: 'crt-cert',
+      code: 'CERT_ENROLLMENT',
+      name: 'Справка об обучении',
+      etaDays: 1,
+      format: 'ELECTRONIC',
+      isInstant: true,
+      formSchema: {
+        keyField: 'purpose',
+        fields: [
+          {
+            key: 'purpose',
+            label: 'Назначение',
+            type: 'enum',
+            required: true,
+            options: ['для банка', 'для военкомата', 'по месту требования', 'для работодателя'],
+          },
+        ],
+      },
+    },
+    {
+      id: 'crt-extract',
+      code: 'GRADES_EXTRACT',
+      name: 'Выписка оценок',
+      etaDays: 1,
+      format: 'ELECTRONIC',
+      isInstant: true,
+      formSchema: null,
+    },
+    {
+      id: 'crt-diploma',
+      code: 'DIPLOMA_COPY',
+      name: 'Дубликат диплома',
+      etaDays: 5,
+      format: 'PAPER',
+      isInstant: false,
+      formSchema: {
+        keyField: 'reason',
+        fields: [{ key: 'reason', label: 'Причина', type: 'text', required: true, maxLength: 200 }],
+      },
+    },
+    {
+      id: 'crt-academic',
+      code: 'ACADEMIC_LEAVE',
+      name: 'Заявление на академический отпуск',
+      etaDays: 3,
+      format: 'HYBRID',
+      isInstant: false,
+      formSchema: {
+        keyField: 'period',
+        fields: [
+          { key: 'period', label: 'Период', type: 'text', required: true, maxLength: 60 },
+          { key: 'reason', label: 'Причина', type: 'text', required: true },
+          { key: 'from', label: 'Дата начала', type: 'date', required: true },
+        ],
+      },
+    },
+  ];
+
+  const certCreated = day(0, 9, 5); // сегодня утром — окно 24 ч активно
+  const diplomaCreated = day(-3, 11, 40);
+  const deferCreated = day(-2, 11, 20);
+  const deferFixAt = day(-1, 10, 5);
+
+  // DIG-33 — заявки Ильи: отдельный мир мутационных e2e карточки.
+  // Сквозная нумерация года (nextCanonicalRequestSeq сканирует все заявки):
+  // у Анны 1–3, у Ильи 4–6 — номера уникальны и детерминированы.
+  const ilyaCertCreated = day(-1, 9, 30);
+  const ilyaAcademicCreated = day(-5, 12, 10);
+  const ilyaAcademicFixAt = day(-2, 14, 45);
+  const ilyaPaperCreated = day(-1, 15, 20);
+
+  const requests: CanonicalRequestRow[] = [
+    {
+      id: 'creq-demo-cert',
+      number: formatCanonicalRequestNumber(certCreated.getFullYear(), 1),
+      studentId: 'st-anna',
+      typeCode: 'CERT_ENROLLMENT',
+      typeName: 'Справка об обучении',
+      title: 'Справка об обучении · для банка',
+      params: { purpose: 'для банка' },
+      status: 'READY',
+      createdAt: certCreated,
+      updatedAt: certCreated,
+    },
+    {
+      id: 'creq-demo-diploma',
+      number: formatCanonicalRequestNumber(diplomaCreated.getFullYear(), 2),
+      studentId: 'st-anna',
+      typeCode: 'DIPLOMA_COPY',
+      typeName: 'Дубликат диплома',
+      title: 'Дубликат диплома · утрата оригинала',
+      params: { reason: 'утрата оригинала' },
+      status: 'SUBMITTED',
+      createdAt: diplomaCreated,
+      updatedAt: diplomaCreated,
+    },
+    // DIG-32 — «Нужна доработка» для пилюли «Нужно действие» и закрепления
+    // наверху списка: сотрудник вернул справку с причиной из задачи.
+    {
+      id: 'creq-demo-defer',
+      number: formatCanonicalRequestNumber(deferCreated.getFullYear(), 3),
+      studentId: 'st-anna',
+      typeCode: 'CERT_ENROLLMENT',
+      typeName: 'Справка об обучении',
+      title: 'Справка об обучении · для военкомата',
+      params: {
+        purpose: 'для военкомата',
+        // DIG-33 — мета мастера заказа: карточка показывает её в
+        // «Параметрах» и во «Вложениях» (в прототипе передаются только
+        // имена и размеры файлов, сами файлы не хранятся).
+        wizard: JSON.stringify({
+          destination: 'Военкомат',
+          language: 'RU',
+          copies: 1,
+          delivery: 'PICKUP',
+          comment: '',
+          attachments: [
+            { name: 'scan-passport.png', size: 1258291 },
+            { name: 'voenny-bilet.pdf', size: 884736 },
+          ],
+        }),
+      },
+      status: 'NEEDS_FIX',
+      createdAt: deferCreated,
+      updatedAt: deferFixAt,
+    },
+    // ── DIG-33: мир Ильи (мутационные e2e карточки) ─────────────────────────
+    {
+      id: 'creq-demo-ilya-cert',
+      number: formatCanonicalRequestNumber(ilyaCertCreated.getFullYear(), 4),
+      studentId: 'st-ilya',
+      typeCode: 'CERT_ENROLLMENT',
+      typeName: 'Справка об обучении',
+      title: 'Справка об обучении · для банка',
+      params: { purpose: 'для банка' },
+      status: 'READY',
+      createdAt: ilyaCertCreated,
+      updatedAt: ilyaCertCreated,
+    },
+    {
+      id: 'creq-demo-ilya-academic',
+      number: formatCanonicalRequestNumber(ilyaAcademicCreated.getFullYear(), 5),
+      studentId: 'st-ilya',
+      typeCode: 'ACADEMIC_LEAVE',
+      typeName: 'Заявление на академический отпуск',
+      title: 'Заявление на академический отпуск · весенний семестр',
+      params: {
+        period: 'весенний семестр',
+        reason: 'по семейным обстоятельствам',
+        from: '2027-03-01',
+        wizard: JSON.stringify({
+          destination: 'Деканат ЭК',
+          language: 'RU',
+          copies: 1,
+          delivery: 'PICKUP',
+          comment: 'Нужны два подписанных экземпляра',
+          attachments: [{ name: 'scan-zayavlenie.pdf', size: 524288 }],
+        }),
+      },
+      status: 'NEEDS_FIX',
+      createdAt: ilyaAcademicCreated,
+      updatedAt: ilyaAcademicFixAt,
+    },
+    {
+      id: 'creq-demo-ilya-paper',
+      number: formatCanonicalRequestNumber(ilyaPaperCreated.getFullYear(), 6),
+      studentId: 'st-ilya',
+      typeCode: 'DIPLOMA_COPY',
+      typeName: 'Дубликат диплома',
+      title: 'Дубликат диплома · повреждение оригинала',
+      params: { reason: 'повреждение оригинала' },
+      status: 'SUBMITTED',
+      createdAt: ilyaPaperCreated,
+      updatedAt: ilyaPaperCreated,
+    },
+  ];
+
+  const events: CanonicalRequestEventRow[] = [
+    {
+      id: 'cev-demo-cert',
+      requestId: 'creq-demo-cert',
+      actorUserId: 'auth-anna',
+      actorRole: 'STUDENT',
+      actorName: 'Анна Ковалёва',
+      fromStatus: null,
+      toStatus: 'READY',
+      comment: 'Документ сформирован автоматически',
+      createdAt: certCreated,
+    },
+    {
+      id: 'cev-demo-diploma',
+      requestId: 'creq-demo-diploma',
+      actorUserId: 'auth-anna',
+      actorRole: 'STUDENT',
+      actorName: 'Анна Ковалёва',
+      fromStatus: null,
+      toStatus: 'SUBMITTED',
+      comment: null,
+      createdAt: diplomaCreated,
+    },
+    {
+      id: 'cev-demo-defer-submit',
+      requestId: 'creq-demo-defer',
+      actorUserId: 'auth-anna',
+      actorRole: 'STUDENT',
+      actorName: 'Анна Ковалёва',
+      fromStatus: null,
+      toStatus: 'SUBMITTED',
+      comment: null,
+      createdAt: deferCreated,
+    },
+    {
+      id: 'cev-demo-defer-fix',
+      requestId: 'creq-demo-defer',
+      actorUserId: 'auth-dean',
+      actorRole: 'STAFF',
+      actorName: 'Мария Петрова',
+      fromStatus: 'SUBMITTED',
+      toStatus: 'NEEDS_FIX',
+      comment: 'Укажите ФИО латиницей',
+      createdAt: deferFixAt,
+    },
+    // ── DIG-33: история заявок Ильи ─────────────────────────────────────────
+    {
+      id: 'cev-demo-ilya-cert',
+      requestId: 'creq-demo-ilya-cert',
+      actorUserId: 'auth-ilya',
+      actorRole: 'STUDENT',
+      actorName: 'Илья Смирнов',
+      fromStatus: null,
+      toStatus: 'READY',
+      comment: 'Документ сформирован автоматически',
+      createdAt: ilyaCertCreated,
+    },
+    {
+      id: 'cev-demo-ilya-academic-submit',
+      requestId: 'creq-demo-ilya-academic',
+      actorUserId: 'auth-ilya',
+      actorRole: 'STUDENT',
+      actorName: 'Илья Смирнов',
+      fromStatus: null,
+      toStatus: 'SUBMITTED',
+      comment: null,
+      createdAt: ilyaAcademicCreated,
+    },
+    {
+      id: 'cev-demo-ilya-academic-fix',
+      requestId: 'creq-demo-ilya-academic',
+      actorUserId: 'auth-dean',
+      actorRole: 'STAFF',
+      actorName: 'Мария Петрова',
+      fromStatus: 'SUBMITTED',
+      toStatus: 'NEEDS_FIX',
+      comment: 'Приложите скан подписанного заявления',
+      createdAt: ilyaAcademicFixAt,
+    },
+    {
+      id: 'cev-demo-ilya-paper-submit',
+      requestId: 'creq-demo-ilya-paper',
+      actorUserId: 'auth-ilya',
+      actorRole: 'STUDENT',
+      actorName: 'Илья Смирнов',
+      fromStatus: null,
+      toStatus: 'SUBMITTED',
+      comment: null,
+      createdAt: ilyaPaperCreated,
+    },
+  ];
+  return { types, requests, events };
+}
+
+const {
+  types: canonicalRequestTypes,
+  requests: canonicalRequests,
+  events: canonicalRequestEvents,
+} = buildCanonicalRequests();
+
+/**
  * Seeds the fictional demo dataset. Idempotent: safe to call on every boot;
  * auth users are added only if missing (authStore may already hold sessions).
  */
@@ -880,6 +1537,10 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     staff: staffRows,
     requests,
     requestEvents,
+    // DIG-30 — канонические заявки «Заявки и справки» (номера ЗД-…).
+    canonicalRequestTypes,
+    canonicalRequests,
+    canonicalRequestEvents,
     grades: [...grades, ...mateGrades],
     notifications,
     appeals,
@@ -890,9 +1551,17 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.
     disciplines: disciplineRows,
     elements: elementRows,
+<<<<<<< HEAD
     // DIG-36 — отметки «Прочитано»: Анна уже читала объявление о порядке
     // пересдач (демо обоих состояний полосы «Важно»: «Прочитано» и новое).
     newsRead: [{ studentId: 'st-anna', newsId: 'retake-order', readAt: day(-1, 18, 20) }],
+=======
+    // DIG-34 — источники экрана «Задачи»: дедлайны курсов и ручные задачи.
+    studyDeadlines,
+    studentTasks,
+    // DIG-47 — реестр справок: действительная (Анна) и отозванная (Илья).
+    certificates,
+>>>>>>> origin/main
   });
 
   // DIG-11 memory auth store: seed the demo logins (guarded — when the Prisma

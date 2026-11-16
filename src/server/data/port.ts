@@ -18,7 +18,11 @@ import type {
   AppealMessageRow,
   AppealRow,
   AuditLogRow,
-  DisciplineElementRow,
+  CalendarSubscriptionRow,
+  CertificateRow,
+  CanonicalRequestEventRow,
+  CanonicalRequestRow,
+  CanonicalRequestTypeRow,  DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
@@ -31,6 +35,9 @@ import type {
   StudentNoteRow,
   StudentRow,
   StudentSettingsRow,
+  /** DIG-34 — дедлайн задания курса и ручная задача студента. */
+  StudyDeadlineRow,
+  StudentTaskRow,
 } from './types';
 
 /** DIG-21 — полуинтервал периода расписания [from, to) в инстантах времени. */
@@ -92,10 +99,68 @@ export interface DataDb {
     },
   ): Promise<ServiceRequestRow>;
 
+  // ── DIG-30: canonical requests «Заявки и справки» (owner-scoped) ────────
+  /** Словарь типов заявок (RequestType): SLA, мгновенность, форма. */
+  listCanonicalRequestTypes(): Promise<CanonicalRequestTypeRow[]>;
+  findCanonicalRequestTypeByCode(code: string): Promise<CanonicalRequestTypeRow | null>;
+
+  /** Probe по публичному номеру/id БЕЗ владельца — только для аудита отказа. */
+  probeCanonicalRequestByNumber(number: string): Promise<CanonicalRequestRow | null>;
+  probeCanonicalRequestById(id: string): Promise<CanonicalRequestRow | null>;
+
+  findCanonicalRequestByStudentAndNumber(
+    studentId: string,
+    number: string,
+  ): Promise<CanonicalRequestRow | null>;
+  findCanonicalRequestByStudentAndId(
+    studentId: string,
+    id: string,
+  ): Promise<CanonicalRequestRow | null>;
+  listCanonicalRequestsByStudent(studentId: string): Promise<CanonicalRequestRow[]>;
+  listCanonicalRequestEvents(requestId: string): Promise<CanonicalRequestEventRow[]>;
+
+  /**
+   * Атомарное создание: строка заявки + первое событие («Подана» /
+   * «Документ сформирован»). id строки и события назначает адаптер.
+   * Нарушение UNIQUE номера — ошибка адаптера (приёмка DIG-30).
+   */
+  insertCanonicalRequest(
+    row: Omit<CanonicalRequestRow, 'id'>,
+    event: Omit<CanonicalRequestEventRow, 'id' | 'requestId'>,
+  ): Promise<CanonicalRequestRow>;
+  /**
+   * Переход статуса: патч строки + событие истории одним вызовом.
+   * null — заявки нет (событие не пишется в никуда).
+   */
+  saveCanonicalRequestStatus(
+    requestId: string,
+    patch: { status: CanonicalRequestRow['status']; updatedAt: Date },
+    event: Omit<CanonicalRequestEventRow, 'id' | 'requestId'>,
+  ): Promise<CanonicalRequestRow | null>;
+  /**
+   * Последняя заявка студента данного типа, созданная позже `createdAfter`
+   * (окно повторного заказа DIG-30 — 24 часа). Дубликат — тот же ДОКУМЕНТ:
+   * совпадает и тип, и значение ключевого поля формы (keyField/keyValue):
+   * справка «для банка» не блокирует заказ «для военкомата».
+   */
+  findLatestCanonicalRequestByStudentAndType(
+    studentId: string,
+    typeCode: string,
+    createdAfter: Date,
+    keyField?: string | null,
+    keyValue?: string | null,
+  ): Promise<CanonicalRequestRow | null>;
+  /** Следующий порядковый номер года (в PostgreSQL — request_number_seq). */
+  nextCanonicalRequestSeq(year: number): Promise<number>;
+
   // ── grades / notifications / appeals (owner-scoped) ───────────────────────
   listGradesByStudent(studentId: string): Promise<GradeRow[]>;
   listNotificationsByStudent(studentId: string): Promise<NotificationRow[]>;
   markNotificationReadByStudent(studentId: string, id: string): Promise<boolean>;
+  /** DIG-35 — число непрочитанных владельца (счётчик колокольчика). */
+  countUnreadNotificationsByStudent(studentId: string): Promise<number>;
+  /** DIG-35 — «Отметить все прочитанными»; возвращает число изменённых строк. */
+  markAllNotificationsReadByStudent(studentId: string): Promise<number>;
   listAppealsByStudent(studentId: string): Promise<AppealRow[]>;
   findAppealByStudentAndId(studentId: string, id: string): Promise<AppealRow | null>;
   listAppealMessages(appealId: string): Promise<AppealMessageRow[]>;
@@ -185,6 +250,7 @@ export interface DataDb {
   /** Снимает закрепление; идемпотентно (несуществующее — no-op). */
   removeFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
 
+<<<<<<< HEAD
   // ── DIG-36: новости — отметки «Прочитано» (owner-scoped) ─────────────────
   /** Id прочитанных студентом новостей/объявлений. */
   listNewsReadIdsByStudent(studentId: string): Promise<string[]>;
@@ -193,6 +259,89 @@ export interface DataDb {
    * Валидация id новости (whitelist каталога) — в слое данных, не здесь.
    */
   markNewsReadByStudent(studentId: string, newsId: string): Promise<void>;
+=======
+  // ── DIG-34: задачи студента (group-scoped дедлайны + owner-scoped ручные) ─
+  /** Дедлайны заданий группы из системы курсов (в концепте — сиды). */
+  listStudyDeadlinesByGroup(groupName: string): Promise<StudyDeadlineRow[]>;
+  /** Ручные задачи владельца (включая отмеченные — фильтрация на слое выше). */
+  listStudentTasksByStudent(studentId: string): Promise<StudentTaskRow[]>;
+  /** Probe ручной задачи по id БЕЗ владельца — только для аудита отказа. */
+  probeStudentTaskById(taskId: string): Promise<StudentTaskRow | null>;
+  /** Отмечает СВОЮ ручную задачу выполненной; null — задачи нет/чужая. */
+  markStudentTaskDoneByStudent(
+    studentId: string,
+    taskId: string,
+    doneAt: Date,
+  ): Promise<StudentTaskRow | null>;
+
+  // ── DIG-47: реестр справок и публичная проверка подлинности ──────────────
+  /**
+   * Публичный поиск по коду проверки — ОСОЗНАННОЕ исключение из
+   * owner-scope: страница /verify/<код> по определению работает без
+   * входа, а код несёт 160 бит энтропии. Вызов разрешён ТОЛЬКО
+   * certificates.ts, который отдаёт наружу публичное представление без
+   * studentId и полного имени; любые другие употребления запрещены.
+   */
+  findCertificateByCode(code: string): Promise<CertificateRow | null>;
+  /** Справка заявки владельца (find-or-create опирается на этот поиск). */
+  findCertificateByStudentAndRequestId(
+    studentId: string,
+    requestId: string,
+  ): Promise<CertificateRow | null>;
+  /**
+   * DIG-64 — поиск студента по SHA-256-хэшу персонального MCP-токена —
+   * ОСОЗНАННОЕ исключение из owner-scope, как findCertificateByCode выше:
+   * lookup возможен только по хэшу случайного токена с ≥128 битами
+   * энтропии, а вызывать его разрешено ТОЛЬКО resolveMcpDemoToken из
+   * src/server/data/mcp.ts, который тут же превращает результат в
+   * скоупленный DataCtx владельца. Наружу из слоя данных студенческие поля
+   * не уходят; userId берётся из записи токена (для аудита).
+   */
+  findStudentByMcpTokenHash(
+    tokenHash: string,
+  ): Promise<{ student: StudentRow; userId: string } | null>;
+  /**
+   * Выдача справки владельцу: код/номер генерирует вызывающий
+   * (certificates.ts), адаптер обязан записать строку атомарно.
+   */
+  appendCertificateForStudent(studentId: string, input: CertificateRow): Promise<CertificateRow>;
+  /**
+   * Отзыв сотрудником факультета: адаптер сам присоединяет студента и
+   * проверяет faculty; чужой/несуществующий код → null. Повторный отзыв
+   * идемпотентен (revokedAt не перезаписывается).
+   */
+  revokeCertificateByStaff(
+    faculty: string,
+    code: string,
+    input: { revokedAt: Date; reason: string | null },
+  ): Promise<CertificateRow | null>;
+
+  // ── DIG-63: живая ICS-подписка расписания и дедлайнов ────────────────────
+  /** Активная подписка владельца (строка одна на студента). */
+  findCalendarSubscriptionByStudent(studentId: string): Promise<CalendarSubscriptionRow | null>;
+  /**
+   * Поиск подписки по tokenId БЕЗ скоупа — осознанное исключение из
+   * owner-scope по образцу findCertificateByCode: публичный фид по
+   * определению читает без входа, а tokenId несёт 128 бит энтропии и
+   * HMAC-подпись (проверяется в calendar.ts до этого вызова). Наружу из
+   * слоя данных уходит только представление без studentId (см. calendar.ts);
+   * любые другие употребления запрещены.
+   */
+  findCalendarSubscriptionByTokenId(tokenId: string): Promise<CalendarSubscriptionRow | null>;
+  /** Upsert подписки владельца: один tokenId на строку (активная ссылка). */
+  saveCalendarSubscriptionForStudent(
+    studentId: string,
+    input: { tokenId: string; createdAt: Date; rotatedAt: Date | null },
+  ): Promise<CalendarSubscriptionRow>;
+  /** Отзыв владельцем (ротация в кабинете); false — подписки нет. */
+  deleteCalendarSubscriptionByStudent(studentId: string): Promise<boolean>;
+  /**
+   * Отзыв по логину владельца — контракт выхода из кабинета (login приходит
+   * из живой сессии в server action, никогда не из ввода). false — у
+   * логина нет студента или активной подписки.
+   */
+  deleteCalendarSubscriptionByLogin(login: string): Promise<boolean>;
+>>>>>>> origin/main
 
   // ── staff scope ───────────────────────────────────────────────────────────
   listStudentsByFaculty(faculty: string): Promise<StudentRow[]>;

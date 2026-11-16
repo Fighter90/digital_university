@@ -6,6 +6,8 @@ node_modules/
 # next.js (build → .next, dev → .next-dev: раздельные distDir, DIG-12)
 .next/
 .next-dev/
+# build-serialization lock (scripts/build-lock.mjs, DIG-55 round 2)
+.next-build.lock/
 out/
 build/
 next-env.d.ts
@@ -53,3 +55,7 @@ openspec/.cache/
 src/generated/
 .next-dev/
 node_modules
+
+# runtime lock каталог build-lock.mjs (DIG-55) — не мусорит рабочий старт
+
+# next.js build lock (артефакт локальной сборки, PID процесса).next-build.lock/

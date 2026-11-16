@@ -17,6 +17,20 @@ vi.mock('@/server/auth/session', () => ({
   getAuthSession: vi.fn(async () => null),
   listActiveUserSessions: vi.fn(async () => []),
 }));
+// DIG-64 — страница настроек читает заголовки запроса (URL MCP-сервера) и
+// персональный токен: в prerender-тестах оба заменяются стабами.
+vi.mock('next/headers', () => ({
+  headers: vi.fn(async () => new Headers({ host: 'localhost:3000' })),
+  cookies: vi.fn(async () => new Map()),
+}));
+// DIG-31 — мастер заказа на /requests использует useRouter (router.replace
+// при закрытии): в prerender-тестах роутер заменяется стабом.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+}));
+vi.mock('@/server/data/mcp', () => ({
+  getOwnMcpTokenView: vi.fn(async () => null),
+}));
 vi.mock('@/server/data', () => ({
   requireDataCtx: vi.fn(async () => ({
     userId: 'u_test',
@@ -24,6 +38,9 @@ vi.mock('@/server/data', () => ({
     role: 'STUDENT' as const,
     login: 'student1',
   })),
+  // DIG-46: страница ассистента читает контекст чата; для каркасного
+  // рендера достаточно null (чат показывает приветствие без имени).
+  getAssistantContext: vi.fn(async () => null),
   getOwnProfile: vi.fn(async () => ({
     id: 's_test',
     login: 'student1',
@@ -54,6 +71,32 @@ vi.mock('@/server/data', () => ({
     theme: 'SYSTEM' as const,
     updatedAt: new Date('2026-11-11T10:00:00Z'),
   })),
+  // DIG-31: страница /requests передаёт мастеру заказа словарь типов.
+  listCanonicalRequestTypes: vi.fn(async () => []),
+  // DIG-32: страница /requests читает агрегат getRequestsScreen (виды-
+  // карточки уже с каноническими статусами единого словаря).
+  getRequestsScreen: vi.fn(async () => ({
+    cards: [
+      {
+        id: 'creq-1',
+        number: 'ЗД-2026-000001',
+        title: 'Справка об обучении · для банка',
+        typeName: 'Справка об обучении',
+        iconKind: 'certificate',
+        status: 'READY',
+        createdAtISO: '2026-11-01T10:00:00.000Z',
+        createdAtLabel: '1 ноября, 13:00',
+        readyByISO: null,
+        readyByLabel: null,
+        updatedAtISO: '2026-11-01T10:00:00.000Z',
+        action: 'DOWNLOAD',
+        pipelineStep: 4,
+        nextAction: 'Документ готов к скачиванию',
+        reason: null,
+        isFix: false,
+      },
+    ],
+  })),
   listRequests: vi.fn(async () => [
     {
       // id обязателен: RequestsPage строит <li key={request.id}> — без него
@@ -68,13 +111,18 @@ vi.mock('@/server/data', () => ({
       updatedAt: new Date('2026-11-01T10:00:00Z'),
     },
   ]),
+  // DIG-35: экран «Уведомления» читает ленту владельца сессии.
+  listNotifications: vi.fn(async () => []),
   // DIG-20: главная кабинета читает агрегат getDashboard и новости деканата.
   getDashboard: vi.fn(async () => ({
     firstName: 'Анна',
     greeting: 'Добрый день',
     headingDate: 'среда, 11 ноября',
     summary: 'Сегодня 2 пары.',
-    today: { ok: true, value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null } },
+    today: {
+      ok: true,
+      value: { lessons: [], movedCount: 0, cancelledCount: 0, nearestStudyDay: null },
+    },
     deadlines: { ok: true, value: [] },
     progress: {
       ok: true,
@@ -88,10 +136,25 @@ vi.mock('@/server/data', () => ({
       },
     },
     requests: { ok: true, value: { inWork: 1, total: 1 } },
+    // DIG-34: главная содержит секцию «Что от меня ждут» (виджет задач).
+    tasks: { ok: true, value: { openCount: 0, top: [] } },
   })),
   listDeaneryNews: vi.fn(() => []),
+  // DIG-66 (ревью r2): экран «Успеваемость» читает агрегат успеваемости,
+  // сессии группы и инсайт динамики. До r2 их отсутствие в этом моке
+  // «работало» случайно: страница целиком уходила в ErrorState и
+  // layout-проверка не видела настоящий рендер экрана.
+  getPerformance: vi.fn(async () => ({
+    studentId: 's_test',
+    disciplines: [],
+    gpa: null,
+    credits: { earned: 0, required: 240 },
+    rating: null,
+    debts: [],
+  })),
+  listExams: vi.fn(async () => []),
+  getGradeInsight: vi.fn(async () => null),
 }));
-import { Readable } from 'node:stream';
 import {
   CABINET_SECTIONS,
   MORE_SECTIONS,
@@ -131,6 +194,13 @@ describe('nav config (cabinet shell)', () => {
     expect(new Set(hrefs).size).toBe(hrefs.length);
   });
 
+  it('DIG-34: раздел «Задачи» в полном меню, сразу после «Главной»', () => {
+    const tasks = CABINET_SECTIONS.find((s) => s.href === '/tasks');
+    expect(tasks?.label).toBe('Задачи');
+    // Задачник — actionable-инбокс: сразу после главной.
+    expect(CABINET_SECTIONS[1]?.href).toBe('/tasks');
+  });
+
   it('mobile tab bar is exactly: Главная, Расписание, Оценки, Заявки, Ещё', () => {
     expect(TAB_SECTIONS.map((t) => t.label)).toEqual([
       'Главная',
@@ -141,8 +211,9 @@ describe('nav config (cabinet shell)', () => {
     ]);
   });
 
-  it('«Ещё» covers Уведомления, Связь с деканатом, AI-ассистент, Профиль, Настройки', () => {
+  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, AI-ассистент, Профиль, Настройки', () => {
     expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
+      '/tasks',
       '/notifications',
       '/deanery',
       '/ai-assistant',
