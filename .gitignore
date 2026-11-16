@@ -7,7 +7,7 @@ node_modules/
 .next/
 .next-dev/
 # build-serialization lock (scripts/build-lock.mjs, DIG-55 round 2)
-.next-build.lock/
+# lock-каталог `next build` (PID живого процесса сборки, меняется на каждый прогон).next-build.lock/
 out/
 build/
 next-env.d.ts
