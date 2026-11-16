@@ -116,16 +116,16 @@ export function HelpBrowser() {
               data-testid={`help-category-${key}`}
               aria-pressed={active}
               onClick={() => setCategory(active ? null : key)}
-              className="flex min-h-20 flex-col items-start justify-between rounded-card border border-border bg-card p-3.5 text-left shadow-soft transition-colors hover:border-muted-foreground/40 aria-pressed:border-foreground aria-pressed:bg-foreground aria-pressed:text-background"
+              className="group flex min-h-20 flex-col items-start justify-between rounded-card border border-border bg-card p-3.5 text-left shadow-soft transition-colors hover:border-muted-foreground/40 aria-pressed:border-foreground aria-pressed:bg-foreground aria-pressed:text-background"
             >
               <span className="flex items-center gap-1.5 text-xs font-bold leading-snug">
                 <CircleHelp
                   aria-hidden="true"
-                  className="size-3.5 shrink-0 text-coral-600 aria-pressed:text-background"
+                  className="size-3.5 shrink-0 text-coral-600 group-aria-pressed:text-background"
                 />
                 {FAQ_CATEGORY_LABELS[key]}
               </span>
-              <span className="text-xs text-muted-foreground aria-pressed:text-background/70">
+              <span className="text-xs text-muted-foreground group-aria-pressed:text-background/70">
                 {count}
               </span>
             </button>

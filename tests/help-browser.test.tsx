@@ -89,4 +89,25 @@ describe('HelpBrowser — фильтр категории vs пустой пои
       within(screen.getByTestId('help-articles')).getAllByRole('link').length,
     ).toBeGreaterThanOrEqual(12);
   });
+
+  // Вариант `aria-pressed:` на дочернем элементе — мёртвый CSS: скомпилированный
+  // селектор `.aria-pressed\:…[aria-pressed=true]` требует атрибут на самом
+  // ребёнке, которого там нет. Активная плитка красит кнопку, но иконка
+  // оставалась коралловой, а счётчик — серым на тёмном фоне (низкий контраст).
+  // Дочерние элементы обязаны читать состояние плитки через group-aria-pressed.
+  it('активная плитка: дети реагируют через group-aria-pressed, мёртвых aria-pressed-вариантов нет', () => {
+    render(React.createElement(HelpBrowser));
+
+    const tile = screen.getByTestId('help-category-STUDY');
+    fireEvent.click(tile);
+    expect(tile).toHaveAttribute('aria-pressed', 'true');
+
+    // Плитка — группа: именно её aria-pressed читают дочерние элементы.
+    expect(tile.className).toContain('group');
+
+    const deadVariantDescendants = [...tile.querySelectorAll('*')].filter((child) =>
+      /(^|\s)aria-pressed:/.test(child.getAttribute('class') ?? ''),
+    );
+    expect(deadVariantDescendants).toEqual([]);
+  });
 });
