@@ -90,3 +90,20 @@
   lint (0 errors), typecheck, `node scripts/swarm/gates.mjs` — зелёные;
   e2e people 16 passed (+2 skipped desktop-проектом), dashboard/shell e2e
   18 passed.
+
+## Раунд 4 (pipeline роя падал на гейтах — причина экологическая)
+
+- [x] 24. Диагноз «gates failed after 3 rounds»: код ни при чём. (1) Осиротевший
+  `next build` роя продолжал писать в `.next` параллельно с гейт-сборкой —
+  гонка на `route.js.nft.json` в фазе «Collecting build traces» роняла build;
+  процесс убит, `.next` пересобран. (2) `@playwright/test` обновился при
+  переустановке зависимостей, а бинарник `chromium_headless_shell-1254` в кэше
+  отсутствовал — все e2е падали на `browserType.launch`; поставлен
+  `npx playwright install chromium`. (3) Переиспользуемый прод-сервер на :3000
+  держал манифесты старой сборки — остановлен, e2e подняли свой свежий.
+- [x] 25. Верификация раунда: `node scripts/swarm/gates.mjs` —
+  `lint=pass typecheck=pass build=pass test=pass` на чистой среде;
+  `e2e/people.spec.ts` — 16 passed + 2 skipped (при `--workers=2`: дефолтный
+  fullyParallel-прогон двух проектов ловит 30-секундный test-timeout под
+  нагрузкой — флейк среды, не сценария; изолированный прогон зелёный).
+  Код задачи не менялся, замечаний по существу нет.
