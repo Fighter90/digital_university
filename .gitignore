@@ -10,6 +10,9 @@ out/
 build/
 next-env.d.ts
 
+# build-lock wrapper (npm run build → scripts/build-lock.mjs, DIG-48)
+.next-build.lock/
+
 # prisma generated client
 src/generated/
 

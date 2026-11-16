@@ -60,6 +60,8 @@ export interface StaffAppealThread {
 }
 
 export interface StaffSummaryData {
+  /** Момент выборки данных — база для «заявок сегодня» и SLA сводки. */
+  now: Date;
   requests: ServiceRequestRow[];
   eventsByRequestId: Record<string, RequestEventRow[]>;
   appeals: AppealRow[];
@@ -453,7 +455,7 @@ export async function getStaffSummaryData(db: DataDb, ctx: DataCtx): Promise<Sta
   const faculty = staffFacultyOf(ctx);
   if (faculty === null) {
     await auditRequestDenial(db, ctx, 'staff-summary', 'ROLE_MISMATCH');
-    return { requests: [], eventsByRequestId: {}, appeals: [] };
+    return { now: new Date(), requests: [], eventsByRequestId: {}, appeals: [] };
   }
   const requests = await db.listRequestsByFaculty(faculty);
   const eventsByRequestId: Record<string, RequestEventRow[]> = {};
@@ -463,5 +465,5 @@ export async function getStaffSummaryData(db: DataDb, ctx: DataCtx): Promise<Sta
     }),
   );
   const appeals = await db.listAppealsByFaculty(faculty);
-  return { requests, eventsByRequestId, appeals };
+  return { now: new Date(), requests, eventsByRequestId, appeals };
 }

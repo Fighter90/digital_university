@@ -8,6 +8,7 @@ import { notFound } from 'next/navigation';
 import { getStaffAppealThread, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { formatRequestDate } from '@/lib/request-labels';
+import { APPEAL_STATUS_BADGES } from '@/lib/appeal-status';
 import { AppealReplyForm, AppealResolveForm } from '@/components/staff/appeal-forms';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ export default async function StaffAppealThreadPage({
   const thread = await getStaffAppealThread(dataDb, ctx, appealId);
   if (!thread) notFound();
   const { appeal, student, messages } = thread;
+  const badge = APPEAL_STATUS_BADGES[appeal.status];
 
   return (
     <div>
@@ -33,7 +35,15 @@ export default async function StaffAppealThreadPage({
         ← Ко всем обращениям
       </Link>
 
-      <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">{appeal.subject}</h1>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">{appeal.subject}</h1>
+        <span
+          data-testid="appeal-status-badge"
+          className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${badge.cls}`}
+        >
+          {badge.label}
+        </span>
+      </div>
       <p className="mb-6 text-sm text-neutral-600">
         {student.fullName} · {student.groupName} · поступило {formatRequestDate(appeal.createdAt)}
       </p>

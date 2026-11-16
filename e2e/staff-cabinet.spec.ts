@@ -20,6 +20,10 @@ async function signIn(page: Page, login: string, password: string, next?: string
   await page.getByLabel('Логин').fill(login);
   await page.getByLabel('Пароль', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  // Вход завершён, когда сессия редиректнула с /login на цель (next или
+  // /dashboard): без ожидания параллельные воркеры ловят «Входим…» вместо
+  // кабинета и ожидают контент ещё не своей страницы.
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'), { timeout: 20_000 });
 }
 
 /** Номер заявки из карточки очереди (ссылка /staff/requests/<номер>). */
@@ -89,7 +93,13 @@ test('«Взять в работу» + причина доработки → с�
   const freshNumber = await requestNumberFromRow(freshRow);
   const takeForm = freshRow.locator('[data-testid^="take-"]');
   await expect(takeForm).toBeVisible();
-  await takeForm.getByRole('button', { name: 'Взять в работу' }).click();
+  // При успехе очередь ре-рендерится и кнопка исчезает — Playwright иначе
+  // ретраит клик по пропавшему элементу до таймаута; исходное проверяет
+  // следующий ассерт статуса.
+  await takeForm
+    .getByRole('button', { name: 'Взять в работу' })
+    .click({ timeout: 10_000 })
+    .catch(() => {});
   await expect(freshRow.getByText('В работе')).toBeVisible();
 
   // Карточка: доработка без причины невозможна (required), с причиной — да.
@@ -98,15 +108,24 @@ test('«Взять в работу» + причина доработки → с�
   await expect(
     card.getByRole('heading', { name: 'Заявление на перезачёт дисциплины' }),
   ).toBeVisible();
-  await expect(card.getByText('Анна Ковалёва')).toBeVisible();
+  // Точное совпадение: на карточке имя есть и в блоке профиля, и в подписях
+  // событий таймлайна («Анна Ковалёва · студент») — ищем именно профиль.
+  await expect(card.getByText('Анна Ковалёва', { exact: true })).toBeVisible();
   await expect(card.getByText('ПИ-21')).toBeVisible();
 
-  await card.getByRole('button', { name: 'Вернуть студенту на доработку' }).click();
+  // aria-label кнопки — «Заявка возвращена на доработку»; видимый текст —
+  // «Нужна доработка» (substring доступного имени).
+  await card.getByRole('button', { name: 'Нужна доработка' }).click();
   // HTML5 required держит форму — статус не меняется, ошибки сервера нет.
   await expect(card.getByText('Требует правок')).toHaveCount(0);
 
   await card.getByLabel(/Причина/).fill('Приложите план перезачёта с подписью преподавателя');
-  await card.getByRole('button', { name: 'Вернуть студенту на доработку' }).click();
+  // Успех ре-рендерит карточку (новый статус, кнопки перестраиваются) —
+  // исчезновение кнопки после отправки не должно ронять клик.
+  await card
+    .getByRole('button', { name: 'Нужна доработка' })
+    .click({ timeout: 10_000 })
+    .catch(() => {});
   await expect(card.getByText('Статус обновлён — студент получил уведомление.')).toBeVisible();
   await expect(card.getByText('Требует правок')).toBeVisible();
 
@@ -194,7 +213,12 @@ test('объявления: предпросмотр при вводе, публ
 
 // ── Mobile 360: только чтение (мутации — в desktop, чтобы не гонять стейт) ──
 
-test('мобильный 360: студенту 403, сотруднику — кабинет с таб-баром деканата', async ({ page }) => {
+test('мобильный 360: студенту 403, сотруднику — кабинет с таб-баром деканата', async ({
+  page,
+}, testInfo) => {
+  // Таб-бар — мобильный Shell: на desktop-1440 его нет по определению
+  // (там боковое меню), сценарий мобильный — desktop-проект скипаем.
+  test.skip(testInfo.project.name === 'desktop-1440', 'сценарий мобильного 360');
   await signIn(page, ANNA.login, ANNA.password, '/dashboard');
   // Ждём завершения входа: иначе /staff открывается анонимом и редирект
   // на /login отвечает 200 (проверялся бы не экран сотрудника, а вход).
@@ -202,6 +226,9 @@ test('мобильный 360: студенту 403, сотруднику — к�
   const res = await page.goto('/staff');
   expect(res?.status()).toBe(403);
 
+  // Смена аккаунта: сбрасываем сессию Анны — иначе /login редиректит
+  // авторизованного на /dashboard и форма входа не появится.
+  await page.context().clearCookies();
   await signIn(page, STAFF.login, STAFF.password, '/staff');
   await expect(page.getByRole('heading', { level: 1, name: 'Сводка деканата' })).toBeVisible();
   // Таб-бар сотрудника (мобильный Shell по роли).

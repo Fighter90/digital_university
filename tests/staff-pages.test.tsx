@@ -192,7 +192,7 @@ function summaryDataFixture(now: Date) {
       createdAt: created(3),
     },
   ];
-  return { requests, eventsByRequestId, appeals };
+  return { now, requests, eventsByRequestId, appeals };
 }
 
 describe('страница /staff — сводка', () => {
@@ -420,6 +420,10 @@ describe('страницы обращений сотрудника', () => {
       params: Promise.resolve({ id: 'apl-anna-1' }),
     });
     expect(html).toContain('Здравствуйте! Зачли ли зачёт?');
+    // Статус обращения виден в чате: сотрудник видит текущее состояние,
+    // после ответа появляется «Отвечено» (e2e-контракт смены статуса).
+    const badge = html.match(/data-testid="appeal-status-badge"[\s\S]*?<\/span>/)![0];
+    expect(badge).toContain('Новое');
     // Шаблоны ответов: минимум три кнопки с текстом.
     const templates = html.match(/data-testid="template-[a-z-]+"/g) ?? [];
     expect(templates.length).toBeGreaterThanOrEqual(3);
@@ -427,6 +431,25 @@ describe('страницы обращений сотрудника', () => {
     expect(form).toMatch(/<textarea[^>]*name="body"[\s\S]*?required/);
     expect(form).toContain('name="appealId" value="apl-anna-1"');
     expect(html).toContain('Решено');
+  });
+
+  it('после ответа сотрудника в чате виден статус «Отвечено»', async () => {
+    state.thread = {
+      appeal: {
+        id: 'apl-anna-1',
+        studentId: 'st-anna',
+        subject: 'Вопрос',
+        status: 'ANSWERED',
+        createdAt: new Date('2026-11-12T19:00:00'),
+      },
+      student: anna,
+      messages: [],
+    };
+    const html = await renderPage(StaffAppealThreadPage, {
+      params: Promise.resolve({ id: 'apl-anna-1' }),
+    });
+    const badge = html.match(/data-testid="appeal-status-badge"[\s\S]*?<\/span>/)![0];
+    expect(badge).toContain('Отвечено');
   });
 
   it('закрытое обращение — только чтение (формы нет)', async () => {

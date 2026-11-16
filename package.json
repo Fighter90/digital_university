@@ -8,10 +8,10 @@
   },
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "node scripts/build-lock.mjs",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "node scripts/clean-next-types.mjs && next typegen && tsc --noEmit",
     "test": "vitest run && node --test tests/*.test.mjs",
     "e2e": "playwright test",
     "prepare": "husky",

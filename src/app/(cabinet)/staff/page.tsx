@@ -63,8 +63,7 @@ function MetricCard({
 
 export default async function StaffSummaryPage() {
   const ctx = await requireDataCtx('/staff');
-  const now = new Date();
-  const data = await getStaffSummaryData(dataDb, ctx);
+  const { now, ...data } = await getStaffSummaryData(dataDb, ctx);
   const summary: StaffSummary = computeStaffSummary({ ...data, now });
 
   return (

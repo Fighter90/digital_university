@@ -4,13 +4,7 @@ import Link from 'next/link';
 import { getStaffAppeals, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { formatRequestDate } from '@/lib/request-labels';
-import type { AppealStatus } from '@/server/data/types';
-
-const STATUS_LABELS: Record<AppealStatus, { label: string; cls: string }> = {
-  OPEN: { label: 'Новое', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-  ANSWERED: { label: 'Отвечено', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-  CLOSED: { label: 'Закрыто', cls: 'bg-green-50 text-green-700 border-green-200' },
-};
+import { APPEAL_STATUS_BADGES } from '@/lib/appeal-status';
 
 export default async function StaffAppealsPage() {
   const ctx = await requireDataCtx('/staff/appeals');
@@ -33,7 +27,7 @@ export default async function StaffAppealsPage() {
       ) : (
         <ul className="flex flex-col gap-2" data-testid="staff-appeals-list">
           {items.map(({ appeal, student, lastAt }) => {
-            const badge = STATUS_LABELS[appeal.status];
+            const badge = APPEAL_STATUS_BADGES[appeal.status];
             return (
               <li key={appeal.id}>
                 <Link
