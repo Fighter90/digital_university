@@ -71,7 +71,7 @@ export function Shell({
       />
 
       <div className="mx-auto flex w-full max-w-[1440px]">
-        <SideNav unreadCount={unreadCount} />
+        <SideNav unreadCount={unreadCount} tasksCount={tasksCount} />
         <main
           id="main-content"
           tabIndex={-1}

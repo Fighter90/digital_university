@@ -538,8 +538,13 @@ describe('getDashboard: секция tasks (DIG-34)', () => {
     expect(data.tasks.ok).toBe(true);
     if (!data.tasks.ok) return;
     expect(data.tasks.value.openCount).toBe(3);
-    // Топ-3 — по срочности: просроченный дедлайн, сегодняшний семинар, оплата.
-    expect(data.tasks.value.top.map((t) => t.id)).toEqual(['dl-1', 'dl-2', 'task-1']);
+    // Топ-3 — по срочности: просроченный дедлайн, сегодняшний семинар, оплата
+    // (view-id строки задачи = `<источник>-<id объекта>`).
+    expect(data.tasks.value.top.map((t) => t.id)).toEqual([
+      'course-dl-1',
+      'course-dl-2',
+      'manual-task-1',
+    ]);
   });
 
   it('сбой секции задач изолирован: остальные блоки живы', async () => {

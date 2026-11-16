@@ -32,6 +32,9 @@ import type {
   StaffRow,
   StudentRow,
   StudentSettingsRow,
+  /** DIG-34 — дедлайны заданий курса и ручные задачи студентов. */
+  StudyDeadlineRow,
+  StudentTaskRow,
 } from './types';
 
 export const DEMO_PASSWORDS = {
@@ -310,6 +313,89 @@ function buildRequests(): {
 }
 
 const { requests, requestEvents } = buildRequests();
+
+// DIG-34 — дедлайны заданий по дисциплинам (система курсов; в концепте —
+// сиды). Групповые: сдаёт вся ПИ-21/ЭК-11; сроки покрывают все группы
+// задач — Просрочено / Сегодня / На этой неделе / Позже (конец дня).
+const studyDeadlines: StudyDeadlineRow[] = [
+  {
+    id: 'dl-pi21-phys-test',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-PHYS',
+    disciplineName: 'Физика',
+    title: 'Тест 1 «Кинематика»',
+    dueAt: day(-2, 23, 59),
+  },
+  {
+    id: 'dl-pi21-hist-case',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-HIST',
+    disciplineName: 'История',
+    title: 'Кейс-семинар «Реформы Александра II»',
+    dueAt: day(0, 23, 59),
+  },
+  {
+    id: 'dl-pi21-disc-project',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-DISC',
+    disciplineName: 'Дискретная математика',
+    title: 'Индивидуальный проект «Графы»',
+    dueAt: day(3, 23, 59),
+  },
+  {
+    id: 'dl-pi21-alg-essay',
+    groupName: 'ПИ-21',
+    disciplineCode: 'PI21-ALG',
+    disciplineName: 'Алгоритмы и структуры данных',
+    title: 'Реферат «NP-полнота»',
+    dueAt: day(21, 23, 59),
+  },
+  {
+    id: 'dl-ek11-econ-essay',
+    groupName: 'ЭК-11',
+    disciplineCode: 'EK11-ECON',
+    disciplineName: 'Экономическая теория',
+    title: 'Эссе «Рынки труда»',
+    dueAt: day(1, 23, 59),
+  },
+  {
+    id: 'dl-ek11-math-hw',
+    groupName: 'ЭК-11',
+    disciplineCode: 'EK11-MATH',
+    disciplineName: 'Математический анализ',
+    title: 'Домашняя работа «Пределы»',
+    dueAt: day(6, 23, 59),
+  },
+];
+
+// DIG-34 — ручные задачи (подписать документ, оплатить по договору):
+// выполняются вне кабинета, закрываются отметкой «выполнено» владельцем.
+const studentTasks: StudentTaskRow[] = [
+  {
+    id: 'task-anna-sign',
+    studentId: 'st-anna',
+    title: 'Подписать согласие на обработку персональных данных',
+    note: null,
+    dueAt: day(-1, 18, 0),
+    doneAt: null,
+  },
+  {
+    id: 'task-anna-pay',
+    studentId: 'st-anna',
+    title: 'Оплатить обучение по договору',
+    note: 'Договор об образовании У-2026-114',
+    dueAt: day(5, 18, 0),
+    doneAt: null,
+  },
+  {
+    id: 'task-ilya-pay',
+    studentId: 'st-ilya',
+    title: 'Оплатить оставшуюся часть по договору',
+    note: 'Договор об образовании У-2025-407',
+    dueAt: day(9, 18, 0),
+    doneAt: null,
+  },
+];
 
 // DIG-47 — демо-реестр справок. Код проверки — НЕ секрет (страница
 // проверки публична по самому замыслу), фиксированные значения нужны для
@@ -794,6 +880,15 @@ const appeals: AppealRow[] = [
     status: 'OPEN',
     createdAt: day(-2, 19, 0),
   },
+  // DIG-34 — обращение Анны с ответом сотрудника: источник задачи
+  // «Ответить на обращение» (последнее сообщение — от деканата, не закрыто).
+  {
+    id: 'apl-anna-2',
+    studentId: 'st-anna',
+    subject: 'Перенос лабораторной по программированию',
+    status: 'ANSWERED',
+    createdAt: day(-3, 9, 30),
+  },
   {
     id: 'apl-ilya-1',
     studentId: 'st-ilya',
@@ -819,6 +914,22 @@ const appealMessages: AppealMessageRow[] = [
     authorName: 'Мария Петрова',
     body: 'Пересдача назначена на пятницу, ауд. 12.',
     createdAt: day(-8, 10, 0),
+  },
+  {
+    id: 'msg-anna-2a',
+    appealId: 'apl-anna-2',
+    authorRole: 'STUDENT',
+    authorName: 'Анна Ковалёва',
+    body: 'Здравствуйте! Возможен ли перенос лабораторной со среды?',
+    createdAt: day(-3, 9, 30),
+  },
+  {
+    id: 'msg-anna-2b',
+    appealId: 'apl-anna-2',
+    authorRole: 'STAFF',
+    authorName: 'Мария Петрова',
+    body: 'Лабораторная переносится на четверг, ауд. 305. Подтвердите, пожалуйста.',
+    createdAt: day(-1, 10, 15),
   },
 ];
 
@@ -1412,6 +1523,9 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.
     disciplines: disciplineRows,
     elements: elementRows,
+    // DIG-34 — источники экрана «Задачи»: дедлайны курсов и ручные задачи.
+    studyDeadlines,
+    studentTasks,
     // DIG-47 — реестр справок: действительная (Анна) и отозванная (Илья).
     certificates,
   });

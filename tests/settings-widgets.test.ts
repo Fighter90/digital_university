@@ -61,6 +61,9 @@ describe('normalizeWidgets — legacy/partial input becomes a full ordered list'
       'news',
       'today',
       'deadlines',
+      // Пропущенные дописываются в каноническом относительном порядке:
+      // DIG-34 «Что от меня ждут» стоит между «Дедлайнами» и «Успеваемостью».
+      'tasks',
       'performance',
       'requests',
       'events',
@@ -107,7 +110,7 @@ describe('setWidgetEnabled / enabledWidgetIds', () => {
     const list = normalizeWidgets([{ id: 'news', enabled: false }]);
     const next = setWidgetEnabled(list, 'news', true);
     expect(next.find((w) => w.id === 'news')?.enabled).toBe(true);
-    expect(next.filter((w) => w.enabled)).toHaveLength(6);
+    expect(next.filter((w) => w.enabled)).toHaveLength(7);
   });
 
   it('enabledWidgetIds respects the saved order', () => {
@@ -119,6 +122,7 @@ describe('setWidgetEnabled / enabledWidgetIds', () => {
     expect(enabledWidgetIds(list)).toEqual([
       'news',
       'deadlines',
+      'tasks',
       'performance',
       'requests',
       'events',
