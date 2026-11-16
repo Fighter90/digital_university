@@ -20,8 +20,8 @@ import type {
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
-  NewsReadRow,
   NotificationRow,
+  NewsReadRow,
   RequestEventRow,
   ScheduleEventRow,
   ServiceRequestRow,
@@ -46,6 +46,8 @@ export interface MemorySeed {
   canonicalRequestEvents?: CanonicalRequestEventRow[];
   grades?: GradeRow[];
   notifications?: NotificationRow[];
+  /** DIG-36 — отметки «Прочитано» новостей/объявлений. */
+  newsRead?: NewsReadRow[];
   appeals?: AppealRow[];
   appealMessages?: AppealMessageRow[];
   schedule?: ScheduleEventRow[];
@@ -59,8 +61,6 @@ export interface MemorySeed {
   elements?: DisciplineElementRow[];
   /** DIG-29 — закреплённые студентом сервисы каталога. */
   serviceFavorites?: ServiceFavoriteRow[];
-  /** DIG-36 — отметки «Прочитано» новостей/объявлений. */
-  newsRead?: NewsReadRow[];
   /** DIG-34 — дедлайны заданий группы (система курсов, в концепте — сиды). */
   studyDeadlines?: StudyDeadlineRow[];
   /** DIG-34 — ручные задачи студентов (подписать/оплатить…). */
@@ -68,7 +68,8 @@ export interface MemorySeed {
   /** DIG-47 — реестр выданных справок (проверка подлинности по коду). */
   certificates?: CertificateRow[];
   /** DIG-63 — активные ICS-подписки студентов (одна на студента). */
-  calendarSubscriptions?: CalendarSubscriptionRow[];}
+  calendarSubscriptions?: CalendarSubscriptionRow[];
+}
 
 export interface MemoryDataDb extends DataDb {
   /** Test/demo helper: replaces the whole dataset (never called in pages). */
@@ -98,11 +99,12 @@ export function createMemoryDataDb(): MemoryDataDb {
   let settings: StudentSettingsRow[] = [];
   let notes: StudentNoteRow[] = [];
   let serviceFavorites: ServiceFavoriteRow[] = [];
-  let newsRead: NewsReadRow[] = [];
   let studyDeadlines: StudyDeadlineRow[] = [];
   let studentTasks: StudentTaskRow[] = [];
   let certificates: CertificateRow[] = [];
-  let calendarSubscriptions: CalendarSubscriptionRow[] = [];  let audit: AuditLogRow[] = [];
+  let calendarSubscriptions: CalendarSubscriptionRow[] = [];
+  let newsRead: NewsReadRow[] = [];
+  let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
   let appealSeq = 0;
@@ -140,13 +142,14 @@ export function createMemoryDataDb(): MemoryDataDb {
       settings = seed.settings ? seed.settings.map(clone) : [];
       notes = seed.notes ? seed.notes.map(clone) : [];
       serviceFavorites = seed.serviceFavorites ? seed.serviceFavorites.map(clone) : [];
-      newsRead = seed.newsRead ? seed.newsRead.map(clone) : [];
       studyDeadlines = seed.studyDeadlines ? seed.studyDeadlines.map(clone) : [];
       studentTasks = seed.studentTasks ? seed.studentTasks.map(clone) : [];
       certificates = seed.certificates ? seed.certificates.map(clone) : [];
       calendarSubscriptions = seed.calendarSubscriptions
         ? seed.calendarSubscriptions.map(clone)
-        : [];      audit = [];
+        : [];
+      newsRead = seed.newsRead ? seed.newsRead.map(clone) : [];
+      audit = [];
     },
 
     auditEvents() {
@@ -523,20 +526,6 @@ export function createMemoryDataDb(): MemoryDataDb {
       );
     },
 
-    // ── DIG-36: отметки «Прочитано» новостей (owner-scoped) ───────────────
-    async listNewsReadIdsByStudent(studentId) {
-      return newsRead
-        .filter((r) => r.studentId === studentId)
-        .sort((a, b) => a.readAt.getTime() - b.readAt.getTime())
-        .map((r) => r.newsId);
-    },
-    async markNewsReadByStudent(studentId, newsId) {
-      const exists = newsRead.some((r) => r.studentId === studentId && r.newsId === newsId);
-      if (!exists) {
-        newsRead.push({ studentId, newsId, readAt: new Date() });
-      }
-    },
-
     // ── DIG-34: дедлайны курса (group-scoped) и ручные задачи (owner-scoped) ─
     async listStudyDeadlinesByGroup(groupName) {
       return studyDeadlines.filter((d) => d.groupName === groupName).map(clone);
@@ -578,6 +567,7 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
     async revokeCertificateByStaff(faculty, code, input) {
       const row = certificates.find((c) => c.verificationCode === code);
+      if (!row) return null;
       const owner = students.find((s) => s.id === row.studentId);
       if (!owner || owner.faculty !== faculty) return null;
       if (row.revokedAt) return clone(row); // идемпотентно: дата не перезаписывается
@@ -611,6 +601,20 @@ export function createMemoryDataDb(): MemoryDataDb {
       }
       return clone(row);
     },
+    // ── DIG-36: отметки «Прочитано» новостей (owner-scoped) ───────────────
+    async listNewsReadIdsByStudent(studentId) {
+      return newsRead
+        .filter((r) => r.studentId === studentId)
+        .sort((a, b) => a.readAt.getTime() - b.readAt.getTime())
+        .map((r) => r.newsId);
+    },
+    async markNewsReadByStudent(studentId, newsId) {
+      const exists = newsRead.some((r) => r.studentId === studentId && r.newsId === newsId);
+      if (!exists) {
+        newsRead.push({ studentId, newsId, readAt: new Date() });
+      }
+    },
+
     async deleteCalendarSubscriptionByStudent(studentId) {
       const before = calendarSubscriptions.length;
       calendarSubscriptions = calendarSubscriptions.filter((s) => s.studentId !== studentId);
@@ -621,7 +625,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       if (!owner) return false;
       const before = calendarSubscriptions.length;
       calendarSubscriptions = calendarSubscriptions.filter((s) => s.studentId !== owner.id);
-      return before < calendarSubscriptions.length;
+      return calendarSubscriptions.length < before;
     },
 
     async listStudentsByFaculty(faculty) {

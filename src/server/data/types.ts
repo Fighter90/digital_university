@@ -403,17 +403,6 @@ export interface ServiceFavoriteRow {
 }
 
 /**
- * DIG-36 — отметка «Прочитано» для новости/объявления: одна строка на пару
- * (студент, новость), owner-scoped по studentId. Сам контент новостей —
- * публичный вымышленный каталог (lib/news-catalog), здесь только отметки.
- */
-export interface NewsReadRow {
-  studentId: string;
-  newsId: string;
-  readAt: Date;
-}
-
-/**
  * DIG-34 — дедлайн задания по дисциплине (система курсов; в концепте — сиды).
  * Групповая сущность: сдаёт вся группа, скоуп — `groupName`.
  */
@@ -444,14 +433,17 @@ export interface StudentTaskRow {
   doneAt: Date | null;
 }
 
+
 /**
  * DIG-47 — выданная справка: строка реестра проверки подлинности.
  * Публичный ключ — verificationCode (160 бит base32): по нему публичная
  * страница /verify/<код> отвечает БЕЗ входа, поэтому наружу из слоя
  * данных уходит только минимальное представление (см. certificates.ts) —
  * studentId/полное имя/заявка через публичный контракт не проходят.
-   */
+ */
 export interface CertificateRow {
+  id: string;
+  studentId: string;
   /** Заявка-основание (справки «вне заявки» — null, сид демо). */
   requestId: string | null;
   /** Тип документа, например «Справка об обучении». */
@@ -479,6 +471,7 @@ export interface CertificateRow {
  * tokenId.
  */
 export interface CalendarSubscriptionRow {
+  studentId: string;
   tokenId: string;
   createdAt: Date;
   /** Момент последней ротации (отзыв + повторная выдача); null — не ротировалась. */
@@ -514,6 +507,16 @@ export type StoredStudentSettingsRow = Omit<
       | 'mcpToken'
     >
   >;
+
+/**
+ * DIG-36 — отметка «Прочитано» для новости/объявления: одна строка на пару
+ * (студент, новость), owner-scoped по studentId.
+ */
+export interface NewsReadRow {
+  studentId: string;
+  newsId: string;
+  readAt: Date;
+}
 
 /**
  * Why access was denied. `OWNERSHIP_DENIED` / `OUTSIDE_FACULTY` mean the row

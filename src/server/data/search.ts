@@ -33,7 +33,7 @@ import {
 import { matchService, servicesForRole } from '@/lib/services-catalog';
 import { CABINET_SECTIONS, MORE_SECTIONS } from '@/components/shell/nav-items';
 import { denyAccess } from './access';
-import { listDeaneryNews } from './news';
+import { listAllNews } from '@/lib/news-catalog';
 import { normalizeRequestNumber } from './request-number';
 import type { DataDb } from './port';
 import type { DataCtx } from './types';
@@ -187,8 +187,8 @@ export async function searchCabinet(
     });
   }
 
-  // ── Новости деканата (экран — DIG-36; фид ведёт в уведомления, DIG-20) ───
-  for (const news of listDeaneryNews()) {
+  // ── Новости деканата (DIG-36): поиск по ПОЛНОМУ фиду каталога ──────────
+  for (const news of listAllNews()) {
     if (
       !hitMatchesSearch(
         {
@@ -208,7 +208,7 @@ export async function searchCabinet(
       kind: 'news',
       title: news.title,
       subtitle: news.excerpt,
-      href: '/notifications',
+      href: `/news/${news.id}`,
     });
   }
 

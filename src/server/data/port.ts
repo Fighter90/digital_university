@@ -59,6 +59,12 @@ export interface ScheduleChangePatch {
 }
 
 export interface DataDb {
+  // ── DIG-36: новости — отметки «Прочитано» (owner-scoped) ─────────────────
+  /** Id прочитанных студентом новостей/объявлений. */
+  listNewsReadIdsByStudent(studentId: string): Promise<string[]>;
+  /** Ставит отметку «Прочитано»; идемпотентно (повтор — no-op). */
+  markNewsReadByStudent(studentId: string, newsId: string): Promise<void>;
+
   // ── directory (ctx resolution) ────────────────────────────────────────────
   findStudentByLogin(login: string): Promise<StudentRow | null>;
   findStaffByLogin(login: string): Promise<StaffRow | null>;
@@ -250,14 +256,6 @@ export interface DataDb {
   /** Снимает закрепление; идемпотентно (несуществующее — no-op). */
   removeFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
 
-  // ── DIG-36: новости — отметки «Прочитано» (owner-scoped) ─────────────────
-  /** Id прочитанных студентом новостей/объявлений. */
-  listNewsReadIdsByStudent(studentId: string): Promise<string[]>;
-  /**
-   * Ставит отметку «Прочитано»; идемпотентно (повтор — no-op).
-   * Валидация id новости (whitelist каталога) — в слое данных, не здесь.
-   */
-  markNewsReadByStudent(studentId: string, newsId: string): Promise<void>;
   // ── DIG-34: задачи студента (group-scoped дедлайны + owner-scoped ручные) ─
   /** Дедлайны заданий группы из системы курсов (в концепте — сиды). */
   listStudyDeadlinesByGroup(groupName: string): Promise<StudyDeadlineRow[]>;
@@ -279,12 +277,13 @@ export interface DataDb {
    * входа, а код несёт 160 бит энтропии. Вызов разрешён ТОЛЬКО
    * certificates.ts, который отдаёт наружу публичное представление без
    * studentId и полного имени; любые другие употребления запрещены.
+   */
   findCertificateByCode(code: string): Promise<CertificateRow | null>;
   /** Справка заявки владельца (find-or-create опирается на этот поиск). */
   findCertificateByStudentAndRequestId(
+    studentId: string,
     requestId: string,
   ): Promise<CertificateRow | null>;
-
   /**
    * DIG-64 — поиск студента по SHA-256-хэшу персонального MCP-токена —
    * ОСОЗНАННОЕ исключение из owner-scope, как findCertificateByCode выше:
@@ -293,19 +292,25 @@ export interface DataDb {
    * src/server/data/mcp.ts, который тут же превращает результат в
    * скоупленный DataCtx владельца. Наружу из слоя данных студенческие поля
    * не уходят; userId берётся из записи токена (для аудита).
+   */
   findStudentByMcpTokenHash(
     tokenHash: string,
   ): Promise<{ student: StudentRow; userId: string } | null>;
+  /**
    * Выдача справки владельцу: код/номер генерирует вызывающий
    * (certificates.ts), адаптер обязан записать строку атомарно.
+   */
   appendCertificateForStudent(studentId: string, input: CertificateRow): Promise<CertificateRow>;
+  /**
    * Отзыв сотрудником факультета: адаптер сам присоединяет студента и
    * проверяет faculty; чужой/несуществующий код → null. Повторный отзыв
    * идемпотентен (revokedAt не перезаписывается).
+   */
   revokeCertificateByStaff(
     faculty: string,
     code: string,
     input: { revokedAt: Date; reason: string | null },
+  ): Promise<CertificateRow | null>;
 
   // ── DIG-63: живая ICS-подписка расписания и дедлайнов ────────────────────
   /** Активная подписка владельца (строка одна на студента). */
@@ -317,9 +322,11 @@ export interface DataDb {
    * HMAC-подпись (проверяется в calendar.ts до этого вызова). Наружу из
    * слоя данных уходит только представление без studentId (см. calendar.ts);
    * любые другие употребления запрещены.
+   */
   findCalendarSubscriptionByTokenId(tokenId: string): Promise<CalendarSubscriptionRow | null>;
   /** Upsert подписки владельца: один tokenId на строку (активная ссылка). */
   saveCalendarSubscriptionForStudent(
+    studentId: string,
     input: { tokenId: string; createdAt: Date; rotatedAt: Date | null },
   ): Promise<CalendarSubscriptionRow>;
   /** Отзыв владельцем (ротация в кабинете); false — подписки нет. */
@@ -330,6 +337,7 @@ export interface DataDb {
    * логина нет студента или активной подписки.
    */
   deleteCalendarSubscriptionByLogin(login: string): Promise<boolean>;
+
   // ── staff scope ───────────────────────────────────────────────────────────
   listStudentsByFaculty(faculty: string): Promise<StudentRow[]>;
 
