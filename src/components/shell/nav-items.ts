@@ -33,7 +33,26 @@ export const TAB_SECTIONS: CabinetSection[] = [
 ];
 
 // Разделы, доступные через «Ещё» на мобильном. DIG-34 — «Задачи» первой:
-// экран /tasks не входит в нижний таб-бар.
+// экран /tasks не входит в нижний таб-бар.// DIG-48 — разделы кабинета СОТРУДНИКА деканата (роль STAFF): меню и таб-бар
+// строятся по роли сессии, URL /staff студенту недоступен (middleware 403).
+export const STAFF_SECTIONS: CabinetSection[] = [
+  { href: '/staff', label: 'Сводка' },
+  { href: '/staff/requests', label: 'Заявки' },
+  { href: '/staff/appeals', label: 'Обращения' },
+  { href: '/staff/announcements', label: 'Объявления' },
+];
+
+/** Меню по роли сессии: сотруднику — его разделы, студенту — кабинет. */
+export function sectionsForRole(role: 'STUDENT' | 'STAFF'): CabinetSection[] {
+  return role === 'STAFF' ? STAFF_SECTIONS : CABINET_SECTIONS;
+}
+
+/** Таб-бар по роли сессии (у сотрудника все разделы помещаются в четыре вкладки). */
+export function tabsForRole(role: 'STUDENT' | 'STAFF'): CabinetSection[] {
+  return role === 'STAFF' ? STAFF_SECTIONS : TAB_SECTIONS;
+}
+
+// Разделы, доступные через «Ещё» на мобильном.
 export const MORE_SECTIONS: CabinetSection[] = [
   { href: '/tasks', label: 'Задачи' },
   { href: '/notifications', label: 'Уведомления' },
@@ -68,13 +87,19 @@ export function resolveActiveSection(
 /**
  * Активная вкладка таб-бара. Разделы из «Ещё» (и сама /more)
  * подсвечивают вкладку «Ещё», чтобы меню и таб-бар не расходились.
+ * DIG-48: у сотрудника вкладки — его разделы (/staff*), «Ещё» нет.
  */
-export function resolveActiveTab(pathname: string): string | null {
+export function resolveActiveTab(
+  pathname: string,
+  role: 'STUDENT' | 'STAFF' = 'STUDENT',
+): string | null {
+  const tabs = tabsForRole(role);
   const direct = resolveActiveSection(
     pathname,
-    TAB_SECTIONS.filter((t) => t.href !== '/more'),
+    tabs.filter((t) => t.href !== '/more'),
   );
   if (direct) return direct;
+  if (role === 'STAFF') return null;
   if (pathname === '/more' || resolveActiveSection(pathname, MORE_SECTIONS)) {
     return '/more';
   }

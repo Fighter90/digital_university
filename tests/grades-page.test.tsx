@@ -12,7 +12,6 @@ import { prerenderToNodeStream } from 'react-dom/static';
 
 import type { PerformanceData, DisciplinePerformance } from '@/server/data/performance';
 import type { GradeInsight } from '@/lib/grade-insight';import type { DataCtx, ExamSessionRow } from '@/server/data/types';
-
 const studentCtx: DataCtx = {
   userId: 'auth-anna',
   login: 'anna.smirnova',
@@ -212,8 +211,11 @@ const examSessions: ExamSessionRow[] = [
     disciplineCode: 'PI21-DB',
     disciplineName: 'Базы данных',
     kind: 'CREDIT',
-    date: firstCreditDate,
-    startsAt: firstCreditDate,
+    // 2099: фикстура «будущей» контрольной — дата должна оставаться в
+    // будущем у любого прогона (14.11.2026 10:00 стало прошлым после
+    // 14.11.2026 10:00 и ломало пустое состояние), формат «14 ноября» сохранён.
+    date: new Date(2099, 10, 20, 10, 0),
+    startsAt: new Date(2099, 10, 20, 10, 0),
     room: '212',
     note: null,
   },
@@ -225,8 +227,8 @@ const examSessions: ExamSessionRow[] = [
     kind: 'EXAM',
     // Дальше «первой контрольной» (+30 дней против +3): подсказка пустого
     // семестра всегда называет «Базы данных».
-    date: new Date(Date.now() + 30 * 86_400_000),
-    startsAt: new Date(Date.now() + 30 * 86_400_000),
+    date: new Date(2099, 11, 24, 10, 0),
+    startsAt: new Date(2099, 11, 24, 10, 0),
     room: '305',
     note: null,
   },
@@ -427,8 +429,8 @@ async function renderWith(overrides: {
   return renderPage(GradesPage, searchProps);  return renderPage(
     GradesPage,
     overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined,
-  );}
-
+  );
+}
 describe('/grades (DIG-26) — «Успеваемость: сводка»', () => {
   it('заголовок и пилюли семестров: по умолчанию открыт семестр с оценками', async () => {
     const html = await renderWith({});

@@ -106,21 +106,21 @@ describe('middleware decision (decideAccess)', () => {
     }
   });
 
-  it('authenticated user reaches the cabinet; student is barred from /staff', () => {
+  it('authenticated user reaches the cabinet; student is barred from /staff with 403 (DIG-48)', () => {
     expect(decideAccess({ pathname: '/dashboard', search: '', ...signed('STUDENT') })).toEqual(OK);
     const blocked = decideAccess({ pathname: '/staff', search: '', ...signed('STUDENT') });
-    expect(blocked).toEqual({ kind: 'redirect', location: '/dashboard' });
+    expect(blocked).toEqual({ kind: 'forbidden' });
     expect(
       decideAccess({ pathname: '/staff/requests', search: '?x=1', ...signed('STAFF') }),
     ).toEqual(OK);
-    // Missing/invalid hint must fail closed: treated as student.
+    // Missing/invalid hint must fail closed: 403 (DIG-48, критерий приёмки).
     const noHint = decideAccess({
       pathname: '/staff',
       search: '',
       hasSessionCookie: true,
       roleHint: null,
     });
-    expect(noHint).toEqual({ kind: 'redirect', location: '/dashboard' });
+    expect(noHint).toEqual({ kind: 'forbidden' });
   });
 
   it('API mutations require a same-origin header; GET is exempt', () => {

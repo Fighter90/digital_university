@@ -357,6 +357,22 @@ export interface TicketMessageRow {
   readAt: Date | null;
 }
 
+/**
+ * DIG-48 — объявление сотрудника деканата: аудитория — факультет или
+ * группа внутри факультета (groupName null = весь факультет). Автор —
+ * Staff-профиль сессии; студентские ленты подключит DIG-36.
+ */
+export interface AnnouncementRow {
+  id: string;
+  faculty: string;
+  /** null — объявление всему факультету. */
+  groupName: string | null;
+  title: string;
+  body: string;
+  authorLogin: string;
+  authorName: string;
+  createdAt: Date;}
+
 export interface ScheduleEventRow {
   id: string;
   groupName: string;
