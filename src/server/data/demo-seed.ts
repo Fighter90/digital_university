@@ -1551,17 +1551,14 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.
     disciplines: disciplineRows,
     elements: elementRows,
-<<<<<<< HEAD
     // DIG-36 — отметки «Прочитано»: Анна уже читала объявление о порядке
     // пересдач (демо обоих состояний полосы «Важно»: «Прочитано» и новое).
     newsRead: [{ studentId: 'st-anna', newsId: 'retake-order', readAt: day(-1, 18, 20) }],
-=======
     // DIG-34 — источники экрана «Задачи»: дедлайны курсов и ручные задачи.
     studyDeadlines,
     studentTasks,
     // DIG-47 — реестр справок: действительная (Анна) и отозванная (Илья).
     certificates,
->>>>>>> origin/main
   });
 
   // DIG-11 memory auth store: seed the demo logins (guarded — when the Prisma
