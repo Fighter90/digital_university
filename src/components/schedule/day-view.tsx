@@ -23,6 +23,8 @@ export interface DayViewProps {
   nextHref: string | null;
   todayHref: string;
   nextStudy: NextStudyDayInfo | null;
+  /** DIG-24 — query-часть ссылки на детали (?view=…&date=…); без неё карточки не кликабельны. */
+  eventQuery?: string;
   /** DIG-65 — «Озвучка и голосовой ввод» (настройка студента). */
   voiceEnabled?: boolean;
 }
@@ -39,6 +41,7 @@ export function DayView({
   todayHref,
   nextStudy,
   voiceEnabled = true,
+  eventQuery,
 }: DayViewProps) {
   return (
     <div data-testid="desktop-day" className="flex flex-col gap-4">
@@ -110,7 +113,11 @@ export function DayView({
       ) : (
         <ol className="flex flex-col gap-2" aria-label={`Пары, ${title}`}>
           {events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard
+              key={event.id}
+              event={event}
+              href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
+            />
           ))}
         </ol>
       )}
