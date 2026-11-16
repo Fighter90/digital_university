@@ -100,12 +100,12 @@ vi.mock('@/server/data', () => ({
   createStaffAnnouncement: vi.fn(),
 }));
 
-import StaffSummaryPage from '@/app/(cabinet)/staff/page';
-import StaffQueuePage from '@/app/(cabinet)/staff/requests/page';
-import StaffRequestCardPage from '@/app/(cabinet)/staff/requests/[number]/page';
-import StaffAppealsPage from '@/app/(cabinet)/staff/appeals/page';
-import StaffAppealThreadPage from '@/app/(cabinet)/staff/appeals/[id]/page';
-import StaffAnnouncementsPage from '@/app/(cabinet)/staff/announcements/page';
+import StaffSummaryPage from '@/app/(cabinet)/staff/(dashboard)/page';
+import StaffQueuePage from '@/app/(cabinet)/staff/(dashboard)/requests/page';
+import StaffRequestCardPage from '@/app/(cabinet)/staff/(cards)/requests/[number]/page';
+import StaffAppealsPage from '@/app/(cabinet)/staff/(dashboard)/appeals/page';
+import StaffAppealThreadPage from '@/app/(cabinet)/staff/(cards)/appeals/[id]/page';
+import StaffAnnouncementsPage from '@/app/(cabinet)/staff/(dashboard)/announcements/page';
 
 const DAY = 24 * 60 * 60 * 1000;
 

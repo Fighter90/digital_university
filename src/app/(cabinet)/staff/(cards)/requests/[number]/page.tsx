@@ -4,8 +4,9 @@
 // «Нужна доработка» с обязательной причиной, «Сформировать PDF» (DIG-47)
 // для выполненной заявки-справки. Чужой/несуществующий номер — единый 404.
 //
-// NOTE: как и студенческая карточка — без loading.tsx выше сегмента,
-// чтобы notFound() успел выставить статус 404 (контракт e2e data-isolation).
+// NOTE: карточка живёт в route group (cards) — на пути от корня нет ни
+// одного loading.tsx, поэтому notFound() успевает выставить статус 404
+// (контракт e2e staff-cabinet и data-isolation; см. (dashboard)/loading.tsx).
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FileDown } from 'lucide-react';

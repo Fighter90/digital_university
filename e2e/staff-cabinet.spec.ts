@@ -14,6 +14,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const STAFF = { login: 'dean.kovaleva', password: 'dean-demo-2026' };
 const ANNA = { login: 'anna.smirnova', password: 'anna-demo-2026' };
+const ILYA = { login: 'ilya.petrov', password: 'ilya-demo-2026' };
 
 async function signIn(page: Page, login: string, password: string, next?: string) {
   await page.goto(next ? `/login?next=${encodeURIComponent(next)}` : '/login');
@@ -55,6 +56,49 @@ test('аноним на /staff уходит на /login (кабинет закр
   const res = await page.request.get('/staff', { maxRedirects: 0 });
   expect([302, 307, 303]).toContain(res.status());
   expect(res.headers()['location']).toContain('/login');
+});
+
+// ── Единый 404 карточек сотрудника (контракт data-isolation, раунд 2) ────────
+// Над /staff не должно быть loading.tsx: Suspense-граница стримит оболочку
+// (скелетон) с HTTP 200 раньше, чем notFound() выставит 404, — контракт
+// «чужой и несуществующий объект неразличимы, статус ровно 404» ломается.
+// Эти тесты — страховка от возврата loading.tsx над сегментами карточек.
+
+test('несуществующий номер заявки — единый 404, не 200-скелетон', async ({ page }) => {
+  await signIn(page, STAFF.login, STAFF.password, '/staff/requests');
+  const res = await page.goto('/staff/requests/SR-2026-ZZZZZ');
+  expect(res?.status()).toBe(404);
+  await expect(page.getByRole('heading', { level: 1, name: 'Страница не найдена' })).toBeVisible();
+});
+
+test('заявка чужого факультета — тот же 404 (нет оракула существования)', async ({ browser }) => {
+  // Номер заявки Ильи (факультет «ЭК») берём чёрным ящиком из его списка.
+  const ilyaContext = await browser.newContext();
+  const ilya = await ilyaContext.newPage();
+  await signIn(ilya, ILYA.login, ILYA.password, '/requests');
+  const ownCard = ilya.locator('main a[href^="/requests/SR-"]').first();
+  await expect(ownCard).toBeVisible();
+  const ilyaNumber = (await ownCard.getAttribute('href'))!.split('/').pop()!;
+  expect(ilyaNumber).toMatch(/^SR-\d{4}-[A-Z0-9]{5}$/);
+
+  const staffContext = await browser.newContext();
+  const staffPage = await staffContext.newPage();
+  await signIn(staffPage, STAFF.login, STAFF.password, '/staff/requests');
+  const res = await staffPage.goto(`/staff/requests/${ilyaNumber}`);
+  expect(res?.status()).toBe(404);
+  await expect(
+    staffPage.getByRole('heading', { level: 1, name: 'Страница не найдена' }),
+  ).toBeVisible();
+
+  await ilyaContext.close();
+  await staffContext.close();
+});
+
+test('несуществующее обращение — единый 404', async ({ page }) => {
+  await signIn(page, STAFF.login, STAFF.password, '/staff/appeals');
+  const res = await page.goto('/staff/appeals/apl-does-not-exist-zzz');
+  expect(res?.status()).toBe(404);
+  await expect(page.getByRole('heading', { level: 1, name: 'Страница не найдена' })).toBeVisible();
 });
 
 // ── Очередь и «Взять в работу» (desktop) ─────────────────────────────────────

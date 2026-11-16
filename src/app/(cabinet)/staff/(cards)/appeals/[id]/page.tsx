@@ -2,7 +2,9 @@
 // студента и деканата, шаблоны ответов, «Решено». Чужой (другой факультет)
 // и несуществующий id — единый 404. Закрытое обращение — только чтение.
 //
-// NOTE: без loading.tsx над сегментом — notFound() должен успеть выставить 404.
+// NOTE: карточка живёт в route group (cards) — на пути от корня нет ни
+// одного loading.tsx, поэтому notFound() успевает выставить статус 404
+// (см. (dashboard)/loading.tsx).
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getStaffAppealThread, requireDataCtx } from '@/server/data';
