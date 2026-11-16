@@ -59,3 +59,16 @@
       (stale lock, pid мёртв); лечение — очистка `.next` и
       одиночный прогон, гейты повторно зелёные
       (lint/typecheck/build/test = pass).
+
+## Раунд 3 (замечания ревью)
+
+- [x] Повторный флейк сборки `ENOENT .next/server/pages-manifest.json`
+      на этапе «Collecting page data»: в checkout остался stale lock
+      (holder pid=86127 мёртв), ворapper роя украл его, а осиротевший
+      `next build` от погибшей сессии ещё дописывал `.next` — две
+      сборки затёрли манифест друг друга. Код задачи не при чём
+      (compile/lint/types прошли). Проверено: дождались завершения
+      чужой сборки, очистили stale lock, одиночный прогон
+      `node scripts/swarm/gates.mjs` —
+      `lint=pass typecheck=pass build=pass test=pass`, GATES green.
+      Изменения продукта не потребовались.
