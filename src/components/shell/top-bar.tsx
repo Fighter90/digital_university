@@ -82,16 +82,9 @@ export function TopBar({
             <Sparkles className="size-4" aria-hidden="true" />
           </Link>
 
-          <Link
-            href="/notifications"
-            // DIG-54: контейнер бейджа — точка привязки e2e-проверки позиции.
-            data-testid="unread-badge"
-            className="relative grid size-8 shrink-0 place-items-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-coral-600 md:size-9"
-          >
-            <Bell className="size-4" aria-hidden="true" />
-            <UnreadBadge count={unreadCount} />
-            <span className="sr-only">Уведомления: {unreadCount} непрочитанных</span>
-          </Link>
+          {/* DIG-35: колокольчик с панелью уведомлений (SSR-данные). Якорь
+              e2e-проверки позиции бейджа (DIG-54) — data-testid на кнопке. */}
+          <NotificationsBell initialItems={recentNotifications} initialCount={unreadCount} />
 
           <UserMenu user={user} />
         </div>

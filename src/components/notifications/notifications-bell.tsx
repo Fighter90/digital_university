@@ -128,7 +128,7 @@ export function NotificationsBell({ initialItems, initialCount }: NotificationsB
   );
 
   return (
-    <div className="relative shrink-0">
+    <div className="relative shrink-0" data-testid="unread-badge">
       <button
         ref={buttonRef}
         type="button"
