@@ -28,10 +28,26 @@ const PUBLIC_EXACT_PATHS = new Set([
   // без cookies; доступ держится на HMAC-подписанном bearer-токене ссылки.
   '/api/calendar/ics',
   '/favicon.ico',
+  // DIG-16: OG-превью и файловые конвенции Next (favicon/apple-icon/manifest)
+  // — корневые маршруты для анонимных посетителей и внешних краулеров.
+  '/og.jpg',
+  '/icon.png',
+  '/apple-icon.png',
+  '/manifest.webmanifest',
 ]);
 // DIG-47: /verify/<код> — публичная проверка подлинности справок (без входа);
 // ключ — неугадываемый код проверки, перебор ограничен rate limit'ом страницы.
-const PUBLIC_PREFIXES = ['/_next/', '/assets/', '/verify/'];
+// DIG-16: бренд-ассеты (иллюстрации, иконки, OG, favicon-файл-конвенции)
+// публичны — анонимный экран входа показывает hero-иллюстрацию и favicon,
+// а OG-превью запрашивают внешние краулеры без сессии.
+const PUBLIC_PREFIXES = [
+  '/_next/',
+  '/assets/',
+  '/verify/',
+  '/illustrations/',
+  '/icons/',
+  '/brand/',
+];
 
 export function isPublicPath(pathname: string): boolean {
   return (

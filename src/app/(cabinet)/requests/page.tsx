@@ -26,7 +26,11 @@ import { dataDb } from '@/server/data/db';
 import { createRequestAction } from '@/server/actions/requests';
 import { RequestsBrowser } from '@/components/requests/requests-browser';
 import { EmptyState } from '@/components/ui/empty-state';
-import { OrderWizard, type WizardProfileDto, type WizardTypeDto } from '@/components/requests/order-wizard';
+import {
+  OrderWizard,
+  type WizardProfileDto,
+  type WizardTypeDto,
+} from '@/components/requests/order-wizard';
 import { orderTargetForService } from '@/lib/request-order-map';
 
 export const metadata = { title: 'Мои заявки — Цифровой деканат' };
@@ -107,6 +111,7 @@ export default async function RequestsPage({
           <EmptyState
             className="mt-8"
             icon={FileText}
+            illustration="no-requests"
             title="Заявок пока нет"
             description="Закажите справку или напишите заявление — заявка появится здесь вместе со сроком готовности."
             action={orderCta('requests-empty-order-cta')}

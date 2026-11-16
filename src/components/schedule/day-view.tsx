@@ -104,6 +104,7 @@ export function DayView({
         <div data-testid="day-empty">
           <EmptyState
             icon={CalendarOff}
+            illustration="no-classes"
             title="Пар в этот день нет"
             description={
               nextStudy ? `Ближайшие пары: ${nextStudy.label}` : 'В семестре пар больше нет'

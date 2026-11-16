@@ -1,0 +1,69 @@
+// DIG-16 — собственный вымышленный логотип «Цифровой деканат»: открытая
+// книга + шапочка выпускника в коралловом скруглённом квадрате. Инлайн-SVG
+// (та же геометрия, что public/brand/logo.svg — канонический файл для
+// манифеста/превью): резкий на любом масштабе, без внешних запросов.
+// Заливка — сплошной цвет, НЕ url(#id): на /login рендерятся два инстанса
+// (первый скрыт на мобильном как hidden md:flex), а браузер резолвит id
+// paint server'а к первому в DOM — градиент в display:none не рендерится и
+// на 360 px знак терял заливку (см. tests/brand-illustration.test.tsx).
+// Бренд вуза не используется (запрещён AGENTS.md).
+export function BrandLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" role="img" aria-hidden="true" focusable="false" className={className}>
+      {/* коралловый скруглённый квадрат */}
+      <rect width="64" height="64" rx="14" fill="#E7645A" />
+      {/* открытая книга */}
+      <path
+        d="M32 27.5 C27 23.8 19.5 23 13.5 24.6 L13.5 42.4 C19.5 40.8 27 41.6 32 45.3 Z"
+        fill="#FFFFFF"
+      />
+      <path
+        d="M32 27.5 C37 23.8 44.5 23 50.5 24.6 L50.5 42.4 C44.5 40.8 37 41.6 32 45.3 Z"
+        fill="#FFFFFF"
+      />
+      <path
+        d="M17.5 29 C22 28.4 26.2 29 29.6 30.8"
+        stroke="#FEBFB4"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M17.5 33.6 C22 33 26.2 33.6 29.6 35.4"
+        stroke="#FEBFB4"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M46.5 29 C42 28.4 37.8 29 34.4 30.8"
+        stroke="#FEBFB4"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M46.5 33.6 C42 33 37.8 33.6 34.4 35.4"
+        stroke="#FEBFB4"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* шапочка выпускника на книге */}
+      <path
+        d="M25.5 15.5 L25.5 20.8 C25.5 22.9 28.4 24.5 32 24.5 C35.6 24.5 38.5 22.9 38.5 20.8 L38.5 15.5 Z"
+        fill="#FFF3F0"
+      />
+      <path d="M32 8 L49 15.5 L32 23 L15 15.5 Z" fill="#FFFFFF" />
+      {/* кисточка */}
+      <path
+        d="M32 15.5 C41 15.5 45.5 16.6 45.5 20.5 L45.5 24"
+        stroke="#FBBF24"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <circle cx="45.5" cy="25.8" r="1.8" fill="#FBBF24" />
+    </svg>
+  );
+}

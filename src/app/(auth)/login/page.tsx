@@ -4,7 +4,9 @@
 // форма на весь экран. Безопасный `?next=` и редирект залогиненных — DIG-11.
 import type { CSSProperties } from 'react';
 import { redirect } from 'next/navigation';
-import { BookOpen, CheckCircle2, FileText, GraduationCap } from 'lucide-react';
+import { BookOpen, CheckCircle2, FileText } from 'lucide-react';
+import { BrandLogo } from '@/components/brand/logo';
+import { Illustration } from '@/components/ui/illustration';
 import { LoginForm } from '@/components/auth/login-form';
 import { getAuthSession } from '@/server/auth/session';
 import { ensureAppData } from '@/server/data';
@@ -48,9 +50,7 @@ export default async function LoginPage({
         <div className="pointer-events-none absolute -right-32 bottom-24 size-[28rem] rounded-full bg-coral-200/60 blur-3xl" />
 
         <div className="relative flex items-center gap-3">
-          <span className="gradient-brand flex size-10 items-center justify-center rounded-card text-white shadow-soft">
-            <GraduationCap size={22} />
-          </span>
+          <BrandLogo className="size-10 shrink-0 rounded-card shadow-soft" />
           <span className="text-lg font-extrabold tracking-heading">Цифровой деканат</span>
         </div>
 
@@ -108,15 +108,22 @@ export default async function LoginPage({
             </p>
           </div>
         </div>
+
+        {/* DIG-16: декоративная ИИ-иллюстрация hero (alt=""), сгенерирована
+            Recraft V4.1 — промпт и исходник в docs/ai-log/assets.md. */}
+        <Illustration
+          name="login-hero"
+          priority
+          sizes="(min-width: 1280px) 640px, (min-width: 768px) 45vw, 0px"
+          className="mt-6 w-full max-w-xl self-center rounded-card shadow-hover"
+        />
       </section>
 
       {/* Форма: на мобильном — весь экран, поля 48 px внутри LoginForm. */}
       <section className="flex flex-1 items-center justify-center bg-card px-4 py-10 sm:px-8 md:py-14">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-3 md:hidden">
-            <span className="gradient-brand flex size-10 items-center justify-center rounded-card text-white shadow-soft">
-              <GraduationCap size={22} aria-hidden="true" />
-            </span>
+            <BrandLogo className="size-10 shrink-0 rounded-card shadow-soft" />
             <span className="text-lg font-extrabold tracking-heading">Цифровой деканат</span>
           </div>
           {signedOut ? (

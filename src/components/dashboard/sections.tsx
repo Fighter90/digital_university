@@ -178,6 +178,7 @@ export function TodaySection({ today }: { today: DashboardSection<TodayView> }) 
         <EmptyState
           className="mt-3"
           icon={CalendarClock}
+          illustration="no-classes"
           title="Нет пар сегодня"
           description={
             nearestStudyDay
