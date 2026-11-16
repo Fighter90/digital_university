@@ -85,6 +85,21 @@ describe('/ai-assistant — студент', () => {
     expect(html).toContain('data-assistant-seed="1"');
   });
 
+  // DIG-38: «Спросить AI-ассистента» из пустого состояния /help переносит
+  // текст запроса в параметр q — ассистент сеет его как первый вопрос.
+  it('?q= из базы знаний сеет запрос как вопрос в чат', async () => {
+    state.context = contextFixture();
+    const html = await renderPage({ q: 'как получить повышенную стипендию' });
+    expect(html).toContain('data-assistant-seed="1"');
+    expect(html).toContain('как получить повышенную стипендию');
+  });
+
+  it('?q= пустой или из одних пробелов — сид не ставится', async () => {
+    state.context = contextFixture();
+    const html = await renderPage({ q: '   ' });
+    expect(html).not.toContain('data-assistant-seed="1"');
+  });
+
   it('контекст передаётся в чат сериализуемым JSON', async () => {
     state.context = contextFixture();
     const html = await renderPage();

@@ -25,6 +25,9 @@ export const metadata: Metadata = {
 /** Коды дисциплин в deep-link: латиница/цифры и дефис (PI21-INFO). */
 const DEEP_LINK_CODE = /^[A-Za-z0-9][A-Za-z0-9-]{0,63}$/;
 
+/** Перенос запроса из базы знаний (DIG-38): лимит длины текста сида. */
+const MAX_SEED_QUERY_LENGTH = 300;
+
 /** ?intent=exam-prep&discipline=… → вопрос, который чат сеет при открытии. */
 function buildSeedQuestion(
   intent: string | undefined,
@@ -32,6 +35,18 @@ function buildSeedQuestion(
 ): string | null {
   if (intent !== 'exam-prep' || !discipline || !DEEP_LINK_CODE.test(discipline)) return null;
   return `Сколько нужно на экзамене по ${discipline}, чтобы получить 8?`;
+}
+
+/**
+ * DIG-38: «Спросить AI-ассистента» из пустого состояния /help переносит
+ * текст запроса в ?q= — он становится первым вопросом чата. Deep-link
+ * ?intent=… приоритетнее. Отображается как текст (React экранирует), длина
+ * ограничена — рефлекта бесконтрольного пользовательского ввода нет.
+ */
+function seedFromQuery(q: string | undefined): string | null {
+  const trimmed = (q ?? '').trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, MAX_SEED_QUERY_LENGTH);
 }
 
 export default async function AiAssistantPage({
@@ -42,7 +57,8 @@ export default async function AiAssistantPage({
   const ctx = await requireDataCtx('/ai-assistant');
   const params = await searchParams;
   const context = await getAssistantContext(dataDb, ctx);
-  const seedQuestion = buildSeedQuestion(params.intent, params.discipline);
+  const seedQuestion =
+    buildSeedQuestion(params.intent, params.discipline) ?? seedFromQuery(params.q);
 
   return (
     // Высота = вьюпорт минус каркас (топбар, баннер концепта, отступы main):
