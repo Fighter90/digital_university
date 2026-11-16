@@ -1042,12 +1042,12 @@ function buildTickets(): {
 
   const ticketNotifications: NotificationRow[] = [
     {
-      id: 'ntf-anna-3',
+      id: 'ntf-anna-9',
       studentId: 'st-anna',
       type: 'TICKET',
       title: 'Ответ по обращению',
       body: 'Мария Петрова ответила в обращении по общежитию.',
-      isRead: false,
+      isRead: true,
       createdAt: day(-1, 16, 41),
       link: `/deanery/${ticketA.number}`,
     },

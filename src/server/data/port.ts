@@ -124,10 +124,15 @@ export interface DataDb {
     number: string,
   ): Promise<CanonicalRequestRow | null>;
   findCanonicalRequestByStudentAndId(
+    studentId: string,
     id: string,
   ): Promise<CanonicalRequestRow | null>;
   listCanonicalRequestsByStudent(studentId: string): Promise<CanonicalRequestRow[]>;
   listCanonicalRequestEvents(requestId: string): Promise<CanonicalRequestEventRow[]>;
+
+  /**
+   * Атомарное создание: строка заявки + первое событие («Подана» /
+   * «Документ сформирован»). id строки и события назначает адаптер.
 
   /**
    * Атомарное создание: строка заявки + первое событие («Подана» /
@@ -138,29 +143,44 @@ export interface DataDb {
     row: Omit<CanonicalRequestRow, 'id'>,
     event: Omit<CanonicalRequestEventRow, 'id' | 'requestId'>,
   ): Promise<CanonicalRequestRow>;
+  /**
    * Переход статуса: патч строки + событие истории одним вызовом.
    * null — заявки нет (событие не пишется в никуда).
+   */
   saveCanonicalRequestStatus(
     requestId: string,
     patch: { status: CanonicalRequestRow['status']; updatedAt: Date },
+    event: Omit<CanonicalRequestEventRow, 'id' | 'requestId'>,
+  ): Promise<CanonicalRequestRow | null>;
+  /**
    * Последняя заявка студента данного типа, созданная позже `createdAfter`
    * (окно повторного заказа DIG-30 — 24 часа). Дубликат — тот же ДОКУМЕНТ:
    * совпадает и тип, и значение ключевого поля формы (keyField/keyValue):
    * справка «для банка» не блокирует заказ «для военкомата».
+   */
   findLatestCanonicalRequestByStudentAndType(
+    studentId: string,
     typeCode: string,
     createdAfter: Date,
     keyField?: string | null,
     keyValue?: string | null,
+  ): Promise<CanonicalRequestRow | null>;
   /** Следующий порядковый номер года (в PostgreSQL — request_number_seq). */
   nextCanonicalRequestSeq(year: number): Promise<number>;
+
+  // ── grades / notifications / appeals (owner-scoped) ───────────────────────
+  listGradesByStudent(studentId: string): Promise<GradeRow[]>;
+  listNotificationsByStudent(studentId: string): Promise<NotificationRow[]>;
   // ── DIG-39: tickets — обращения с перепиской (owner-scoped) ──────────────
   /** Тикеты владельца, свежие сверху (по updatedAt). */
   listTicketsByStudent(studentId: string): Promise<TicketRow[]>;
   findTicketByStudentAndNumber(studentId: string, number: string): Promise<TicketRow | null>;
+  /**
    * Обращение + первое сообщение студента пишутся одним вызовом (атомарно,
    * как appendAppealByStudent). Номер генерирует слой данных.
+   */
   appendTicketByStudent(
+    studentId: string,
     input: {
       number: string;
       subject: TicketSubject;
@@ -172,16 +192,25 @@ export interface DataDb {
       createdAt: Date;
     },
   ): Promise<TicketRow>;
+  /**
    * Сообщение в чат обращения. Одним вызовом обновляется активность тикета
    * (updatedAt = createdAt сообщения) и, если задано, статус/исполнитель
    * (бизнес-правило выбирает deanery.ts). null — тикета нет (defensive).
+   */
   appendTicketMessage(
     ticketId: string,
+    input: {
       authorRole: TicketMessageRow['authorRole'];
+      authorName: string;
+      body: string;
+      attachments: string[];
+      createdAt: Date;
       status?: TicketStatus;
       assigneeUserId?: string | null;
+    },
   ): Promise<TicketMessageRow | null>;
   listTicketMessages(ticketId: string): Promise<TicketMessageRow[]>;
+  /**
    * Прочтение: сообщения роли authorRole этого тикета получают readAt (там,
    * где ещё null). Вызывается ТОЛЬКО после проверки владельца в deanery.ts.
    *
@@ -189,8 +218,15 @@ export interface DataDb {
    * данные при GET-рендере страницы чата (openTicketChat) — осознанный
    * компромисс до Prisma. При переезде на PostgreSQL (DIG-10/50) перенести
    * в явную мутацию (server action / POST), чтобы GET оставался без
+   * мутаций (замечание раунда 2 ревью DIG-39).
+   */
+  /**
+   * Прочтение: сообщения роли authorRole этого тикета получают readAt (там,
+   * где ещё null). Отмечает их прочитанными одним вызовом адаптера; без
    * побочных эффектов; сигнатуры порта менять не придётся.
-   */  markTicketMessagesRead(
+   */
+  markTicketMessagesRead(
+    ticketId: string,
     authorRole: TicketMessageRow['authorRole'],
     readAt: Date,
   ): Promise<boolean>;

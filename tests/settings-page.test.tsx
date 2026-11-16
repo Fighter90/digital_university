@@ -170,7 +170,7 @@ describe('/settings?tab=notifications — matrix + quiet hours', () => {
     expect(html).toContain('08:00');
     // Telegram switches stay disabled («скоро»).
     const telegramToggles = html.match(/— Telegram/g)?.length ?? 0;
-    expect(telegramToggles).toBe(5);
+    expect(telegramToggles).toBe(6); // 5 базовых + TICKET (DIG-39)
   });
 });
 

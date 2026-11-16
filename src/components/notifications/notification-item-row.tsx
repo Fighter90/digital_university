@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDays, FileText, GraduationCap, Info, Megaphone, Wallet } from 'lucide-react';
+import { MessageSquareText, CalendarDays, FileText, GraduationCap, Info, Megaphone, Wallet } from 'lucide-react';
 import type { NotificationType } from '@/server/data/types';
 import { cn } from '@/lib/utils';
 import { formatNotificationTime } from '@/lib/notification-view';
@@ -35,6 +35,12 @@ const CATEGORY: Record<
     label: 'Заявки',
   },
   NEWS: { icon: Megaphone, tint: 'bg-warning-soft text-warning-ink', label: 'Деканат' },
+  TICKET: {
+    icon: MessageSquareText,
+    tint: 'bg-sky-100 text-sky-700',
+    label: 'Обращение в деканат',
+  },
+
   SYSTEM: { icon: Info, tint: 'bg-warning-soft text-warning-ink', label: 'Системные' },
   DEADLINE: { icon: Wallet, tint: 'bg-error-soft text-error-ink', label: 'Финансы' },
 };
