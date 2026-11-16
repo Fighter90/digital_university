@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 test('rc-design: dashboard скрин', async ({ page }) => {
   await page.goto('http://localhost:3311/login');
   await page.getByLabel('Логин', { exact: true }).fill('anna.smirnova');

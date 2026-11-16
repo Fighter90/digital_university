@@ -59,13 +59,16 @@ import {
   getOwnSettings,
   getSchedule,
   requireDataCtx,
+  getEventDetails,
 } from '@/server/data';
+import { EventDetailsPanel } from '@/components/schedule/event-details-panel';
+import { toEventDetailsView } from '@/lib/event-details';
 
 export const metadata = { title: 'Расписание — Цифровой деканат' };
 
 interface SchedulePageProps {
   /** Next 15 передаёт промис; рендер без пропсов (юнит-прендер) тоже валиден. */
-  searchParams?: Promise<{ view?: string; date?: string; week?: string; month?: string }>;
+  searchParams?: Promise<{ view?: string; date?: string; week?: string; month?: string; event?: string }>;
 }
 
 type Bounds = ReturnType<typeof semesterBounds>;
@@ -75,11 +78,13 @@ async function ScheduleContent({
   date,
   week,
   month,
+  event,
 }: {
   view?: string;
   date?: string;
   week?: string;
   month?: string;
+  event?: string;
 }) {
   const ctx = await requireDataCtx('/schedule');
 
@@ -125,6 +130,7 @@ async function ScheduleContent({
     return await DayWeekContent({
       ctx,
       now,
+      event,
       bounds,
       todayKey,
       viewParam: view,
@@ -165,6 +171,8 @@ interface DayWeekProps {
   mobileView: ScheduleView;
   /** Query URL для ViewSwitcher/WeekView (см. ScheduleContent). */
   currentQuery: string;
+  /** DIG-24 — ?event=<id> пары, детали которой открываются панелью. */
+  event?: string;
   /** DIG-65 — настройка «Озвучка и голосовой ввод» владельца сессии. */
   voiceEnabled: boolean;
 }
@@ -172,6 +180,7 @@ interface DayWeekProps {
 async function DayWeekContent({
   ctx,
   now,
+  event,
   bounds,
   todayKey,
   viewParam,
@@ -196,6 +205,10 @@ async function DayWeekContent({
     parsedDate ??
     (weekPage && !weekPage.isCurrent ? weekPage.from : resolveSelectedDate(undefined, now));
   const selectedKey = moscowDateKey(selectedDate);
+
+  // DIG-24 — детали пары для панели (?event=<id>); чужая группа/сотрудник — null.
+  const details =
+    ctx.role === 'STUDENT' && event ? await getEventDetails(dataDb, ctx, event) : null;
 
   // Окно ±2 недели вокруг фокуса (+ диапазон недели вида «неделя»):
   // один запрос слоя данных на все части экрана.
@@ -309,6 +322,7 @@ async function DayWeekContent({
               todayHref="/schedule?view=day"
               nextStudy={nextStudy}
               voiceEnabled={voiceEnabled}
+              eventQuery={currentQuery}
             />
           </>
         )}
@@ -333,9 +347,17 @@ async function DayWeekContent({
             initialDateKey={selectedKey}
             nextStudy={nextStudy}
             voiceEnabled={voiceEnabled}
+            eventQuery={currentQuery}
           />
         )}
       </div>
+      {event && details ? (
+        <EventDetailsPanel
+          view={toEventDetailsView(details.event)}
+          note={details.note?.text ?? null}
+          closeHref={currentQuery ? `/schedule?${currentQuery}` : '/schedule'}
+        />
+      ) : null}
     </section>
   );
 }
@@ -426,6 +448,7 @@ export default async function SchedulePage({ searchParams }: SchedulePageProps) 
       date={params.date}
       week={params.week}
       month={params.month}
+      event={params.event}
     />
   );
 }

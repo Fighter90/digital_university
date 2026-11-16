@@ -47,6 +47,8 @@ export interface MobileScheduleProps {
   nextStudy: { dateKey: string; label: string } | null;
   /** DIG-65 — «Озвучка и голосовой ввод» (настройка студента). */
   voiceEnabled?: boolean;
+  /** DIG-24 — query-часть ссылки на детали (?view=…&date=…). */
+  eventQuery?: string;
 }
 
 const SWIPE_THRESHOLD = 48;
@@ -57,6 +59,7 @@ export function MobileSchedule({
   initialDateKey,
   nextStudy,
   voiceEnabled = true,
+  eventQuery,
 }: MobileScheduleProps) {
   const [selectedKey, setSelectedKey] = useState(initialDateKey);
   const ribbonRef = useRef<HTMLDivElement | null>(null);
@@ -113,7 +116,12 @@ export function MobileSchedule({
   if (!selected) return null;
 
   if (mode === 'week') {
-    return <WeekList days={weekDays.length > 0 ? weekDays : days.slice(0, 7)} />;
+    return (
+      <WeekList
+        days={weekDays.length > 0 ? weekDays : days.slice(0, 7)}
+        eventQuery={eventQuery}
+      />
+    );
   }
 
   return (
@@ -224,7 +232,11 @@ export function MobileSchedule({
           }}
         >
           {selected.events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard
+              key={event.id}
+              event={event}
+              href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
+            />
           ))}
         </ol>
       )}
@@ -252,7 +264,13 @@ function emptyDescription(
 }
 
 /** Компактный список недели (переключатель «Неделя» на мобильном). */
-function WeekList({ days }: { days: readonly MobileDayView[] }) {
+function WeekList({
+  days,
+  eventQuery,
+}: {
+  days: readonly MobileDayView[];
+  eventQuery?: string;
+}) {
   return (
     <div data-testid="mobile-week-list" className="flex flex-col gap-4">
       {days.map((day) => (
@@ -281,7 +299,12 @@ function WeekList({ days }: { days: readonly MobileDayView[] }) {
           ) : (
             <ol className="flex flex-col gap-1.5">
               {day.events.map((event) => (
-                <EventCard key={event.id} event={event} compact />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  compact
+                  href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
+                />
               ))}
             </ol>
           )}
