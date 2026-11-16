@@ -241,6 +241,14 @@ test.describe('DIG-39: изоляция данных и роли', () => {
     // Несуществующий номер отвечает ровно так же (нет оракула существования).
     const missing = await page.goto('/deanery/TS-2026-ZZZZZ');
     expect(missing?.status()).toBe(404);
+
+    // Некорректный percent-encoding не должен давать 500 (раунд 2 ревью
+    // DIG-39). Наблюдаемое поведение по слоям: битые последовательности
+    // («%zz», «%E0%A4%A») отсекает сам Next — 400 Bad Request до страницы;
+    // защитный try/catch в page переводит любой остаточный URIError от
+    // decodeURIComponent в тот же контрактный 404 (unit: deanery-page).
+    const malformed = await page.goto('/deanery/%E0%A4%A');
+    expect([400, 404]).toContain(malformed?.status());
   });
 
   test('сотруднику раздел недоступен: «Доступно студентам»', async ({ page }) => {

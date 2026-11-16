@@ -324,4 +324,18 @@ describe('/deanery/[number] — чат обращения', () => {
     await expect(renderChatPage('TS-2026-ZZZZZ')).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404');
     expect(state.notFoundCalled).toBe(true);
   });
+
+  it('некорректный percent-encoding в номере → notFound(), а не 500 (раунд 2 ревью)', async () => {
+    state.ctx = studentCtx;
+    state.chat = null;
+    state.notFoundCalled = false;
+
+    // decodeURIComponent на битом percent-encoding бросает URIError —
+    // страница обязана отдать тот же контрактный 404 (единый notFound),
+    // что для чужого/несуществующего номера, а не 500. Через реальный HTTP
+    // битые последовательности отсекает сам Next (400); этот юнит —
+    // защитный контракт страницы (см. e2e: status 400|404, не 500).
+    await expect(renderChatPage('%zz')).rejects.toThrow('NEXT_HTTP_ERROR_FALLBACK;404');
+    expect(state.notFoundCalled).toBe(true);
+  });
 });

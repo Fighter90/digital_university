@@ -26,7 +26,15 @@ import { TicketReplyForm } from '@/components/deanery/ticket-reply-form';
 
 export default async function TicketChatPage({ params }: { params: Promise<{ number: string }> }) {
   const { number: rawNumber } = await params;
-  const number = normalizeTicketNumber(decodeURIComponent(rawNumber));
+  let number: string;
+  try {
+    number = normalizeTicketNumber(decodeURIComponent(rawNumber));
+  } catch {
+    // Некорректный percent-encoding (URIError) — тот же контрактный 404,
+    // что для чужого и несуществующего номера, а не 500
+    // (см. requests/[number]/page.tsx про единый notFound()).
+    notFound();
+  }
   const ctx = await requireDataCtx(`/deanery/${rawNumber}`);
 
   const chat = await openTicketChat(dataDb, ctx, number);
