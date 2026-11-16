@@ -38,7 +38,10 @@ import type {
   /** DIG-34 — дедлайн задания курса и ручная задача студента. */
   StudyDeadlineRow,
   StudentTaskRow,
-} from './types';
+  TicketMessageRow,
+  TicketRow,
+  TicketStatus,
+  TicketSubject,} from './types';
 
 /** DIG-21 — полуинтервал периода расписания [from, to) в инстантах времени. */
 export interface SchedulePeriod {
@@ -75,6 +78,8 @@ export interface DataDb {
   probeNotificationById(id: string): Promise<NotificationRow | null>;
   probeAppealById(id: string): Promise<AppealRow | null>;
   probeStudentById(id: string): Promise<StudentRow | null>;
+  /** DIG-39 — probe тикета по публичному номеру БЕЗ владельца (только аудит). */
+  probeTicketByNumber(number: string): Promise<TicketRow | null>;
   /** DIG-27 — probe дисциплины по коду БЕЗ скоупа группы (только аудит отказа). */
   probeDisciplineByCode(disciplineCode: string): Promise<DisciplineRow | null>;
   /** DIG-28 — probe контрольной сессии по id БЕЗ скоупа группы (только аудит). */
@@ -119,9 +124,7 @@ export interface DataDb {
     number: string,
   ): Promise<CanonicalRequestRow | null>;
   findCanonicalRequestByStudentAndId(
-    studentId: string,
     id: string,
-  ): Promise<CanonicalRequestRow | null>;
   listCanonicalRequestsByStudent(studentId: string): Promise<CanonicalRequestRow[]>;
   listCanonicalRequestEvents(requestId: string): Promise<CanonicalRequestEventRow[]>;
 
@@ -134,31 +137,56 @@ export interface DataDb {
     row: Omit<CanonicalRequestRow, 'id'>,
     event: Omit<CanonicalRequestEventRow, 'id' | 'requestId'>,
   ): Promise<CanonicalRequestRow>;
-  /**
    * Переход статуса: патч строки + событие истории одним вызовом.
    * null — заявки нет (событие не пишется в никуда).
-   */
   saveCanonicalRequestStatus(
     requestId: string,
     patch: { status: CanonicalRequestRow['status']; updatedAt: Date },
-    event: Omit<CanonicalRequestEventRow, 'id' | 'requestId'>,
-  ): Promise<CanonicalRequestRow | null>;
-  /**
    * Последняя заявка студента данного типа, созданная позже `createdAfter`
    * (окно повторного заказа DIG-30 — 24 часа). Дубликат — тот же ДОКУМЕНТ:
    * совпадает и тип, и значение ключевого поля формы (keyField/keyValue):
    * справка «для банка» не блокирует заказ «для военкомата».
-   */
   findLatestCanonicalRequestByStudentAndType(
-    studentId: string,
     typeCode: string,
     createdAfter: Date,
     keyField?: string | null,
     keyValue?: string | null,
-  ): Promise<CanonicalRequestRow | null>;
   /** Следующий порядковый номер года (в PostgreSQL — request_number_seq). */
   nextCanonicalRequestSeq(year: number): Promise<number>;
-
+  // ── DIG-39: tickets — обращения с перепиской (owner-scoped) ──────────────
+  /** Тикеты владельца, свежие сверху (по updatedAt). */
+  listTicketsByStudent(studentId: string): Promise<TicketRow[]>;
+  findTicketByStudentAndNumber(studentId: string, number: string): Promise<TicketRow | null>;
+   * Обращение + первое сообщение студента пишутся одним вызовом (атомарно,
+   * как appendAppealByStudent). Номер генерирует слой данных.
+  appendTicketByStudent(
+    input: {
+      number: string;
+      subject: TicketSubject;
+      body: string;
+      attachments: string[];
+      authorName: string;
+      requestNumber: string | null;
+      disciplineCode: string | null;
+      createdAt: Date;
+    },
+  ): Promise<TicketRow>;
+   * Сообщение в чат обращения. Одним вызовом обновляется активность тикета
+   * (updatedAt = createdAt сообщения) и, если задано, статус/исполнитель
+   * (бизнес-правило выбирает deanery.ts). null — тикета нет (defensive).
+  appendTicketMessage(
+    ticketId: string,
+      authorRole: TicketMessageRow['authorRole'];
+      status?: TicketStatus;
+      assigneeUserId?: string | null;
+  ): Promise<TicketMessageRow | null>;
+  listTicketMessages(ticketId: string): Promise<TicketMessageRow[]>;
+   * Прочтение: сообщения роли authorRole этого тикета получают readAt (там,
+   * где ещё null). Вызывается ТОЛЬКО после проверки владельца в deanery.ts.
+  markTicketMessagesRead(
+    authorRole: TicketMessageRow['authorRole'],
+    readAt: Date,
+  ): Promise<boolean>;
   // ── grades / notifications / appeals (owner-scoped) ───────────────────────
   listGradesByStudent(studentId: string): Promise<GradeRow[]>;
   listNotificationsByStudent(studentId: string): Promise<NotificationRow[]>;

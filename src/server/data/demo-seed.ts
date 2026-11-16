@@ -14,6 +14,7 @@ import type { MemoryDataDb } from './memory-db';
 import { defaultSettingsFor } from './profile';
 import { formatCanonicalRequestNumber } from './canonical-request-number';
 import { newRequestNumber } from './request-number';
+import { newTicketNumber } from './ticket-number';
 import type {
   AppealMessageRow,
   AppealRow,
@@ -35,7 +36,8 @@ import type {
   /** DIG-34 — дедлайны заданий курса и ручные задачи студентов. */
   StudyDeadlineRow,
   StudentTaskRow,
-} from './types';
+  TicketMessageRow,
+  TicketRow,} from './types';
 
 export const DEMO_PASSWORDS = {
   'anna.smirnova': 'anna-demo-2026',
@@ -933,6 +935,129 @@ const appealMessages: AppealMessageRow[] = [
   },
 ];
 
+// DIG-39 — обращения в деканат (тикет с перепиской). У Анны два обращения:
+// «Ждём вас» — переписка с менеджером, вложение и привязка к её заявке на
+// общежитие (ответ менеджера НЕПРОЧИТАН — точка в списке + уведомление
+// TICKET со ссылкой на чат), и «Открыто» — новое обращение с привязкой к
+// дисциплине её группы. У Ильи — «Решено». Все номера вымышленные.
+function buildTickets(): {
+  tickets: TicketRow[];
+  ticketMessages: TicketMessageRow[];
+  ticketNotifications: NotificationRow[];
+} {
+  // Сид номеров тикетов независим от заявок — детерминизм сохраняется.
+  const rand = prng(20261139);
+  const dormRequest = requests.find((r) => r.id === 'req-anna-2');
+  if (!dormRequest) throw new Error('seed: ticket needs req-anna-2');
+
+  const ticketA: TicketRow = {
+    id: 'tkt-anna-1',
+    studentId: 'st-anna',
+    number: newTicketNumber(rand, day(-4, 11, 20)),
+    subject: 'OTHER',
+    status: 'ANSWERED',
+    assigneeUserId: 'auth-dean',
+    requestNumber: dormRequest.number,
+    disciplineCode: null,
+    createdAt: day(-4, 11, 20),
+    updatedAt: day(-1, 16, 40),
+  };
+  const ticketB: TicketRow = {
+    id: 'tkt-anna-2',
+    studentId: 'st-anna',
+    number: newTicketNumber(rand, day(0, 9, 5)),
+    subject: 'GRADES',
+    status: 'OPEN',
+    assigneeUserId: null,
+    requestNumber: null,
+    disciplineCode: 'PI21-DB',
+    createdAt: day(0, 9, 5),
+    updatedAt: day(0, 9, 5),
+  };
+  const ticketIlya: TicketRow = {
+    id: 'tkt-ilya-1',
+    studentId: 'st-ilya',
+    number: newTicketNumber(rand, day(-13, 12, 10)),
+    subject: 'TRANSFER',
+    status: 'RESOLVED',
+    assigneeUserId: 'auth-dean',
+    requestNumber: null,
+    disciplineCode: null,
+    createdAt: day(-13, 12, 10),
+    updatedAt: day(-12, 10, 25),
+  };
+
+  const ticketMessages: TicketMessageRow[] = [
+    {
+      id: 'tktmsg-a-1',
+      ticketId: ticketA.id,
+      authorRole: 'STUDENT',
+      authorName: 'Анна Ковалёва',
+      body: 'Здравствуйте! Подскажите, пожалуйста, когда будет решение по моему заявлению на общежитие? Прикладываю справку с места учёбы.',
+      attachments: ['справка-с-места-учёбы.pdf'],
+      createdAt: day(-4, 11, 20),
+      readAt: day(-1, 16, 35),
+    },
+    {
+      id: 'tktmsg-a-2',
+      ticketId: ticketA.id,
+      authorRole: 'STAFF',
+      authorName: 'Мария Петрова',
+      body: 'Добрый день! Заявление принято в работу, проверяем свободные места. Ответ дадим до конца недели.',
+      attachments: ['скан-заявления.pdf'],
+      createdAt: day(-1, 16, 40),
+      readAt: null, // непрочитанный ответ менеджера — точка в списке + уведомление
+    },
+    {
+      id: 'tktmsg-b-1',
+      ticketId: ticketB.id,
+      authorRole: 'STUDENT',
+      authorName: 'Анна Ковалёва',
+      body: 'Проверьте, пожалуйста, оценку за проект по «Базам данных»: в кабинете 85, а на защите объявили 90.',
+      attachments: [],
+      createdAt: day(0, 9, 5),
+      readAt: null,
+    },
+    {
+      id: 'tktmsg-i-1',
+      ticketId: ticketIlya.id,
+      authorRole: 'STUDENT',
+      authorName: 'Илья Смирнов',
+      body: 'Как перевестись с платного обучения на бюджетное место?',
+      attachments: [],
+      createdAt: day(-13, 12, 10),
+      readAt: day(-12, 10, 20),
+    },
+    {
+      id: 'tktmsg-i-2',
+      ticketId: ticketIlya.id,
+      authorRole: 'STAFF',
+      authorName: 'Мария Петрова',
+      body: 'Заявление на перевод подаётся в деканат до 5 июля. Условия — средний балл не ниже 4.0 и отсутствие долгов. Ваше заявление зарегистрировали под №214.',
+      attachments: [],
+      createdAt: day(-12, 10, 25),
+      readAt: day(-12, 14, 0),
+    },
+  ];
+
+  const ticketNotifications: NotificationRow[] = [
+    {
+      id: 'ntf-anna-3',
+      studentId: 'st-anna',
+      type: 'TICKET',
+      title: 'Ответ по обращению',
+      body: 'Мария Петрова ответила в обращении по общежитию.',
+      isRead: false,
+      createdAt: day(-1, 16, 41),
+      link: `/deanery/${ticketA.number}`,
+    },
+  ];
+
+  return { tickets: [ticketA, ticketB, ticketIlya], ticketMessages, ticketNotifications };
+}
+
+const { tickets, ticketMessages, ticketNotifications } = buildTickets();
+
 const schedule: ScheduleEventRow[] = [
   {
     // DIG-24 — обычная пара с полным составом панели: корпус, email
@@ -1542,9 +1667,11 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     canonicalRequests,
     canonicalRequestEvents,
     grades: [...grades, ...mateGrades],
-    notifications,
+    notifications: [...notifications, ...ticketNotifications],
     appeals,
     appealMessages,
+    tickets,
+    ticketMessages,
     schedule,
     exams,
     settings,

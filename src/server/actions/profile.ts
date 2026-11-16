@@ -83,6 +83,7 @@ const CHANNEL_TYPES: NotificationType[] = [
   'REQUEST',
   'GRADE',
   'NEWS',
+  'TICKET',
   'SYSTEM',
 ];
 const CHANNELS: NotificationChannel[] = ['PUSH', 'EMAIL', 'TELEGRAM'];

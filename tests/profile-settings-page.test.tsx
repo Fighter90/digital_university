@@ -43,6 +43,7 @@ const annaSettings = {
     REQUEST: { PUSH: true, EMAIL: true, TELEGRAM: false },
     NEWS: { PUSH: true, EMAIL: true, TELEGRAM: false },
     DEADLINE: { PUSH: false, EMAIL: true, TELEGRAM: false },
+    TICKET: { PUSH: true, EMAIL: true, TELEGRAM: false },
     SYSTEM: { PUSH: true, EMAIL: true, TELEGRAM: false },
   },
   theme: 'LIGHT' as const,
