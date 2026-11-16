@@ -66,7 +66,7 @@ describe('UnreadBadge (счётчик непрочитанных)', () => {
 describe('TopBar — бейдж внутри контейнера колокольчика (unread-badge)', () => {
   it('кнопка колокольчика — контейнер data-testid="unread-badge" с бейджем внутри', () => {
     const html = renderToStaticMarkup(
-      <TopBar user={USER} unreadCount={3} onOpenSearch={() => {}} />,
+      <TopBar user={USER} unreadCount={3} recentNotifications={[]} onOpenSearch={() => {}} />,
     );
     const containerAt = html.indexOf('data-testid="unread-badge"');
     expect(containerAt, 'bell container testid').toBeGreaterThanOrEqual(0);
@@ -79,7 +79,7 @@ describe('TopBar — бейдж внутри контейнера колокол
 
   it('при нуле непрочитанных в шапке бейджа нет', () => {
     const html = renderToStaticMarkup(
-      <TopBar user={USER} unreadCount={0} onOpenSearch={() => {}} />,
+      <TopBar user={USER} unreadCount={0} recentNotifications={[]} onOpenSearch={() => {}} />,
     );
     expect(html).not.toContain('data-testid="unread-count"');
   });
