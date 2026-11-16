@@ -38,6 +38,9 @@ vi.mock('@/server/data', () => ({
     role: 'STUDENT' as const,
     login: 'student1',
   })),
+  // DIG-46: страница ассистента читает контекст чата; для каркасного
+  // рендера достаточно null (чат показывает приветствие без имени).
+  getAssistantContext: vi.fn(async () => null),
   getOwnProfile: vi.fn(async () => ({
     id: 's_test',
     login: 'student1',

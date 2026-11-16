@@ -9,6 +9,7 @@ import { TabBar } from './tab-bar';
 import { AiFab } from './ai-fab';
 import { AiGuide } from './ai-guide';
 import { SearchPalette } from './search-palette';
+import { AssistantPanel } from '@/components/assistant/assistant-panel';
 
 type ShellProps = {
   user: ShellUser;
@@ -22,8 +23,11 @@ type ShellProps = {
 // Десктоп: верхняя панель + меню 212 px. Планшет: иконочный рельс.
 // Мобильный (<768): таб-бар + плавающая AI-кнопка. Первая таб-стоп —
 // skip-link «К содержимому» (доступность с клавиатуры).
+// DIG-46: AI-кнопки (плавающая и в шапке) открывают выезжающую панель
+// ассистента на любом экране; полный экран раздела — /ai-assistant.
 export function Shell({ user, unreadCount, recentNotifications, children }: ShellProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   // Кнопка поиска: ссылка нужна палитре, чтобы вернуть фокус при закрытии.
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
@@ -54,6 +58,7 @@ export function Shell({ user, unreadCount, recentNotifications, children }: Shel
         unreadCount={unreadCount}
         recentNotifications={recentNotifications}
         onOpenSearch={() => setSearchOpen(true)}
+        onOpenAssistant={() => setAssistantOpen(true)}
         searchTriggerRef={searchTriggerRef}
       />
 
@@ -69,7 +74,7 @@ export function Shell({ user, unreadCount, recentNotifications, children }: Shel
       </div>
 
       <TabBar />
-      <AiFab />
+      <AiFab onOpen={() => setAssistantOpen(true)} />
       {/* DIG-62: AI-гид — вне <main>, чтобы краулер DIG-60 и геометрия
           контента не видели его ссылки; только роль студента. DIG-65:
           флаг voiceAssistant прячет/показывает микрофон голосового ввода. */}
@@ -80,6 +85,7 @@ export function Shell({ user, unreadCount, recentNotifications, children }: Shel
         returnFocusRef={searchTriggerRef}
         role={user.role}
       />
+      <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} />
     </div>
   );
 }

@@ -132,6 +132,8 @@ export {
   NOTIFICATION_SETTING_TYPES,
 } from './profile';
 export { denyAccess } from './access';
+export { getAssistantContext, createAssistantRequest, reportAssistantAnswer } from './assistant';
+export { ASSISTANT_REPORT_SUBJECT } from './assistant';
 export { uniformNotFoundResponse } from './http';
 export { ensureAppData } from './bootstrap';
 export {

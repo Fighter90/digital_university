@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ConceptBanner } from '@/components/concept-banner';
 import {
@@ -20,6 +20,14 @@ export const metadata: Metadata = {
   title: 'Цифровой деканат — личный кабинет студента',
   description:
     'Концепт для конкурса «Цифровой деканат будущего»: расписание, успеваемость, заявки и уведомления в одном кабинете. Все данные вымышленные.',
+};
+
+// DIG-46 — экранная клавиатура не перекрывает поле ввода ассистента:
+// страница «сжимается» (resizes-content) вместо прокрутки поверх клавиатуры.
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  interactiveWidget: 'resizes-content',
 };
 
 export default async function RootLayout({

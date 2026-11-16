@@ -14,6 +14,8 @@ type TopBarProps = {
   /** DIG-35 — последние уведомления для панели колокольчика (SSR). */
   recentNotifications: NotificationFeedItem[];
   onOpenSearch: () => void;
+  /** DIG-46 — открывает плавающую панель AI-ассистента. */
+  onOpenAssistant: () => void;
   /** Ref кнопки поиска — Shell передаёт его палитре для возврата фокуса. */
   searchTriggerRef?: React.Ref<HTMLButtonElement>;
 };
@@ -25,6 +27,7 @@ export function TopBar({
   unreadCount,
   recentNotifications,
   onOpenSearch,
+  onOpenAssistant,
   searchTriggerRef,
 }: TopBarProps) {
   return (
@@ -74,13 +77,15 @@ export function TopBar({
             </kbd>
           </button>
 
-          <Link
-            href="/ai-assistant"
+          <button
+            type="button"
+            onClick={onOpenAssistant}
             aria-label="AI-ассистент"
+            aria-haspopup="dialog"
             className="grid size-8 shrink-0 place-items-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-coral-600 md:size-9"
           >
             <Sparkles className="size-4" aria-hidden="true" />
-          </Link>
+          </button>
 
           {/* DIG-35: колокольчик с панелью уведомлений (SSR-данные). Якорь
               e2e-проверки позиции бейджа (DIG-54) — data-testid на кнопке. */}
