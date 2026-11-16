@@ -113,9 +113,10 @@ test('«Взять в работу» + причина доработки → с�
   await expect(card.getByText('Анна Ковалёва', { exact: true })).toBeVisible();
   await expect(card.getByText('ПИ-21')).toBeVisible();
 
-  // aria-label кнопки — «Заявка возвращена на доработку»; видимый текст —
-  // «Нужна доработка» (substring доступного имени).
-  await card.getByRole('button', { name: 'Нужна доработка' }).click();
+  // aria-label кнопки — «Заявка возвращена на доработку», он же доступное
+  // имя: getByRole сверяет его ЦЕЛИКОМ (не подстрокой), видимый текст
+  // «Нужна доработка» не совпадёт и клик зависнет до таймаута.
+  await card.getByRole('button', { name: 'Заявка возвращена на доработку' }).click();
   // HTML5 required держит форму — статус не меняется, ошибки сервера нет.
   await expect(card.getByText('Требует правок')).toHaveCount(0);
 
@@ -123,7 +124,7 @@ test('«Взять в работу» + причина доработки → с�
   // Успех ре-рендерит карточку (новый статус, кнопки перестраиваются) —
   // исчезновение кнопки после отправки не должно ронять клик.
   await card
-    .getByRole('button', { name: 'Нужна доработка' })
+    .getByRole('button', { name: 'Заявка возвращена на доработку' })
     .click({ timeout: 10_000 })
     .catch(() => {});
   await expect(card.getByText('Статус обновлён — студент получил уведомление.')).toBeVisible();
@@ -135,8 +136,10 @@ test('«Взять в работу» + причина доработки → с�
   await signIn(anna, ANNA.login, ANNA.password, `/requests/${freshNumber}`);
   const annaCard = anna.locator('main');
   await expect(annaCard.getByText('Требует правок')).toBeVisible();
+  // Причина видна студенту в теле события И в строке истории — берём точное
+  // совпадение (строка истории длиннее: «Заявка возвращена на доработку. Причина: …»).
   await expect(
-    annaCard.getByText('Приложите план перезачёта с подписью преподавателя'),
+    annaCard.getByText('Приложите план перезачёта с подписью преподавателя', { exact: true }),
   ).toBeVisible();
 
   await staffContext.close();
