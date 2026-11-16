@@ -125,6 +125,7 @@ export interface DataDb {
   ): Promise<CanonicalRequestRow | null>;
   findCanonicalRequestByStudentAndId(
     id: string,
+  ): Promise<CanonicalRequestRow | null>;
   listCanonicalRequestsByStudent(studentId: string): Promise<CanonicalRequestRow[]>;
   listCanonicalRequestEvents(requestId: string): Promise<CanonicalRequestEventRow[]>;
 
