@@ -22,6 +22,7 @@ import {
   ProgressSection,
   QuickActionsSection,
   RequestsSection,
+  TasksSection,
   TodaySection,
 } from '@/components/dashboard/sections';
 import {
@@ -68,6 +69,7 @@ async function DashboardContent() {
   const widgetSections: Record<DashboardWidgetId, React.ReactNode> = {
     today: <TodaySection today={data.today} />,
     deadlines: <DeadlinesSection deadlines={data.deadlines} />,
+    tasks: <TasksSection tasks={data.tasks} />,
     performance: <ProgressSection progress={data.progress} />,
     requests: <RequestsSection requests={data.requests} />,
     news: <NewsSection news={news} />,

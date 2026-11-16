@@ -23,6 +23,8 @@ import {
   headingDateLabel,
   nearestStudyDayLabel,
 } from '@/lib/dashboard-format';
+import { getTasksSummary } from './tasks';
+import type { TasksSummary } from './tasks';
 import type { DataDb } from './port';
 import type {
   DataCtx,
@@ -149,6 +151,8 @@ export interface DashboardData {
   deadlines: DashboardSection<DeadlineView[]>;
   progress: DashboardSection<ProgressView>;
   requests: DashboardSection<RequestsView>;
+  /** DIG-34 — виджет «Что от меня ждут»: счётчик и самые срочные задачи. */
+  tasks: DashboardSection<TasksSummary>;
 }
 
 const GRADE_AHEAD_WINDOW = 2;
@@ -347,12 +351,19 @@ export async function getDashboard(
   ctx: DataCtx,
   now: Date = new Date(),
 ): Promise<DashboardData> {
-  const [student, schedule, exams, grades, requests] = await Promise.all([
+  const [student, schedule, exams, grades, requests, tasks] = await Promise.all([
     settle(ctx.studentId === null ? Promise.resolve(null) : db.findStudentById(ctx.studentId)),
     settle(db.listScheduleByGroup(ctx.groupName ?? '__no-group__')),
     settle(db.listExamsByGroup(ctx.groupName ?? '__no-group__')),
     settle(ctx.studentId === null ? Promise.resolve([]) : db.listGradesByStudent(ctx.studentId)),
     settle(ctx.studentId === null ? Promise.resolve([]) : db.listRequestsByStudent(ctx.studentId)),
+    // DIG-34 — задачи студента; сотруднику — пустая сводка без аудита
+    // (главная сотрудника и так рисует заглушку, отказывать нечем).
+    settle(
+      ctx.studentId === null
+        ? Promise.resolve({ openCount: 0, top: [] })
+        : getTasksSummary(db, ctx, now),
+    ),
   ]);
 
   const firstName = student.ok && student.value ? student.value.fullName.split(' ')[0] : null;
@@ -384,5 +395,6 @@ export async function getDashboard(
     deadlines,
     progress,
     requests: requestsView,
+    tasks,
   };
 }

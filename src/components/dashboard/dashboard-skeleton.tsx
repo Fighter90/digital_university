@@ -21,17 +21,22 @@ export function DashboardSkeleton() {
         </div>
       </div>
 
-      {/* Блоки */}
-      {['skeleton-today', 'skeleton-deadlines', 'skeleton-progress', 'skeleton-actions', 'skeleton-news'].map(
-        (key) => (
-          <div key={key} className="rounded-card border border-border bg-card p-5 shadow-soft">
-            <Skeleton className="h-5 w-44" />
-            <Skeleton className="mt-4 h-4 w-full" />
-            <Skeleton className="mt-2 h-4 w-4/5" />
-            <Skeleton className="mt-2 h-4 w-3/5" />
-          </div>
-        ),
-      )}
+      {/* Блоки (DIG-34: + «Что от меня ждут» после «Сегодня»/«Дедлайнов») */}
+      {[
+        'skeleton-today',
+        'skeleton-deadlines',
+        'skeleton-tasks',
+        'skeleton-progress',
+        'skeleton-actions',
+        'skeleton-news',
+      ].map((key) => (
+        <div key={key} className="rounded-card border border-border bg-card p-5 shadow-soft">
+          <Skeleton className="h-5 w-44" />
+          <Skeleton className="mt-4 h-4 w-full" />
+          <Skeleton className="mt-2 h-4 w-4/5" />
+          <Skeleton className="mt-2 h-4 w-3/5" />
+        </div>
+      ))}
     </section>
   );
 }

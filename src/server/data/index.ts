@@ -66,6 +66,8 @@ export type {
 } from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
 export { getDashboard } from './dashboard';
+export { getTasks, getTasksSummary, groupTasks, markTaskDone } from './tasks';
+export type { TaskGroupViews, TaskSource, TasksData, TasksSummary, TaskView } from './tasks';
 export type {
   DashboardData,
   DashboardSection,

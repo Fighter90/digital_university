@@ -5,6 +5,7 @@ import {
   FileText,
   GraduationCap,
   House,
+  ListChecks,
   MessagesSquare,
   Sparkles,
   UserRound,
@@ -15,6 +16,7 @@ import {
 // те же иконки, что и боковое меню, — визуальная согласованность каркаса).
 const SECTION_ICONS: Record<string, LucideIcon> = {
   '/dashboard': House,
+  '/tasks': ListChecks,
   '/schedule': CalendarDays,
   '/grades': GraduationCap,
   '/requests': FileText,
