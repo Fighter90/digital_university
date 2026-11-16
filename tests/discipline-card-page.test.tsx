@@ -108,7 +108,13 @@ function cardFixture(): DisciplineCardData {
         comment: null,
       },
     ],
-    exam: { elementCode: 'PI21-ALG-EX', elementName: 'Экзамен', weightPercent: 70, maxScore: 100, graded: true },
+    exam: {
+      elementCode: 'PI21-ALG-EX',
+      elementName: 'Экзамен',
+      weightPercent: 70,
+      maxScore: 100,
+      graded: true,
+    },
   };
 }
 
@@ -127,6 +133,10 @@ describe('/grades/[disciplineId] — карточка дисциплины', () 
     expect(html).toContain('Весенний семестр 2025/26');
     // Обратная ссылка на зачётку.
     expect(html).toContain('href="/grades/gradebook"');
+    // DIG-37 — преподаватель ведёт на карточку человека в справочнике.
+    expect(html).toContain('href="/people/teacher-ivanova"');
+    expect(html).toContain('data-testid="discipline-teacher-link"');
+    expect(html).not.toContain('раздел в разработке');
   });
 
   it('формула оценки полосами: проценты частей и текущие баллы', async () => {

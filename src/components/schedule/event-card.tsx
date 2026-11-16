@@ -1,4 +1,7 @@
-import { cn } from 'cn';
+import Link from 'next/link';
+
+import { cn } from '@/lib/utils';
+import { personHrefByFullName } from '@/lib/people-catalog';
 
 // DIG-23: EventCard — общая карточка пары (Figma «04 · Расписание — день»).
 // Время слева (начало жирным, «до конец» мелкой строкой), цветная полоса
@@ -27,6 +30,8 @@ export interface EventCardProps {
 
 export function EventCard({ event, compact = false, href }: EventCardProps) {
   const meta = LESSON_KIND_META[event.kind];
+  /** DIG-37: имя преподавателя — ссылка на карточку в справочнике. */
+  const teacherHref = personHrefByFullName(event.teacher);
   const card = (
     <>
       {/* цветная полоса типа занятия */}
@@ -55,9 +60,24 @@ export function EventCard({ event, compact = false, href }: EventCardProps) {
           </span>
           <EventTypePill kind={event.kind} />
         </div>
-        <p className={cn('text-xs text-neutral-600', compact && 'truncate')}>
-          {compact ? event.roomLabel : `${event.roomLabel} · ${event.teacher}`}
-        </p>
+        {compact ? (
+          <p className="truncate text-xs text-neutral-600">{event.roomLabel}</p>
+        ) : (
+          <p className="text-xs text-neutral-600">
+            {event.roomLabel} ·{' '}
+            {teacherHref ? (
+              <Link
+                href={teacherHref}
+                data-testid={`event-teacher-${event.id}`}
+                className="font-medium underline decoration-neutral-300 underline-offset-2 hover:text-coral-600 hover:decoration-coral-400"
+              >
+                {event.teacher}
+              </Link>
+            ) : (
+              event.teacher
+            )}
+          </p>
+        )}
         {event.isMoved || event.isCancelled ? (
           <div className="flex flex-wrap items-center gap-1.5">
             {event.isMoved ? <Badge status="warning">Перенос</Badge> : null}

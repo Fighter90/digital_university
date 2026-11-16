@@ -17,6 +17,7 @@ export const CABINET_SECTIONS: CabinetSection[] = [
   { href: '/requests', label: 'Заявки и справки' },
   { href: '/notifications', label: 'Уведомления' },
   { href: '/deanery', label: 'Связь с деканатом' },
+  { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
   { href: '/profile', label: 'Профиль' },
 ];
@@ -36,6 +37,7 @@ export const MORE_SECTIONS: CabinetSection[] = [
   { href: '/tasks', label: 'Задачи' },
   { href: '/notifications', label: 'Уведомления' },
   { href: '/deanery', label: 'Связь с деканатом' },
+  { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
   { href: '/profile', label: 'Профиль' },
   { href: '/settings', label: 'Настройки' },

@@ -91,6 +91,13 @@ export type {
   StaffChangeStatus,
 } from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
+export { getPeopleDirectory, getPersonCard, MAX_UPCOMING_EVENTS } from './people';
+export type {
+  PeopleDirectoryData,
+  PersonCardData,
+  PersonListEntry,
+  PersonUpcomingEvent,
+} from './people';
 export { getDashboard } from './dashboard';
 export { getTasks, getTasksSummary, groupTasks, markTaskDone } from './tasks';
 export type { TaskGroupViews, TaskSource, TasksData, TasksSummary, TaskView } from './tasks';
