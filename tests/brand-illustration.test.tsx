@@ -35,6 +35,7 @@ vi.mock('next/image', () => ({
 import { Illustration } from '@/components/ui/illustration';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
+import { BrandLogo } from '@/components/brand/logo';
 import { ILLUSTRATIONS } from '@/lib/illustrations';
 
 afterEach(() => {
@@ -105,5 +106,34 @@ describe('ErrorState + illustration (DIG-16)', () => {
     const { container } = render(<ErrorState />);
     expect(screen.queryByTestId('illustration-img')).not.toBeInTheDocument();
     expect(container.querySelector('svg')).not.toBeNull();
+  });
+});
+
+describe('BrandLogo — несколько инстансов на странице (DIG-16, раунд 1 фикс)', () => {
+  // /login рендерит два BrandLogo: первый — в скрытой на мобильном секции
+  // (hidden md:flex). Если заливка идёт через url(#id), браузер резолвит id
+  // к первому инстансу в DOM — в display:none поддереве paint server не
+  // рендерится, и на 360 px логотип теряет коралловую заливку.
+  it('инлайн-логотип не использует paint server (url(#id)) — дубликаты безопасны', () => {
+    const { container } = render(
+      <>
+        <BrandLogo />
+        <BrandLogo />
+      </>,
+    );
+    const fills = [...container.querySelectorAll('svg rect')].map((r) => r.getAttribute('fill'));
+    expect(fills.length).toBeGreaterThanOrEqual(2);
+    for (const fill of fills) {
+      expect(
+        fill,
+        'url(#id) ломается при скрытом дубле id — используйте сплошной цвет',
+      ).not.toMatch(/^url\(/);
+    }
+  });
+
+  it('заливка знака — коралловый бренда-цвет #E7645A', () => {
+    const { container } = render(<BrandLogo />);
+    const rect = container.querySelector('svg rect');
+    expect(rect?.getAttribute('fill')).toBe('#E7645A');
   });
 });

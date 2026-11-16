@@ -46,7 +46,9 @@ describe('DIG-16: иллюстрации public/illustrations', () => {
     expect(src).toContain('ILLUSTRATIONS');
     // реестр объявляет все шесть имён
     for (const name of EXPECTED_ILLUSTRATIONS) {
-      expect(src, `в реестре нет ${name}`).toContain(`'${name}'`);
+      // ключ в исходнике: с кавычками или без (prettier их снимает с
+      // валидных идентификаторов) — имя с опциональной кавычкой и двоеточие
+      expect(src, `в реестре нет ${name}`).toMatch(new RegExp(`['"]?${name}['"]?\\s*:`));
     }
     const { ILLUSTRATIONS } = await import('@/lib/illustrations');
     for (const [name, entry] of Object.entries(ILLUSTRATIONS)) {

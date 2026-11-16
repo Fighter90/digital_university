@@ -2,18 +2,16 @@
 // книга + шапочка выпускника в коралловом скруглённом квадрате. Инлайн-SVG
 // (та же геометрия, что public/brand/logo.svg — канонический файл для
 // манифеста/превью): резкий на любом масштабе, без внешних запросов.
+// Заливка — сплошной цвет, НЕ url(#id): на /login рендерятся два инстанса
+// (первый скрыт на мобильном как hidden md:flex), а браузер резолвит id
+// paint server'а к первому в DOM — градиент в display:none не рендерится и
+// на 360 px знак терял заливку (см. tests/brand-illustration.test.tsx).
 // Бренд вуза не используется (запрещён AGENTS.md).
 export function BrandLogo({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" role="img" aria-hidden="true" focusable="false" className={className}>
-      <defs>
-        <linearGradient id="du-coral-mark" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#E7645A" />
-          <stop offset="1" stopColor="#D04F47" />
-        </linearGradient>
-      </defs>
       {/* коралловый скруглённый квадрат */}
-      <rect width="64" height="64" rx="14" fill="url(#du-coral-mark)" />
+      <rect width="64" height="64" rx="14" fill="#E7645A" />
       {/* открытая книга */}
       <path
         d="M32 27.5 C27 23.8 19.5 23 13.5 24.6 L13.5 42.4 C19.5 40.8 27 41.6 32 45.3 Z"

@@ -14,7 +14,7 @@
 | Логотип (SVG + иконки) | векторная отрисовка по концепту пробы Higgsfield | — | SVG → PNG 48/180/192/512 |
 
 Примечание. Генерация в Higgsfield была начата на модели `z_image` (проба
-логотипа сохранена в `assets-src/higgsfield-probe-logo.png`); для векторного
+логотипа сохранена в `assets-src/higgsfield-probe-logo.webp`); для векторного
 стиля иллюстраций Recraft V4.1 требовал платный план, а кредиты free-плана
 закончились, поэтому финальные иллюстрации сгенерированы той же моделью
 Recraft V4.1 (Flash) через встроенный генератор сессии. Все промпты — ниже.
@@ -122,7 +122,7 @@ Recraft V4.1 (Flash) через встроенный генератор сесс
 
 Знак «открытая книга + шапочка выпускника в коралловом скруглённом квадрате»:
 
-1. Стиль-проба в Higgsfield (`z_image`): `assets-src/higgsfield-probe-logo.png`
+1. Стиль-проба в Higgsfield (`z_image`): `assets-src/higgsfield-probe-logo.webp`
    (3D-версия знака — как референс композиции).
    Промпт: *«App icon design: a coral rounded square filling the entire frame
    edge to edge… white open book with a graduation cap resting on top, tiny
