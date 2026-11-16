@@ -79,7 +79,6 @@ export type {
   TodayLessonView,
   TodayView,
 } from './dashboard';
-<<<<<<< HEAD
 export { getNewsPage, getNewsArticle, markNewsRead, listDeaneryNews } from './news';
 export type {
   DeaneryNewsItem,
@@ -89,13 +88,10 @@ export type {
   NewsPageInput,
 } from './news';
 export { parseNewsScope, parseNewsTopic } from '@/lib/news-catalog';
-=======
 export { listDeaneryNews } from './news';
 export type { DeaneryNewsItem } from './news';
 export { searchCabinet } from './search';
-export type { SearchResponse, SearchGroup, SearchHit, SearchHitKind } from '@/lib/search-core';
->>>>>>> origin/main
-export { getServicesPage, toggleFavoriteService, MAX_FAVORITES } from './services';
+export type { SearchResponse, SearchGroup, SearchHit, SearchHitKind } from '@/lib/search-core';export { getServicesPage, toggleFavoriteService, MAX_FAVORITES } from './services';
 export type { ServicesPageData, ServiceToggleResult } from './services';
 export {
   getCertificatePdfInput,
@@ -220,10 +216,6 @@ export {
   type DisciplineRow,
   type DisciplineElementRow,
   type ServiceFavoriteRow,
-<<<<<<< HEAD
   type NewsReadRow,
-=======
   type CertificateRow,
-  type CalendarSubscriptionRow,
->>>>>>> origin/main
-} from './types';
+  type CalendarSubscriptionRow,} from './types';
