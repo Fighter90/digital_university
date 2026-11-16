@@ -72,6 +72,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Static assets are handled by the public-path rules as well; the matcher
-  // just keeps them out of the middleware entirely.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // just keeps them out of the middleware entirely (DIG-16: бренд-ассеты,
+  // OG-превью и файловые конвенции иконок/манифеста — публичные, см.
+  // PUBLIC_PREFIXES/PUBLIC_EXACT_PATHS в route-guard).
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|illustrations/|icons/|brand/|og.jpg|icon.png|apple-icon.png|manifest.webmanifest).*)',
+  ],
 };

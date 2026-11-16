@@ -5,6 +5,7 @@ import { Search, Sparkles } from 'lucide-react';
 import type { ShellUser } from '@/lib/user';
 import type { NotificationFeedItem } from '@/lib/notification-view';
 import { cn } from '@/lib/utils';
+import { BrandLogo } from '@/components/brand/logo';
 import { UserMenu } from './user-menu';
 import { NotificationsBell } from '@/components/notifications/notifications-bell';
 
@@ -38,13 +39,8 @@ export function TopBar({
           className="flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
           aria-label="Цифровой деканат — на главную"
         >
-          {/* Собственный вымышленный знак (бренд вуза запрещён) */}
-          <span
-            aria-hidden="true"
-            className="grid size-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-coral-500 to-amber-400 text-xs font-bold text-white"
-          >
-            ЦД
-          </span>
+          {/* Собственный вымышленный знак (бренд вуза запрещён) — DIG-16 */}
+          <BrandLogo className="size-8 shrink-0 rounded-xl" />
           <span className="truncate text-sm font-semibold text-neutral-900 md:text-base">
             Цифровой деканат
           </span>

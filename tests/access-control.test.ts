@@ -27,6 +27,17 @@ describe('route guard: public vs protected paths', () => {
     ['/verify/abc', true],
     ['/verify', true], // DIG-33: лендинг проверки (ввод кода вручную) без данных
     ['/api/mcp', true], // DIG-64: демо-MCP-сервер — Bearer-токен вместо cookie-сессии
+    // DIG-16: бренд-ассеты публичны — экран входа и OG-краулеры анонимны
+    ['/illustrations/login-hero.webp', true],
+    ['/illustrations/error.webp', true],
+    ['/icons/icon-512.png', true],
+    ['/brand/logo.svg', true],
+    ['/brand/pdf-cover.jpg', true],
+    ['/og.jpg', true],
+    ['/icon.png', true],
+    ['/apple-icon.png', true],
+    ['/manifest.webmanifest', true],
+    ['/illustrations/../../secret', false], // префикс не открывает обход пути
     ['/dashboard', false],
     ['/dashboard/sub', false],
     ['/staff', false],

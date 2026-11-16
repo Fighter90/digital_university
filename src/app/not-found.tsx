@@ -4,10 +4,13 @@
 // number / cuid) and a missing object render EXACTLY this screen, so the
 // answer never reveals whether the object exists at all.
 import Link from 'next/link';
+import { Illustration } from '@/components/ui/illustration';
 
 export default function NotFound() {
   return (
     <main className="mx-auto flex max-w-3xl flex-col items-center px-4 py-16 text-center">
+      {/* DIG-16: декоративная ИИ-иллюстрация ошибки/404 (alt=""). */}
+      <Illustration name="error" className="mb-4 h-36 w-36 md:h-44 md:w-44" />
       <p className="mb-2 text-5xl font-bold text-neutral-900">404</p>
       <h1 className="mb-2 text-xl font-bold sm:text-2xl">Страница не найдена</h1>
       <p className="mb-6 max-w-md text-sm text-neutral-600">

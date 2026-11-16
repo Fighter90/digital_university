@@ -40,11 +40,7 @@ import {
   type WizardMeta,
   type WizardDelivery,
 } from '@/lib/request-wizard-schema';
-import {
-  REQUEST_FORMAT_LABELS,
-  requestTypeHint,
-  type OrderTarget,
-} from '@/lib/request-order-map';
+import { REQUEST_FORMAT_LABELS, requestTypeHint, type OrderTarget } from '@/lib/request-order-map';
 import {
   parseRequestFormSchema,
   requestTitleFromParams,
@@ -53,6 +49,7 @@ import {
 import { formatReadyBy, slaReadyDate } from '@/lib/request-sla';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
+import { Illustration } from '@/components/ui/illustration';
 import { Segmented } from '@/components/ui/segmented';
 import { Icon } from '@/components/ui/icon';
 import type { RequestActionState } from '@/server/actions/requests';
@@ -97,13 +94,7 @@ const STEP_TITLES: Record<WizardStep, string> = {
 const inputClass =
   'mt-1 w-full rounded-button border border-border bg-card px-3 py-2 text-sm text-foreground shadow-soft outline-none transition-colors placeholder:text-muted-foreground focus:border-muted-foreground/40';
 
-export function OrderWizard({
-  types,
-  profile,
-  orderParam,
-  autoTarget,
-  action,
-}: OrderWizardProps) {
+export function OrderWizard({ types, profile, orderParam, autoTarget, action }: OrderWizardProps) {
   const router = useRouter();
 
   // Мастер монтируется с чистым черновиком под своим ключом (страница даёт
@@ -165,7 +156,14 @@ export function OrderWizard({
     setStep(1);
     setTypeCode(autoTarget?.typeCode ?? null);
     setValues(autoTarget?.preset ? { ...autoTarget.preset } : {});
-    setMeta({ destination: '', language: 'RU', copies: 1, delivery: 'PDF_ONLINE', comment: '', attachments: [] });
+    setMeta({
+      destination: '',
+      language: 'RU',
+      copies: 1,
+      delivery: 'PDF_ONLINE',
+      comment: '',
+      attachments: [],
+    });
     setFiles([]);
     setFieldErrors({});
     setFilesError(null);
@@ -366,11 +364,7 @@ export function OrderWizard({
                   etaLabel={etaLabel}
                 />
               ) : step === 1 ? (
-                <StepWhat
-                  types={types}
-                  typeCode={typeCode}
-                  onSelect={selectType}
-                />
+                <StepWhat types={types} typeCode={typeCode} onSelect={selectType} />
               ) : step === 2 ? (
                 <StepParams
                   schemaFields={schema?.fields ?? []}
@@ -615,7 +609,9 @@ function StepParams({
         <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           Данные из профиля
         </p>
-        <p className="mt-1 text-sm font-bold">{profile?.fullName ?? 'Данные появятся из профиля'}</p>
+        <p className="mt-1 text-sm font-bold">
+          {profile?.fullName ?? 'Данные появятся из профиля'}
+        </p>
         {profile ? (
           <p className="text-xs text-muted-foreground">
             {profile.groupName} · {profile.course} курс · {profile.faculty}
@@ -885,7 +881,12 @@ function StepReview({
       >
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-bold">Документ</h3>
-          <button type="button" data-testid="wizard-edit-document" onClick={onEditDocument} className={editButton}>
+          <button
+            type="button"
+            data-testid="wizard-edit-document"
+            onClick={onEditDocument}
+            className={editButton}
+          >
             Изменить
           </button>
         </div>
@@ -912,7 +913,12 @@ function StepReview({
       >
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-bold">Параметры</h3>
-          <button type="button" data-testid="wizard-edit-params" onClick={onEditParams} className={editButton}>
+          <button
+            type="button"
+            data-testid="wizard-edit-params"
+            onClick={onEditParams}
+            className={editButton}
+          >
             Изменить
           </button>
         </div>
@@ -1014,24 +1020,8 @@ function SuccessScreen({
 }) {
   return (
     <div data-testid="wizard-success" className="flex flex-col items-center py-2 text-center">
-      <svg
-        data-testid="wizard-success-art"
-        aria-hidden="true"
-        viewBox="0 0 96 96"
-        className="size-20"
-      >
-        <rect x="18" y="8" width="56" height="76" rx="8" fill="#eef2ff" stroke="#2563eb" strokeWidth="2" />
-        <path d="M30 26h32M30 38h32M30 50h18" stroke="#94a3b8" strokeWidth="3" strokeLinecap="round" />
-        <circle cx="68" cy="68" r="17" fill="#16a34a" />
-        <path
-          d="M60.5 68.5l5.5 5.5 9.5-11"
-          stroke="#ffffff"
-          strokeWidth="3.5"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      {/* DIG-16: декоративная ИИ-иллюстрация «Справка готова» (alt=""). */}
+      <Illustration name="success" className="size-24 md:size-28" />
 
       <h3 className="mt-3 text-lg font-extrabold tracking-heading">
         {instant ? 'Справка готова' : 'Заявка отправлена'}

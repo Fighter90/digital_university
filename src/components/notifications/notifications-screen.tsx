@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Bell, Settings2 } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
+import { Illustration } from '@/components/ui/illustration';
 import { cn } from '@/lib/utils';
 import {
   NOTIFICATION_FILTERS,
@@ -144,13 +145,8 @@ export function NotificationsScreen({ initialItems }: NotificationsScreenProps) 
           data-testid="notifications-empty"
           className="flex flex-col items-center gap-3 rounded-block border border-dashed border-neutral-300 bg-card px-6 py-14 text-center"
         >
-          {/* Иллюстрация колокольчика (вымышленная, без внешних ассетов). */}
-          <span
-            aria-hidden="true"
-            className="grid size-20 place-items-center rounded-full bg-coral-50 ring-8 ring-coral-50/60"
-          >
-            <Bell className="size-9 text-coral-400" strokeWidth={1.5} />
-          </span>
+          {/* DIG-16: декоративная ИИ-иллюстрация «Нет уведомлений» (alt=""). */}
+          <Illustration name="no-notifications" className="h-28 w-28 md:h-32 md:w-32" />
           <p className="text-sm font-bold text-neutral-900">Новых уведомлений нет</p>
           <p className="max-w-xs text-sm text-neutral-600">
             Здесь появятся события: перенос пар, статусы заявок, оценки и дедлайны оплат.
