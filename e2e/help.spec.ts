@@ -65,6 +65,23 @@ test.describe('DIG-38: база знаний', () => {
     // Текст запроса переносится в обе ссылки.
     await expect(ai).toHaveAttribute('href', `/ai-assistant?q=${encodeURIComponent('фыгвпркст')}`);
     await expect(deanery).toHaveAttribute('href', `/deanery?q=${encodeURIComponent('фыгвпркст')}`);
+
+    // Перенос работает по-настоящему: деканат открывается с готовым текстом
+    // обращения (раунд 4 ревью — ссылки должны вести к предзаполненной форме).
+    await deanery.click();
+    await expect(page).toHaveURL(/\/deanery\?q=/);
+    await expect(page.getByTestId('ticket-body')).toHaveValue('фыгвпркст');
+  });
+
+  test('«Спросить AI-ассистента» сеет запрос как первый вопрос чата', async ({ page }) => {
+    await signIn(page, '/help');
+    const search = page.getByTestId('help-search');
+    await search.fill('фыгвпркст');
+
+    await page.getByTestId('help-empty-ai').click();
+    await expect(page).toHaveURL(/\/ai-assistant\?q=/);
+    // Сид вопроса виден в чате ассистента (сообщение пользователя).
+    await expect(page.getByTestId('assistant-messages')).toContainText('фыгвпркст');
   });
 
   test('категории плитками фильтруют список, статья открывается', async ({ page }) => {
@@ -84,6 +101,18 @@ test.describe('DIG-38: база знаний', () => {
     await page.getByTestId('help-category-SCHOLARSHIPS').click();
     await expect(results.getByRole('link').first()).toBeVisible();
 
+    // Фильтр может опустошить список при живом поиске: честная записка со
+    // сбросом, а не «Ничего не нашлось» (раунд 4 ревью).
+    await page.getByTestId('help-search').fill('стипендия');
+    await page.getByTestId('help-category-DORMITORY').click();
+    const note = page.getByTestId('help-filter-empty');
+    await expect(note).toBeVisible();
+    await page.getByTestId('help-filter-reset').click();
+    await expect(page.getByTestId('help-empty')).toHaveCount(0);
+    await expect(results.getByRole('link').first()).toBeVisible();
+    // Убираем поисковый запрос — дальше проверяем полный каталог.
+    await page.getByTestId('help-search').fill('');
+
     // Статья: вопрос, «Полезно?», связанные статьи.
     await results.getByRole('link', { name: /Какие справки можно заказать/ }).click();
     await expect(page).toHaveURL(/\/help\/cert-online$/);
@@ -96,9 +125,15 @@ test.describe('DIG-38: база знаний', () => {
       '/requests?order=cert-enrollment',
     );
 
-    // Фидбек: клик «Да» благодарит.
+    // Фидбек: клик «Да» благодарит, повторный выбор «Нет» возможен
+    // (delta-спека: «повторный выбор возможен»).
+    const feedback = page.getByTestId('help-feedback');
     await page.getByTestId('help-feedback-yes').click();
-    await expect(page.getByTestId('help-feedback')).toContainText('Спасибо');
+    await expect(feedback).toContainText('Спасибо');
+    await expect(page.getByTestId('help-feedback-yes')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('help-feedback-no').click();
+    await expect(feedback).toContainText('Спасибо');
+    await expect(page.getByTestId('help-feedback-no')).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('360 px: плитки и результаты в одну колонку', async ({ page }) => {

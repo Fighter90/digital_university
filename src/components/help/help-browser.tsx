@@ -21,6 +21,15 @@ import {
 const linkButtonClasses =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-button px-4 py-2.5 text-sm font-semibold shadow-soft transition-colors focus-visible:outline-2';
 
+/** Русская плюрализация: 1 статья, 2–4 статьи, 5–20 статей, 21 статья… */
+function articlesLabel(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'статью';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'статьи';
+  return 'статей';
+}
+
 function ArticleLink({ article }: { article: FaqArticle }) {
   return (
     <li>
@@ -55,15 +64,18 @@ export function HelpBrowser() {
   return (
     <div data-testid="help-browser" className="mt-5">
       {/* Большое поле «Найдите ответ» — ввод сразу фильтрует статьи. */}
-      <div className="relative">
+      <label htmlFor="help-search" className="block text-base font-extrabold tracking-heading">
+        Найдите ответ
+      </label>
+      <div className="relative mt-2">
         <Search
           aria-hidden="true"
           className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
         />
         <input
+          id="help-search"
           data-testid="help-search"
           type="search"
-          aria-label="Найдите ответ"
           placeholder="Например: стипендия, справка, общежитие…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -122,7 +134,28 @@ export function HelpBrowser() {
       </div>
 
       {/* Статьи: поиск + фильтр категории. По умолчанию — весь каталог. */}
-      {visible.length === 0 ? (
+      {visible.length === 0 && results.length > 0 ? (
+        // Поиск нашёл статьи, но фильтр категории всё скрыл: честная записка
+        // со сбросом вместо «Ничего не нашлось» (раунд 4 ревью).
+        <div
+          data-testid="help-filter-empty"
+          className="mt-6 flex flex-col items-center gap-3 rounded-card border border-dashed border-border bg-card px-6 py-8 text-center"
+        >
+          <p className="text-sm text-muted-foreground">
+            В категории «{category ? FAQ_CATEGORY_LABELS[category] : ''}» по запросу «{trimmed}»
+            статей нет. Сбросьте фильтр — поиск нашёл {results.length}{' '}
+            {articlesLabel(results.length)}.
+          </p>
+          <button
+            type="button"
+            data-testid="help-filter-reset"
+            onClick={() => setCategory(null)}
+            className="inline-flex min-h-10 items-center justify-center rounded-button border border-border bg-card px-4 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted"
+          >
+            Показать все результаты
+          </button>
+        </div>
+      ) : visible.length === 0 ? (
         <div data-testid="help-empty" className="mt-6">
           <div className="flex flex-col items-center justify-center gap-3 rounded-card border border-dashed border-border bg-card px-6 py-10 text-center">
             <span

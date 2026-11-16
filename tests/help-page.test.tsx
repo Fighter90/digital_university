@@ -34,12 +34,13 @@ describe('/help — экран базы знаний', () => {
 
     expect(html).toContain('Вопросы и ответы');
     expect(html).toContain('data-testid="help-search"');
-    expect(html).toMatch(/aria-label="Найдите ответ"/);
+    // Видимая подпись «Найдите ответ» связана с полем (Figma «11»).
+    expect(html).toMatch(/<label[^>]*for="help-search"/);
+    expect(html).toContain('Найдите ответ');
     // Подсказки популярных запросов кликабельны.
     for (const q of POPULAR_QUERIES) {
       expect(html).toContain(`data-testid="help-popular-${q}"`);
     }
-    expect(html).toContain('Найдите ответ');
   });
 
   it('категории плитками: ровно 6 с числом статей', async () => {

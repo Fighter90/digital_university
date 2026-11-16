@@ -62,9 +62,15 @@ async function render(node: ReactElement): Promise<string> {
   return html.replaceAll('<!-- -->', '');
 }
 
-async function renderListPage(): Promise<string> {
-  const Page = DeaneryPage as unknown as ComponentType;
-  return render(createElement(Page));
+async function renderListPage(searchParams?: Record<string, string>): Promise<string> {
+  const Page = DeaneryPage as unknown as ComponentType<{
+    searchParams?: Promise<Record<string, string>>;
+  }>;
+  return render(
+    createElement(Page, {
+      searchParams: Promise.resolve(searchParams ?? {}),
+    }),
+  );
 }
 
 async function renderChatPage(number = 'TS-2026-AB12C'): Promise<string> {
@@ -200,6 +206,19 @@ describe('/deanery — список обращений (студент)', () => 
     expect(html).toContain('Доступно студентам');
     expect(html).not.toContain('data-testid="deanery-list"');
     expect(html).not.toContain('data-testid="deanery-composer"');
+  });
+
+  // DIG-38: «Написать в деканат» из пустого состояния /help переносит текст
+  // запроса в параметр q — композер открывается с готовым текстом обращения.
+  it('?q= из базы знаний предзаполняет текст нового обращения', async () => {
+    state.ctx = studentCtx;
+    state.page = pageFixture();
+
+    const html = await renderListPage({ q: 'не нашёл про пересдачу' });
+    const composer = html.match(
+      /<section[^>]*data-testid="deanery-composer"[\s\S]*?<\/section>/,
+    )![0];
+    expect(composer).toContain('не нашёл про пересдачу');
   });
 });
 

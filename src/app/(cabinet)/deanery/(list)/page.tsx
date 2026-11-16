@@ -3,6 +3,10 @@
 // видит только свои обращения. На десктопе (≥1024 px) — две панели
 // (Figma «17 · Деканат»), на мобильном — колонкой. Сотруднику раздел
 // недоступен («Доступно студентам»).
+//
+// DIG-38: «Написать в деканат» из пустого состояния /help переносит текст
+// запроса в ?q= — композер открывается с готовым черновиком обращения.
+// Только предзаполнение textarea (React экранирует), длина ограничена.
 import { requireDataCtx, getDeaneryPage } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { TicketList } from '@/components/deanery/ticket-list';
@@ -11,9 +15,18 @@ import { RESPONSE_PROMISE } from '@/lib/tickets';
 import { EmptyState } from '@/components/ui/empty-state';
 import { MessagesSquare } from 'lucide-react';
 
-export default async function DeaneryPage() {
+/** Лимит переноса запроса из базы знаний в черновик обращения. */
+const MAX_TICKET_DRAFT_LENGTH = 300;
+
+export default async function DeaneryPage({
+  searchParams = Promise.resolve({}),
+}: {
+  searchParams?: Promise<Record<string, string>>;
+}) {
   const ctx = await requireDataCtx('/deanery');
   const page = await getDeaneryPage(dataDb, ctx);
+  const params = await searchParams;
+  const draftBody = (params.q ?? '').trim().slice(0, MAX_TICKET_DRAFT_LENGTH);
 
   if (ctx.role === 'STAFF') {
     return (
@@ -40,7 +53,11 @@ export default async function DeaneryPage() {
       {/* Две панели на десктопе; на мобильном — список, затем композер. */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <TicketList tickets={page.tickets} />
-        <TicketComposer requests={page.requests} disciplines={page.disciplines} />
+        <TicketComposer
+          requests={page.requests}
+          disciplines={page.disciplines}
+          initialBody={draftBody}
+        />
       </div>
     </section>
   );
