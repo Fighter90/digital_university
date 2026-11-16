@@ -98,6 +98,7 @@ const channelMatrix = (schedulePush: boolean): StudentSettingsRow['notificationC
     REQUEST: on,
     NEWS: on,
     DEADLINE: on,
+    TICKET: on,
     SYSTEM: on,
   };
 };

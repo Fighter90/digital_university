@@ -32,7 +32,8 @@ import type {
   ServiceFavoriteRow,
   StudyDeadlineRow,
   StudentTaskRow,
-} from './types';
+  TicketMessageRow,
+  TicketRow,} from './types';
 import { canonicalRequestNumberSeq } from './canonical-request-number';
 
 export interface MemorySeed {
@@ -50,6 +51,9 @@ export interface MemorySeed {
   newsRead?: NewsReadRow[];
   appeals?: AppealRow[];
   appealMessages?: AppealMessageRow[];
+  /** DIG-39 — обращения с перепиской. */
+  tickets?: TicketRow[];
+  ticketMessages?: TicketMessageRow[];
   schedule?: ScheduleEventRow[];
   exams?: ExamSessionRow[];
   /** DIG-19 — per-student profile settings (contacts visibility, channels, theme). */
@@ -92,6 +96,8 @@ export function createMemoryDataDb(): MemoryDataDb {
   let notifications: NotificationRow[] = [];
   let appeals: AppealRow[] = [];
   let appealMessages: AppealMessageRow[] = [];
+  let tickets: TicketRow[] = [];
+  let ticketMessages: TicketMessageRow[] = [];
   let schedule: ScheduleEventRow[] = [];
   let exams: ExamSessionRow[] = [];
   let disciplines: DisciplineRow[] = [];
@@ -109,6 +115,8 @@ export function createMemoryDataDb(): MemoryDataDb {
   let notificationSeq = 0;
   let appealSeq = 0;
   let appealMessageSeq = 0;
+  let ticketSeq = 0;
+  let ticketMessageSeq = 0;
   let noteSeq = 0;
   let requestSeq = 0;
   let requestEventSeq = 0;
@@ -135,6 +143,8 @@ export function createMemoryDataDb(): MemoryDataDb {
       notifications = seed.notifications ? seed.notifications.map(clone) : [];
       appeals = seed.appeals ? seed.appeals.map(clone) : [];
       appealMessages = seed.appealMessages ? seed.appealMessages.map(clone) : [];
+      tickets = seed.tickets ? seed.tickets.map(clone) : [];
+      ticketMessages = seed.ticketMessages ? seed.ticketMessages.map(clone) : [];
       schedule = seed.schedule ? seed.schedule.map(clone) : [];
       exams = seed.exams ? seed.exams.map(clone) : [];
       disciplines = seed.disciplines ? seed.disciplines.map(clone) : [];
@@ -174,6 +184,12 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
     async probeAppealById(id) {
       return clone(by(appeals, 'id', id));
+    },
+    // DIG-39 — probe тикета по публичному номеру без владельца: различение
+    // «чужой» (OWNERSHIP_DENIED) и «несуществующий» (NOT_FOUND) — только для
+    // аудита; наружу из слоя данных в обоих случаях уходит null.
+    async probeTicketByNumber(number) {
+      return clone(by(tickets, 'number', number));
     },
     async probeStudentById(id) {
       return clone(by(students, 'id', id));
@@ -427,6 +443,89 @@ export function createMemoryDataDb(): MemoryDataDb {
     },
     async listAppealMessages(appealId) {
       return appealMessages.filter((m) => m.appealId === appealId).map(clone);
+    },
+
+    // ── DIG-39: tickets — обращения с перепиской (owner-scoped) ───────────
+    async listTicketsByStudent(studentId) {
+      return tickets
+        .filter((t) => t.studentId === studentId)
+        .sort(
+          (a, b) =>
+            b.updatedAt.getTime() - a.updatedAt.getTime() ||
+            b.createdAt.getTime() - a.createdAt.getTime(),
+        )
+        .map(clone);
+    },
+    async findTicketByStudentAndNumber(studentId, number) {
+      return clone(
+        tickets.find((t) => t.studentId === studentId && t.number === number) ?? null,
+      ) as TicketRow | null;
+    },
+    async appendTicketByStudent(studentId, input) {
+      ticketSeq += 1;
+      const row: TicketRow = {
+        id: `tkt-new-${ticketSeq}`,
+        studentId,
+        number: input.number,
+        subject: input.subject,
+        status: 'OPEN',
+        assigneeUserId: null,
+        requestNumber: input.requestNumber,
+        disciplineCode: input.disciplineCode,
+        createdAt: input.createdAt,
+        updatedAt: input.createdAt,
+      };
+      tickets.push(row);
+      ticketMessageSeq += 1;
+      ticketMessages.push({
+        id: `tktmsg-new-${ticketMessageSeq}`,
+        ticketId: row.id,
+        authorRole: 'STUDENT',
+        authorName: input.authorName,
+        body: input.body,
+        attachments: [...input.attachments],
+        createdAt: input.createdAt,
+        readAt: null,
+      });
+      return clone(row);
+    },
+    async appendTicketMessage(ticketId, input) {
+      const ticket = tickets.find((t) => t.id === ticketId);
+      if (!ticket) return null;
+      ticketMessageSeq += 1;
+      const row: TicketMessageRow = {
+        id: `tktmsg-new-${ticketMessageSeq}`,
+        ticketId,
+        authorRole: input.authorRole,
+        authorName: input.authorName,
+        body: input.body,
+        attachments: [...input.attachments],
+        createdAt: input.createdAt,
+        readAt: null,
+      };
+      ticketMessages.push(row);
+      // Активность тикета = время последнего сообщения; статус/исполнитель
+      // задаёт бизнес-правило через input.
+      ticket.updatedAt = input.createdAt;
+      if (input.status) ticket.status = input.status;
+      if (input.assigneeUserId !== undefined) ticket.assigneeUserId = input.assigneeUserId;
+      return clone(row);
+    },
+    async listTicketMessages(ticketId) {
+      return ticketMessages
+        .filter((m) => m.ticketId === ticketId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map(clone);
+    },
+    async markTicketMessagesRead(ticketId, authorRole, readAt) {
+      let changed = false;
+      for (const message of ticketMessages) {
+        if (message.ticketId === ticketId && message.authorRole === authorRole && !message.readAt) {
+          message.readAt = readAt;
+          changed = true;
+        }
+      }
+      return changed;
     },
 
     async listScheduleByGroup(groupName) {

@@ -38,7 +38,12 @@ export type RequestStatus =
 
 export type ActorRole = 'STUDENT' | 'STAFF';
 
-export type NotificationType = 'SCHEDULE' | 'GRADE' | 'REQUEST' | 'NEWS' | 'DEADLINE' | 'SYSTEM';
+/**
+ * DIG-39 добавляет TICKET («Обращения») — уведомление о новом сообщении
+ * менеджера в чате обращения. Канал настраивается в матрице профиля.
+ */
+export type NotificationType =
+  'SCHEDULE' | 'GRADE' | 'REQUEST' | 'NEWS' | 'DEADLINE' | 'TICKET' | 'SYSTEM';
 
 /** DIG-19 — delivery channel of a notification (Telegram is «скоро»: off). */
 export type NotificationChannel = 'PUSH' | 'EMAIL' | 'TELEGRAM';
@@ -310,6 +315,46 @@ export interface AppealMessageRow {
   authorName: string;
   body: string;
   createdAt: Date;
+}
+
+// ── DIG-39 — обращения в деканат (тикет с перепиской) ────────────────────────
+
+/** Темы обращения — фиксированный список из задачи (метки в lib/tickets). */
+export type TicketSubject = 'CURRICULUM' | 'GRADES' | 'TRANSFER' | 'ACADEMIC_LEAVE' | 'OTHER';
+
+/** Статусы канонической схемы DIG-9; видимые три — маппинг в lib/tickets. */
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'ANSWERED' | 'RESOLVED' | 'CLOSED';
+
+/** Структурный зеркало Prisma-модели Ticket (DIG-49) + привязки прототипа. */
+export interface TicketRow {
+  id: string;
+  studentId: string;
+  /** Публичный номер `TS-ГГГГ-XXXXX` — единственный ключ наружу (URL). */
+  number: string;
+  subject: TicketSubject;
+  status: TicketStatus;
+  /** Сотрудник, взявший обращение (заполняется ответом менеджера). */
+  assigneeUserId: string | null;
+  /** Привязка к СВОЕЙ заявке (публичный номер SR-…). */
+  requestNumber: string | null;
+  /** Привязка к дисциплине СВОЕЙ группы (код дисциплины). */
+  disciplineCode: string | null;
+  createdAt: Date;
+  /** Время последней активности — порядок списка (свежие сверху). */
+  updatedAt: Date;
+}
+
+/** Сообщение чата обращения. Вложения — только имена файлов (DIG-39). */
+export interface TicketMessageRow {
+  id: string;
+  ticketId: string;
+  authorRole: ActorRole;
+  authorName: string;
+  body: string;
+  attachments: string[];
+  createdAt: Date;
+  /** Момент, когда адресат прочитал сообщение (null — не прочитано). */
+  readAt: Date | null;
 }
 
 export interface ScheduleEventRow {

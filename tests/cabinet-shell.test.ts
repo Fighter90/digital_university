@@ -41,7 +41,10 @@ vi.mock('@/server/data', () => ({
   // DIG-46: страница ассистента читает контекст чата; для каркасного
   // рендера достаточно null (чат показывает приветствие без имени).
   getAssistantContext: vi.fn(async () => null),
-  getOwnProfile: vi.fn(async () => ({
+  // DIG-39 — обращения: пустой список для каркаса (страница рендерится,
+  // а не падает на моке барреля). Остальные страницы каркаса используют
+  // свои моки ниже; расписание сознательно идёт по ветке ошибки, как раньше.
+  getDeaneryPage: vi.fn(async () => ({ tickets: [], requests: [], disciplines: [] })),  getOwnProfile: vi.fn(async () => ({
     id: 's_test',
     login: 'student1',
     fullName: 'Анна Ковалёва',
@@ -66,6 +69,7 @@ vi.mock('@/server/data', () => ({
       REQUEST: { PUSH: true, EMAIL: true, TELEGRAM: false },
       NEWS: { PUSH: true, EMAIL: true, TELEGRAM: false },
       DEADLINE: { PUSH: true, EMAIL: true, TELEGRAM: false },
+      TICKET: { PUSH: true, EMAIL: true, TELEGRAM: false },
       SYSTEM: { PUSH: true, EMAIL: true, TELEGRAM: false },
     },
     theme: 'SYSTEM' as const,
@@ -167,7 +171,7 @@ import SchedulePage from '@/app/(cabinet)/schedule/page';
 import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
 import RequestsPage from '@/app/(cabinet)/requests/page';
 import NotificationsPage from '@/app/(cabinet)/notifications/page';
-import DeaneryPage from '@/app/(cabinet)/deanery/page';
+import DeaneryPage from '@/app/(cabinet)/deanery/(list)/page';
 import AiAssistantPage from '@/app/(cabinet)/ai-assistant/page';
 import ProfilePage from '@/app/(cabinet)/profile/page';
 import SettingsPage from '@/app/(cabinet)/settings/page';

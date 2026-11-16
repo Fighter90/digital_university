@@ -36,6 +36,32 @@ export {
   markAllNotificationsRead,
 } from './notifications';
 export { listAppeals, getAppeal, listAppealMessages } from './appeals';
+export {
+  getDeaneryPage,
+  openTicketChat,
+  createTicket,
+  replyToTicket,
+  appendManagerMessage,
+  MAX_TICKET_ATTACHMENTS,
+  MAX_ATTACHMENT_NAME_LENGTH,
+  MIN_TICKET_BODY_LENGTH,
+  MAX_TICKET_BODY_LENGTH,
+} from './deanery';
+export type {
+  DeaneryPageData,
+  TicketChatData,
+  TicketListItem,
+  CreateTicketInput,
+  CreateTicketResult,
+  ReplyInput,
+  ReplyResult,
+} from './deanery';
+export {
+  newTicketNumber,
+  normalizeTicketNumber,
+  isValidTicketNumber,
+  TICKET_NUMBER_PATTERN,
+} from './ticket-number';
 export { listSchedule, listExams } from './schedule';
 export { getSession, createRetakeRequest } from './session';
 export type {
@@ -222,4 +248,7 @@ export {
   type ServiceFavoriteRow,
   type CertificateRow,
   type CalendarSubscriptionRow,
-} from './types';
+  type TicketRow,
+  type TicketMessageRow,
+  type TicketStatus,
+  type TicketSubject,} from './types';
