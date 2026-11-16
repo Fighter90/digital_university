@@ -73,7 +73,8 @@
   прямое отображение колонок на `ScheduleEventRow`.
 - [x] 16. lint-гейт: зелёный (0 ошибок; 2 warning только в `scripts/swarm/`,
   который правилам роя трогать запрещено). Причина прошлого красного гейта —
-  lint прогонялся по stale-состоянию рабочего дерева до коммита ec24346.
+  lint прогонялся по stale-состоянию рабочего дерева до коммита
+  c8f9dc1 (ранее ec24346 до rebase-reword).
 - [x] 17. Незакоммиченные доработки раунда 2 закоммичены: (а) e2e DIG-24 —
   worker-scoped `storageState` (один вход на воркер: per-IP rate limiter входа
   30/15 мин не выжигается параллельными воркерами), увеличенные таймауты
@@ -85,4 +86,33 @@
   v7) падал на `react-hooks/set-state-in-effect`; сравнение по нормализованному
   `note ?? ''` — иначе SSR зацикливался («Too many re-renders», поймано
   tests/schedule-page.test.tsx). 22/22 тестов страницы зелёные.
-  Коммит dbd5861.
+  Коммит 029b130 (ранее dbd5861 до rebase-reword).
+
+## Раунд 2 (повторный запуск роя) — 4 замечания ревью от round-1
+
+- [x] 19. «ICS-роут без поведенческих тестов» → e2e
+  `e2e/schedule-event-details.spec.ts` (describe «ICS одной пары»,
+  desktop-1440): своя пара sch-pi21-1 → 200, `text/calendar`,
+  BEGIN:VCALENDAR/VEVENT/END, `UID:event-sch-pi21-1@digital-deanery`,
+  `SUMMARY:Лекция: Информатика`, `LOCATION:ауд. 301`,
+  `content-disposition: attachment`, `cache-control: no-store`;
+  чужой (sch-ek11-1) и несуществующий id → единый 404 JSON
+  `{error:"not_found"}` — оба сценария delta-спеки покрыты по
+  прецеденту e2e/session.spec.ts:97-105/148-149.
+- [x] 20. «Спека↔код: нижний лист <768 px vs sm: (640 px)» → классы
+  PANEL_CLASSES выровнены на `md:` (спека не менялась — она становится
+  «правдой системы» при archive). Red-first: новый e2e «720×800: панель
+  во всю ширину» падал (панель была правой колонкой 420 px), после
+  фикса зелёный; в 640–767 px страница показывает мобильный вид и
+  панель теперь нижний лист, как в спеке.
+- [x] 21. «Неверный комментарий „нет Date в полях"» → тест
+  сериализуемости переписан по реальному контракту: startsAt/endsAt —
+  Date (RSC сериализует), скаляры — строки/boolean/null, блоки
+  переноса/отмены — объект или null.
+- [x] 22. «wip(dig-24): salvage r2 — не conventional» → rebase-reword:
+  теперь `a2e1830 fix(schedule): восстановление lint-правок раунда 2 —
+  DIG-24`; история ветки — только conventional commits с DIG-XX
+  (соседние SHA обновлены: dbd5861→029b130, ec24346→c8f9dc1).
+- [x] 23. Гейты и прогон: полный spec e2e DIG-24 — 12 passed / 8
+  skipped (project-gates), включая сохранение/удаление заметки;
+  vitest, lint/typecheck/build/test — см. коммит 5980b21.
