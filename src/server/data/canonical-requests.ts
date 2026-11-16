@@ -31,6 +31,7 @@ import { formatCanonicalRequestNumber } from './canonical-request-number';
 import { denyAccess } from './access';
 import type { DataDb } from './port';
 import type {
+  AppealRow,
   CanonicalRequestEventRow,
   CanonicalRequestRow,
   CanonicalRequestTypeRow,
@@ -376,7 +377,6 @@ export async function transitionCanonicalRequest(
 }
 
 // ── чтение (owner-scoped, uniform 404) ────────────────────────────────────────
-
 /**
  * Одна заявка по публичному номеру. Чужой и несуществующий номер → null
  * (вызывающий код отвечает единым 404), попытка чужой — в аудите.
@@ -465,3 +465,91 @@ export async function listCanonicalRequestEvents(
 
 // Реэкспорт меток для будущего UI (экранная задача переиспользует).
 export { CANONICAL_REQUEST_STATUS_LABELS };
+
+// ── DIG-33: действия карточки заявки ──────────────────────────────────────────
+
+/**
+ * «Задать вопрос по заявке» — обращение в деканат с привязкой к номеру:
+ * тема «Вопрос по заявке ЗД-…», вопрос — в первом сообщении. Пишет
+ * только студент-владелец: чужая заявка неотличима от несуществующей
+ * (null, попытка — в аудите), сотрудник получает ROLE_MISMATCH.
+ */
+export async function createRequestQuestionAppeal(
+  db: DataDb,
+  ctx: DataCtx,
+  input: { requestId: string; message: string },
+  options: { now?: Date } = {},
+): Promise<AppealRow | null> {
+  const now = options.now ?? new Date();
+
+  if (ctx.role !== 'STUDENT' || ctx.studentId === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: input.requestId,
+      reason: 'ROLE_MISMATCH',
+    });
+    return null;
+  }
+
+  // Owner-scope чтением: чужая и несуществующая заявка отвечают одинаково.
+  const request = await getCanonicalRequestById(db, ctx, input.requestId);
+  if (!request) return null;
+
+  const student = await db.findStudentById(ctx.studentId);
+  return db.appendAppealByStudent(ctx.studentId, {
+    subject: `Вопрос по заявке ${request.number}`,
+    message: `Заявка ${request.number} «${request.title}».\n\n${input.message}`,
+    authorName: student?.fullName ?? ctx.login,
+    createdAt: now,
+  });
+}
+
+export type SendDocumentByEmailResult = { ok: true; email: string } | { ok: false; error: string };
+
+/**
+ * «Отправить на email» готового документа. Концепт: SMTP не подключается,
+ * факт отправки фиксируется кабинетным уведомлением на email профиля
+ * (адрес берётся из профиля владельца, никогда не из ввода). Только
+ * студент-владелец, только мгновенный тип в READY/ISSUED.
+ */
+export async function sendRequestDocumentByEmail(
+  db: DataDb,
+  ctx: DataCtx,
+  number: string,
+  options: { now?: Date } = {},
+): Promise<SendDocumentByEmailResult> {
+  const now = options.now ?? new Date();
+
+  if (ctx.role !== 'STUDENT' || ctx.studentId === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: number,
+      reason: 'ROLE_MISMATCH',
+    });
+    return { ok: false, error: 'Отправка доступна студенту — владельцу заявки' };
+  }
+
+  const request = await getCanonicalRequestByNumber(db, ctx, number);
+  if (!request) return { ok: false, error: 'Заявка не найдена' };
+
+  const type = await db.findCanonicalRequestTypeByCode(request.typeCode);
+  const documentable =
+    (request.status === 'READY' || request.status === 'ISSUED') && (type?.isInstant ?? false);
+  if (!documentable) {
+    return { ok: false, error: 'Документ ещё не готов к отправке' };
+  }
+
+  const student = await db.findStudentById(ctx.studentId);
+  if (!student) return { ok: false, error: 'Не удалось определить email профиля' };
+
+  await db.appendNotificationToStudent(ctx.studentId, {
+    type: 'REQUEST',
+    title: 'Документ отправлен на email',
+    body: `«${request.title}» (${request.number}) отправлен на ${student.email}.`,
+    link: `/requests/${request.number}`,
+    createdAt: now,
+  });
+  return { ok: true, email: student.email };
+}

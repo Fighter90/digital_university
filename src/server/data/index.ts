@@ -159,6 +159,8 @@ export {
   getCanonicalRequestById,
   listCanonicalRequestsByStudent,
   listCanonicalRequestEvents,
+  createRequestQuestionAppeal,
+  sendRequestDocumentByEmail,
   CANONICAL_REQUEST_STATUS_LABELS,
 } from './canonical-requests';
 export type {
@@ -166,6 +168,7 @@ export type {
   CreateCanonicalRequestResult,
   TransitionCanonicalRequestInput,
   TransitionCanonicalRequestResult,
+  SendDocumentByEmailResult,
 } from './canonical-requests';
 export type { DataDb, SchedulePeriod, ScheduleChangePatch } from './port';
 export { getRequestsScreen } from './requests-screen';

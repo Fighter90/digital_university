@@ -15,8 +15,13 @@ import {
   createCanonicalRequest,
   transitionCanonicalRequest,
   listCanonicalRequestTypes,
+  createRequestQuestionAppeal,
+  sendRequestDocumentByEmail,
+  normalizeRequestNumber,
+  CANONICAL_REQUEST_NUMBER_PATTERN,
 } from '@/server/data';
 import { dataDb } from '@/server/data/db';
+import { MAX_QUESTION_LENGTH, MIN_QUESTION_LENGTH } from '@/lib/request-card-view';
 
 export type RequestActionState =
   | {
@@ -175,4 +180,61 @@ export async function listRequestTypesForForm(): Promise<
     isInstant: type.isInstant,
     formSchema: type.formSchema,
   }));
+}
+
+// ── DIG-33: действия карточки заявки ──────────────────────────────────────────
+
+export type RequestEmailState = { ok: true; email: string } | { ok: false; error: string } | null;
+
+/**
+ * «Отправить на email» готового документа. Концепт-прототип: SMTP не
+ * подключается, факт отправки фиксируется кабинетным уведомлением.
+ * Владельца и готовность проверяет слой данных (IDOR-контракт).
+ */
+export async function sendRequestDocumentByEmailAction(
+  _prev: RequestEmailState,
+  formData: FormData,
+): Promise<RequestEmailState> {
+  void _prev;
+  const ctx = await requireDataCtx('/requests');
+
+  const number = normalizeRequestNumber(String(formData.get('number') ?? '').trim());
+  if (!CANONICAL_REQUEST_NUMBER_PATTERN.test(number)) {
+    return { ok: false, error: 'Некорректная заявка' };
+  }
+
+  return sendRequestDocumentByEmail(dataDb, ctx, number);
+}
+
+export type RequestQuestionState = { ok: true } | { ok: false; error: string } | null;
+
+/**
+ * «Задать вопрос по заявке» — создаёт обращение в деканат с темой
+ * «Вопрос по заявке ЗД-…». Владение проверяет слой данных; вопрос
+ * обязателен и ограничен по длине (как комментарий мастера).
+ */
+export async function createRequestQuestionAction(
+  _prev: RequestQuestionState,
+  formData: FormData,
+): Promise<RequestQuestionState> {
+  void _prev;
+  const ctx = await requireDataCtx('/requests');
+
+  const requestId = String(formData.get('requestId') ?? '').trim();
+  if (!REQUEST_ID_PATTERN.test(requestId)) {
+    return { ok: false, error: 'Некорректная заявка' };
+  }
+  const message = String(formData.get('message') ?? '').trim();
+  if (message.length < MIN_QUESTION_LENGTH) {
+    return { ok: false, error: `Опишите вопрос (минимум ${MIN_QUESTION_LENGTH} символа)` };
+  }
+  if (message.length > MAX_QUESTION_LENGTH) {
+    return { ok: false, error: `Вопрос — максимум ${MAX_QUESTION_LENGTH} символов` };
+  }
+
+  const appeal = await createRequestQuestionAppeal(dataDb, ctx, { requestId, message });
+  if (!appeal) {
+    return { ok: false, error: 'Заявка не найдена' };
+  }
+  return { ok: true };
 }

@@ -25,6 +25,7 @@ describe('route guard: public vs protected paths', () => {
     ['/api/calendar/ics', true], // DIG-63: ICS-подписка по персональному токену (календарные клиенты без кук)
     ['/verify/ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-6777', true], // DIG-47: публичная проверка справок
     ['/verify/abc', true],
+    ['/verify', true], // DIG-33: лендинг проверки (ввод кода вручную) без данных
     ['/api/mcp', true], // DIG-64: демо-MCP-сервер — Bearer-токен вместо cookie-сессии
     ['/dashboard', false],
     ['/dashboard/sub', false],
