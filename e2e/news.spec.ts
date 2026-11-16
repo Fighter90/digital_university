@@ -88,19 +88,11 @@ test.describe('DIG-36: лента новостей', () => {
     test.skip(test.info().project.name !== 'desktop-1440', 'desktop-1440 only');
     await signIn(page, ANNA.login, ANNA.password, '/news?scope=university');
 
-    // Сводим состояние к известному: объявление стипендии не прочитано.
+    // Сводим состояние к известному: memory-стор пересоздаётся на каждый
+    // прогон (прод-подобный сервер), сид Анны знает только retake-order —
+    // объявление стипендии гарантированно непрочитанное.
     const strip = page.getByTestId('news-announcements');
     const card = strip.getByTestId('news-announcement-scholarship-increased-docs');
-    if (
-      await card
-        .getByTestId('news-read-badge')
-        .isVisible()
-        .catch(() => false)
-    ) {
-      // Уже прочитано прошлым прогоном — пропуск пометки не ломает сценарий
-      // только если это тот же владелец; для Анны сбросить нельзя, поэтому
-      // тест размечен на уникальную пару «владелец + новость».
-    }
     await expect(card).toHaveAttribute('data-unread', 'true');
 
     // Открываем объявление…

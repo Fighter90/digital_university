@@ -196,9 +196,12 @@ describe('/news (DIG-36) — лента новостей', () => {
     expect(html).toContain('data-testid="news-topics"');
   });
 
-  it('карточки: обложка img с alt и loading="lazy", дата, источник, 2 строки текста', async () => {
+  it('карточки: обложка img с alt, loading="lazy", decoding="async", дата, источник, 2 строки', async () => {
     const html = await renderPage(FeedPage);
     expect(html).toMatch(/<img[^>]+loading="lazy"/);
+    // DIG-36 р3 (замечание ревью): спека обещает decoding="async" — код обязан
+    // её ставить (иначе после openspec archive спека ↔ код расходятся).
+    expect(html).toMatch(/<img[^>]+decoding="async"/);
     expect(html).toMatch(/<img[^>]+alt="[^"]{10,}"/);
     expect(html).toContain('12 ноября 2026');
     expect(html).toContain('Деканат');
@@ -244,6 +247,9 @@ describe('/news/[id] (DIG-36) — страница новости', () => {
     expect(html).toContain('Первый абзац статьи.');
     expect(html).toContain('Порядок пересдач (извлечение)');
     expect(html).toContain('href="/news/files/retake-order-2026.txt"');
+    // Обложка статьи: lazy + decoding="async" (тот же контракт, что у ленты).
+    expect(html).toMatch(/<img[^>]+loading="lazy"/);
+    expect(html).toMatch(/<img[^>]+decoding="async"/);
     expect(html).toContain('Поделиться ссылкой');
     // Возврат в ленту.
     expect(html).toMatch(/href="\/news"/);

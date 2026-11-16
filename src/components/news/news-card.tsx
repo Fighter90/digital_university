@@ -23,6 +23,7 @@ export function NewsCard({ item, feedQuery }: { item: NewsCardView; feedQuery: s
         src={cover.src}
         alt={cover.alt}
         loading="lazy"
+        decoding="async"
         unoptimized
         width={640}
         height={360}

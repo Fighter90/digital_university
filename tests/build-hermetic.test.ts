@@ -71,19 +71,21 @@ describe('npm run typecheck — герметичный прогон (без чу
   // .next/types/**/*.ts, поэтому tsc читает типы СТАРОГО дерева. `next typegen`
   // устаревшие файлы за удалёнными роутами НЕ чистит (проверено эмпирически),
   // значит чистка сгенерированных типов должна быть явной, до перегенерации.
-  it('typecheck чистит .next/types и .next-dev/types, перегенерирует их через next typegen и только потом запускает tsc', () => {
-    expect(pkg().scripts.typecheck).toBe(
-      'rm -rf .next/types .next-dev/types && next typegen && tsc --noEmit',
-    );
+  it('typecheck чистит route-types кроссплатформенно: node -e + fs.rmSync обеих директорий (DIG-36 р3, замечание ревью: POSIX-only `rm -rf`)', () => {
+    const typecheck = pkg().scripts.typecheck;
+    expect(typecheck).toContain('fs.rmSync');
+    expect(typecheck).toContain('.next/types');
+    expect(typecheck).toContain('.next-dev/types');
+    expect(typecheck).not.toContain('rm -rf');
   });
 
-  it('порядок внутри скрипта: rm → typegen → tsc (перегенерация обязана создать routes.d.ts из next-env.d.ts, иначе TS6053)', () => {
+  it('порядок внутри скрипта: чистка (node -e) → typegen → tsc (перегенерация обязана создать routes.d.ts из next-env.d.ts, иначе TS6053)', () => {
     const typecheck = pkg().scripts.typecheck;
-    const rm = typecheck.indexOf('rm -rf');
+    const clean = typecheck.indexOf('node -e');
     const typegen = typecheck.indexOf('next typegen');
     const tsc = typecheck.indexOf('tsc --noEmit');
-    expect(rm, 'нет чистки сгенерированных route-types').toBeGreaterThanOrEqual(0);
-    expect(typegen, 'нет перегенерации типов после чистки').toBeGreaterThan(rm);
+    expect(clean, 'нет чистки сгенерированных route-types').toBeGreaterThanOrEqual(0);
+    expect(typegen, 'нет перегенерации типов после чистки').toBeGreaterThan(clean);
     expect(tsc, 'tsc должен идти последним — по свежим типам').toBeGreaterThan(typegen);
   });
 });
