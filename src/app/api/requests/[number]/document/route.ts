@@ -34,12 +34,18 @@ export const dynamic = 'force-dynamic';
 /** Мгновенные типы с цифровым документом; остальные — бумажный поток. */
 const DOCUMENT_TYPES = new Set(['CERT_ENROLLMENT', 'GRADES_EXTRACT']);
 
-export async function GET(_request: Request, { params }: { params: Promise<{ number: string }> }) {
+export async function GET(
+  httpRequest: Request,
+  { params }: { params: Promise<{ number: string }> },
+) {
   const { number: rawNumber } = await params;
   // Безопасное декодирование: «сырой» % в сегменте не должен ронять роут
   // с 500 — мусор дальше отсеется проверкой формата и даст единый 404.
   const number = normalizeRequestNumber(decodeRequestNumberParam(rawNumber));
   const ctx = await requireDataCtx(`/api/requests/${rawNumber}/document`);
+  // DIG-33 — превью в карточке заявки: ?inline=1 отдаёт тот же PDF с
+  // Content-Disposition: inline (по умолчанию — attachment, скачивание).
+  const inline = new URL(httpRequest.url).searchParams.get('inline') === '1';
 
   // Номера мира сидов (SR-…) документов не имеют — тот же единый 404.
   if (!CANONICAL_REQUEST_NUMBER_PATTERN.test(number)) {
@@ -77,7 +83,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ num
       },
       { now, code, requestNumber: request.number },
     );
-    return pdfResponse(pdf, certificateFilename(now));
+    return pdfResponse(pdf, certificateFilename(now), inline);
   }
 
   // GRADES_EXTRACT — выписка из зачётки (тот же документ, что DIG-27).
@@ -102,15 +108,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ num
     creditsRequired: gradebook.creditsRequired,
   };
   const pdf = buildTranscriptPdf(data, { now, code });
-  return pdfResponse(pdf, transcriptFilename(now));
+  return pdfResponse(pdf, transcriptFilename(now), inline);
 }
 
-function pdfResponse(pdf: Uint8Array, filename: string): Response {
+function pdfResponse(pdf: Uint8Array, filename: string, inline = false): Response {
   return new Response(new Blob([new Uint8Array(pdf)], { type: 'application/pdf' }), {
     status: 200,
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="${filename}"`,
       'Cache-Control': 'private, no-store',
     },
   });

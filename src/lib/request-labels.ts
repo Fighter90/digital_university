@@ -8,9 +8,19 @@
 // мир prisma-сидов DIG-10) остаются в записи для старых экранов, но в
 // экран «Мои заявки» эти значения не попадают: unifyRequestStatus
 // отображает их на канон (lib/requests-view.ts).
+//
+// DIG-33 — «время везде одинаковое и в поясе пользователя»: все метки
+// времени заявок (список, карточка, история событий) форматирует ОДИН
+// форматтер с ЯВНОЙ зоной Europe/Moscow — поясу пользователя прототипа
+// (конвенция проекта: schedule-time.ts, PDF-документы, MCP-формат).
+// Пояс машины сервера больше не протекает в интерфейс, а суффикс «МСК»
+// делает зону видимой пользователю.
 
 import { CANONICAL_REQUEST_STATUS_LABELS } from '@/lib/request-machine';
 import type { RequestStatus, RequestType } from '@/server/data/types';
+
+/** Пояс пользователя прототипа — единый для всех экранов заявок. */
+export const REQUEST_TIME_ZONE = 'Europe/Moscow';
 
 export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   ...CANONICAL_REQUEST_STATUS_LABELS,
@@ -46,8 +56,10 @@ const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
   month: 'long',
   hour: '2-digit',
   minute: '2-digit',
+  timeZone: REQUEST_TIME_ZONE,
 });
 
+/** «16 ноября, 10:05 МСК» — единственный формат времени заявок. */
 export function formatRequestDate(value: Date): string {
-  return dateTimeFormatter.format(value);
+  return `${dateTimeFormatter.format(value)} МСК`;
 }

@@ -44,6 +44,9 @@ export function slaReadyDate(now: Date, etaDays: number | null | undefined): Dat
 const readyByFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: 'numeric',
   month: 'long',
+  // DIG-33 — дата готовности в том же поясе пользователя, что и все
+  // метки времени заявок (Europe/Moscow, см. lib/request-labels.ts).
+  timeZone: 'Europe/Moscow',
 });
 
 /** «до 14 ноября» — часть уведомления о статусе заявки (без года). */

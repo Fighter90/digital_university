@@ -20,7 +20,8 @@ import type {
   CertificateRow,
   CanonicalRequestEventRow,
   CanonicalRequestRow,
-  CanonicalRequestTypeRow,  DisciplineElementRow,
+  CanonicalRequestTypeRow,
+  DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
@@ -1173,6 +1174,14 @@ function buildCanonicalRequests(): {
   const deferCreated = day(-2, 11, 20);
   const deferFixAt = day(-1, 10, 5);
 
+  // DIG-33 — заявки Ильи: отдельный мир мутационных e2e карточки.
+  // Сквозная нумерация года (nextCanonicalRequestSeq сканирует все заявки):
+  // у Анны 1–3, у Ильи 4–6 — номера уникальны и детерминированы.
+  const ilyaCertCreated = day(-1, 9, 30);
+  const ilyaAcademicCreated = day(-5, 12, 10);
+  const ilyaAcademicFixAt = day(-2, 14, 45);
+  const ilyaPaperCreated = day(-1, 15, 20);
+
   const requests: CanonicalRequestRow[] = [
     {
       id: 'creq-demo-cert',
@@ -1207,10 +1216,75 @@ function buildCanonicalRequests(): {
       typeCode: 'CERT_ENROLLMENT',
       typeName: 'Справка об обучении',
       title: 'Справка об обучении · для военкомата',
-      params: { purpose: 'для военкомата' },
+      params: {
+        purpose: 'для военкомата',
+        // DIG-33 — мета мастера заказа: карточка показывает её в
+        // «Параметрах» и во «Вложениях» (в прототипе передаются только
+        // имена и размеры файлов, сами файлы не хранятся).
+        wizard: JSON.stringify({
+          destination: 'Военкомат',
+          language: 'RU',
+          copies: 1,
+          delivery: 'PICKUP',
+          comment: '',
+          attachments: [
+            { name: 'scan-passport.png', size: 1258291 },
+            { name: 'voenny-bilet.pdf', size: 884736 },
+          ],
+        }),
+      },
       status: 'NEEDS_FIX',
       createdAt: deferCreated,
       updatedAt: deferFixAt,
+    },
+    // ── DIG-33: мир Ильи (мутационные e2e карточки) ─────────────────────────
+    {
+      id: 'creq-demo-ilya-cert',
+      number: formatCanonicalRequestNumber(ilyaCertCreated.getFullYear(), 4),
+      studentId: 'st-ilya',
+      typeCode: 'CERT_ENROLLMENT',
+      typeName: 'Справка об обучении',
+      title: 'Справка об обучении · для банка',
+      params: { purpose: 'для банка' },
+      status: 'READY',
+      createdAt: ilyaCertCreated,
+      updatedAt: ilyaCertCreated,
+    },
+    {
+      id: 'creq-demo-ilya-academic',
+      number: formatCanonicalRequestNumber(ilyaAcademicCreated.getFullYear(), 5),
+      studentId: 'st-ilya',
+      typeCode: 'ACADEMIC_LEAVE',
+      typeName: 'Заявление на академический отпуск',
+      title: 'Заявление на академический отпуск · весенний семестр',
+      params: {
+        period: 'весенний семестр',
+        reason: 'по семейным обстоятельствам',
+        from: '2027-03-01',
+        wizard: JSON.stringify({
+          destination: 'Деканат ЭК',
+          language: 'RU',
+          copies: 1,
+          delivery: 'PICKUP',
+          comment: 'Нужны два подписанных экземпляра',
+          attachments: [{ name: 'scan-zayavlenie.pdf', size: 524288 }],
+        }),
+      },
+      status: 'NEEDS_FIX',
+      createdAt: ilyaAcademicCreated,
+      updatedAt: ilyaAcademicFixAt,
+    },
+    {
+      id: 'creq-demo-ilya-paper',
+      number: formatCanonicalRequestNumber(ilyaPaperCreated.getFullYear(), 6),
+      studentId: 'st-ilya',
+      typeCode: 'DIPLOMA_COPY',
+      typeName: 'Дубликат диплома',
+      title: 'Дубликат диплома · повреждение оригинала',
+      params: { reason: 'повреждение оригинала' },
+      status: 'SUBMITTED',
+      createdAt: ilyaPaperCreated,
+      updatedAt: ilyaPaperCreated,
     },
   ];
 
@@ -1258,6 +1332,51 @@ function buildCanonicalRequests(): {
       toStatus: 'NEEDS_FIX',
       comment: 'Укажите ФИО латиницей',
       createdAt: deferFixAt,
+    },
+    // ── DIG-33: история заявок Ильи ─────────────────────────────────────────
+    {
+      id: 'cev-demo-ilya-cert',
+      requestId: 'creq-demo-ilya-cert',
+      actorUserId: 'auth-ilya',
+      actorRole: 'STUDENT',
+      actorName: 'Илья Смирнов',
+      fromStatus: null,
+      toStatus: 'READY',
+      comment: 'Документ сформирован автоматически',
+      createdAt: ilyaCertCreated,
+    },
+    {
+      id: 'cev-demo-ilya-academic-submit',
+      requestId: 'creq-demo-ilya-academic',
+      actorUserId: 'auth-ilya',
+      actorRole: 'STUDENT',
+      actorName: 'Илья Смирнов',
+      fromStatus: null,
+      toStatus: 'SUBMITTED',
+      comment: null,
+      createdAt: ilyaAcademicCreated,
+    },
+    {
+      id: 'cev-demo-ilya-academic-fix',
+      requestId: 'creq-demo-ilya-academic',
+      actorUserId: 'auth-dean',
+      actorRole: 'STAFF',
+      actorName: 'Мария Петрова',
+      fromStatus: 'SUBMITTED',
+      toStatus: 'NEEDS_FIX',
+      comment: 'Приложите скан подписанного заявления',
+      createdAt: ilyaAcademicFixAt,
+    },
+    {
+      id: 'cev-demo-ilya-paper-submit',
+      requestId: 'creq-demo-ilya-paper',
+      actorUserId: 'auth-ilya',
+      actorRole: 'STUDENT',
+      actorName: 'Илья Смирнов',
+      fromStatus: null,
+      toStatus: 'SUBMITTED',
+      comment: null,
+      createdAt: ilyaPaperCreated,
     },
   ];
   return { types, requests, events };

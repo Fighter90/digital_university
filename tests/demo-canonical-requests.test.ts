@@ -65,8 +65,54 @@ describe('demo seed: канонические заявки (DIG-30)', () => {
       // История начинается с создания (подача или мгновенная READY)
       // и заканчивается текущим статусом.
       expect(events[0]!.fromStatus).toBeNull();
-      expect(events[0]!.toStatus).toBe(request.status === 'NEEDS_FIX' ? 'SUBMITTED' : request.status);
+      expect(events[0]!.toStatus).toBe(
+        request.status === 'NEEDS_FIX' ? 'SUBMITTED' : request.status,
+      );
       expect(events[events.length - 1]!.toStatus).toBe(request.status);
     }
+  });
+
+  // DIG-33 — заявки Ильи: мир мутационных e2e экрана «Карточка заявки»,
+  // изолированный от зафиксированного read-only мира Анны (пилюли DIG-32,
+  // бейдж непрочитанных DIG-54).
+  it('заявки Ильи: мгновенная READY и «нужна доработка» с валидной историей', async () => {
+    const db = createMemoryDataDb();
+    await seedDemoData(db, stubAuthStore);
+
+    const ilya = await db.listCanonicalRequestsByStudent('st-ilya');
+    expect(ilya.length).toBeGreaterThanOrEqual(2);
+
+    const ready = ilya.find((r) => r.status === 'READY');
+    expect(ready).toBeDefined();
+    expect(ready!.typeCode).toBe('CERT_ENROLLMENT'); // мгновенный тип — PDF есть
+
+    const fix = ilya.find((r) => r.status === 'NEEDS_FIX');
+    expect(fix).toBeDefined();
+    expect(fix!.typeCode).toBe('ACADEMIC_LEAVE');
+
+    const numbers = ilya.map((r) => r.number);
+    expect(new Set(numbers).size).toBe(numbers.length);
+    // Номера Ильи не пересекаются с номерами Анны (сквозная нумерация года).
+    const annaNumbers = new Set(
+      (await db.listCanonicalRequestsByStudent('st-anna')).map((r) => r.number),
+    );
+    for (const number of numbers) expect(annaNumbers.has(number)).toBe(false);
+
+    for (const request of ilya) {
+      const events = await db.listCanonicalRequestEvents(request.id);
+      // Готовая мгновенная и поданная в очередь — одно событие создания;
+      // доработка — минимум подача + переход сотрудника с причиной.
+      expect(events.length, request.number).toBeGreaterThanOrEqual(
+        request.status === 'NEEDS_FIX' ? 2 : 1,
+      );
+      expect(events[0]!.fromStatus).toBeNull();
+      // История начинается с создания: мгновенная READY или подача.
+      expect(events[0]!.toStatus).toBe(request.status === 'READY' ? 'READY' : 'SUBMITTED');
+      expect(events[events.length - 1]!.toStatus).toBe(request.status);
+    }
+
+    // «Нужна доработка» Ильи несёт причину сотрудника — она попадает в карточку.
+    const fixEvents = await db.listCanonicalRequestEvents(fix!.id);
+    expect(fixEvents.at(-1)!.comment).toBeTruthy();
   });
 });

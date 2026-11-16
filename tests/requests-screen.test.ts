@@ -22,7 +22,7 @@ let anna: DataCtx;
 let maria: DataCtx;
 
 const asUser = (id: string, login: string, role: AuthUser['role']): AuthUser =>
-  ({ id, login, role, displayName: login } as AuthUser);
+  ({ id, login, role, displayName: login }) as AuthUser;
 
 beforeEach(async () => {
   db = createMemoryDataDb();
@@ -116,17 +116,20 @@ describe('getRequestsScreen — демо-данные Анны', () => {
 });
 
 describe('getRequestsScreen — Илья и сотрудник', () => {
-  it('Илья видит только свои legacy-заявки (единый словарь)', async () => {
+  it('Илья видит только свои заявки в едином словаре (legacy SR- + канон ЗД-)', async () => {
     const ilyaCtx = await toDataCtx(asUser('auth-ilya', 'ilya.petrov', 'STUDENT'), db);
     if (!ilyaCtx) throw new Error('ilya ctx missing');
     const { cards } = await getRequestsScreen(db, ilyaCtx);
-    expect(cards).toHaveLength(3);
-    for (const card of cards) {
-      expect(card.number).toMatch(/^SR-/);
+    // DIG-33: +3 канонические заявки Ильи (READY мгновенная, NEEDS_FIX,
+    // SUBMITTED бумажная) — мир мутационных e2e карточки.
+    expect(cards).toHaveLength(6);
+    const legacy = cards.filter((card) => card.number.startsWith('SR-'));
+    expect(legacy).toHaveLength(3);
+    for (const card of legacy) {
       expect(CANONICAL_REQUEST_STATUSES).toContain(card.status);
     }
     // REJECTED остался в архиве с причиной отказа.
-    const rejected = cards.find((card) => card.status === 'REJECTED')!;
+    const rejected = legacy.find((card) => card.status === 'REJECTED')!;
     expect(rejected).toBeDefined();
     expect(rejected.nextAction).toContain('Перенос невозможен');
     expect(rejected.action).toBeNull();

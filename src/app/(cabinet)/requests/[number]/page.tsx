@@ -10,12 +10,18 @@
 // отмена до IN_PROGRESS); legacy-заявки «SR-…» идут прежним потоком
 // (контракт e2e изоляции данных data-isolation.spec.ts).
 //
+// DIG-33 — карточка по Figma «06 · Заявки — карточка»: шапка с номером
+// (копируется), ожидаемой датой и «Ведёт», форма исправления доработки,
+// блок готового документа (превью / скачать / проверить / email),
+// параметры и вложения, вертикальный таймлайн истории с временем в
+// единой зоне «МСК», «Задать вопрос по заявке».
+//
 // NOTE: do NOT add a loading.tsx above this segment. A Suspense boundary
 // makes Next stream the shell and the response leaves with HTTP 200 before
 // notFound() can set the status — a foreign page would answer 200 instead of
 // the contract-mandated uniform 404 (caught by e2e/data-isolation.spec.ts).
 import Link from 'next/link';
-import { Download, TriangleAlert } from 'lucide-react';
+import { Download, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import {
   requireDataCtx,
@@ -26,17 +32,33 @@ import {
   getOrCreateCertificateForRequest,
   getCanonicalRequestByNumber,
   listCanonicalRequestEvents,
+  listCanonicalRequestTypes,
   isValidCanonicalRequestNumber,
   CANONICAL_REQUEST_STATUS_LABELS,
   isTerminalRequestStatus,
 } from '@/server/data';
 import { dataDb } from '@/server/data/db';
-import { cancelRequestAction, resubmitRequestAction } from '@/server/actions/requests';
+import {
+  cancelRequestAction,
+  createRequestQuestionAction,
+  resubmitRequestAction,
+  sendRequestDocumentByEmailAction,
+} from '@/server/actions/requests';
 import { RequestStatusBadge } from '@/components/request-status-badge';
 import { REQUEST_TYPE_LABELS, formatRequestDate } from '@/lib/request-labels';
 import { RequestStepper } from '@/components/requests/request-stepper';
 import { RequestTransitionButton } from '@/components/requests/request-transition-button';
-import { formatStatusTransition } from '@/lib/request-machine';
+import { CopyRequestNumber } from '@/components/requests/copy-request-number';
+import { RequestFixForm } from '@/components/requests/request-fix-form';
+import { RequestQuestionForm } from '@/components/requests/request-question-form';
+import { RequestEmailButton } from '@/components/requests/request-email-button';
+import { RequestHistoryTimeline } from '@/components/requests/request-history-timeline';
+import {
+  expectedReadyLabelFromEvents,
+  lastStaffActorName,
+  requestParamsRows,
+  requestWizardView,
+} from '@/lib/request-card-view';
 
 export default async function RequestDetailPage({
   params,
@@ -143,7 +165,7 @@ export default async function RequestDetailPage({
   );
 }
 
-// ── DIG-32: карточка канонической заявки «ЗД-…» ──────────────────────────────
+// ── DIG-32/33: карточка канонической заявки «ЗД-…» ───────────────────────────
 
 async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof requireDataCtx>>) {
   // Чтение owner-scoped: чужой и несуществующий номер → одинаковый 404,
@@ -154,12 +176,20 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
   const events = await listCanonicalRequestEvents(dataDb, ctx, request.id);
   if (!events) notFound();
 
+  const types = await listCanonicalRequestTypes(dataDb);
+  const type = types.find((t) => t.code === request.typeCode) ?? null;
+
+  const isStudent = ctx.role === 'STUDENT';
   const isFix = request.status === 'NEEDS_FIX';
   const isReady = request.status === 'READY' || request.status === 'ISSUED';
-  // Отмена — только до IN_PROGRESS (машина состояний DIG-30).
+  // Блок документа — только мгновенные типы с цифровым PDF (роут /document).
+  const hasDocument = isReady && (type?.isInstant ?? false);
+  // Отмена — только до IN_PROGRESS (машина состояний DIG-30, ветка NEEDS_FIX разрешена).
   const canCancel =
-    ctx.role === 'STUDENT' &&
-    (request.status === 'SUBMITTED' || request.status === 'ACCEPTED');
+    isStudent &&
+    (request.status === 'SUBMITTED' ||
+      request.status === 'ACCEPTED' ||
+      request.status === 'NEEDS_FIX');
 
   // Последняя причина доработки/отказа — для алерта.
   let reason: string | null = null;
@@ -169,6 +199,12 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
       if (comment) reason = comment;
     }
   }
+
+  const manager = lastStaffActorName(events);
+  const expectedReady = expectedReadyLabelFromEvents(events, type?.etaDays ?? null);
+  const paramRows = requestParamsRows(request.params, type?.formSchema ?? null);
+  const wizard = requestWizardView(request.params);
+  const documentHref = `/api/requests/${encodeURIComponent(request.number)}/document`;
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
@@ -185,8 +221,11 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
           isFix ? 'border-warning/60 bg-warning-soft/40' : 'border-border'
         }`}
       >
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <span className="font-mono text-xs text-muted-foreground">{request.number}</span>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <span className="inline-flex items-center gap-1">
+            <span className="font-mono text-xs text-muted-foreground">{request.number}</span>
+            {isStudent ? <CopyRequestNumber number={request.number} /> : null}
+          </span>
           <span
             data-testid="request-status-pill"
             className="inline-block rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground"
@@ -196,11 +235,22 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
         </div>
         <h1 className="text-xl font-bold sm:text-2xl">{request.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {request.typeName} · подана {formatRequestDate(request.createdAt)}
+          {request.typeName} · подана{' '}
+          <span data-testid="request-timestamp">{formatRequestDate(request.createdAt)}</span>
         </p>
 
         <div className="mt-5">
           <RequestStepper status={request.status} />
+        </div>
+
+        {/* Ожидаемая дата и менеджер заявки (DIG-33). */}
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          {isFix ? (
+            <span data-testid="request-expected-ready">Срок — после исправления</span>
+          ) : expectedReady ? (
+            <span data-testid="request-expected-ready">{expectedReady}</span>
+          ) : null}
+          <span data-testid="request-manager">Ведёт: {manager ?? 'сотрудник деканата'}</span>
         </div>
 
         {isFix && reason ? (
@@ -209,7 +259,9 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
             className="mt-4 flex items-start gap-2 rounded-button border border-warning/50 bg-warning-soft p-3"
           >
             <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning-ink" />
-            <p className="text-sm font-medium text-warning-ink">Нужна доработка: {reason}</p>
+            <p className="text-sm font-medium text-warning-ink">
+              Нужна доработка. Что исправить: {reason}
+            </p>
           </div>
         ) : null}
         {request.status === 'REJECTED' && reason ? (
@@ -218,28 +270,62 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
           </div>
         ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {isReady && ctx.role === 'STUDENT' ? (
-            <a
-              href={`/api/requests/${encodeURIComponent(request.number)}/document`}
-              data-testid="request-document-pdf"
-              className="inline-flex items-center gap-1.5 rounded-button bg-coral-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
+        {/* Форма исправления прямо в карточке (DIG-33). */}
+        {isFix && isStudent ? (
+          <RequestFixForm requestId={request.id} action={resubmitRequestAction} />
+        ) : null}
+
+        {/* Блок готового документа: превью, скачать, проверить, email (DIG-33). */}
+        {hasDocument && isStudent ? (
+          <div
+            data-testid="request-document-block"
+            className="mt-4 rounded-button border border-border bg-background p-3"
+          >
+            <p className="text-sm font-bold text-foreground">Документ готов</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              PDF с QR-кодом проверки. Скачать можно сколько угодно раз — документ формируется при
+              скачивании.
+            </p>
+            {/* Превью PDF: inline-отдача того же документа; на 360 px скрыто. */}
+            <object
+              data={`${documentHref}?inline=1`}
+              type="application/pdf"
+              data-testid="request-document-preview"
+              className="mt-3 hidden h-80 w-full rounded-button border border-border sm:block"
+              aria-label={`Превью документа ${request.number}`}
             >
-              <Download aria-hidden="true" className="size-4" />
-              Скачать PDF
-            </a>
-          ) : null}
-          {isFix && ctx.role === 'STUDENT' ? (
-            <RequestTransitionButton
-              action={resubmitRequestAction}
-              requestId={request.id}
-              label="Исправить и подать повторно"
-              pendingLabel="Подаём…"
-              testid="request-resubmit"
-              variant="primary"
-            />
-          ) : null}
-          {canCancel ? (
+              <p className="p-3 text-xs text-muted-foreground">
+                Превью не поддерживается браузером — скачайте PDF ниже.
+              </p>
+            </object>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <a
+                href={documentHref}
+                data-testid="request-document-pdf"
+                className="inline-flex items-center gap-1.5 rounded-button bg-coral-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
+              >
+                <Download aria-hidden="true" className="size-4" />
+                Скачать PDF
+              </a>
+              <Link
+                href="/verify"
+                data-testid="request-document-verify"
+                className="inline-flex items-center gap-1.5 rounded-button border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"
+              >
+                <ShieldCheck aria-hidden="true" className="size-4" />
+                Проверить подлинность
+              </Link>
+              <RequestEmailButton
+                number={request.number}
+                action={sendRequestDocumentByEmailAction}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {/* Действия студента по машине состояний DIG-30. */}
+        {canCancel ? (
+          <div className="mt-4">
             <RequestTransitionButton
               action={cancelRequestAction}
               requestId={request.id}
@@ -248,35 +334,60 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
               confirmText="Отменить заявку? Действие нельзя отменить."
               testid="request-cancel"
             />
-          ) : null}
-        </div>
+          </div>
+        ) : null}
+
+        {/* Вопрос по заявке — обращение с привязкой к номеру (DIG-33). */}
+        {isStudent ? (
+          <RequestQuestionForm requestId={request.id} action={createRequestQuestionAction} />
+        ) : null}
       </div>
 
-      <h2 className="mb-3 mt-6 text-base font-semibold">История заявки</h2>
-      <ol className="flex flex-col gap-3">
-        {events.map((event) => (
-          <li
-            key={event.id}
-            data-testid="request-history-item"
-            className="rounded-card border border-border bg-card p-4"
-          >
-            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-sm font-medium text-foreground">{event.actorName}</span>
-              <span className="text-xs text-muted-foreground">
-                {formatRequestDate(event.createdAt)}
-              </span>
+      {/* Параметры заявки и вложения (DIG-33). */}
+      {paramRows.length > 0 || wizard ? (
+        <div
+          data-testid="request-params"
+          className="mt-6 rounded-card border border-border bg-card p-4 shadow-soft"
+        >
+          <h2 className="text-base font-semibold">Параметры заявки</h2>
+          <dl className="mt-2 flex flex-col divide-y divide-border">
+            {paramRows.map((row) => (
+              <div key={row.label} className="flex flex-wrap justify-between gap-x-4 py-2">
+                <dt className="text-sm text-muted-foreground">{row.label}</dt>
+                <dd className="text-sm font-medium text-foreground">{row.value}</dd>
+              </div>
+            ))}
+            {wizard?.rows.map((row) => (
+              <div
+                key={`wizard-${row.label}`}
+                className="flex flex-wrap justify-between gap-x-4 py-2"
+              >
+                <dt className="text-sm text-muted-foreground">{row.label}</dt>
+                <dd className="text-sm font-medium text-foreground">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+          {wizard && wizard.attachments.length > 0 ? (
+            <div data-testid="request-attachments" className="mt-3">
+              <p className="text-xs font-semibold text-muted-foreground">Вложения</p>
+              <ul className="mt-1 flex flex-col gap-1">
+                {wizard.attachments.map((file) => (
+                  <li
+                    key={file.name}
+                    className="flex items-center justify-between gap-3 rounded-button bg-muted px-3 py-1.5 text-sm"
+                  >
+                    <span className="truncate text-foreground">{file.name}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{file.sizeLabel}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {event.fromStatus
-                ? formatStatusTransition(event.fromStatus, event.toStatus)
-                : CANONICAL_REQUEST_STATUS_LABELS[event.toStatus]}
-              {!isTerminalRequestStatus(event.toStatus) && event.comment
-                ? ` — ${event.comment}`
-                : ''}
-            </p>
-          </li>
-        ))}
-      </ol>
+          ) : null}
+        </div>
+      ) : null}
+
+      <h2 className="mb-3 mt-6 text-base font-semibold">История заявки</h2>
+      <RequestHistoryTimeline events={events} />
     </section>
   );
 }
