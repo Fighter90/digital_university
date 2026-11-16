@@ -158,6 +158,9 @@ export async function openTicketChat(
   if (!ticket) return null;
 
   // Студент открыл чат → ответы менеджера прочитаны (точка в списке гаснет).
+  // Осознанный компромисс прототипа: мутация readAt при GET-рендере; при
+  // переезде на Prisma (DIG-10/50) вынести в явную мутацию — warning у
+  // сигнатуры markTicketMessagesRead в port.ts.
   await db.markTicketMessagesRead(ticket.id, 'STAFF', new Date());
   const messages = await db.listTicketMessages(ticket.id);
   return { ticket, messages };

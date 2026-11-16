@@ -183,7 +183,13 @@ export interface DataDb {
   listTicketMessages(ticketId: string): Promise<TicketMessageRow[]>;
    * Прочтение: сообщения роли authorRole этого тикета получают readAt (там,
    * где ещё null). Вызывается ТОЛЬКО после проверки владельца в deanery.ts.
-  markTicketMessagesRead(
+   *
+   * ВНИМАНИЕ (раунд 2 ревью DIG-39): в текущем memory-прототипе это мутирует
+   * данные при GET-рендере страницы чата (openTicketChat) — осознанный
+   * компромисс до Prisma. При переезде на PostgreSQL (DIG-10/50) перенести
+   * в явную мутацию (server action / POST), чтобы GET оставался без
+   * побочных эффектов; сигнатуры порта менять не придётся.
+   */  markTicketMessagesRead(
     authorRole: TicketMessageRow['authorRole'],
     readAt: Date,
   ): Promise<boolean>;

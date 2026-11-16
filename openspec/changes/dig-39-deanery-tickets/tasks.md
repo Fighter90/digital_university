@@ -62,3 +62,25 @@
   tests/grades-page.test.tsx — статичная дата «первой контрольной» заменена
   на относительную; падал на ветке и без изменений DIG-39.)
 - [x] 11. Change-папка openspec/changes/dig-39-deanery-tickets — задачи  отмечаются по ходу.
+- [x] 11. Change-папка openspec/changes/dig-39-deanery-tickets — задачи
+  отмечаются по ходу.
+
+## Раунд 2 — правки по ревью
+
+- [x] 12. Red-first: `tests/deanery-page.test.tsx` — некорректный
+  percent-encoding в номере (`%zz`) → notFound(), а не 500
+  (decodeURIComponent бросал URIError). Падало до фикса (URI malformed).
+  Через реальный HTTP битые последовательности отсекает сам Next (400),
+  e2e закрепляет наблюдаемый контракт «400 | 404, не 500».
+- [x] 13. Red-first: `tests/build-hermetic.test.ts` — `.next-build.lock/`
+  игнорируется git и отсутствует в индексе (runtime-артефакт `next build`
+  с PID живого процесса). Падало до фикса (файл был закоммичен).
+- [x] 14. `git rm -r --cached .next-build.lock` + `.gitignore` — артефакт
+  убран из индекса.
+- [x] 15. `proposal.md` — задокументировано отклонение макета
+  «07 · Деканат» (текст задачи) → «17 · Деканат» (figma-screens, код, e2e).
+- [x] 16. `port.ts` / `deanery.ts` — comment-warning: мутация readAt при
+  GET-рендере чата — компромисс memory-прототипа; при переезде на Prisma
+  (DIG-10/50) перенести в явную мутацию.
+- [x] 17. Попутный фикс `tests/grades-page.test.tsx` (date-bomb DIG-26)
+  вынесен в отдельный коммит `test(grades)` — дифф экрана чистый.
