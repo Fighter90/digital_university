@@ -56,8 +56,10 @@ import type {
   MspVoteRow,
   /** DIG-43 — мероприятия вуза и запись (/events). */
   EventRegistrationRow,
-  EventRow,
-} from './types';
+  EventRow,  /** DIG-42 — «Дополнительное образование» (/dpo). */
+  DpoDocumentRow,
+  DpoEnrollmentRow,
+  DpoProgramRow,} from './types';
 
 /** DIG-48 — уведомление студенту, записываемое вместе с действием сотрудника. */
 export interface StaffNotificationInput {
@@ -628,8 +630,24 @@ export interface DataDb {
    * Сколько студентов записано на мероприятие (агрегат: наружу из слоя
    * данных уходит число, не чужие строки — по образцу listMspVotes).
    */
-  listEventAttendeeCount(eventId: string): Promise<number>;
-
+  listEventAttendeeCount(eventId: string): Promise<number>;  // ── DIG-42: «Дополнительное образование» (/dpo) ──────────────────────────
+  /**
+   * Весь каталог программ ДПО — публичный контент (чтение — любой
+   * вошедний, осознанное исключение из owner-scope, как listMspProjects:
+   * вход проверяет dpo.ts до вызова, программа не содержит персональных
+   * данных).
+   */
+  listDpoPrograms(): Promise<DpoProgramRow[]>;
+  /** Записи владельца на программы ДПО (вкладка «Мои программы»). */
+  listDpoEnrollmentsByStudent(studentId: string): Promise<DpoEnrollmentRow[]>;
+  /**
+   * Запись владельца на существующую программу. null — программы нет или
+   * владелец уже записан (UNIQUE пара программа+студент): дубликат строки
+   * невозможен.
+   */
+  enrollDpo(studentId: string, programId: string): Promise<DpoEnrollmentRow | null>;
+  /** Документы ДПО владельца (договор/акт/квитанция/сертификат). */
+  listDpoDocumentsByStudent(studentId: string): Promise<DpoDocumentRow[]>;
   // ── audit (append-only) ───────────────────────────────────────────────────
   appendAudit(
     event: Omit<AuditLogRow, 'id' | 'createdAt'> & { createdAt?: Date },

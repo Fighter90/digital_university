@@ -80,6 +80,8 @@ const TITLE_BY_HREF: readonly PrefixKey[] = [
   { href: '/services', key: 'title.services' },
   { href: '/dashboard', key: 'title.dashboard' },
   { href: '/more', key: 'title.more' },
+  // DIG-42 — «Дополнительное образование».
+  { href: '/dpo', key: 'title.dpo' },
 ];
 
 /** href → ключ пункта меню (SideNav / TabBar / «Ещё»). */
@@ -99,6 +101,8 @@ const MENU_KEY_BY_HREF: readonly PrefixKey[] = [
   { href: '/profile', key: 'menu.profile' },
   { href: '/settings', key: 'menu.settings' },
   { href: '/more', key: 'menu.more' },
+  // DIG-42 — «Дополнительное образование».
+  { href: '/dpo', key: 'menu.dpo' },
   { href: '/staff/requests', key: 'menu.staffRequests' },
   { href: '/staff/appeals', key: 'menu.staffAppeals' },
   { href: '/staff/announcements', key: 'menu.staffAnnouncements' },
