@@ -20,6 +20,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Chip } from '@/components/ui/chip';
 import { EmptyState } from '@/components/ui/empty-state';
+import { riseDelayStyle } from '@/lib/motion';
 
 export interface PeopleBrowserProps {
   people: PersonListEntry[];
@@ -89,8 +90,13 @@ export function PeopleBrowser({ people, showPersonal }: PeopleBrowserProps) {
         />
       ) : (
         <ul data-testid="people-list" className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {visible.map((person) => (
-            <li key={person.id} data-testid={`person-card-${person.id}`}>
+          {visible.map((person, index) => (
+            <li
+              key={person.id}
+              data-testid={`person-card-${person.id}`}
+              className="animate-rise"
+              style={riseDelayStyle(index)}
+            >
               <PersonListItem person={person} query={query} showPersonal={showPersonal} />
             </li>
           ))}

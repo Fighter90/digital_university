@@ -16,6 +16,7 @@ import { NewsSkeleton } from '@/components/news/news-skeleton';
 import { NewsScopeTabs } from '@/components/news/news-scope-tabs';
 import { NewsTopicPills } from '@/components/news/news-topic-pills';
 import { EmptyState } from '@/components/ui/empty-state';
+import { riseDelayStyle } from '@/lib/motion';
 import { dataDb } from '@/server/data/db';
 import { getNewsPage, requireDataCtx } from '@/server/data';
 
@@ -79,8 +80,8 @@ async function NewsContent({ searchParams }: { searchParams: SearchParams }) {
           data-testid="news-grid"
           className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
         >
-          {data.items.map((item) => (
-            <li key={item.id} className="min-w-0">
+          {data.items.map((item, index) => (
+            <li key={item.id} className="animate-rise min-w-0" style={riseDelayStyle(index)}>
               <NewsCard item={item} feedQuery={feedQuery} />
             </li>
           ))}

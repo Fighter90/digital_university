@@ -7,6 +7,7 @@ import { Megaphone } from 'lucide-react';
 import { cn } from 'cn';
 
 import { formatNewsDate } from '@/lib/news-catalog';
+import { riseDelayStyle } from '@/lib/motion';
 import type { NewsCardView } from '@/server/data/news';
 
 export function AnnouncementsStrip({
@@ -28,8 +29,12 @@ export function AnnouncementsStrip({
         Важно: объявления деканата
       </h2>
       <ul className="flex snap-x gap-3 overflow-x-auto pb-1">
-        {announcements.map((item) => (
-          <li key={item.id} className="min-w-0 shrink-0 snap-start">
+        {announcements.map((item, index) => (
+          <li
+            key={item.id}
+            className="animate-rise min-w-0 shrink-0 snap-start"
+            style={riseDelayStyle(index)}
+          >
             <Link
               href={`/news/${item.id}${feedQuery ? `?${feedQuery}` : ''}`}
               data-testid={`news-announcement-${item.id}`}

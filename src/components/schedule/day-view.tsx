@@ -113,11 +113,12 @@ export function DayView({
         </div>
       ) : (
         <ol className="flex flex-col gap-2" aria-label={`Пары, ${title}`}>
-          {events.map((event) => (
+          {events.map((event, index) => (
             <EventCard
               key={event.id}
               event={event}
               href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
+              riseIndex={index}
             />
           ))}
         </ol>

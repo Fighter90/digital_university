@@ -111,13 +111,19 @@ describe('DIG-71: компоненты используют новые утил�
 
   it('списки-карточки каскадно появляются (animate-rise)', () => {
     for (const file of [
-      'src/components/schedule/day-view.tsx',
-      'src/components/schedule/mobile-schedule.tsx',
       'src/app/(cabinet)/news/page.tsx',
       'src/components/requests/requests-browser.tsx',
       'src/components/people/people-browser.tsx',
     ]) {
       expect(read(file), file).toContain('animate-rise');
+    }
+    // Расписание: каскад через проп riseIndex → animate-rise в EventCard.
+    expect(read('src/components/schedule/event-card.tsx')).toContain('animate-rise');
+    for (const file of [
+      'src/components/schedule/day-view.tsx',
+      'src/components/schedule/mobile-schedule.tsx',
+    ]) {
+      expect(read(file), file).toContain('riseIndex');
     }
   });
 

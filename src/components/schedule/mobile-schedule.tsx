@@ -117,10 +117,7 @@ export function MobileSchedule({
 
   if (mode === 'week') {
     return (
-      <WeekList
-        days={weekDays.length > 0 ? weekDays : days.slice(0, 7)}
-        eventQuery={eventQuery}
-      />
+      <WeekList days={weekDays.length > 0 ? weekDays : days.slice(0, 7)} eventQuery={eventQuery} />
     );
   }
 
@@ -231,11 +228,12 @@ export function MobileSchedule({
             if (direction === 'prev') shiftDay(-1);
           }}
         >
-          {selected.events.map((event) => (
+          {selected.events.map((event, index) => (
             <EventCard
               key={event.id}
               event={event}
               href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
+              riseIndex={index}
             />
           ))}
         </ol>
@@ -264,13 +262,7 @@ function emptyDescription(
 }
 
 /** Компактный список недели (переключатель «Неделя» на мобильном). */
-function WeekList({
-  days,
-  eventQuery,
-}: {
-  days: readonly MobileDayView[];
-  eventQuery?: string;
-}) {
+function WeekList({ days, eventQuery }: { days: readonly MobileDayView[]; eventQuery?: string }) {
   return (
     <div data-testid="mobile-week-list" className="flex flex-col gap-4">
       {days.map((day) => (
@@ -298,12 +290,13 @@ function WeekList({
             </p>
           ) : (
             <ol className="flex flex-col gap-1.5">
-              {day.events.map((event) => (
+              {day.events.map((event, index) => (
                 <EventCard
                   key={event.id}
                   event={event}
                   compact
                   href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
+                  riseIndex={index}
                 />
               ))}
             </ol>
