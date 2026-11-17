@@ -97,8 +97,14 @@ test.describe('DIG-41: экран «Финансы» — бюджетник', ()
       '/requests?order=fin-scholarship-cert',
     );
 
-    await page.getByTestId('finance-action-scholarship-cert').click();
-    await expect(page).toHaveURL(/\/requests\?order=fin-scholarship-cert$/);
+    // Клик может «проглотиться» на ещё не гидрированной странице (гонка сразу
+    // после логина) — повторяем клик, пока мастер не откроется (идиома toPass).
+    await expect(async () => {
+      await page.getByTestId('finance-action-scholarship-cert').click();
+      await expect(page).toHaveURL(/\/requests\?order=fin-scholarship-cert$/, {
+        timeout: 5_000,
+      });
+    }).toPass({ timeout: 15_000 });
     // Мастер открыт на шаге 1 с предвыбранным типом словаря (DIG-31 + DIG-41).
     await expect(page.getByTestId('order-wizard-root')).toHaveAttribute(
       'data-auto-type',
@@ -159,6 +165,14 @@ test.describe('DIG-41: экран «Финансы» — платник', () => 
     const foreign = await annaPage.request.get(receiptHref!);
     expect(foreign.status()).toBe(404);
     await annaPage.close();
+
+    // Сотруднику деканата студенческие финансы недоступны на уровне роута
+    // (гвард ctx.role !== 'STUDENT') — тот же единый 404 без раскрытия причины.
+    const deanPage = await browser.newPage();
+    await signIn(deanPage, DEAN.login, DEAN.password, '/finance');
+    const staffAttempt = await deanPage.request.get(receiptHref!);
+    expect(staffAttempt.status()).toBe(404);
+    await deanPage.close();
 
     // Мусорный id — тот же единый 404.
     const garbage = await page.request.get('/api/finance/documents/fin-doc-unknown');
