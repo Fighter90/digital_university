@@ -50,6 +50,10 @@ import type {
   FeedbackRow,
   FeedbackStatus,
   FeedbackTarget,
+  /** DIG-68 — каталог студенческих стартапов «МСП» (/msp). */
+  MspCommentRow,
+  MspProjectRow,
+  MspVoteRow,
 } from './types';
 
 /** DIG-48 — уведомление студенту, записываемое вместе с действием сотрудника. */
@@ -536,6 +540,62 @@ export interface DataDb {
     faculty: string,
     input: StaffAnnouncementInput,
   ): Promise<AnnouncementRow>;
+
+  // ── DIG-68: каталог студенческих стартапов «МСП» (/msp) ──────────────────
+  /**
+   * Весь каталог проектов — лента /msp по определению общая для
+   * авторизованных (осознанное исключение из owner-scope, как
+   * listPublishedFeedbackOutcomes: вход и роль проверяет msp.ts до вызова,
+   * карточка проекта не содержит ничего сверх публичного запуска).
+   */
+  listMspProjects(): Promise<MspProjectRow[]>;
+  /**
+   * Все голоса каталога — только вход агрегатов (счётчики по проектам в
+   * msp.ts), по образцу listGradesByGroup: наружу из слоя данных уходят
+   * числа, не чужие строки.
+   */
+  listMspVotes(): Promise<MspVoteRow[]>;
+  /** Голоса владельца (отметка «уже голосовал» в ленте и на карточке). */
+  listMspVotesByStudent(studentId: string): Promise<MspVoteRow[]>;
+  /**
+   * Переключение голоса владельца: голос → повторный вызов снимает
+   * (UNIQUE пары проект+студент, дубликат строки невозможен — строка
+   * либо создаётся, либо удаляется). null — проекта не существует:
+   * голосование только по существующему проекту.
+   */
+  toggleMspVote(
+    studentId: string,
+    projectId: string,
+  ): Promise<{ voted: boolean; votes: number } | null>;
+  /** Комментарии проекта, старые сверху. */
+  listMspCommentsByProject(projectId: string): Promise<MspCommentRow[]>;
+  /**
+   * Комментарий владельца к проекту. null — проекта нет: комментарий
+   * возможен только к существующему проекту.
+   */
+  appendMspComment(
+    studentId: string,
+    projectId: string,
+    input: { authorName: string; body: string; createdAt: Date },
+  ): Promise<MspCommentRow | null>;
+  /**
+   * Публикация запуска владельцем. Slug генерирует слой данных
+   * (msp-slug.ts: детерминированный транслит заголовка + суффикс, занятые
+   * slug'и учтены вызывающим); дубль slug — сбой генерации (UNIQUE).
+   */
+  createMspProject(
+    studentId: string,
+    input: {
+      slug: string;
+      title: string;
+      tagline: string;
+      description: string;
+      tags: string[];
+      authorName: string;
+      letter: string;
+      createdAt: Date;
+    },
+  ): Promise<MspProjectRow>;
 
   // ── audit (append-only) ───────────────────────────────────────────────────
   appendAudit(

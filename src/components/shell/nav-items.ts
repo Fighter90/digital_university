@@ -24,6 +24,8 @@ export const CABINET_SECTIONS: CabinetSection[] = [
   // DIG-70 — «Справка»: детальный гайд «Как пользоваться кабинетом»
   // (отдельный пункт меню, /guide; FAQ остаётся на /help).
   { href: '/guide', label: 'Справка' },
+  // DIG-68 — каталог студенческих стартапов «МСП» (/msp).
+  { href: '/msp', label: 'МСП' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
   { href: '/profile', label: 'Профиль' },
@@ -71,6 +73,8 @@ export const MORE_SECTIONS: CabinetSection[] = [
   { href: '/help', label: 'Вопросы и ответы' },
   // DIG-70 — детальный гайд «Как пользоваться кабинетом» (экран /guide).
   { href: '/guide', label: 'Справка' },
+  // DIG-68 — каталог студенческих стартапов «МСП» (/msp).
+  { href: '/msp', label: 'МСП' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
   { href: '/profile', label: 'Профиль' },

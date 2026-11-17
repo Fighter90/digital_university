@@ -222,7 +222,7 @@ describe('nav config (cabinet shell)', () => {
     ]);
   });
 
-  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, Обратная связь, Вопросы и ответы, Справка, Справочник, AI-ассистент, Профиль, Настройки', () => {
+  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, Обратная связь, Вопросы и ответы, Справка, МСП, Справочник, AI-ассистент, Профиль, Настройки', () => {
     expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
       '/tasks',
       '/notifications',
@@ -231,6 +231,8 @@ describe('nav config (cabinet shell)', () => {
       '/help',
       // DIG-70 — «Справка» (гайд «Как пользоваться кабинетом») в «Ещё».
       '/guide',
+      // DIG-68 — каталог студенческих стартапов «МСП» в «Ещё».
+      '/msp',
       '/people',
       '/ai-assistant',
       '/profile',
@@ -240,6 +242,17 @@ describe('nav config (cabinet shell)', () => {
 
   // DIG-40 (приёмка): пункт меню канала обратной связи однозначно объясняет
   // назначение — в аудированном ЛК он назывался «Выразительная кнопка».
+  it('DIG-68: пункт меню «МСП» присутствует в кабинете и в «Ещё»', () => {
+    const cabinet = CABINET_SECTIONS.find((s) => s.href === '/msp');
+    const more = MORE_SECTIONS.find((s) => s.href === '/msp');
+    expect(cabinet?.label).toBe('МСП');
+    expect(more?.label).toBe('МСП');
+    // /msp/* подсвечивает пункт меню и вкладку «Ещё» на мобильном.
+    expect(resolveActiveSection('/msp', CABINET_SECTIONS)).toBe('/msp');
+    expect(resolveActiveSection('/msp/konspekt-bot-a1b2', CABINET_SECTIONS)).toBe('/msp');
+    expect(resolveActiveTab('/msp/konspekt-bot-a1b2')).toBe('/more');
+  });
+
   it('DIG-40: пункт меню «Обратная связь» объясняет назначение канала', () => {
     const section = CABINET_SECTIONS.find((s) => s.href === '/feedback');
     expect(section).toBeTruthy();
