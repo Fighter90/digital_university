@@ -119,17 +119,25 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
       {/* Оглавление: десктоп — постоянная колонка, мобильный — details/summary. */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] lg:gap-6">
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <details className="rounded-card border border-border bg-card p-3 shadow-soft lg:open">
-            <summary className="cursor-pointer select-none text-sm font-extrabold tracking-heading lg:hidden">
+          {/* Мобильный: свёрнутое оглавление. */}
+          <details className="rounded-card border border-border bg-card p-3 shadow-soft lg:hidden">
+            <summary className="cursor-pointer select-none text-sm font-extrabold tracking-heading">
               Содержание
             </summary>
-            <p className="mt-3 hidden text-sm font-extrabold tracking-heading lg:block">
-              Содержание
-            </p>
-            <div className="mt-1 lg:mt-2">
+            <div className="mt-1">
               <Toc sections={results} />
             </div>
           </details>
+          {/* Десктоп ≥1024: постоянная колонка оглавления. */}
+          <nav
+            aria-label="Содержание справки"
+            className="hidden rounded-card border border-border bg-card p-3 shadow-soft lg:block"
+          >
+            <p className="text-sm font-extrabold tracking-heading">Содержание</p>
+            <div className="mt-2">
+              <Toc sections={results} />
+            </div>
+          </nav>
         </aside>
 
         <div className="grid gap-4">
