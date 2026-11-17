@@ -42,7 +42,12 @@ import type {
   StudentTaskRow,
   TicketMessageRow,
   TicketRow,
+  /** DIG-68 — каталог студенческих стартапов «МСП» (/msp). */
+  MspCommentRow,
+  MspProjectRow,
+  MspVoteRow,
 } from './types';
+import { newMspSlug } from './msp-slug';
 
 export const DEMO_PASSWORDS = {
   'anna.smirnova': 'anna-demo-2026',
@@ -986,7 +991,8 @@ const announcements: AnnouncementRow[] = [
     body: 'Завтра в 10:00, ауд. 305: вопросы сессии и практики. Возьмите зачётные книжки.',
     authorLogin: 'dean.kovaleva',
     authorName: 'Мария Петрова',
-    createdAt: day(-1, 13, 0),  },
+    createdAt: day(-1, 13, 0),
+  },
 ];
 
 // DIG-39 — обращения в деканат (тикет с перепиской). У Анны два обращения:
@@ -1247,6 +1253,217 @@ function buildFeedback(): FeedbackRow[] {
 }
 
 const feedbackRows = buildFeedback();
+
+// DIG-68 — каталог студенческих стартапов «МСП» (/msp): 7 вымышленных
+// студенческих проектов (только фиктивные названия, никаких реальных
+// компаний), голоса шестерых демо-студентов и комментарии. «Запуск дня» —
+// «Конспект-бот» (максимум голосов), детерминировано, без random.
+// Slug'и генерирует тот же newMspSlug, что и публикацию из кабинета, —
+// ссылки стабильны между сборками.
+function buildMspCatalog(): {
+  mspProjects: MspProjectRow[];
+  mspVotes: MspVoteRow[];
+  mspComments: MspCommentRow[];
+} {
+  // (автор, название, слоган, описание, теги, дней назад)
+  const drafts: Array<{
+    id: string;
+    authorId: string;
+    authorName: string;
+    title: string;
+    tagline: string;
+    description: string;
+    tags: string[];
+    daysAgo: number;
+    /** Кто голосовал: логины-заглушки переводятся в id студентов ниже. */
+    voters: string[];
+  }> = [
+    {
+      id: 'msp-konspekt',
+      authorId: 'st-anna',
+      authorName: 'Анна Ковалёва',
+      title: 'Конспект-бот',
+      tagline: 'ИИ-конспекты лекций за минуту',
+      description:
+        'Студент загружает запись или тезисы пары, а бот собирает структурированный конспект с определениями и вопросами для самопроверки. Черновик дипломного прототипа: работает на вымышленных записях, ничего не отправляет наружу.',
+      tags: ['ai', 'учёба', 'конспекты'],
+      daysAgo: 5,
+      voters: ['st-ilya', 'st-mate-dmitry', 'st-mate-polina', 'st-mate-artem', 'st-mate-sofia'],
+    },
+    {
+      id: 'msp-repetitor',
+      authorId: 'st-mate-dmitry',
+      authorName: 'Дмитрий Волков',
+      title: 'Репетитор.Маркет',
+      tagline: 'Маркетплейс репетиторов от старшекурсников',
+      description:
+        'Старшекурсники публикуют консультации по своим дисциплинам, первокурсники записываются прямо из кабинета. В концепте — витрина с вымышленными профилями: рейтинги, отзывы и слоты придуманы для демо.',
+      tags: ['наставничество', 'консультации'],
+      daysAgo: 4,
+      voters: ['st-anna', 'st-ilya', 'st-mate-polina', 'st-mate-sofia'],
+    },
+    {
+      id: 'msp-deadline',
+      authorId: 'st-anna',
+      authorName: 'Анна Ковалёва',
+      title: 'Дедлайн-радар',
+      tagline: 'Все сроки семестра на одной шкале',
+      description:
+        'Собирает дедлайны курсов, пересдач и оплат в одну таймлайн-шкалу и присылает тихие напоминания за три дня. Задумка второкурсницы после первой сессии; данные в демо — вымышленные.',
+      tags: ['дедлайны', 'планирование'],
+      daysAgo: 2,
+      voters: ['st-ilya', 'st-mate-dmitry', 'st-mate-polina'],
+    },
+    {
+      id: 'msp-biblio',
+      authorId: 'st-mate-polina',
+      authorName: 'Полина Егорова',
+      title: 'БиблиоОбмен',
+      tagline: 'Обмен учебниками между курсами',
+      description:
+        'Студенты помечают ненужные учебники, младшие курсы бронируют их для следующего семестра. Прототип каталога на бумажных формах: все книги и владельцы вымышленные.',
+      tags: ['книги', 'шеринг'],
+      daysAgo: 3,
+      voters: ['st-anna', 'st-mate-artem'],
+    },
+    {
+      id: 'msp-timlider',
+      authorId: 'st-mate-artem',
+      authorName: 'Артём Фёдоров',
+      title: 'ТимЛидер',
+      tagline: 'Поиск команды для хакатона и курсовой',
+      description:
+        'Карточки студентов с навыками и ролями: дизайнер ищет фронтендера, тимлид собирает команду к дедлайну конкурса. Внутри демо — только вымышленные участники и проекты.',
+      tags: ['команды', 'хакатон'],
+      daysAgo: 2,
+      voters: ['st-anna', 'st-mate-sofia'],
+    },
+    {
+      id: 'msp-studcoffee',
+      authorId: 'st-ilya',
+      authorName: 'Илья Смирнов',
+      title: 'СтудКофе',
+      tagline: 'Карта кофеен со студенческой скидкой',
+      description:
+        'Студенческий проект о кофе рядом с кампусом: карта точек, часы загрузки и «студенческий» процент. Все кофейни в демо вымышленные, никаких реальных заведений и коммерции.',
+      tags: ['кампус', 'скидки'],
+      daysAgo: 7,
+      voters: ['st-anna'],
+    },
+    {
+      id: 'msp-stipfond',
+      authorId: 'st-mate-sofia',
+      authorName: 'София Гусева',
+      title: 'СтипФонд',
+      tagline: 'Калькулятор стипендий и грантов',
+      description:
+        'Считает ожидаемую стипендию по успеваемости и подсказывает вымышленные гранты конкурса под профиль студента. Первый прототип на таблицах, цифры в демо придуманы.',
+      tags: ['стипендии', 'гранты'],
+      daysAgo: 1,
+      voters: [],
+    },
+  ];
+
+  const taken: string[] = [];
+  const mspProjects: MspProjectRow[] = drafts.map((draft) => {
+    const slug = newMspSlug(draft.title, taken);
+    taken.push(slug);
+    return {
+      id: draft.id,
+      slug,
+      title: draft.title,
+      tagline: draft.tagline,
+      description: draft.description,
+      tags: draft.tags,
+      authorStudentId: draft.authorId,
+      authorName: draft.authorName,
+      createdAt: day(-draft.daysAgo, 12, 0),
+      letter: draft.title.charAt(0).toUpperCase(),
+    };
+  });
+
+  const mspVotes: MspVoteRow[] = [];
+  let voteSeq = 0;
+  for (const draft of drafts) {
+    for (const voterId of draft.voters) {
+      voteSeq += 1;
+      mspVotes.push({
+        projectId: draft.id,
+        studentId: voterId,
+        createdAt: day(-draft.daysAgo + 1, 9, voteSeq % 50),
+      });
+    }
+  }
+
+  const mkComment = (
+    id: string,
+    projectId: string,
+    studentId: string,
+    authorName: string,
+    body: string,
+    daysAgo: number,
+    hour: number,
+  ): MspCommentRow => ({
+    id,
+    projectId,
+    studentId,
+    authorName,
+    body,
+    createdAt: day(-daysAgo, hour),
+  });
+
+  const mspComments: MspCommentRow[] = [
+    mkComment(
+      'msp-cmt-1',
+      'msp-konspekt',
+      'st-ilya',
+      'Илья Смирнов',
+      'Загрузил конспект вчерашней лекции — структура с определениями собралась за минуту, годно!',
+      4,
+      18,
+    ),
+    mkComment(
+      'msp-cmt-2',
+      'msp-konspekt',
+      'st-mate-polina',
+      'Полина Егорова',
+      'Сделайте, пожалуйста, выгрузку конспекта в PDF — хочется печатать перед семинаром.',
+      3,
+      10,
+    ),
+    mkComment(
+      'msp-cmt-3',
+      'msp-studcoffee',
+      'st-anna',
+      'Анна Ковалёва',
+      'Кофейня у второго корпуса на карте отмечена верно, скидка по студенческому работает.',
+      6,
+      15,
+    ),
+    mkComment(
+      'msp-cmt-4',
+      'msp-repetitor',
+      'st-mate-sofia',
+      'София Гусева',
+      'Записалась на консультацию по матанализу — слоты видно прямо в карточке, удобно.',
+      2,
+      13,
+    ),
+    mkComment(
+      'msp-cmt-5',
+      'msp-timlider',
+      'st-ilya',
+      'Илья Смирнов',
+      'Собрали команду на конкурс за вечер: два фронтендера и дизайнер нашлись через карточки.',
+      1,
+      21,
+    ),
+  ];
+
+  return { mspProjects, mspVotes, mspComments };
+}
+
+const { mspProjects, mspVotes, mspComments } = buildMspCatalog();
 
 const schedule: ScheduleEventRow[] = [
   {
@@ -1867,6 +2084,10 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     schedule,
     // DIG-40 — обратная связь руководству: подписанные, анонимное и лента.
     feedback: feedbackRows,
+    // DIG-68 — каталог студенческих стартапов «МСП»: 7 вымышленных запусков.
+    mspProjects,
+    mspVotes,
+    mspComments,
     exams,
     settings,
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.

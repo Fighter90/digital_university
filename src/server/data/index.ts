@@ -83,6 +83,46 @@ export {
   isValidFeedbackNumber,
   FEEDBACK_NUMBER_PATTERN,
 } from './feedback-number';
+// DIG-68 — каталог студенческих стартапов «МСП» (/msp).
+export {
+  addMspCommentToProject,
+  getMspPage,
+  launchMspProject,
+  mspLetterOf,
+  openMspProjectView,
+  parseMspSort,
+  parseMspTags,
+  toggleMspVoteForProject,
+  MAX_MSP_COMMENT_LENGTH,
+  MAX_MSP_DESCRIPTION_LENGTH,
+  MAX_MSP_TAGLINE_LENGTH,
+  MAX_MSP_TAG_LENGTH,
+  MAX_MSP_TAGS,
+  MAX_MSP_TITLE_LENGTH,
+  MIN_MSP_COMMENT_LENGTH,
+  MIN_MSP_DESCRIPTION_LENGTH,
+  MIN_MSP_TAGLINE_LENGTH,
+  MIN_MSP_TAG_LENGTH,
+  MIN_MSP_TITLE_LENGTH,
+} from './msp';
+export type {
+  AddMspCommentInput,
+  AddMspCommentResult,
+  LaunchMspProjectInput,
+  LaunchMspProjectResult,
+  MspPageData,
+  MspProjectDetail,
+  MspProjectView,
+  MspSort,
+  ToggleMspVoteResult,
+} from './msp';
+export {
+  MSP_SLUG_PATTERN,
+  mspSlugBase,
+  mspSlugSuffix,
+  newMspSlug,
+  normalizeMspSlug,
+} from './msp-slug';
 export { listSchedule, listExams } from './schedule';
 export { getSession, createRetakeRequest } from './session';
 export type {
@@ -118,7 +158,8 @@ export type {
   PersonCardData,
   PersonListEntry,
   PersonUpcomingEvent,
-} from './people';export {
+} from './people';
+export {
   answerStaffAppeal,
   changeStaffRequestStatus,
   createStaffAnnouncement,
@@ -139,7 +180,8 @@ export type {
   StaffRequestDetail,
   StaffStatusChangeResult,
   StaffSummaryData,
-} from './staff-workflow';export { getDashboard } from './dashboard';
+} from './staff-workflow';
+export { getDashboard } from './dashboard';
 export { getTasks, getTasksSummary, groupTasks, markTaskDone } from './tasks';
 export type { TaskGroupViews, TaskSource, TasksData, TasksSummary, TaskView } from './tasks';
 export type {
@@ -264,7 +306,8 @@ export type {
   StaffAnnouncementInput,
 } from './port';
 export { getRequestsScreen } from './requests-screen';
-export type { RequestsScreenData } from './requests-screen';export {
+export type { RequestsScreenData } from './requests-screen';
+export {
   type DataCtx,
   type Role,
   type RequestType,
@@ -308,4 +351,8 @@ export type { RequestsScreenData } from './requests-screen';export {
   type FeedbackKind,
   type FeedbackTarget,
   type FeedbackStatus,
+  /** DIG-68 — каталог студенческих стартапов «МСП» (/msp). */
+  type MspCommentRow,
+  type MspProjectRow,
+  type MspVoteRow,
 } from './types';

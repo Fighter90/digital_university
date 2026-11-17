@@ -14,7 +14,8 @@ import type {
   StaffAnnouncementInput,
   StaffAppealMessageInput,
   StaffRequestUpdateInput,
-} from './port';import type {
+} from './port';
+import type {
   AppealMessageRow,
   AppealRow,
   AuditLogRow,
@@ -41,8 +42,13 @@ import type {
   StudentTaskRow,
   TicketMessageRow,
   TicketRow,
-  AnnouncementRow,  /** DIG-40 — обратная связь руководству (/feedback). */
-  FeedbackRow,} from './types';
+  AnnouncementRow /** DIG-40 — обратная связь руководству (/feedback). */,
+  FeedbackRow,
+  /** DIG-68 — каталог студенческих стартапов «МСП» (/msp). */
+  MspCommentRow,
+  MspProjectRow,
+  MspVoteRow,
+} from './types';
 import { canonicalRequestNumberSeq } from './canonical-request-number';
 export interface MemorySeed {
   students?: StudentRow[];
@@ -82,8 +88,15 @@ export interface MemorySeed {
   /** DIG-47 — реестр выданных справок (проверка подлинности по коду). */
   certificates?: CertificateRow[];
   /** DIG-63 — активные ICS-подписки студентов (одна на студента). */
-  calendarSubscriptions?: CalendarSubscriptionRow[];  /** DIG-48 — объявления сотрудников деканата. */
-  announcements?: AnnouncementRow[];}
+  calendarSubscriptions?: CalendarSubscriptionRow[]; /** DIG-48 — объявления сотрудников деканата. */
+  announcements?: AnnouncementRow[];
+  /** DIG-68 — проекты каталога «МСП» (студенческие стартапы). */
+  mspProjects?: MspProjectRow[];
+  /** DIG-68 — голоса студентов за проекты (UNIQUE пары проект+студент). */
+  mspVotes?: MspVoteRow[];
+  /** DIG-68 — комментарии к проектам каталога. */
+  mspComments?: MspCommentRow[];
+}
 
 export interface MemoryDataDb extends DataDb {
   /** Test/demo helper: replaces the whole dataset (never called in pages). */
@@ -120,7 +133,12 @@ export function createMemoryDataDb(): MemoryDataDb {
   let studentTasks: StudentTaskRow[] = [];
   let certificates: CertificateRow[] = [];
   let calendarSubscriptions: CalendarSubscriptionRow[] = [];
-  let newsRead: NewsReadRow[] = [];  let announcements: AnnouncementRow[] = [];  let audit: AuditLogRow[] = [];
+  let newsRead: NewsReadRow[] = [];
+  let announcements: AnnouncementRow[] = [];
+  let mspProjects: MspProjectRow[] = [];
+  let mspVotes: MspVoteRow[] = [];
+  let mspComments: MspCommentRow[] = [];
+  let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
   let appealSeq = 0;
@@ -133,7 +151,10 @@ export function createMemoryDataDb(): MemoryDataDb {
   let requestEventSeq = 0;
   let certificateSeq = 0;
   let canonicalRequestSeq = 0;
-  let canonicalEventSeq = 0;  let announcementSeq = 0;
+  let canonicalEventSeq = 0;
+  let announcementSeq = 0;
+  let mspProjectSeq = 0;
+  let mspCommentSeq = 0;
   const by = <T, K extends keyof T>(rows: T[], key: K, value: T[K]) =>
     rows.find((row) => row[key] === value) ?? null;
 
@@ -170,7 +191,12 @@ export function createMemoryDataDb(): MemoryDataDb {
       calendarSubscriptions = seed.calendarSubscriptions
         ? seed.calendarSubscriptions.map(clone)
         : [];
-      newsRead = seed.newsRead ? seed.newsRead.map(clone) : [];      announcements = seed.announcements ? seed.announcements.map(clone) : [];      audit = [];
+      newsRead = seed.newsRead ? seed.newsRead.map(clone) : [];
+      announcements = seed.announcements ? seed.announcements.map(clone) : [];
+      mspProjects = seed.mspProjects ? seed.mspProjects.map(clone) : [];
+      mspVotes = seed.mspVotes ? seed.mspVotes.map(clone) : [];
+      mspComments = seed.mspComments ? seed.mspComments.map(clone) : [];
+      audit = [];
     },
 
     auditEvents() {
@@ -914,7 +940,83 @@ export function createMemoryDataDb(): MemoryDataDb {
         createdAt: input.now,
       };
       announcements.push(row);
-      return clone(row);    },
+      return clone(row);
+    },
+
+    // ── DIG-68: каталог студенческих стартапов «МСП» (/msp) ────────────────
+    async listMspProjects() {
+      return mspProjects.map(clone);
+    },
+    // Все голоса — вход агрегатов счётчиков (msp.ts); наружу уходят числа.
+    async listMspVotes() {
+      return mspVotes.map(clone);
+    },
+    async listMspVotesByStudent(studentId) {
+      return mspVotes
+        .filter((v) => v.studentId === studentId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map(clone);
+    },
+    // Переключение голоса: строки пары (проект, студент) всегда 0/1 —
+    // повторный вызов снимает голос (строка удаляется), дубликат невозможен.
+    async toggleMspVote(studentId, projectId) {
+      const project = by(mspProjects, 'id', projectId);
+      if (!project) return null;
+      const exists = mspVotes.some((v) => v.projectId === projectId && v.studentId === studentId);
+      if (exists) {
+        mspVotes = mspVotes.filter(
+          (v) => !(v.projectId === projectId && v.studentId === studentId),
+        );
+      } else {
+        mspVotes.push({ projectId, studentId, createdAt: new Date() });
+      }
+      const votes = mspVotes.filter((v) => v.projectId === projectId).length;
+      return { voted: !exists, votes };
+    },
+    async listMspCommentsByProject(projectId) {
+      return mspComments
+        .filter((c) => c.projectId === projectId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map(clone);
+    },
+    // Комментарий только к СУЩЕСТВУЮЩЕМУ проекту: null — проекта нет.
+    async appendMspComment(studentId, projectId, input) {
+      const project = by(mspProjects, 'id', projectId);
+      if (!project) return null;
+      mspCommentSeq += 1;
+      const row: MspCommentRow = {
+        id: `msp-cmt-${mspCommentSeq}`,
+        projectId,
+        studentId,
+        authorName: input.authorName,
+        body: input.body,
+        createdAt: input.createdAt,
+      };
+      mspComments.push(row);
+      return clone(row);
+    },
+    async createMspProject(studentId, input) {
+      // UNIQUE slug из генерации слоя (msp-slug.ts учитывает занятые):
+      // дубль — сбой контракта, а не тихая перезапись.
+      if (mspProjects.some((p) => p.slug === input.slug)) {
+        throw new Error('duplicate msp project slug');
+      }
+      mspProjectSeq += 1;
+      const row: MspProjectRow = {
+        id: `msp-prj-${mspProjectSeq}`,
+        slug: input.slug,
+        title: input.title,
+        tagline: input.tagline,
+        description: input.description,
+        tags: [...input.tags],
+        authorStudentId: studentId,
+        authorName: input.authorName,
+        createdAt: input.createdAt,
+        letter: input.letter,
+      };
+      mspProjects.push(row);
+      return clone(row);
+    },
 
     async appendAudit(event) {
       auditSeq += 1;

@@ -371,7 +371,8 @@ export interface AnnouncementRow {
   body: string;
   authorLogin: string;
   authorName: string;
-  createdAt: Date;}// ── DIG-40 — обратная связь руководству (/feedback) ──────────────────────────
+  createdAt: Date;
+} // ── DIG-40 — обратная связь руководству (/feedback) ──────────────────────────
 
 /** Тип обращения канала «Обратная связь» (метки в lib/feedback). */
 export type FeedbackKind = 'SUGGESTION' | 'COMPLAINT' | 'GRATITUDE';
@@ -612,6 +613,53 @@ export interface NewsReadRow {
   studentId: string;
   newsId: string;
   readAt: Date;
+}
+
+// ── DIG-68 — каталог студенческих стартапов «МСП» (/msp) ─────────────────────
+
+/**
+ * Проект каталога «МСП — Малое и среднее предпринимательство»: студенческий
+ * стартап в духе Product Hunt. Публичный ключ — slug («транслит заголовка +
+ * суффикс», детерминированно генерирует слой данных, msp-slug.ts), никогда
+ * cuid. Каталог общий для авторизованных (чтение — любой вошедший), поэтому
+ * slug — единственный сегмент URL карточки.
+ */
+export interface MspProjectRow {
+  id: string;
+  slug: string;
+  title: string;
+  /** Однострочное описание в ленте («ИИ-конспекты лекций за минуту»). */
+  tagline: string;
+  description: string;
+  tags: string[];
+  /** Автор запуска — студент (id строки Student). */
+  authorStudentId: string;
+  /** Денормализация имени автора (лента и карточка без join по студенту). */
+  authorName: string;
+  createdAt: Date;
+  /** Логотип-буква (первая буква названия) — квадрат в ленте. */
+  letter: string;
+}
+
+/**
+ * Голос студента за проект. UNIQUE пара (project, студент): каждый студент
+ * голосует 0/1 раз, повторное переключение снимает голос (строка удаляется).
+ */
+export interface MspVoteRow {
+  projectId: string;
+  studentId: string;
+  createdAt: Date;
+}
+
+/** Комментарий к проекту каталога. Автор — всегда владелец сессии. */
+export interface MspCommentRow {
+  id: string;
+  projectId: string;
+  studentId: string;
+  /** Денормализация имени автора (как у проекта). */
+  authorName: string;
+  body: string;
+  createdAt: Date;
 }
 
 /**
