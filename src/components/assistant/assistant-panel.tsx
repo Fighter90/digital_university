@@ -110,10 +110,10 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
                 aria-hidden="true"
                 data-testid="assistant-panel-skeleton"
               >
-                <div className="h-11 animate-pulse rounded-card bg-neutral-200/70" />
-                <div className="h-16 animate-pulse rounded-card bg-neutral-200/70" />
-                <div className="h-16 animate-pulse rounded-card bg-neutral-200/70" />
-                <div className="h-11 animate-pulse rounded-card bg-neutral-200/70" />
+                <div className="h-11 animate-pulse animate-shimmer rounded-card bg-neutral-200/70" />
+                <div className="h-16 animate-pulse animate-shimmer rounded-card bg-neutral-200/70" />
+                <div className="h-16 animate-pulse animate-shimmer rounded-card bg-neutral-200/70" />
+                <div className="h-11 animate-pulse animate-shimmer rounded-card bg-neutral-200/70" />
               </div>
             )}
           </div>
