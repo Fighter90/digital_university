@@ -15,6 +15,8 @@ import { defaultSettingsFor } from './profile';
 import { formatCanonicalRequestNumber } from './canonical-request-number';
 import { newRequestNumber } from './request-number';
 import { newTicketNumber } from './ticket-number';
+import { FEEDBACK_RESPONSE_DAYS } from '@/lib/feedback';
+import { addWorkingDays } from '@/lib/request-sla';
 import type {
   AppealMessageRow,
   AppealRow,
@@ -26,6 +28,7 @@ import type {
   DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
+  FeedbackRow,
   GradeRow,
   NotificationRow,
   RequestEventRow,
@@ -38,7 +41,8 @@ import type {
   StudyDeadlineRow,
   StudentTaskRow,
   TicketMessageRow,
-  TicketRow,} from './types';
+  TicketRow,
+} from './types';
 
 export const DEMO_PASSWORDS = {
   'anna.smirnova': 'anna-demo-2026',
@@ -1108,6 +1112,142 @@ function buildTickets(): {
 
 const { tickets, ticketMessages, ticketNotifications } = buildTickets();
 
+// DIG-40 — обратная связь руководству (/feedback). У Анны два подписанных
+// обращения («На рассмотрении» и «Отвечено»), у Ильи — жалоба («На
+// рассмотрении»), плюс одно АНОНИМНОЕ обращение: studentId = null — связи
+// с пользователем нет нигде (приёмка DIG-40), в списках оно не видно и
+// по карточке не открывается никому. Отдельно — три решённых предложения
+// в публичной ленте «Что мы изменили по вашим предложениям» (тоже без
+// авторов). Все тексты и номера вымышленные.
+export const DEMO_FEEDBACK = {
+  /** Номер анонимного сида — e2e проверяет, что карточка отвечает 404 всем. */
+  anonymousNumber: 'FB-2026-QA77X',
+} as const;
+
+function buildFeedback(): FeedbackRow[] {
+  const mk = (
+    id: string,
+    studentId: string | null,
+    number: string,
+    kind: FeedbackRow['kind'],
+    target: FeedbackRow['target'],
+    status: FeedbackRow['status'],
+    text: string,
+    createdOn: number,
+    extras: Partial<FeedbackRow> = {},
+  ): FeedbackRow => {
+    const createdAt = day(createdOn, 14, 30);
+    return {
+      id,
+      studentId,
+      number,
+      kind,
+      target,
+      status,
+      text,
+      attachments: extras.attachments ?? [],
+      isAnonymous: extras.isAnonymous ?? studentId === null,
+      publishedOutcome: extras.publishedOutcome ?? null,
+      createdAt,
+      dueAt: addWorkingDays(createdAt, FEEDBACK_RESPONSE_DAYS),
+      updatedAt: extras.updatedAt ?? createdAt,
+    };
+  };
+
+  return [
+    mk(
+      'fb-anna-1',
+      'st-anna',
+      'FB-2026-KM41P',
+      'SUGGESTION',
+      'DEANERY',
+      'NEW',
+      'Добавьте, пожалуйста, в расписание фильтр по корпусу — удобно видеть только пары рядом.',
+      -3,
+    ),
+    mk(
+      'fb-anna-2',
+      'st-anna',
+      'FB-2026-WN82T',
+      'GRATITUDE',
+      'PROGRAM_MANAGEMENT',
+      'ANSWERED',
+      'Спасибо за дополнительные консультации перед сессией — очень помогли!',
+      -9,
+      { updatedAt: day(-6, 11, 15) },
+    ),
+    mk(
+      'fb-ilya-1',
+      'st-ilya',
+      'FB-2026-RB53D',
+      'COMPLAINT',
+      'UNIVERSITY_MANAGEMENT',
+      'NEW',
+      'В аудитории 12 экономического корпуса проектор не читает ноутбуки — половина пар начинается с починки техники.',
+      -2,
+    ),
+    // Анонимное обращение: НИКАКОЙ связи с пользователем (studentId: null).
+    mk(
+      'fb-anon-1',
+      null,
+      DEMO_FEEDBACK.anonymousNumber,
+      'SUGGESTION',
+      'ACADEMIC_OFFICE',
+      'NEW',
+      'Опубликуйте шаблоны заявлений прямо в кабинете, чтобы не искать на сайте.',
+      -1,
+    ),
+    // Публичная лента «Что мы изменили по вашим предложениям» — решённые
+    // предложения с результатом, без авторов.
+    mk(
+      'fb-out-1',
+      null,
+      'FB-2026-ZA11Q',
+      'SUGGESTION',
+      'DEANERY',
+      'RESOLVED',
+      'Сделайте запись к специалисту деканата прямо из кабинета — не хочется занимать очередь в коридоре.',
+      -45,
+      {
+        publishedOutcome:
+          'Запись появилась в разделе «Связь с деканатом»: обращение уходит менеджеру программы, ответ — в кабинете.',
+        updatedAt: day(-20, 10, 0),
+      },
+    ),
+    mk(
+      'fb-out-2',
+      null,
+      'FB-2026-ZB22R',
+      'SUGGESTION',
+      'ACADEMIC_OFFICE',
+      'RESOLVED',
+      'Показывайте срок готовности справки сразу при заказе, а не после звонка в деканат.',
+      -38,
+      {
+        publishedOutcome:
+          'Срок готовности теперь виден при заказе и на карточке заявки — считается по рабочим дням.',
+        updatedAt: day(-14, 10, 0),
+      },
+    ),
+    mk(
+      'fb-out-3',
+      null,
+      'FB-2026-ZC33S',
+      'SUGGESTION',
+      'UNIVERSITY_MANAGEMENT',
+      'RESOLVED',
+      'Добавьте в расписание фильтр по корпусу, чтобы видеть только пары в своём здании.',
+      -30,
+      {
+        publishedOutcome: 'В расписании появился выбор корпуса: пары фильтруются по зданию.',
+        updatedAt: day(-7, 10, 0),
+      },
+    ),
+  ];
+}
+
+const feedbackRows = buildFeedback();
+
 const schedule: ScheduleEventRow[] = [
   {
     // DIG-24 — обычная пара с полным составом панели: корпус, email
@@ -1721,8 +1861,12 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     appeals,
     appealMessages,
     tickets,
-    ticketMessages,    // DIG-48 — демо-объявление раздела «Объявления» сотрудника.
-    announcements,    schedule,
+    ticketMessages,
+    // DIG-48 — демо-объявление раздела «Объявления» сотрудника.
+    announcements,
+    schedule,
+    // DIG-40 — обратная связь руководству: подписанные, анонимное и лента.
+    feedback: feedbackRows,
     exams,
     settings,
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.

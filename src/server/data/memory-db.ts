@@ -22,7 +22,8 @@ import type {
   CertificateRow,
   CanonicalRequestEventRow,
   CanonicalRequestRow,
-  CanonicalRequestTypeRow,  DisciplineElementRow,
+  CanonicalRequestTypeRow,
+  DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
@@ -40,8 +41,8 @@ import type {
   StudentTaskRow,
   TicketMessageRow,
   TicketRow,
-  AnnouncementRow,
-} from './types';
+  AnnouncementRow,  /** DIG-40 — обратная связь руководству (/feedback). */
+  FeedbackRow,} from './types';
 import { canonicalRequestNumberSeq } from './canonical-request-number';
 export interface MemorySeed {
   students?: StudentRow[];
@@ -61,6 +62,8 @@ export interface MemorySeed {
   /** DIG-39 — обращения с перепиской. */
   tickets?: TicketRow[];
   ticketMessages?: TicketMessageRow[];
+  /** DIG-40 — обратная связь руководству (включая анонимные и ленту). */
+  feedback?: FeedbackRow[];
   schedule?: ScheduleEventRow[];
   exams?: ExamSessionRow[];
   /** DIG-19 — per-student profile settings (contacts visibility, channels, theme). */
@@ -105,6 +108,7 @@ export function createMemoryDataDb(): MemoryDataDb {
   let appealMessages: AppealMessageRow[] = [];
   let tickets: TicketRow[] = [];
   let ticketMessages: TicketMessageRow[] = [];
+  let feedbacks: FeedbackRow[] = [];
   let schedule: ScheduleEventRow[] = [];
   let exams: ExamSessionRow[] = [];
   let disciplines: DisciplineRow[] = [];
@@ -123,6 +127,7 @@ export function createMemoryDataDb(): MemoryDataDb {
   let appealMessageSeq = 0;
   let ticketSeq = 0;
   let ticketMessageSeq = 0;
+  let feedbackSeq = 0;
   let noteSeq = 0;
   let requestSeq = 0;
   let requestEventSeq = 0;
@@ -151,6 +156,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       appealMessages = seed.appealMessages ? seed.appealMessages.map(clone) : [];
       tickets = seed.tickets ? seed.tickets.map(clone) : [];
       ticketMessages = seed.ticketMessages ? seed.ticketMessages.map(clone) : [];
+      feedbacks = seed.feedback ? seed.feedback.map(clone) : [];
       schedule = seed.schedule ? seed.schedule.map(clone) : [];
       exams = seed.exams ? seed.exams.map(clone) : [];
       disciplines = seed.disciplines ? seed.disciplines.map(clone) : [];
@@ -531,6 +537,54 @@ export function createMemoryDataDb(): MemoryDataDb {
         }
       }
       return changed;
+    },
+
+    // ── DIG-40: feedback — предложения/жалобы руководству (/feedback) ─────
+    // Анонимные строки (studentId = null) не видны ни в чьих списках: у них
+    // нет владельца (приёмка DIG-40 — никакой связи с пользователем).
+    async listFeedbackByStudent(studentId) {
+      return feedbacks
+        .filter((f) => f.studentId === studentId)
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+        .map(clone);
+    },
+    // Публичная лента решённых предложений — осознанное исключение из
+    // owner-scope (см. port.ts): наружу уходят только строки с результатом.
+    async listPublishedFeedbackOutcomes() {
+      return feedbacks
+        .filter((f) => f.publishedOutcome !== null)
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+        .map(clone);
+    },
+    async findFeedbackByStudentAndNumber(studentId, number) {
+      return clone(feedbacks.find((f) => f.studentId === studentId && f.number === number) ?? null);
+    },
+    // Probe по номеру БЕЗ владельца: различение «чужой» (OWNERSHIP_DENIED) и
+    // «несуществующий» (NOT_FOUND) — только для аудита; наружу в обоих
+    // случаях уходит null (единый 404 без оракула существования).
+    async probeFeedbackByNumber(number) {
+      return clone(by(feedbacks, 'number', number));
+    },
+    async appendFeedbackByStudent(studentId, input) {
+      feedbackSeq += 1;
+      const row: FeedbackRow = {
+        id: `fb-new-${feedbackSeq}`,
+        // null = анонимное обращение: связь с пользователем не записывается.
+        studentId,
+        number: input.number,
+        kind: input.kind,
+        target: input.target,
+        status: input.status,
+        text: input.text,
+        attachments: [...input.attachments],
+        isAnonymous: input.isAnonymous,
+        publishedOutcome: null,
+        createdAt: input.createdAt,
+        dueAt: input.dueAt,
+        updatedAt: input.createdAt,
+      };
+      feedbacks.push(row);
+      return clone(row);
     },
 
     async listScheduleByGroup(groupName) {

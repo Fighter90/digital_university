@@ -17,6 +17,9 @@ export const CABINET_SECTIONS: CabinetSection[] = [
   { href: '/requests', label: 'Заявки и справки' },
   { href: '/notifications', label: 'Уведомления' },
   { href: '/deanery', label: 'Связь с деканатом' },
+  // DIG-40 — понятный канал обратной связи руководству (в аудированном ЛК
+  // он назывался «Выразительная кнопка» — из меню неясно, что за ним стоит).
+  { href: '/feedback', label: 'Обратная связь' },
   { href: '/help', label: 'Вопросы и ответы' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
@@ -57,6 +60,8 @@ export const MORE_SECTIONS: CabinetSection[] = [
   { href: '/tasks', label: 'Задачи' },
   { href: '/notifications', label: 'Уведомления' },
   { href: '/deanery', label: 'Связь с деканатом' },
+  // DIG-40 — канал обратной связи руководству (см. комментарий выше).
+  { href: '/feedback', label: 'Обратная связь' },
   { href: '/help', label: 'Вопросы и ответы' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
