@@ -3,6 +3,7 @@
 // изолированного слоя, скоупленного requireDataCtx() → session.user.id:
 // чужой профиль с этой страницы получить невозможно по построению.
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getLocale } from '@/lib/i18n/server';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/shell/section-title';
@@ -14,7 +15,7 @@ import { dataDb } from '@/server/data/db';
 import { currentAcademicPeriod } from '@/lib/profile-format';
 
 export default async function ProfilePage() {
-  const ctx = await requireDataCtx('/profile');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/profile'), getLocale()]);
 
   if (ctx.role !== 'STUDENT') {
     return (
@@ -123,6 +124,7 @@ export default async function ProfilePage() {
             phone={settings.phone}
             emailVisibleToStaff={settings.emailVisibleToStaff}
             phoneVisibleToStaff={settings.phoneVisibleToStaff}
+            locale={locale}
           />
         </CardContent>
       </Card>

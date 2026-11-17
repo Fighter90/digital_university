@@ -6,6 +6,8 @@
 // ведёт ровно туда, где её выполнить; ручные задачи закрываются отметкой
 // прямо на экране; пустой список — «Все дела сделаны 🎉».
 import Link from 'next/link';
+import { t } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 
 import { requireDataCtx, getTasks } from '@/server/data';
 import { dataDb } from '@/server/data/db';
@@ -24,7 +26,7 @@ export default function TasksPage() {
 }
 
 async function TasksContent() {
-  const ctx = await requireDataCtx('/tasks');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/tasks'), getLocale()]);
 
   // Сотруднику деканата студенческие задачи не показываются — явная
   // заглушка (тот же контракт, что на «Сессии»).
@@ -33,8 +35,8 @@ async function TasksContent() {
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
         <SectionTitle href="/tasks" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <EmptyState
-          title="Экран доступен студентам"
-          description="Задачи собираются по учебной группе и личным данным студента. Кабинет сотрудника с очередью заявок — отдельная задача."
+          title={t(locale, 'empty.tasksStaffTitle')}
+          description={t(locale, 'empty.tasksStaffDesc')}
         />
       </section>
     );
@@ -55,7 +57,7 @@ async function TasksContent() {
         />
         <div className="flex justify-center">
           <Link href="/tasks" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
-            Повторить
+            {t(locale, 'btn.retry')}
           </Link>
         </div>
       </section>

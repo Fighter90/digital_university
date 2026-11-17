@@ -168,7 +168,12 @@ export const en: Record<keyof RuDictionary, string> = {
   'empty.noMatchTitle': 'Nothing found',
   'empty.noMatchDesc': 'Try another number or title — or reset the filter.',
   'empty.resetFilters': 'Reset filters',
+  'empty.staffOnlyTitle': 'For students only',
   'empty.tasksStaffTitle': 'For students only',
+  'empty.deaneryStaffDesc':
+    'Threads with conversations open in the student cabinet. The staff inbox lives in the staff cabinet.',
+  'empty.feedbackStaffDesc':
+    'Suggestions, complaints and thank-yous to the management are created in the student cabinet.',
   'empty.tasksStaffDesc':
     'Tasks are collected per study group and student data. The staff cabinet with the request queue is a separate screen.',
 
@@ -180,6 +185,12 @@ export const en: Record<keyof RuDictionary, string> = {
 
   // ── form buttons ─────────────────────────────────────────────────────────
   'btn.submit': 'Submit',
+  'btn.submitting': 'Submitting…',
+  'btn.saving': 'Saving…',
+  'btn.resubmit': 'Resubmit',
+  'btn.askQuestion': 'Ask a question',
+  'btn.sendFeedback': 'Send message',
+  'btn.createTicket': 'Create appeal',
   'btn.save': 'Save',
   'btn.cancel': 'Cancel',
   'btn.retry': 'Retry',

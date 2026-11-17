@@ -1,10 +1,17 @@
 import Link from 'next/link';
+import { t, type Locale } from '@/lib/i18n';
 import { cn } from 'cn';
 import { SETTINGS_TABS, type SettingsTabId } from '@/lib/settings-tabs';
 
 // DIG-44 — вкладки «Настройки» как обычные ссылки (?tab=…): работают без JS,
 // активная вкладка помечена aria-current="page".
-export function SettingsTabs({ active }: { active: SettingsTabId }) {
+export function SettingsTabs({
+  active,
+  locale = 'ru',
+}: {
+  active: SettingsTabId;
+  locale?: Locale;
+}) {
   return (
     <nav aria-label="Разделы настроек" className="flex flex-wrap gap-2" data-testid="settings-tabs">
       {SETTINGS_TABS.map((tab) => {
@@ -26,7 +33,7 @@ export function SettingsTabs({ active }: { active: SettingsTabId }) {
                 : 'border-border bg-card text-neutral-700 hover:border-coral-200 hover:bg-coral-50',
             )}
           >
-            {tab.label}
+            {t(locale, `settings.tab.${tab.id}`)}
           </Link>
         );
       })}

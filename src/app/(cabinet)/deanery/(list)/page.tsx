@@ -8,6 +8,8 @@
 // запроса в ?q= — композер открывается с готовым черновиком обращения.
 // Только предзаполнение textarea (React экранирует), длина ограничена.
 import { requireDataCtx, getDeaneryPage } from '@/server/data';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
 import { dataDb } from '@/server/data/db';
 import { TicketList } from '@/components/deanery/ticket-list';
 import { TicketComposer } from '@/components/deanery/ticket-composer';
@@ -24,7 +26,7 @@ export default async function DeaneryPage({
 }: {
   searchParams?: Promise<Record<string, string>>;
 }) {
-  const ctx = await requireDataCtx('/deanery');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/deanery'), getLocale()]);
   const page = await getDeaneryPage(dataDb, ctx);
   const params = await searchParams;
   const draftBody = (params.q ?? '').trim().slice(0, MAX_TICKET_DRAFT_LENGTH);
@@ -38,8 +40,8 @@ export default async function DeaneryPage({
         />
         <EmptyState
           icon={MessagesSquare}
-          title="Доступно студентам"
-          description="Обращения с перепиской открываются в кабинете студента. Интерфейс менеджера — в кабинете сотрудника."
+          title={t(locale, 'empty.staffOnlyTitle')}
+          description={t(locale, 'empty.deaneryStaffDesc')}
         />
       </section>
     );
@@ -61,6 +63,7 @@ export default async function DeaneryPage({
           requests={page.requests}
           disciplines={page.disciplines}
           initialBody={draftBody}
+          locale={locale}
         />
       </div>
     </section>

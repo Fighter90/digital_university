@@ -18,6 +18,7 @@
 'use client';
 
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
+import { t, type Locale } from '@/lib/i18n';
 import { Check, FileText, Paperclip, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -81,6 +82,8 @@ export interface OrderWizardProps {
   autoTarget: OrderTarget | null;
   /** Server action подачи заявки (createRequestAction). */
   action: (prevState: RequestActionState, formData: FormData) => Promise<RequestActionState>;
+  /** DIG-69 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 type WizardStep = 1 | 2 | 3;
@@ -94,7 +97,14 @@ const STEP_TITLES: Record<WizardStep, string> = {
 const inputClass =
   'mt-1 w-full rounded-button border border-border bg-card px-3 py-2 text-sm text-foreground shadow-soft outline-none transition-colors placeholder:text-muted-foreground focus:border-muted-foreground/40';
 
-export function OrderWizard({ types, profile, orderParam, autoTarget, action }: OrderWizardProps) {
+export function OrderWizard({
+  types,
+  profile,
+  orderParam,
+  autoTarget,
+  action,
+  locale = 'ru',
+}: OrderWizardProps) {
   const router = useRouter();
 
   // Мастер монтируется с чистым черновиком под своим ключом (страница даёт
@@ -430,7 +440,7 @@ export function OrderWizard({ types, profile, orderParam, autoTarget, action }: 
                   disabled={!consent || pending}
                   className={cn(buttonVariants({ variant: 'primary', size: 'md' }))}
                 >
-                  {pending ? 'Отправляем…' : 'Отправить'}
+                  {pending ? t(locale, 'btn.submitting') : t(locale, 'btn.submit')}
                 </button>
               ) : (
                 <button

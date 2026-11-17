@@ -294,7 +294,7 @@ async function renderCanonical(
 
         {/* Форма исправления прямо в карточке (DIG-33). */}
         {isFix && isStudent ? (
-          <RequestFixForm requestId={request.id} action={resubmitRequestAction} />
+          <RequestFixForm requestId={request.id} action={resubmitRequestAction} locale={locale} />
         ) : null}
 
         {/* Блок готового документа: превью, скачать, проверить, email (DIG-33). */}
@@ -361,7 +361,11 @@ async function renderCanonical(
 
         {/* Вопрос по заявке — обращение с привязкой к номеру (DIG-33). */}
         {isStudent ? (
-          <RequestQuestionForm requestId={request.id} action={createRequestQuestionAction} />
+          <RequestQuestionForm
+            requestId={request.id}
+            action={createRequestQuestionAction}
+            locale={locale}
+          />
         ) : null}
       </div>
 

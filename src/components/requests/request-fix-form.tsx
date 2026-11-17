@@ -7,6 +7,7 @@
 'use client';
 
 import { useActionState, useEffect } from 'react';
+import { t, type Locale } from '@/lib/i18n';
 import { useRouter } from 'next/navigation';
 import { Send } from 'lucide-react';
 
@@ -15,9 +16,12 @@ import type { RequestActionState } from '@/server/actions/requests';
 export function RequestFixForm({
   requestId,
   action,
+  locale = 'ru',
 }: {
   requestId: string;
   action: (prevState: RequestActionState, formData: FormData) => Promise<RequestActionState>;
+  /** DIG-69 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   const [state, formAction, pending] = useActionState<RequestActionState, FormData>(action, null);
   const router = useRouter();
@@ -54,7 +58,7 @@ export function RequestFixForm({
           className="inline-flex items-center gap-1.5 rounded-button bg-coral-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600 disabled:opacity-60"
         >
           <Send aria-hidden="true" className="size-4" />
-          {pending ? 'Подаём…' : 'Отправить повторно'}
+          {pending ? t(locale, 'btn.submitting') : t(locale, 'btn.resubmit')}
         </button>
         {state && !state.ok ? (
           <p role="alert" className="text-xs text-error-ink">

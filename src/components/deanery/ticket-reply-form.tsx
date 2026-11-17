@@ -6,11 +6,19 @@
 // и без JS (server action).
 
 import { useActionState } from 'react';
+import { t, type Locale } from '@/lib/i18n';
 
 import { replyToTicketAction, type TicketActionState } from '@/server/actions/deanery';
 import { MAX_ATTACHMENT_BYTES, MAX_TICKET_ATTACHMENTS } from '@/lib/tickets';
 
-export function TicketReplyForm({ ticketNumber }: { ticketNumber: string }) {
+export function TicketReplyForm({
+  ticketNumber,
+  locale = 'ru',
+}: {
+  ticketNumber: string;
+  /** DIG-69 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const [state, formAction, isPending] = useActionState<TicketActionState, FormData>(
     replyToTicketAction,
     null,
@@ -52,7 +60,7 @@ export function TicketReplyForm({ ticketNumber }: { ticketNumber: string }) {
         disabled={isPending}
         className="inline-flex select-none items-center justify-center gap-2 rounded-button bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-soft transition-colors hover:bg-accent-strong disabled:pointer-events-none disabled:opacity-50"
       >
-        {isPending ? 'Отправляем…' : 'Отправить'}
+        {isPending ? t(locale, 'btn.submitting') : t(locale, 'btn.submit')}
       </button>
       {state?.error ? (
         <p role="alert" className="text-sm font-medium text-error-ink">

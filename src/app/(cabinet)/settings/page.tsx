@@ -7,6 +7,7 @@
 // «Главную». Настройки применяются сразу: каждая мутация перевалидирует
 // страницы, вид/тема — и root layout (классы на <html>).
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getLocale } from '@/lib/i18n/server';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/shell/section-title';
 import { ExternalLink } from 'lucide-react';
@@ -45,7 +46,7 @@ export default async function SettingsPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const ctx = await requireDataCtx('/settings');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/settings'), getLocale()]);
 
   if (ctx.role !== 'STUDENT') {
     return (
@@ -86,7 +87,7 @@ export default async function SettingsPage({
             Изменения сохраняются и применяются сразу.
           </p>
         </div>
-        <SettingsTabs active={tab} />
+        <SettingsTabs active={tab} locale={locale} />
       </div>
 
       {tab === 'home' && (

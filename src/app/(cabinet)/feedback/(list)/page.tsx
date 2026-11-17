@@ -9,6 +9,8 @@
 // лента «Что мы изменили по вашим предложениям». Сотруднику раздел
 // недоступен («Доступно студентам»).
 import { requireDataCtx, getFeedbackPage } from '@/server/data';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
 import { dataDb } from '@/server/data/db';
 import { FeedbackList } from '@/components/feedback/feedback-list';
 import { FeedbackComposer } from '@/components/feedback/feedback-composer';
@@ -19,7 +21,7 @@ import { SectionTitle } from '@/components/shell/section-title';
 import { MessageSquareHeart } from 'lucide-react';
 
 export default async function FeedbackPage() {
-  const ctx = await requireDataCtx('/feedback');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/feedback'), getLocale()]);
   const page = await getFeedbackPage(dataDb, ctx);
 
   if (ctx.role === 'STAFF') {
@@ -31,8 +33,8 @@ export default async function FeedbackPage() {
         />
         <EmptyState
           icon={MessageSquareHeart}
-          title="Доступно студентам"
-          description="Предложения, жалобы и благодарности руководству создаются в кабинете студента."
+          title={t(locale, 'empty.staffOnlyTitle')}
+          description={t(locale, 'empty.feedbackStaffDesc')}
         />
       </section>
     );
@@ -50,7 +52,7 @@ export default async function FeedbackPage() {
       {/* Две панели на десктопе; на мобильном — список, затем композер. */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <FeedbackList items={page.items} />
-        <FeedbackComposer />
+        <FeedbackComposer locale={locale} />
       </div>
 
       {/* Публичная лента решённых предложений (без авторов). */}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
+import { t, type Locale } from '@/lib/i18n';
 import { Toggle } from '@/components/ui/toggle';
 import { Button } from '@/components/ui/button';
 import { saveContactsAction, type ProfileFormState } from '@/server/actions/profile';
@@ -13,6 +14,8 @@ export interface ContactsFormProps {
   phone: string | null;
   emailVisibleToStaff: boolean;
   phoneVisibleToStaff: boolean;
+  /** DIG-69 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 function VisibilityField({
@@ -48,6 +51,7 @@ export function ContactsForm({
   phone,
   emailVisibleToStaff,
   phoneVisibleToStaff,
+  locale = 'ru',
 }: ContactsFormProps) {
   const [state, formAction, isPending] = useActionState<ProfileFormState, FormData>(
     saveContactsAction,
@@ -107,7 +111,7 @@ export function ContactsForm({
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" size="sm" disabled={isPending}>
-          {isPending ? 'Сохраняем…' : 'Сохранить'}
+          {isPending ? t(locale, 'btn.saving') : t(locale, 'btn.save')}
         </Button>
         {state?.ok && (
           <p role="status" className="text-sm font-medium text-success-ink">

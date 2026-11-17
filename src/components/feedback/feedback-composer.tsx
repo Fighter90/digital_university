@@ -9,6 +9,7 @@
 // подтверждение по номеру (без связи с пользователем, приёмка DIG-40).
 
 import { useActionState, useState } from 'react';
+import { t, type Locale } from '@/lib/i18n';
 
 import { createFeedbackAction, type FeedbackActionState } from '@/server/actions/feedback';
 import {
@@ -27,7 +28,7 @@ import type { FeedbackKind, FeedbackTarget } from '@/server/data/types';
 const buttonClass =
   'inline-flex select-none items-center justify-center gap-2 rounded-button bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-soft transition-colors hover:bg-accent-strong disabled:pointer-events-none disabled:opacity-50';
 
-export function FeedbackComposer() {
+export function FeedbackComposer({ locale = 'ru' }: { locale?: Locale }) {
   const [state, formAction, isPending] = useActionState<FeedbackActionState, FormData>(
     createFeedbackAction,
     null,
@@ -145,7 +146,7 @@ export function FeedbackComposer() {
         </div>
 
         <button type="submit" disabled={isPending} className={buttonClass}>
-          {isPending ? 'Отправляем…' : 'Отправить обращение'}
+          {isPending ? t(locale, 'btn.submitting') : t(locale, 'btn.sendFeedback')}
         </button>
         {state?.error ? (
           <p role="alert" className="text-sm font-medium text-error-ink">

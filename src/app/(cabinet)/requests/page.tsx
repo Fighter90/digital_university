@@ -143,6 +143,7 @@ export default async function RequestsPage({
             orderParam={orderParam}
             autoTarget={autoTarget}
             action={createRequestAction}
+            locale={locale}
           />
         </div>
       ) : null}
