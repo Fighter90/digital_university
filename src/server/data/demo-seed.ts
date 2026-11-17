@@ -46,6 +46,9 @@ import type {
   MspCommentRow,
   MspProjectRow,
   MspVoteRow,
+  /** DIG-43 — мероприятия вуза и запись (/events). */
+  EventRegistrationRow,
+  EventRow,
 } from './types';
 import { newMspSlug } from './msp-slug';
 
@@ -1465,6 +1468,211 @@ function buildMspCatalog(): {
 
 const { mspProjects, mspVotes, mspComments } = buildMspCatalog();
 
+// DIG-43 — афиша мероприятий вуза (/events): 8 вымышленных событий
+// (лекция про AI, хакатон «Цифровой прорыв», карьерный день, экскурсия,
+// онлайн-вебинар, культурная ночь, Open Lab, воркшоп по резюме) — даты
+// относительно «сейчас» (+1..+30 дней), часть мероприятий онлайн. Записи
+// демо-студентов дают живые счётчики «Осталось N мест»; экскурсия
+// заполнена под завязку (5/5) — Анна видит «Мест нет» и чип «Записан»
+// на своих двух мероприятиях. Slug'и — фиксированные литералы (как у
+// msp-сида через newMspSlug): ссылки стабильны между сборками.
+function buildEvents(): { events: EventRow[]; eventRegistrations: EventRegistrationRow[] } {
+  const drafts: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    kind: EventRow['kind'];
+    /** Смещение старта от «сегодня» (в днях) и время начала/конца. */
+    startDay: number;
+    startHour: number;
+    endDay: number;
+    endHour: number;
+    location: string;
+    isOnline?: boolean;
+    onlineUrl?: string;
+    capacity: number;
+    tags: string[];
+    /** Минуты старта (по умолчанию ровный час). */
+    startMinute?: number;
+  }> = [
+    {
+      id: 'ev-lecture-ai',
+      slug: 'lekciya-bolshie-yazykovye-modeli',
+      title: 'Лекция: как устроены большие языковые модели',
+      description:
+        'Открытая лекция старшекурсников и преподавателей факультета ИТ: от токенов и эмбеддингов до того, почему модели «галлюцинируют». Разберём устройство трансформера на пальцах и попробуем маленькую модель прямо в аудитории. Все примеры — на вымышленных датасетах прототипа.',
+      kind: 'LECTURE',
+      startDay: 2,
+      startHour: 18,
+      endDay: 2,
+      endHour: 20,
+      location: 'Онлайн-трансляция',
+      isOnline: true,
+      onlineUrl: 'https://events.example.edu/live/llm-lecture',
+      capacity: 500,
+      tags: ['ai', 'ИТ'],
+      startMinute: 30,
+    },
+    {
+      id: 'ev-career-day',
+      slug: 'karernyj-den-it',
+      title: 'Карьерный день факультета ИТ',
+      description:
+        'Вымышленные компании-партнёры, стенды выпускников и быстрое резюме-ревью: за вечер можно обойти все стенды и записаться на собеседование-тренажёр. Приходите с одним вопросом «куда расти» — уйдёте с тремя ответами. Все работодатели в демо фиктивные.',
+      kind: 'CAREER',
+      startDay: 4,
+      startHour: 14,
+      endDay: 4,
+      endHour: 18,
+      location: 'Главный корпус, атриум',
+      capacity: 200,
+      tags: ['ИТ', 'карьера'],
+    },
+    {
+      id: 'ev-tour',
+      slug: 'ekskursiya-po-kampusu',
+      title: 'Экскурсия по кампусу и лабораториям',
+      description:
+        'Полтора часа по главным точкам кампуса: библиотека с книжным музейным уголком, робототехническая лаборатория и крыша главного корпуса с лучшим видом на город. Мест мало — группа маленькая, чтобы всем было слышно.',
+      kind: 'CULTURE',
+      startDay: 5,
+      startHour: 16,
+      endDay: 5,
+      endHour: 17,
+      location: 'Главный корпус, холл',
+      capacity: 5,
+      tags: ['кампус'],
+    },
+    {
+      id: 'ev-hackathon',
+      slug: 'hakaton-cifrovoj-proryv',
+      title: 'Хакатон «Цифровой прорыв»',
+      description:
+        'Двухдневный хакатон для студентов всех факультетов: команды собираются на месте, треки — учебные сервисы, кампус и «зелёный» кампус. Курага, кофе и вымышленные призы гарантированы; жюри — сотрудники деканата в составе прототипа.',
+      kind: 'HACKATHON',
+      startDay: 9,
+      startHour: 10,
+      endDay: 10,
+      endHour: 20,
+      location: 'Технопарк, аудитория 301',
+      capacity: 120,
+      tags: ['ИТ', 'хакатон'],
+    },
+    {
+      id: 'ev-webinar',
+      slug: 'vebinar-data-analitik',
+      title: 'Онлайн-вебинар: профессия дата-аналитик',
+      description:
+        'Час про карьерный трек аналитика: типовые задачи первого года, стек инструментов и как учиться на реальных (в демо — вымышленных) датасетах. Половина вебинара — ответы на вопросы, записывайте заранее.',
+      kind: 'CAREER',
+      startDay: 12,
+      startHour: 19,
+      endDay: 12,
+      endHour: 20,
+      location: 'Онлайн-трансляция',
+      isOnline: true,
+      onlineUrl: 'https://events.example.edu/live/data-analyst-webinar',
+      capacity: 300,
+      tags: ['карьера', 'ЭК'],
+    },
+    {
+      id: 'ev-culture-night',
+      slug: 'kulturnaya-noch-kino',
+      title: 'Культурная ночь: кино под открытым небом',
+      description:
+        'Вечерний показ классики студенческого кино на площади у главного корпуса: плед, термос и хорошее настроение. Половина программы — короткометражки, снятые самими студентами для конкурса прототипа.',
+      kind: 'CULTURE',
+      startDay: 16,
+      startHour: 20,
+      endDay: 16,
+      endHour: 23,
+      location: 'Кампусная площадь',
+      capacity: 80,
+      tags: ['кампус', 'кино'],
+    },
+    {
+      id: 'ev-openlab',
+      slug: 'open-lab-laboratorii',
+      title: 'Open Lab: день открытых лабораторий',
+      description:
+        'Три часа открытых дверей в учебных лабораториях: роботы, стенд компьютерного зрения и серверная с легаси-железом, которое пытаются оживить. Можно задавать любые вопросы — даже про дипломные проекты.',
+      kind: 'LECTURE',
+      startDay: 21,
+      startHour: 15,
+      endDay: 21,
+      endHour: 18,
+      location: 'Лабораторный корпус',
+      capacity: 60,
+      tags: ['ИТ', 'лаборатории'],
+    },
+    {
+      id: 'ev-resume',
+      slug: 'workshop-rezyume-it',
+      title: 'Воркшоп: резюме и собеседование в IT',
+      description:
+        'Онлайн-воркшоп карьерного центра: разбираем резюме участников в прямом эфире и играем собеседование-тренажёр. Пришлите резюме заранее — несколько разберём как примеры (все данные в прототипе вымышленные).',
+      kind: 'CAREER',
+      startDay: 26,
+      startHour: 18,
+      endDay: 26,
+      endHour: 19,
+      location: 'Онлайн-трансляция',
+      isOnline: true,
+      onlineUrl: 'https://events.example.edu/live/resume-workshop',
+      capacity: 40,
+      tags: ['карьера'],
+    },
+  ];
+
+  const events: EventRow[] = drafts.map((draft) => ({
+    id: draft.id,
+    slug: draft.slug,
+    title: draft.title,
+    description: draft.description,
+    startsAt: day(draft.startDay, draft.startHour, draft.startMinute ?? 0),
+    endsAt: day(draft.endDay, draft.endHour, 0),
+    location: draft.location,
+    isOnline: draft.isOnline ?? false,
+    onlineUrl: draft.isOnline ? (draft.onlineUrl ?? null) : null,
+    capacity: draft.capacity,
+    tags: draft.tags,
+    kind: draft.kind,
+  }));
+
+  // Записи демо-студентов: живые счётчики «Осталось N мест», у Анны —
+  // два чипа «Записан», экскурсия (5 мест) — заполнена без Анны («Мест нет»).
+  // Кортеж [studentId, час записи] — записи «совершены» два дня назад.
+  const fill = (eventId: string, entries: Array<[string, number]>): EventRegistrationRow[] =>
+    entries.map(([studentId, hour]) => ({ eventId, studentId, createdAt: day(-2, hour) }));
+
+  const eventRegistrations: EventRegistrationRow[] = [
+    ...fill('ev-lecture-ai', [
+      ['st-ilya', 10],
+      ['st-mate-polina', 11],
+    ]),
+    ...fill('ev-career-day', [
+      ['st-anna', 9],
+      ['st-mate-dmitry', 10],
+      ['st-mate-artem', 12],
+    ]),
+    ...fill('ev-tour', [
+      ['st-ilya', 10],
+      ['st-mate-dmitry', 11],
+      ['st-mate-polina', 12],
+      ['st-mate-artem', 13],
+      ['st-mate-sofia', 14],
+    ]),
+    ...fill('ev-hackathon', [['st-ilya', 15]]),
+    ...fill('ev-webinar', [['st-mate-sofia', 16]]),
+    ...fill('ev-culture-night', [['st-anna', 17]]),
+  ];
+
+  return { events, eventRegistrations };
+}
+
+const { events, eventRegistrations } = buildEvents();
+
 const schedule: ScheduleEventRow[] = [
   {
     // DIG-24 — обычная пара с полным составом панели: корпус, email
@@ -2088,6 +2296,9 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     mspProjects,
     mspVotes,
     mspComments,
+    // DIG-43 — афиша мероприятий вуза: 8 вымышленных событий и записи.
+    events,
+    eventRegistrations,
     exams,
     settings,
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.
