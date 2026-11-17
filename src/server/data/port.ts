@@ -54,6 +54,10 @@ import type {
   MspCommentRow,
   MspProjectRow,
   MspVoteRow,
+  /** DIG-42 — «Дополнительное образование» (/dpo). */
+  DpoDocumentRow,
+  DpoEnrollmentRow,
+  DpoProgramRow,
 } from './types';
 
 /** DIG-48 — уведомление студенту, записываемое вместе с действием сотрудника. */
@@ -596,6 +600,25 @@ export interface DataDb {
       createdAt: Date;
     },
   ): Promise<MspProjectRow>;
+
+  // ── DIG-42: «Дополнительное образование» (/dpo) ──────────────────────────
+  /**
+   * Весь каталог программ ДПО — публичный контент (чтение — любой
+   * вошедний, осознанное исключение из owner-scope, как listMspProjects:
+   * вход проверяет dpo.ts до вызова, программа не содержит персональных
+   * данных).
+   */
+  listDpoPrograms(): Promise<DpoProgramRow[]>;
+  /** Записи владельца на программы ДПО (вкладка «Мои программы»). */
+  listDpoEnrollmentsByStudent(studentId: string): Promise<DpoEnrollmentRow[]>;
+  /**
+   * Запись владельца на существующую программу. null — программы нет или
+   * владелец уже записан (UNIQUE пара программа+студент): дубликат строки
+   * невозможен.
+   */
+  enrollDpo(studentId: string, programId: string): Promise<DpoEnrollmentRow | null>;
+  /** Документы ДПО владельца (договор/акт/квитанция/сертификат). */
+  listDpoDocumentsByStudent(studentId: string): Promise<DpoDocumentRow[]>;
 
   // ── audit (append-only) ───────────────────────────────────────────────────
   appendAudit(

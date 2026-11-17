@@ -683,3 +683,60 @@ export interface AuditLogRow {
   outcome: 'DENIED';
   createdAt: Date;
 }
+
+// ── DIG-42 — «Дополнительное образование» (/dpo) ─────────────────────────────
+
+/** Формат обучения программы ДПО: онлайн, офлайн или гибрид. */
+export type DpoFormat = 'ONLINE' | 'OFFLINE' | 'HYBRID';
+
+/**
+ * Программа дополнительного образования каталога /dpo. Публичный контент
+ * (чтение — любой вошедший, как каталог «МСП»): зачисляемости нет —
+ * кнопка «Записаться» только ставит строку записи владельца.
+ */
+export interface DpoProgramRow {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  /** Академических часов. */
+  hours: number;
+  format: DpoFormat;
+  /** Дата старта ближайшего потока. */
+  startsAt: Date;
+  /** Стоимость в рублях (0 — «бесплатно для прототипа»). */
+  price: number;
+  tags: string[];
+  /** Вымышленный факультет-оператор программы (подпись на карточке). */
+  facultyTag: string;
+}
+
+/**
+ * Запись студента на программу ДПО. UNIQUE пара (program, студент): повторная
+ * запись невозможна (enrollDpo возвращает null). Прогресс — демо-число.
+ */
+export interface DpoEnrollmentRow {
+  programId: string;
+  studentId: string;
+  enrolledAt: Date;
+  /** 0–100 — демо-прогресс для полосы на вкладке «Мои программы». */
+  progressPercent: number;
+}
+
+/** Вид документа ДПО: договор, акт, квитанция или сертификат. */
+export type DpoDocumentKind = 'CONTRACT' | 'ACT' | 'RECEIPT' | 'CERTIFICATE';
+
+/**
+ * Документ студента по программе ДПО. Owner-scoped по studentId: наружу
+ * уходят только строки владельца сессии. «Скачать» — заглушка (прототип).
+ */
+export interface DpoDocumentRow {
+  id: string;
+  studentId: string;
+  programId: string;
+  kind: DpoDocumentKind;
+  title: string;
+  issuedAt: Date;
+  /** Номер документа (ДПО-…). */
+  number: string;
+}

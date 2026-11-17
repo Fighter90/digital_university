@@ -48,6 +48,10 @@ import type {
   MspCommentRow,
   MspProjectRow,
   MspVoteRow,
+  /** DIG-42 — «Дополнительное образование» (/dpo). */
+  DpoDocumentRow,
+  DpoEnrollmentRow,
+  DpoProgramRow,
 } from './types';
 import { canonicalRequestNumberSeq } from './canonical-request-number';
 export interface MemorySeed {
@@ -96,6 +100,12 @@ export interface MemorySeed {
   mspVotes?: MspVoteRow[];
   /** DIG-68 — комментарии к проектам каталога. */
   mspComments?: MspCommentRow[];
+  /** DIG-42 — программы каталога «Дополнительное образование» (/dpo). */
+  dpoPrograms?: DpoProgramRow[];
+  /** DIG-42 — записи студентов на программы (UNIQUE пары программа+студент). */
+  dpoEnrollments?: DpoEnrollmentRow[];
+  /** DIG-42 — документы студентов по программам ДПО. */
+  dpoDocuments?: DpoDocumentRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -138,6 +148,10 @@ export function createMemoryDataDb(): MemoryDataDb {
   let mspProjects: MspProjectRow[] = [];
   let mspVotes: MspVoteRow[] = [];
   let mspComments: MspCommentRow[] = [];
+  // DIG-42 — «Дополнительное образование» (/dpo).
+  let dpoPrograms: DpoProgramRow[] = [];
+  let dpoEnrollments: DpoEnrollmentRow[] = [];
+  let dpoDocuments: DpoDocumentRow[] = [];
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
@@ -196,6 +210,10 @@ export function createMemoryDataDb(): MemoryDataDb {
       mspProjects = seed.mspProjects ? seed.mspProjects.map(clone) : [];
       mspVotes = seed.mspVotes ? seed.mspVotes.map(clone) : [];
       mspComments = seed.mspComments ? seed.mspComments.map(clone) : [];
+      // DIG-42 — «Дополнительное образование» (/dpo).
+      dpoPrograms = seed.dpoPrograms ? seed.dpoPrograms.map(clone) : [];
+      dpoEnrollments = seed.dpoEnrollments ? seed.dpoEnrollments.map(clone) : [];
+      dpoDocuments = seed.dpoDocuments ? seed.dpoDocuments.map(clone) : [];
       audit = [];
     },
 
@@ -1016,6 +1034,40 @@ export function createMemoryDataDb(): MemoryDataDb {
       };
       mspProjects.push(row);
       return clone(row);
+    },
+
+    // ── DIG-42: «Дополнительное образование» (/dpo) ────────────────────────
+    async listDpoPrograms() {
+      return dpoPrograms.map(clone);
+    },
+    async listDpoEnrollmentsByStudent(studentId) {
+      return dpoEnrollments
+        .filter((e) => e.studentId === studentId)
+        .sort((a, b) => a.enrolledAt.getTime() - b.enrolledAt.getTime())
+        .map(clone);
+    },
+    // Запись владельца: только на СУЩЕСТВУЮЩУЮ программу, UNIQUE пара
+    // программа+студент — повторный вызов возвращает null (не дубль строки).
+    async enrollDpo(studentId, programId) {
+      const program = by(dpoPrograms, 'id', programId);
+      if (!program) return null;
+      if (dpoEnrollments.some((e) => e.programId === programId && e.studentId === studentId)) {
+        return null;
+      }
+      const row: DpoEnrollmentRow = {
+        programId,
+        studentId,
+        enrolledAt: new Date(),
+        progressPercent: 0,
+      };
+      dpoEnrollments.push(row);
+      return clone(row);
+    },
+    async listDpoDocumentsByStudent(studentId) {
+      return dpoDocuments
+        .filter((d) => d.studentId === studentId)
+        .sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime())
+        .map(clone);
     },
 
     async appendAudit(event) {

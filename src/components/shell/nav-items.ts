@@ -26,6 +26,8 @@ export const CABINET_SECTIONS: CabinetSection[] = [
   { href: '/guide', label: 'Справка' },
   // DIG-68 — каталог студенческих стартапов «МСП» (/msp).
   { href: '/msp', label: 'МСП' },
+  // DIG-42 — «Дополнительное образование» (/dpo): каталог, мои программы, документы.
+  { href: '/dpo', label: 'Доп. образование' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
   { href: '/profile', label: 'Профиль' },
@@ -75,6 +77,8 @@ export const MORE_SECTIONS: CabinetSection[] = [
   { href: '/guide', label: 'Справка' },
   // DIG-68 — каталог студенческих стартапов «МСП» (/msp).
   { href: '/msp', label: 'МСП' },
+  // DIG-42 — «Дополнительное образование» (/dpo).
+  { href: '/dpo', label: 'Доп. образование' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
   { href: '/profile', label: 'Профиль' },

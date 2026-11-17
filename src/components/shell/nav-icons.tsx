@@ -1,5 +1,6 @@
 import {
   Bell,
+  BookMarked,
   CalendarDays,
   CircleHelp,
   ClipboardList,
@@ -37,6 +38,8 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   '/guide': Compass,
   // DIG-68 — каталог студенческих стартапов «МСП».
   '/msp': Rocket,
+  // DIG-42 — «Дополнительное образование» (GraduationCap занят «Успеваемостью»).
+  '/dpo': BookMarked,
   '/people': Contact,
   '/ai-assistant': Sparkles,
   '/profile': UserRound,

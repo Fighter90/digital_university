@@ -116,6 +116,16 @@ export type {
   MspSort,
   ToggleMspVoteResult,
 } from './msp';
+// DIG-42 — «Дополнительное образование» (/dpo).
+export {
+  enrollDpoProgram,
+  filterDpoCatalog,
+  getDpoCatalog,
+  getDpoDocuments,
+  getDpoMyPrograms,
+  parseDpoFormat,
+} from './dpo';
+export type { DpoCatalogView, DpoFormatFilter, DpoMyProgramView, EnrollDpoResult } from './dpo';
 export {
   MSP_SLUG_PATTERN,
   mspSlugBase,
@@ -355,4 +365,10 @@ export {
   type MspCommentRow,
   type MspProjectRow,
   type MspVoteRow,
+  /** DIG-42 — «Дополнительное образование» (/dpo). */
+  type DpoDocumentKind,
+  type DpoDocumentRow,
+  type DpoEnrollmentRow,
+  type DpoFormat,
+  type DpoProgramRow,
 } from './types';
