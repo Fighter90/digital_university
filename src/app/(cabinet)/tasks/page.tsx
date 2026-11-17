@@ -15,6 +15,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { TasksView } from '@/components/tasks/tasks-view';
+import { SectionTitle } from '@/components/shell/section-title';
 
 export const metadata = { title: 'Задачи — Цифровой деканат' };
 
@@ -30,7 +31,7 @@ async function TasksContent() {
   if (ctx.role === 'STAFF') {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Задачи</h1>
+        <SectionTitle href="/tasks" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <EmptyState
           title="Экран доступен студентам"
           description="Задачи собираются по учебной группе и личным данным студента. Кабинет сотрудника с очередью заявок — отдельная задача."
@@ -47,7 +48,7 @@ async function TasksContent() {
     console.error('[tasks] render failed', error);
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Задачи</h1>
+        <SectionTitle href="/tasks" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <ErrorState
           title="Задачи не загрузились"
           description="Обновите страницу — если ошибка повторится, сообщите в деканат."
@@ -64,7 +65,7 @@ async function TasksContent() {
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
       <header className="flex animate-rise flex-col gap-2">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Задачи</h1>
+        <SectionTitle href="/tasks" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <p className="max-w-prose text-sm text-muted-foreground">
           Единый список дел из всех разделов: заявки на доработке, дедлайны курсов, допуски и
           пересдачи, письма деканата. Заявка остаётся объектом в «Заявках» — здесь только действия.

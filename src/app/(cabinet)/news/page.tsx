@@ -16,6 +16,7 @@ import { NewsSkeleton } from '@/components/news/news-skeleton';
 import { NewsScopeTabs } from '@/components/news/news-scope-tabs';
 import { NewsTopicPills } from '@/components/news/news-topic-pills';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SectionTitle } from '@/components/shell/section-title';
 import { riseDelayStyle } from '@/lib/motion';
 import { dataDb } from '@/server/data/db';
 import { getNewsPage, requireDataCtx } from '@/server/data';
@@ -47,7 +48,7 @@ async function NewsContent({ searchParams }: { searchParams: SearchParams }) {
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
-      <h1 className="text-xl font-bold sm:text-2xl">Новости и объявления</h1>
+      <SectionTitle href="/news" className="text-xl font-bold sm:text-2xl" />
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
         По умолчанию — новости вашей группы и факультета; объявления деканата — в полосе «Важно»
         сверху.

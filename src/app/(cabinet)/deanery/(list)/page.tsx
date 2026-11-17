@@ -13,6 +13,7 @@ import { TicketList } from '@/components/deanery/ticket-list';
 import { TicketComposer } from '@/components/deanery/ticket-composer';
 import { RESPONSE_PROMISE } from '@/lib/tickets';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SectionTitle } from '@/components/shell/section-title';
 import { MessagesSquare } from 'lucide-react';
 
 /** Лимит переноса запроса из базы знаний в черновик обращения. */
@@ -31,7 +32,10 @@ export default async function DeaneryPage({
   if (ctx.role === 'STAFF') {
     return (
       <section className="mx-auto w-full max-w-3xl px-4 py-8">
-        <h1 className="mb-1 text-xl font-bold tracking-heading sm:text-2xl">Обращения в деканат</h1>
+        <SectionTitle
+          href="/deanery"
+          className="mb-1 text-xl font-bold tracking-heading sm:text-2xl"
+        />
         <EmptyState
           icon={MessagesSquare}
           title="Доступно студентам"
@@ -44,7 +48,7 @@ export default async function DeaneryPage({
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
       <header>
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Обращения в деканат</h1>
+        <SectionTitle href="/deanery" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <p data-testid="deanery-sla" className="mt-1 text-sm text-muted-foreground">
           {RESPONSE_PROMISE}
         </p>

@@ -5,6 +5,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SectionTitle } from '@/components/shell/section-title';
 import { MaskedStudentBadge } from '@/components/profile/masked-badge';
 import { ContactsForm } from '@/components/profile/contacts-form';
 import { DataErrorReport } from '@/components/profile/data-error-report';
@@ -18,7 +19,7 @@ export default async function ProfilePage() {
   if (ctx.role !== 'STUDENT') {
     return (
       <section className="mx-auto max-w-3xl px-4 py-8">
-        <h1 className="mb-1 text-xl font-bold sm:text-2xl">Профиль</h1>
+        <SectionTitle href="/profile" className="mb-1 text-xl font-bold sm:text-2xl" />
         <EmptyState
           title="Раздел доступен студентам"
           description="Профиль сотрудника ведётся в системе деканата."
@@ -34,7 +35,7 @@ export default async function ProfilePage() {
     // fail-closed на случай рассинхрона хранилищ (не должно происходить).
     return (
       <section className="mx-auto max-w-3xl px-4 py-8">
-        <h1 className="mb-1 text-xl font-bold sm:text-2xl">Профиль</h1>
+        <SectionTitle href="/profile" className="mb-1 text-xl font-bold sm:text-2xl" />
         <EmptyState
           title="Профиль временно недоступен"
           description="Попробуйте обновить страницу позже."
@@ -51,7 +52,7 @@ export default async function ProfilePage() {
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
-        <h1 className="text-xl font-bold sm:text-2xl">Профиль</h1>
+        <SectionTitle href="/profile" className="text-xl font-bold sm:text-2xl" />
         <p className="mt-1 text-sm text-neutral-600">
           Основные данные ведёт деканат — их можно только проверить. Контакты вы редактируете сами.
         </p>

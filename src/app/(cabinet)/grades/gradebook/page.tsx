@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { Download, GraduationCap } from 'lucide-react';
 
 import { GradebookList } from '@/components/gradebook/gradebook-list';
+import { SectionTitle } from '@/components/shell/section-title';
 import { EmptyState } from '@/components/ui/empty-state';
 import { buttonVariants } from '@/components/ui/button';
 import { dataDb } from '@/server/data/db';
@@ -39,7 +40,7 @@ export default async function GradebookPage({
   if (ctx.role === 'STAFF') {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold sm:text-2xl">Зачётная книжка</h1>
+        <SectionTitle href="/grades/gradebook" className="text-xl font-bold sm:text-2xl" />
         <div className="rounded-card border border-dashed border-border bg-card p-8 text-center">
           <p className="text-sm font-medium text-foreground">Доступно студентам</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -55,7 +56,10 @@ export default async function GradebookPage({
       <header className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-extrabold tracking-heading sm:text-2xl">Зачётная книжка</h1>
+            <SectionTitle
+              href="/grades/gradebook"
+              className="text-xl font-extrabold tracking-heading sm:text-2xl"
+            />
             {data.student ? (
               <p className="mt-1 text-sm text-muted-foreground">
                 {data.student.fullName} · {data.student.groupName} · №{' '}

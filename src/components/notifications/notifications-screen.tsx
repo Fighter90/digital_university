@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Settings2 } from 'lucide-react';
 import { Illustration } from '@/components/ui/illustration';
 import { cn } from '@/lib/utils';
+import { t, type Locale } from '@/lib/i18n';
 import {
   NOTIFICATION_FILTERS,
   NOTIFICATIONS_POLL_MS,
@@ -22,13 +23,15 @@ import { NotificationItemRow } from './notification-item-row';
 
 type NotificationsScreenProps = {
   initialItems: NotificationFeedItem[];
+  /** DIG-69 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 };
 
 // DIG-35 — центр уведомлений (Figma «08 · Уведомления»): фильтры, группировка
 // по дням, строки с конкретикой, «Отметить все прочитанными», пустые состояния.
 // Лента перечитывается раз в 60 секунд (polling recent-эндпоинта, скоуп
 // владельца сессии — на сервере), отметки идут через server actions.
-export function NotificationsScreen({ initialItems }: NotificationsScreenProps) {
+export function NotificationsScreen({ initialItems, locale = 'ru' }: NotificationsScreenProps) {
   const router = useSafeRouter();
   const [items, setItems] = useState(initialItems);
   const [filter, setFilter] = useState<NotificationFilter>('ALL');
@@ -88,7 +91,7 @@ export function NotificationsScreen({ initialItems }: NotificationsScreenProps) 
     <section className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold sm:text-2xl">Уведомления</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">{t(locale, 'title.notifications')}</h1>
           <p className="mt-1 text-sm text-neutral-600">
             События кабинета: пары, заявки, деканат и оплаты. Видны только ваши.
           </p>

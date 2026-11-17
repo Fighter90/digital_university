@@ -19,6 +19,7 @@ import {
 } from '@/lib/staff-sla';
 import type { RequestStatus, RequestType } from '@/server/data/types';
 import { takeInProgressAction } from '@/server/actions/staff';
+import { SectionTitle } from '@/components/shell/section-title';
 
 const DUE_OPTIONS: Array<{ value: QueueDueFilter; label: string }> = [
   { value: 'all', label: 'Все сроки' },
@@ -106,7 +107,10 @@ export default async function StaffQueuePage({
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">Очередь заявок</h1>
+      <SectionTitle
+        href="/staff/requests"
+        className="text-xl font-bold text-neutral-900 sm:text-2xl"
+      />
       <p className="mb-5 mt-1 text-sm text-neutral-600">
         Заявки студентов факультета {ctx.faculty ?? '—'} · всего в очереди {items.length}. Чужие
         факультеты и их заявки сюда не попадают.

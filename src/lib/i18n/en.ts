@@ -42,7 +42,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'title.requests': 'My requests',
   'title.notifications': 'Notifications',
   'title.deanery': 'Messages to the deanery',
-  'title.feedback': 'Feedback',
+  'title.feedback': 'Feedback to the management',
   'title.help': 'FAQ',
   'title.guide': 'How to use the cabinet',
   'title.people': 'Directory',

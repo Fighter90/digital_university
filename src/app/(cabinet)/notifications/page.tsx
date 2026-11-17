@@ -5,14 +5,15 @@
 import { requireDataCtx, listNotifications } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { toNotificationFeedItem } from '@/lib/notification-view';
+import { getLocale } from '@/lib/i18n/server';
 import { NotificationsScreen } from '@/components/notifications/notifications-screen';
 
 export default async function NotificationsPage() {
-  const ctx = await requireDataCtx('/notifications');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/notifications'), getLocale()]);
   const rows = await listNotifications(dataDb, ctx);
   const items = [...rows]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .map(toNotificationFeedItem);
 
-  return <NotificationsScreen initialItems={items} />;
+  return <NotificationsScreen initialItems={items} locale={locale} />;
 }

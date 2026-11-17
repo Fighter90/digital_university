@@ -62,13 +62,20 @@ import {
   getEventDetails,
 } from '@/server/data';
 import { EventDetailsPanel } from '@/components/schedule/event-details-panel';
+import { SectionTitle } from '@/components/shell/section-title';
 import { toEventDetailsView } from '@/lib/event-details';
 
 export const metadata = { title: 'Расписание — Цифровой деканат' };
 
 interface SchedulePageProps {
   /** Next 15 передаёт промис; рендер без пропсов (юнит-прендер) тоже валиден. */
-  searchParams?: Promise<{ view?: string; date?: string; week?: string; month?: string; event?: string }>;
+  searchParams?: Promise<{
+    view?: string;
+    date?: string;
+    week?: string;
+    month?: string;
+    event?: string;
+  }>;
 }
 
 type Bounds = ReturnType<typeof semesterBounds>;
@@ -102,7 +109,7 @@ async function ScheduleContent({
   if (ctx.role === 'STAFF') {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 py-6 md:py-8">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Расписание</h1>
+        <SectionTitle href="/schedule" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <EmptyState
           title="Расписание доступно студентам"
           description="Учебные пары показываются по учебной группе. Кабинет сотрудника с управлением расписанием — отдельная задача."
@@ -279,7 +286,7 @@ async function DayWeekContent({
       data-view={autoView ? 'auto' : desktopView}
       className="mx-auto flex w-full max-w-[1200px] flex-col gap-4"
     >
-      <h1 className="sr-only">Расписание</h1>
+      <SectionTitle href="/schedule" className="sr-only" />
 
       {/* ── Десктоп (>= 768 px) ─────────────────────────────────────────── */}
       <div className="hidden md:block">
@@ -388,7 +395,7 @@ async function MonthContent({ ctx, now, bounds, todayKey, monthParam, currentQue
 
   return (
     <section data-view="month" className="mx-auto flex w-full max-w-[1200px] flex-col gap-4">
-      <h1 className="sr-only">Расписание</h1>
+      <SectionTitle href="/schedule" className="sr-only" />
       <div className="hidden justify-end md:flex">
         <ViewSwitcher
           view="month"

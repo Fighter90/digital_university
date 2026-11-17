@@ -5,6 +5,7 @@ import { listFacultyGroups, listStaffAnnouncements, requireDataCtx } from '@/ser
 import { dataDb } from '@/server/data/db';
 import { formatRequestDate } from '@/lib/request-labels';
 import { AnnouncementForm } from '@/components/staff/announcement-form';
+import { SectionTitle } from '@/components/shell/section-title';
 
 export default async function StaffAnnouncementsPage() {
   const ctx = await requireDataCtx('/staff/announcements');
@@ -15,7 +16,10 @@ export default async function StaffAnnouncementsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">Объявления</h1>
+      <SectionTitle
+        href="/staff/announcements"
+        className="text-xl font-bold text-neutral-900 sm:text-2xl"
+      />
       <p className="mb-6 mt-1 text-sm text-neutral-600">
         Объявление уйдёт студентам факультета {ctx.faculty ?? '—'} или выбранной группы.
       </p>

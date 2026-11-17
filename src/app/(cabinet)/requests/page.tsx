@@ -26,6 +26,7 @@ import { dataDb } from '@/server/data/db';
 import { createRequestAction } from '@/server/actions/requests';
 import { RequestsBrowser } from '@/components/requests/requests-browser';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SectionTitle } from '@/components/shell/section-title';
 import {
   OrderWizard,
   type WizardProfileDto,
@@ -92,7 +93,7 @@ export default async function RequestsPage({
       <section className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold sm:text-2xl">Мои заявки</h1>
+            <SectionTitle href="/requests" className="text-xl font-bold sm:text-2xl" />
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">
               Справки и заявления в одном месте: видно, на каком шаге каждая заявка и что от вас
               ждут дальше.

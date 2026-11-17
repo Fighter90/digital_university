@@ -15,6 +15,7 @@ import { FeedbackComposer } from '@/components/feedback/feedback-composer';
 import { FeedbackOutcomes } from '@/components/feedback/feedback-outcomes';
 import { FEEDBACK_OUTCOMES_TITLE, FEEDBACK_RESPONSE_PROMISE } from '@/lib/feedback';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SectionTitle } from '@/components/shell/section-title';
 import { MessageSquareHeart } from 'lucide-react';
 
 export default async function FeedbackPage() {
@@ -24,9 +25,10 @@ export default async function FeedbackPage() {
   if (ctx.role === 'STAFF') {
     return (
       <section className="mx-auto w-full max-w-3xl px-4 py-8">
-        <h1 className="mb-1 text-xl font-bold tracking-heading sm:text-2xl">
-          Обратная связь руководству
-        </h1>
+        <SectionTitle
+          href="/feedback"
+          className="mb-1 text-xl font-bold tracking-heading sm:text-2xl"
+        />
         <EmptyState
           icon={MessageSquareHeart}
           title="Доступно студентам"
@@ -39,9 +41,7 @@ export default async function FeedbackPage() {
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
       <header>
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">
-          Обратная связь руководству
-        </h1>
+        <SectionTitle href="/feedback" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <p data-testid="feedback-sla" className="mt-1 text-sm text-muted-foreground">
           {FEEDBACK_RESPONSE_PROMISE}
         </p>

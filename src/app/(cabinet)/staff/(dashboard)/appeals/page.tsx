@@ -5,6 +5,7 @@ import { getStaffAppeals, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { formatRequestDate } from '@/lib/request-labels';
 import { APPEAL_STATUS_BADGES } from '@/lib/appeal-status';
+import { SectionTitle } from '@/components/shell/section-title';
 
 export default async function StaffAppealsPage() {
   const ctx = await requireDataCtx('/staff/appeals');
@@ -12,7 +13,10 @@ export default async function StaffAppealsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">Обращения студентов</h1>
+      <SectionTitle
+        href="/staff/appeals"
+        className="text-xl font-bold text-neutral-900 sm:text-2xl"
+      />
       <p className="mb-6 mt-1 text-sm text-neutral-600">
         Факультет {ctx.faculty ?? '—'} · новые обращения сверху. Ответ виден студенту сразу.
       </p>

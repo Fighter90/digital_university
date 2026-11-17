@@ -7,6 +7,7 @@ import { requireDataCtx, getPeopleDirectory } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { PeopleBrowser } from '@/components/people/people-browser';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SectionTitle } from '@/components/shell/section-title';
 
 export const metadata = { title: 'Справочник — Цифровой деканат' };
 
@@ -16,7 +17,7 @@ export default async function PeoplePage() {
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
-      <h1 className="text-xl font-bold sm:text-2xl">Справочник</h1>
+      <SectionTitle href="/people" className="text-xl font-bold sm:text-2xl" />
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
         Преподаватели и сотрудники вуза: контакты, кабинеты, часы консультаций.
       </p>

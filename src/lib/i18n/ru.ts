@@ -41,7 +41,7 @@ export const ru = {
   'title.requests': 'Мои заявки',
   'title.notifications': 'Уведомления',
   'title.deanery': 'Обращения в деканат',
-  'title.feedback': 'Обратная связь',
+  'title.feedback': 'Обратная связь руководству',
   'title.help': 'Вопросы и ответы',
   'title.guide': 'Как пользоваться кабинетом',
   'title.people': 'Справочник',
