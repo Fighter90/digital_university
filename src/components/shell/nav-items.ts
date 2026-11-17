@@ -21,6 +21,9 @@ export const CABINET_SECTIONS: CabinetSection[] = [
   // он назывался «Выразительная кнопка» — из меню неясно, что за ним стоит).
   { href: '/feedback', label: 'Обратная связь' },
   { href: '/help', label: 'Вопросы и ответы' },
+  // DIG-70 — «Справка»: детальный гайд «Как пользоваться кабинетом»
+  // (отдельный пункт меню, /guide; FAQ остаётся на /help).
+  { href: '/guide', label: 'Справка' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
   { href: '/profile', label: 'Профиль' },
@@ -35,9 +38,10 @@ export const TAB_SECTIONS: CabinetSection[] = [
   { href: '/more', label: 'Ещё' },
 ];
 
-// Разделы, доступные через «Ещё» на мобильном. DIG-34 — «Задачи» первой:
-// экран /tasks не входит в нижний таб-бар.// DIG-48 — разделы кабинета СОТРУДНИКА деканата (роль STAFF): меню и таб-бар
-// строятся по роли сессии, URL /staff студенту недоступен (middleware 403).
+// Разделы «Ещё» на мобильном. DIG-34 — «Задачи» первой: экран /tasks
+// не входит в нижний таб-бар. DIG-48 — разделы кабинета СОТРУДНИКА деканата
+// (роль STAFF): меню и таб-бар строятся по роли сессии, URL /staff студенту
+// недоступен (middleware 403).
 export const STAFF_SECTIONS: CabinetSection[] = [
   { href: '/staff', label: 'Сводка' },
   { href: '/staff/requests', label: 'Заявки' },
@@ -55,7 +59,9 @@ export function tabsForRole(role: 'STUDENT' | 'STAFF'): CabinetSection[] {
   return role === 'STAFF' ? STAFF_SECTIONS : TAB_SECTIONS;
 }
 
-// Разделы, доступные через «Ещё» на мобильном.
+// DIG-70 — «Справка» в «Ещё»: /tasks не входит в нижний таб-бар, остальные —
+// второстепенные разделы кабинета. «Справка» рядом с «Вопросами и ответами»:
+// FAQ отвечает точечно, гайд — последовательно.
 export const MORE_SECTIONS: CabinetSection[] = [
   { href: '/tasks', label: 'Задачи' },
   { href: '/notifications', label: 'Уведомления' },
@@ -63,6 +69,8 @@ export const MORE_SECTIONS: CabinetSection[] = [
   // DIG-40 — канал обратной связи руководству (см. комментарий выше).
   { href: '/feedback', label: 'Обратная связь' },
   { href: '/help', label: 'Вопросы и ответы' },
+  // DIG-70 — детальный гайд «Как пользоваться кабинетом» (экран /guide).
+  { href: '/guide', label: 'Справка' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
   { href: '/profile', label: 'Профиль' },

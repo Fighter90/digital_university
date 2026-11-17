@@ -3,6 +3,7 @@ import {
   CalendarDays,
   CircleHelp,
   ClipboardList,
+  Compass,
   Contact,
   Ellipsis,
   FileText,
@@ -31,6 +32,8 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   // DIG-40 — канал обратной связи руководству.
   '/feedback': MessageSquareHeart,
   '/help': CircleHelp,
+  // DIG-70 — «Справка»: детальный гайд «Как пользоваться кабинетом».
+  '/guide': Compass,
   '/people': Contact,
   '/ai-assistant': Sparkles,
   '/profile': UserRound,
