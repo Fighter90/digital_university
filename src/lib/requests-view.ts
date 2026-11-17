@@ -44,13 +44,7 @@ const FILTER_BUCKETS: Record<RequestFilterKey, readonly UnifiedRequestStatus[] |
 // ── карточка (сериализуемый вид для клиента: только строки) ──────────────────
 
 export type RequestIconKind =
-  | 'certificate'
-  | 'statement'
-  | 'grades'
-  | 'diploma'
-  | 'practice'
-  | 'dormitory'
-  | 'other';
+  'certificate' | 'statement' | 'grades' | 'diploma' | 'practice' | 'dormitory' | 'other';
 
 export type RequestCardAction = 'DOWNLOAD' | 'FIX' | 'CANCEL';
 
@@ -115,7 +109,13 @@ export function requestPipelineStep(status: RequestStatus): number | null {
   }
 }
 
-const PENDING_STEPS: readonly RequestStepperStepState[] = ['pending', 'pending', 'pending', 'pending', 'pending'];
+const PENDING_STEPS: readonly RequestStepperStepState[] = [
+  'pending',
+  'pending',
+  'pending',
+  'pending',
+  'pending',
+];
 
 /**
  * Состояния пяти шагов степпера для статуса. Защита от утечки легаси-
@@ -190,6 +190,8 @@ export function requestIconKindForTypeCode(typeCode: string): RequestIconKind {
   if (typeCode.startsWith('GRADES')) return 'grades';
   if (typeCode.startsWith('DIPLOMA')) return 'diploma';
   if (typeCode.startsWith('ACADEMIC') || typeCode.startsWith('STMT')) return 'statement';
+  // DIG-41 — заявление на материальную помощь: тоже заявление, не справка.
+  if (typeCode.startsWith('MATERIAL')) return 'statement';
   if (typeCode.startsWith('DORM')) return 'dormitory';
   return 'certificate';
 }
@@ -254,7 +256,9 @@ export function filterRequests(
 ): RequestCardView[] {
   const bucket = FILTER_BUCKETS[filter];
   return cards
-    .filter((card) => (bucket === null || bucket.includes(card.status)) && matchRequest(card, query))
+    .filter(
+      (card) => (bucket === null || bucket.includes(card.status)) && matchRequest(card, query),
+    )
     .sort((a, b) => {
       const fixDelta = Number(b.status === 'NEEDS_FIX') - Number(a.status === 'NEEDS_FIX');
       if (fixDelta !== 0) return fixDelta;

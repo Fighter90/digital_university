@@ -97,7 +97,8 @@ export type {
   PersonCardData,
   PersonListEntry,
   PersonUpcomingEvent,
-} from './people';export {
+} from './people';
+export {
   answerStaffAppeal,
   changeStaffRequestStatus,
   createStaffAnnouncement,
@@ -118,7 +119,8 @@ export type {
   StaffRequestDetail,
   StaffStatusChangeResult,
   StaffSummaryData,
-} from './staff-workflow';export { getDashboard } from './dashboard';
+} from './staff-workflow';
+export { getDashboard } from './dashboard';
 export { getTasks, getTasksSummary, groupTasks, markTaskDone } from './tasks';
 export type { TaskGroupViews, TaskSource, TasksData, TasksSummary, TaskView } from './tasks';
 export type {
@@ -132,12 +134,7 @@ export type {
   TodayLessonView,
   TodayView,
 } from './dashboard';
-export {
-  getNewsPage,
-  getNewsArticle,
-  markNewsRead,
-  listDeaneryNews,
-} from './news';
+export { getNewsPage, getNewsArticle, markNewsRead, listDeaneryNews } from './news';
 export type {
   DeaneryNewsItem,
   NewsArticleData,
@@ -150,6 +147,8 @@ export { searchCabinet } from './search';
 export type { SearchResponse, SearchGroup, SearchHit, SearchHitKind } from '@/lib/search-core';
 export { getServicesPage, toggleFavoriteService, MAX_FAVORITES } from './services';
 export type { ServicesPageData, ServiceToggleResult } from './services';
+export { getFinancePage } from './finance';
+export type { FinancePageData, FinanceStudentView } from './finance';
 export {
   getCertificatePdfInput,
   getOrCreateCertificateForRequest,
@@ -248,7 +247,8 @@ export type {
   StaffAnnouncementInput,
 } from './port';
 export { getRequestsScreen } from './requests-screen';
-export type { RequestsScreenData } from './requests-screen';export {
+export type { RequestsScreenData } from './requests-screen';
+export {
   type DataCtx,
   type Role,
   type RequestType,

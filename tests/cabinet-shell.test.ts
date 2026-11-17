@@ -44,7 +44,8 @@ vi.mock('@/server/data', () => ({
   // DIG-39 — обращения: пустой список для каркаса (страница рендерится,
   // а не падает на моке барреля). Остальные страницы каркаса используют
   // свои моки ниже; расписание сознательно идёт по ветке ошибки, как раньше.
-  getDeaneryPage: vi.fn(async () => ({ tickets: [], requests: [], disciplines: [] })),  getOwnProfile: vi.fn(async () => ({
+  getDeaneryPage: vi.fn(async () => ({ tickets: [], requests: [], disciplines: [] })),
+  getOwnProfile: vi.fn(async () => ({
     id: 's_test',
     login: 'student1',
     fullName: 'Анна Ковалёва',
@@ -207,6 +208,15 @@ describe('nav config (cabinet shell)', () => {
     expect(CABINET_SECTIONS[1]?.href).toBe('/tasks');
   });
 
+  it('DIG-41: раздел «Финансы» в полном меню (после «Успеваемости») и в «Ещё»', () => {
+    const finance = CABINET_SECTIONS.find((s) => s.href === '/finance');
+    expect(finance?.label).toBe('Финансы');
+    const gradesIndex = CABINET_SECTIONS.findIndex((s) => s.href === '/grades');
+    expect(CABINET_SECTIONS[gradesIndex + 1]?.href).toBe('/finance');
+    // Мобильный путь: раздел доступен через «Ещё».
+    expect(MORE_SECTIONS.some((s) => s.href === '/finance')).toBe(true);
+  });
+
   it('mobile tab bar is exactly: Главная, Расписание, Оценки, Заявки, Ещё', () => {
     expect(TAB_SECTIONS.map((t) => t.label)).toEqual([
       'Главная',
@@ -217,9 +227,10 @@ describe('nav config (cabinet shell)', () => {
     ]);
   });
 
-  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, Вопросы и ответы, Справочник, AI-ассистент, Профиль, Настройки', () => {
+  it('«Ещё» covers Задачи, Уведомления, Финансы, Связь с деканатом, Вопросы и ответы, Справочник, AI-ассистент, Профиль, Настройки', () => {
     expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
       '/tasks',
+      '/finance',
       '/notifications',
       '/deanery',
       '/help',

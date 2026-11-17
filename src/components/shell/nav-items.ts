@@ -14,6 +14,7 @@ export const CABINET_SECTIONS: CabinetSection[] = [
   { href: '/tasks', label: 'Задачи' },
   { href: '/schedule', label: 'Расписание' },
   { href: '/grades', label: 'Успеваемость' },
+  { href: '/finance', label: 'Финансы' },
   { href: '/requests', label: 'Заявки и справки' },
   { href: '/notifications', label: 'Уведомления' },
   { href: '/deanery', label: 'Связь с деканатом' },
@@ -52,9 +53,12 @@ export function tabsForRole(role: 'STUDENT' | 'STAFF'): CabinetSection[] {
   return role === 'STAFF' ? STAFF_SECTIONS : TAB_SECTIONS;
 }
 
-// Разделы, доступные через «Ещё» на мобильном.
+// Разделы, доступные через «Ещё» на мобильном. DIG-34 — «Задачи» первой:
+// экран /tasks не входит в нижний таб-бар. DIG-41 — «Финансы» сразу после
+// задач (деньги и сроки — actionable-разделы).
 export const MORE_SECTIONS: CabinetSection[] = [
   { href: '/tasks', label: 'Задачи' },
+  { href: '/finance', label: 'Финансы' },
   { href: '/notifications', label: 'Уведомления' },
   { href: '/deanery', label: 'Связь с деканатом' },
   { href: '/help', label: 'Вопросы и ответы' },

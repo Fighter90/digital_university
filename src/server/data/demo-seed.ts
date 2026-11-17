@@ -38,7 +38,8 @@ import type {
   StudyDeadlineRow,
   StudentTaskRow,
   TicketMessageRow,
-  TicketRow,} from './types';
+  TicketRow,
+} from './types';
 
 export const DEMO_PASSWORDS = {
   'anna.smirnova': 'anna-demo-2026',
@@ -982,7 +983,8 @@ const announcements: AnnouncementRow[] = [
     body: 'Завтра в 10:00, ауд. 305: вопросы сессии и практики. Возьмите зачётные книжки.',
     authorLogin: 'dean.kovaleva',
     authorName: 'Мария Петрова',
-    createdAt: day(-1, 13, 0),  },
+    createdAt: day(-1, 13, 0),
+  },
 ];
 
 // DIG-39 — обращения в деканат (тикет с перепиской). У Анны два обращения:
@@ -1481,6 +1483,48 @@ function buildCanonicalRequests(): {
         ],
       },
     },
+    // DIG-41 — действия экрана «Финансы» (/finance): материальная помощь
+    // и справка о размере стипендии ведут в мастер заявки с предвыбором.
+    {
+      id: 'crt-material-aid',
+      code: 'MATERIAL_AID',
+      name: 'Заявление на материальную помощь',
+      etaDays: 3,
+      format: 'PAPER',
+      isInstant: false,
+      formSchema: {
+        keyField: 'reason',
+        fields: [
+          {
+            key: 'reason',
+            label: 'Причина обращения',
+            type: 'text',
+            required: true,
+            maxLength: 200,
+          },
+        ],
+      },
+    },
+    {
+      id: 'crt-scholarship-cert',
+      code: 'SCHOLARSHIP_CERT',
+      name: 'Справка о размере стипендии',
+      etaDays: 2,
+      format: 'ELECTRONIC',
+      isInstant: false,
+      formSchema: {
+        keyField: 'purpose',
+        fields: [
+          {
+            key: 'purpose',
+            label: 'Назначение',
+            type: 'enum',
+            required: true,
+            options: ['для банка', 'для соцзащиты', 'для визового центра', 'по месту требования'],
+          },
+        ],
+      },
+    },
   ];
 
   const certCreated = day(0, 9, 5); // сегодня утром — окно 24 ч активно
@@ -1721,8 +1765,9 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     appeals,
     appealMessages,
     tickets,
-    ticketMessages,    // DIG-48 — демо-объявление раздела «Объявления» сотрудника.
-    announcements,    schedule,
+    ticketMessages, // DIG-48 — демо-объявление раздела «Объявления» сотрудника.
+    announcements,
+    schedule,
     exams,
     settings,
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.

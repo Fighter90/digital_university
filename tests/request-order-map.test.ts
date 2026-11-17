@@ -17,6 +17,15 @@ describe('orderTargetForService: карта каталог → тип', () => {
     expect(orderTargetForService('stmt-academic-leave')).toEqual({ typeCode: 'ACADEMIC_LEAVE' });
   });
 
+  it('DIG-41: действия экрана «Финансы» предвыбирают свои типы словаря', () => {
+    expect(orderTargetForService('fin-material-aid')).toEqual({ typeCode: 'MATERIAL_AID' });
+    expect(orderTargetForService('fin-scholarship-cert')).toEqual({
+      typeCode: 'SCHOLARSHIP_CERT',
+    });
+    // Нормализация регистра из ссылок каталога.
+    expect(orderTargetForService('Fin-Material-Aid')).toEqual({ typeCode: 'MATERIAL_AID' });
+  });
+
   it('«справка для отсрочки» — справка об обучении с назначением «для военкомата»', () => {
     expect(orderTargetForService('cert-defer')).toEqual({
       typeCode: 'CERT_ENROLLMENT',
@@ -42,8 +51,16 @@ describe('orderTargetForService: карта каталог → тип', () => {
 
 describe('подсказки типов и формата (шаг 1 «что это за документ одной строкой»)', () => {
   it('у всех типов словаря демо-сида есть однострочная подсказка', () => {
-    // Словарь demo-seed: CERT_ENROLLMENT, GRADES_EXTRACT, DIPLOMA_COPY, ACADEMIC_LEAVE.
-    for (const code of ['CERT_ENROLLMENT', 'GRADES_EXTRACT', 'DIPLOMA_COPY', 'ACADEMIC_LEAVE']) {
+    // Словарь demo-seed: CERT_ENROLLMENT, GRADES_EXTRACT, DIPLOMA_COPY,
+    // ACADEMIC_LEAVE, DIG-41: MATERIAL_AID, SCHOLARSHIP_CERT.
+    for (const code of [
+      'CERT_ENROLLMENT',
+      'GRADES_EXTRACT',
+      'DIPLOMA_COPY',
+      'ACADEMIC_LEAVE',
+      'MATERIAL_AID',
+      'SCHOLARSHIP_CERT',
+    ]) {
       expect(requestTypeHint(code), code).not.toBe('');
       expect(REQUEST_TYPE_HINTS[code], code).toBeTruthy();
     }
