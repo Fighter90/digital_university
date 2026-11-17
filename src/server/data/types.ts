@@ -371,8 +371,44 @@ export interface AnnouncementRow {
   body: string;
   authorLogin: string;
   authorName: string;
-  createdAt: Date;}
+  createdAt: Date;}// ── DIG-40 — обратная связь руководству (/feedback) ──────────────────────────
 
+/** Тип обращения канала «Обратная связь» (метки в lib/feedback). */
+export type FeedbackKind = 'SUGGESTION' | 'COMPLAINT' | 'GRATITUDE';
+
+/** Адресат обращения: уровни управления вуза (метки в lib/feedback). */
+export type FeedbackTarget =
+  'DEANERY' | 'ACADEMIC_OFFICE' | 'PROGRAM_MANAGEMENT' | 'UNIVERSITY_MANAGEMENT';
+
+/** Статусы канонического слоя; видимые три — маппинг в lib/feedback. */
+export type FeedbackStatus = 'NEW' | 'IN_REVIEW' | 'ANSWERED' | 'RESOLVED';
+
+/**
+ * Обращение канала «Обратная связь». Публичный ключ — номер FB-ГГГГ-XXXXX.
+ * АНОНИМНОСТЬ (приёмка DIG-40): `studentId === null` — обращение НЕ хранит
+ * связь с пользователем нигде (в хранилище, на клиенте и в ответах API);
+ * такое обращение не видно никому в списках и не открывается по номеру.
+ */
+export interface FeedbackRow {
+  id: string;
+  /** null — анонимное обращение: связи с пользователем нет. */
+  studentId: string | null;
+  number: string;
+  kind: FeedbackKind;
+  target: FeedbackTarget;
+  status: FeedbackStatus;
+  text: string;
+  /** Вложения — только имена файлов (как в обращениях DIG-39). */
+  attachments: string[];
+  isAnonymous: boolean;
+  /** Опубликовано в ленте «Что мы изменили» (текст результата); null — нет. */
+  publishedOutcome: string | null;
+  createdAt: Date;
+  /** Срок ответа: createdAt + 3 рабочих дня (lib/request-sla). */
+  dueAt: Date;
+  /** Время последней активности (публикация результата и т.п.). */
+  updatedAt: Date;
+}
 export interface ScheduleEventRow {
   id: string;
   groupName: string;
@@ -493,7 +529,6 @@ export interface StudentTaskRow {
   dueAt: Date;
   doneAt: Date | null;
 }
-
 
 /**
  * DIG-47 — выданная справка: строка реестра проверки подлинности.

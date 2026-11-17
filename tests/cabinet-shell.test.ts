@@ -44,7 +44,10 @@ vi.mock('@/server/data', () => ({
   // DIG-39 — обращения: пустой список для каркаса (страница рендерится,
   // а не падает на моке барреля). Остальные страницы каркаса используют
   // свои моки ниже; расписание сознательно идёт по ветке ошибки, как раньше.
-  getDeaneryPage: vi.fn(async () => ({ tickets: [], requests: [], disciplines: [] })),  getOwnProfile: vi.fn(async () => ({
+  getDeaneryPage: vi.fn(async () => ({ tickets: [], requests: [], disciplines: [] })),
+  // DIG-40 — обратная связь: пустой список и лента для каркасного рендера.
+  getFeedbackPage: vi.fn(async () => ({ items: [], feed: [] })),
+  getOwnProfile: vi.fn(async () => ({
     id: 's_test',
     login: 'student1',
     fullName: 'Анна Ковалёва',
@@ -172,6 +175,7 @@ import GradesPage from '@/app/(cabinet)/grades/(summary)/page';
 import RequestsPage from '@/app/(cabinet)/requests/page';
 import NotificationsPage from '@/app/(cabinet)/notifications/page';
 import DeaneryPage from '@/app/(cabinet)/deanery/(list)/page';
+import FeedbackPage from '@/app/(cabinet)/feedback/(list)/page';
 import AiAssistantPage from '@/app/(cabinet)/ai-assistant/page';
 import ProfilePage from '@/app/(cabinet)/profile/page';
 import SettingsPage from '@/app/(cabinet)/settings/page';
@@ -186,6 +190,7 @@ describe('nav config (cabinet shell)', () => {
       ['/requests', 'Заявки и справки'],
       ['/notifications', 'Уведомления'],
       ['/deanery', 'Связь с деканатом'],
+      ['/feedback', 'Обратная связь'],
       ['/help', 'Вопросы и ответы'],
       ['/people', 'Справочник'],
       ['/ai-assistant', 'AI-ассистент'],
@@ -217,17 +222,30 @@ describe('nav config (cabinet shell)', () => {
     ]);
   });
 
-  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, Вопросы и ответы, Справочник, AI-ассистент, Профиль, Настройки', () => {
+  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, Обратная связь, Вопросы и ответы, Справочник, AI-ассистент, Профиль, Настройки', () => {
     expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
       '/tasks',
       '/notifications',
       '/deanery',
+      '/feedback',
       '/help',
       '/people',
       '/ai-assistant',
       '/profile',
       '/settings',
     ]);
+  });
+
+  // DIG-40 (приёмка): пункт меню канала обратной связи однозначно объясняет
+  // назначение — в аудированном ЛК он назывался «Выразительная кнопка».
+  it('DIG-40: пункт меню «Обратная связь» объясняет назначение канала', () => {
+    const section = CABINET_SECTIONS.find((s) => s.href === '/feedback');
+    expect(section).toBeTruthy();
+    expect(section?.label).toBe('Обратная связь');
+    // Ни один пункт меню не носит непонятное название канала.
+    for (const { label } of CABINET_SECTIONS) {
+      expect(label.toLowerCase()).not.toContain('выразительная');
+    }
   });
 });
 
@@ -275,6 +293,7 @@ describe('cabinet pages render inside the shell main region', () => {
     ['/requests', RequestsPage],
     ['/notifications', NotificationsPage],
     ['/deanery', DeaneryPage],
+    ['/feedback', FeedbackPage],
     ['/ai-assistant', AiAssistantPage],
     ['/profile', ProfilePage],
     ['/settings', SettingsPage],
