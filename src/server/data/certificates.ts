@@ -185,8 +185,13 @@ export async function getStaffCertificatePdfInput(
     });
     return null;
   }
-  if (request.type !== 'CERTIFICATE' || request.status !== 'COMPLETED') {
-    return null; // справка ещё не выдана: нет ни отказа доступа, ни выдачи
+  // Канон DIG-30: справка готова к PDF в статусаx ISSUED (выдана) и
+  // COMPLETED (legacy-словарь). Остальные — рано: null без аудита.
+  if (
+    request.type !== 'CERTIFICATE' ||
+    (request.status !== 'ISSUED' && request.status !== 'COMPLETED')
+  ) {
+    return null;
   }
 
   let certificate = await db.findCertificateByStudentAndRequestId(student.id, request.id);
