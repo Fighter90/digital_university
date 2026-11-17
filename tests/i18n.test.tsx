@@ -81,14 +81,14 @@ describe('sectionTitle / navLabel по префиксу пути', () => {
 
   it('самый длинный префикс побеждает (grades/session), вложенность матчится', () => {
     expect(sectionTitle('en', '/grades/session')).toBe('Exam session');
-    expect(navLabel('en', '/grades/session')).toBe('Grades');
+    expect(navLabel('en', '/grades/session', 'Оценки')).toBe('Grades');
   });
 
   it('ложных срабатываний по префиксу нет (/schedule-extra)', () => {
     expect(navLabel('en', '/schedule-extra', 'Fallback')).toBe('Fallback');
   });
-
-  it('RU-метки меню байт-в-байт равны подписям nav-items', () => {
+  it('RU-метки меню байт-в-байт равны подписям nav-items (fallback каноничен)', () => {
+    // У одного href — короткая и полная RU-подписи: меню и таб-бар.
     expect(navLabel('ru', '/requests', 'Заявки и справки')).toBe('Заявки и справки');
     expect(navLabel('ru', '/requests', 'Заявки')).toBe('Заявки'); // таб-бар
     expect(navLabel('en', '/requests', 'Заявки')).toBe('Requests & certificates');

@@ -129,11 +129,15 @@ export function sectionTitle(locale: Locale, pathname: string, fallback?: string
   return fallback ?? t(locale, 'title.dashboard');
 }
 
-/** Пункт меню по префиксу пути. RU — байт-в-байт прежние подписи nav-items. */
-export function navLabel(locale: Locale, pathname: string, fallback?: string): string {
+/**
+ * Пункт меню по префиксу пути. RU — байт-в-байт прежние подписи nav-items
+ * (у одного href бывают короткая и полная подписи: таб-бар «Заявки» vs
+ * меню «Заявки и справки»), поэтому fallback каноничен. EN — словарь.
+ */
+export function navLabel(locale: Locale, pathname: string, fallback: string): string {
+  if (locale === 'ru') return fallback;
   const key = longestPrefixMatch(pathname, MENU_KEY_BY_HREF);
-  if (key) return t(locale, key);
-  return fallback ?? pathname;
+  return key ? t('en', key) : fallback;
 }
 
 // ── статусы заявок и обращения ──────────────────────────────────────────────
