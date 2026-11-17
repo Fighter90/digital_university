@@ -8,7 +8,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md';
 
 const BASE =
-  'inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-button font-semibold transition-[transform,box-shadow,background-color,color,border-color] duration-150 disabled:pointer-events-none disabled:opacity-50';
+  'inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-button font-semibold press-scale transition-[transform,box-shadow,background-color,color,border-color] duration-150 disabled:pointer-events-none disabled:opacity-50';
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: 'gradient-brand text-white shadow-soft lift-hover',

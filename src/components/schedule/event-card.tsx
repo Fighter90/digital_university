@@ -17,6 +17,7 @@ import { personHrefByFullName } from '@/lib/people-catalog';
 // списка (обратная совместимость рендеров без контекста панели).
 import { LESSON_KIND_META } from '@/lib/schedule-cards';
 import type { ScheduleEventCard } from '@/lib/schedule-cards';
+import { riseDelayStyle } from '@/lib/motion';
 import { Badge } from '@/components/ui/badge';
 import { EventTypePill } from './event-type-pill';
 
@@ -26,12 +27,18 @@ export interface EventCardProps {
   compact?: boolean;
   /** Ссылка на панель деталей пары (?event=<id>); без пропса карточка — <li>. */
   href?: string;
+  /**
+   * DIG-71 — индекс в списке для каскадного появления (animate-rise +
+   * --du-rise-delay через riseDelayStyle). Без пропса анимации нет.
+   */
+  riseIndex?: number;
 }
 
-export function EventCard({ event, compact = false, href }: EventCardProps) {
+export function EventCard({ event, compact = false, href, riseIndex }: EventCardProps) {
   const meta = LESSON_KIND_META[event.kind];
   /** DIG-37: имя преподавателя — ссылка на карточку в справочнике. */
   const teacherHref = personHrefByFullName(event.teacher);
+  const riseStyle = riseIndex === undefined ? undefined : riseDelayStyle(riseIndex);
   const card = (
     <>
       {/* цветная полоса типа занятия */}
@@ -111,7 +118,8 @@ export function EventCard({ event, compact = false, href }: EventCardProps) {
     event.isMoved && 'hatch-rescheduled border-warning',
     event.isCancelled && 'opacity-70',
     compact && 'p-2.5',
-    href && 'transition-shadow hover:shadow-hover focus-visible:outline-accent',
+    href && 'lift-hover press-scale focus-visible:outline-accent',
+    riseIndex !== undefined && 'animate-rise',
   );
   if (href) {
     return (
@@ -124,6 +132,7 @@ export function EventCard({ event, compact = false, href }: EventCardProps) {
           data-compact={compact ? 'true' : undefined}
           aria-label={event.ariaLabel}
           className={cn(cardClasses, 'block')}
+          style={riseStyle}
         >
           {card}
         </a>
@@ -137,6 +146,7 @@ export function EventCard({ event, compact = false, href }: EventCardProps) {
       data-compact={compact ? 'true' : undefined}
       aria-label={event.ariaLabel}
       className={cardClasses}
+      style={riseStyle}
     >
       {card}
     </li>

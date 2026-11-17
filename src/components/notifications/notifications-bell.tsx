@@ -9,6 +9,7 @@ import {
   type NotificationFeedItem,
 } from '@/lib/notification-view';
 import { markNotificationReadAction } from '@/server/actions/notifications';
+import { cn } from '@/lib/utils';
 import { useSafeRouter } from './use-safe-router';
 import { UnreadBadge } from '@/components/shell/unread-badge';
 import { NotificationItemRow } from './notification-item-row';
@@ -140,7 +141,7 @@ export function NotificationsBell({ initialItems, initialCount }: NotificationsB
         onClick={() => setOpen((value) => !value)}
         className="relative grid size-8 place-items-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600 md:size-9"
       >
-        <Bell className="size-4" aria-hidden="true" />
+        <Bell className={cn('size-4', initialCount > 0 && 'animate-bell')} aria-hidden="true" />
         <UnreadBadge count={initialCount} />
       </button>
 

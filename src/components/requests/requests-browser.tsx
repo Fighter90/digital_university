@@ -17,6 +17,7 @@ import {
 } from '@/lib/requests-view';
 import { Chip } from '@/components/ui/chip';
 import { EmptyState } from '@/components/ui/empty-state';
+import { riseDelayStyle } from '@/lib/motion';
 import { RequestCard } from './request-card';
 
 export function RequestsBrowser({ cards }: { cards: RequestCardView[] }) {
@@ -57,7 +58,9 @@ export function RequestsBrowser({ cards }: { cards: RequestCardView[] }) {
             <span
               aria-hidden="true"
               className={`min-w-5 rounded-pill px-1.5 text-center text-xs font-bold ${
-                filter === key ? 'bg-background/20 text-background' : 'bg-muted text-muted-foreground'
+                filter === key
+                  ? 'bg-background/20 text-background'
+                  : 'bg-muted text-muted-foreground'
               }`}
             >
               {counts[key]}
@@ -89,8 +92,8 @@ export function RequestsBrowser({ cards }: { cards: RequestCardView[] }) {
         />
       ) : (
         <ul data-testid="requests-list" className="mt-4 flex flex-col gap-3">
-          {visible.map((request) => (
-            <li key={request.id}>
+          {visible.map((request, index) => (
+            <li key={request.id} className="animate-rise" style={riseDelayStyle(index)}>
               <RequestCard request={request} />
             </li>
           ))}

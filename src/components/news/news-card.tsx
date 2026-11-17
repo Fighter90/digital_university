@@ -17,7 +17,7 @@ export function NewsCard({ item, feedQuery }: { item: NewsCardView; feedQuery: s
     <Link
       href={href}
       data-testid={`news-card-${item.id}`}
-      className="lift-hover group flex h-full flex-col overflow-hidden rounded-card border border-border bg-card shadow-soft"
+      className="lift-hover press-scale group flex h-full flex-col overflow-hidden rounded-card border border-border bg-card shadow-soft"
     >
       <Image
         src={cover.src}
