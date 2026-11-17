@@ -119,7 +119,7 @@ function PersonListItem({
   const myDisciplines = showPersonal ? person.myDisciplines : [];
 
   return (
-    <article className="h-full rounded-card border border-border bg-card p-4 shadow-soft transition-colors hover:border-muted-foreground/40">
+    <article className="lift-hover press-scale h-full rounded-card border border-border bg-card p-4 shadow-soft transition-colors hover:border-muted-foreground/40">
       <div className="flex items-start gap-3">
         <Avatar name={person.fullName} size="md" />
         <div className="min-w-0 flex-1">

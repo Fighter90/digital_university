@@ -59,7 +59,7 @@ export function RequestCard({ request }: { request: RequestCardView }) {
     <article
       data-testid="request-card"
       data-request-status={status}
-      className={`relative rounded-card border bg-card p-4 shadow-soft sm:p-5 ${
+      className={`relative rounded-card border bg-card p-4 shadow-soft lift-hover press-scale sm:p-5 ${
         isFix ? 'border-warning/60 bg-warning-soft/40' : 'border-border'
       }`}
     >

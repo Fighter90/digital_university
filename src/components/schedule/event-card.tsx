@@ -118,7 +118,7 @@ export function EventCard({ event, compact = false, href, riseIndex }: EventCard
     event.isMoved && 'hatch-rescheduled border-warning',
     event.isCancelled && 'opacity-70',
     compact && 'p-2.5',
-    href && 'transition-shadow hover:shadow-hover focus-visible:outline-accent',
+    href && 'lift-hover press-scale focus-visible:outline-accent',
     riseIndex !== undefined && 'animate-rise',
   );
   if (href) {

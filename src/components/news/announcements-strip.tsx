@@ -39,7 +39,7 @@ export function AnnouncementsStrip({
               href={`/news/${item.id}${feedQuery ? `?${feedQuery}` : ''}`}
               data-testid={`news-announcement-${item.id}`}
               data-unread={item.isRead ? undefined : 'true'}
-              className="lift-hover flex h-full w-72 flex-col gap-1 rounded-button border border-coral-200 bg-white p-3 shadow-soft"
+              className="lift-hover press-scale flex h-full w-72 flex-col gap-1 rounded-button border border-coral-200 bg-white p-3 shadow-soft"
             >
               <span className="flex items-center gap-2">
                 <span className="rounded-pill bg-coral-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
