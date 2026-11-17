@@ -50,8 +50,10 @@ import type {
   MspVoteRow,
   /** DIG-43 — мероприятия вуза и запись (/events). */
   EventRegistrationRow,
-  EventRow,
-} from './types';
+  EventRow,  /** DIG-42 — «Дополнительное образование» (/dpo). */
+  DpoDocumentRow,
+  DpoEnrollmentRow,
+  DpoProgramRow,} from './types';
 import { canonicalRequestNumberSeq } from './canonical-request-number';
 export interface MemorySeed {
   students?: StudentRow[];
@@ -102,8 +104,12 @@ export interface MemorySeed {
   /** DIG-43 — афиша мероприятий вуза (/events). */
   events?: EventRow[];
   /** DIG-43 — записи студентов на мероприятия (UNIQUE пары). */
-  eventRegistrations?: EventRegistrationRow[];
-}
+  eventRegistrations?: EventRegistrationRow[];  /** DIG-42 — программы каталога «Дополнительное образование» (/dpo). */
+  dpoPrograms?: DpoProgramRow[];
+  /** DIG-42 — записи студентов на программы (UNIQUE пары программа+студент). */
+  dpoEnrollments?: DpoEnrollmentRow[];
+  /** DIG-42 — документы студентов по программам ДПО. */
+  dpoDocuments?: DpoDocumentRow[];}
 
 export interface MemoryDataDb extends DataDb {
   /** Test/demo helper: replaces the whole dataset (never called in pages). */
@@ -146,8 +152,10 @@ export function createMemoryDataDb(): MemoryDataDb {
   let mspVotes: MspVoteRow[] = [];
   let mspComments: MspCommentRow[] = [];
   let events: EventRow[] = [];
-  let eventRegistrations: EventRegistrationRow[] = [];
-  let audit: AuditLogRow[] = [];
+  let eventRegistrations: EventRegistrationRow[] = [];  // DIG-42 — «Дополнительное образование» (/dpo).
+  let dpoPrograms: DpoProgramRow[] = [];
+  let dpoEnrollments: DpoEnrollmentRow[] = [];
+  let dpoDocuments: DpoDocumentRow[] = [];  let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
   let appealSeq = 0;
@@ -209,8 +217,10 @@ export function createMemoryDataDb(): MemoryDataDb {
       mspVotes = seed.mspVotes ? seed.mspVotes.map(clone) : [];
       mspComments = seed.mspComments ? seed.mspComments.map(clone) : [];
       events = seed.events ? seed.events.map(clone) : [];
-      eventRegistrations = seed.eventRegistrations ? seed.eventRegistrations.map(clone) : [];
-      audit = [];
+      eventRegistrations = seed.eventRegistrations ? seed.eventRegistrations.map(clone) : [];      // DIG-42 — «Дополнительное образование» (/dpo).
+      dpoPrograms = seed.dpoPrograms ? seed.dpoPrograms.map(clone) : [];
+      dpoEnrollments = seed.dpoEnrollments ? seed.dpoEnrollments.map(clone) : [];
+      dpoDocuments = seed.dpoDocuments ? seed.dpoDocuments.map(clone) : [];      audit = [];
     },
 
     auditEvents() {
@@ -1077,8 +1087,39 @@ export function createMemoryDataDb(): MemoryDataDb {
     // Агрегат: наружу уходит число записанных, не чужие строки.
     async listEventAttendeeCount(eventId) {
       return countAttendees(eventId);
+    },    // ── DIG-42: «Дополнительное образование» (/dpo) ────────────────────────
+    async listDpoPrograms() {
+      return dpoPrograms.map(clone);
     },
-
+    async listDpoEnrollmentsByStudent(studentId) {
+      return dpoEnrollments
+        .filter((e) => e.studentId === studentId)
+        .sort((a, b) => a.enrolledAt.getTime() - b.enrolledAt.getTime())
+        .map(clone);
+    },
+    // Запись владельца: только на СУЩЕСТВУЮЩУЮ программу, UNIQUE пара
+    // программа+студент — повторный вызов возвращает null (не дубль строки).
+    async enrollDpo(studentId, programId) {
+      const program = by(dpoPrograms, 'id', programId);
+      if (!program) return null;
+      if (dpoEnrollments.some((e) => e.programId === programId && e.studentId === studentId)) {
+        return null;
+      }
+      const row: DpoEnrollmentRow = {
+        programId,
+        studentId,
+        enrolledAt: new Date(),
+        progressPercent: 0,
+      };
+      dpoEnrollments.push(row);
+      return clone(row);
+    },
+    async listDpoDocumentsByStudent(studentId) {
+      return dpoDocuments
+        .filter((d) => d.studentId === studentId)
+        .sort((a, b) => b.issuedAt.getTime() - a.issuedAt.getTime())
+        .map(clone);
+    },
     async appendAudit(event) {
       auditSeq += 1;
       const row: AuditLogRow = {

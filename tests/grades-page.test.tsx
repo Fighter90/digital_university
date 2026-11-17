@@ -553,9 +553,13 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
       expect(html).toContain('Оценок пока нет');
       expect(html).toContain('Первая контрольная');
       expect(html).toContain('Базы данных');
-      // Дата первой контрольной — из фикстуры (ru-RU, «д месяц»).
+      // Дата первой контрольной — из фикстуры examSessions[0] (2099-10-20,
+      // ru-RU «д месяц»). Детерминированно: не зависит от реальных часов
+      // машины и TZ-сдвига UTC/МСК (полуночный флейк 20↔21 ноября).
       expect(html).toContain(
-        new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(firstCreditDate),
+        new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(
+          new Date(2099, 10, 20, 10, 0),
+        ),
       );
       // карточек дисциплин нет — только пустое состояние
       expect(html).not.toContain('data-testid="discipline-card"');

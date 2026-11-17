@@ -48,8 +48,10 @@ import type {
   MspVoteRow,
   /** DIG-43 — мероприятия вуза и запись (/events). */
   EventRegistrationRow,
-  EventRow,
-} from './types';
+  EventRow,  /** DIG-42 — «Дополнительное образование» (/dpo). */
+  DpoDocumentRow,
+  DpoEnrollmentRow,
+  DpoProgramRow,} from './types';
 import { newMspSlug } from './msp-slug';
 export const DEMO_PASSWORDS = {
   'anna.smirnova': 'anna-demo-2026',
@@ -1670,8 +1672,149 @@ function buildEvents(): { events: EventRow[]; eventRegistrations: EventRegistrat
   return { events, eventRegistrations };
 }
 
-const { events, eventRegistrations } = buildEvents();
+const { events, eventRegistrations } = buildEvents();// DIG-42 — «Дополнительное образование» (/dpo): 6 вымышленных программ
+// (названия обобщённые, никаких реальных провайдеров), 2 записи Анны с
+// демо-прогрессом (60 % и 10 %) и 3 её документа (договор, акт, сертификат).
+// Реальной зачисляемости и оплаты нет: «Записаться» только ставит строку
+// записи владельца, цена 0 читается как «бесплатно для прототипа».
+function buildDpoCatalog(): {
+  dpoPrograms: DpoProgramRow[];
+  dpoEnrollments: DpoEnrollmentRow[];
+  dpoDocuments: DpoDocumentRow[];
+} {
+  const dpoPrograms: DpoProgramRow[] = [
+    {
+      id: 'dpo-analytics',
+      slug: 'analitika-dannyh',
+      title: 'Аналитика данных',
+      description:
+        'Сбор, очистка и визуализация данных на реальных кейсах: от таблиц до дашбордов. Финальный проект — аналитический отчёт для вымышленного университета.',
+      hours: 72,
+      format: 'ONLINE',
+      startsAt: day(14, 10),
+      price: 0,
+      tags: ['данные', 'SQL', 'дашборды'],
+      facultyTag: 'ИТ',
+    },
+    {
+      id: 'dpo-uxui',
+      slug: 'ux-ui-dizayn',
+      title: 'UX/UI дизайн',
+      description:
+        'Исследование пользователей, прототипы и дизайн-системы: от сценария до кликабельного макета мобильного приложения. Кейсы в курсе вымышленные.',
+      hours: 108,
+      format: 'HYBRID',
+      startsAt: day(21, 18),
+      price: 24000,
+      tags: ['дизайн', 'Figma', 'прототипы'],
+      facultyTag: 'Дизайн',
+    },
+    {
+      id: 'dpo-pm',
+      slug: 'proektnoe-upravlenie',
+      title: 'Проектное управление',
+      description:
+        'Планирование, роли и коммуникации в учебных и студенческих проектах: roadmap, риски и защита проекта перед комиссией (демо-кейсы).',
+      hours: 64,
+      format: 'OFFLINE',
+      startsAt: day(30, 16),
+      price: 18000,
+      tags: ['управление', 'agile'],
+      facultyTag: 'Менеджмент',
+    },
+    {
+      id: 'dpo-python',
+      slug: 'python-dlya-issledovaniy',
+      title: 'Python для исследований',
+      description:
+        'Python-стек исследователя: pandas, визуализация и автоматизация рутины. Разбираем обработку вымышленных датасетов студенческих опросов.',
+      hours: 96,
+      format: 'ONLINE',
+      startsAt: day(10, 19),
+      price: 15000,
+      tags: ['python', 'наука'],
+      facultyTag: 'ИТ',
+    },
+    {
+      id: 'dpo-pedagogy',
+      slug: 'tsifrovaya-pedagogika',
+      title: 'Цифровая педагогика',
+      description:
+        'Онлайн-форматы, обратная связь и оценивание в цифровой среде: проектирование урока под смешанное обучение. Прототип — витрина без выдачи документов.',
+      hours: 36,
+      format: 'ONLINE',
+      startsAt: day(17, 17),
+      price: 0,
+      tags: ['педагогика', 'онлайн-урок'],
+      facultyTag: 'Педагогика',
+    },
+    {
+      id: 'dpo-cybersec',
+      slug: 'kiberbezopasnost-osnovy',
+      title: 'Кибербезопасность основы',
+      description:
+        'Базовая гигиена digital-жизни: пароли, фишинг, шифрование и безопасные настройки устройств. Практикум на изолированных вымышленных примерах.',
+      hours: 72,
+      format: 'HYBRID',
+      startsAt: day(24, 18),
+      price: 21000,
+      tags: ['безопасность', 'приватность'],
+      facultyTag: 'Безопасность',
+    },
+  ];
 
+  // Две записи Анны с демо-прогрессом (приёмка: 60 % и 10 %).
+  const dpoEnrollments: DpoEnrollmentRow[] = [
+    {
+      programId: 'dpo-analytics',
+      studentId: 'st-anna',
+      enrolledAt: day(-40, 12, 30),
+      progressPercent: 60,
+    },
+    {
+      programId: 'dpo-uxui',
+      studentId: 'st-anna',
+      enrolledAt: day(-12, 20, 10),
+      progressPercent: 10,
+    },
+  ];
+
+  // Три документа Анны: договор и акт по «Аналитике данных», сертификат
+  // за завершённый (в вымышленной истории) «Python для исследований».
+  const dpoDocuments: DpoDocumentRow[] = [
+    {
+      id: 'dpo-doc-1',
+      studentId: 'st-anna',
+      programId: 'dpo-analytics',
+      kind: 'CONTRACT',
+      title: 'Договор на обучение по программе «Аналитика данных»',
+      issuedAt: day(-40, 12, 45),
+      number: 'ДПО-2026-0141',
+    },
+    {
+      id: 'dpo-doc-2',
+      studentId: 'st-anna',
+      programId: 'dpo-analytics',
+      kind: 'ACT',
+      title: 'Акт об оказании образовательных услуг',
+      issuedAt: day(-20, 11, 0),
+      number: 'ДПО-АКТ-2026-0093',
+    },
+    {
+      id: 'dpo-doc-3',
+      studentId: 'st-anna',
+      programId: 'dpo-python',
+      kind: 'CERTIFICATE',
+      title: 'Сертификат о повышении квалификации «Python для исследований»',
+      issuedAt: day(-60, 15, 30),
+      number: 'ДПО-СЕРТ-2026-0057',
+    },
+  ];
+
+  return { dpoPrograms, dpoEnrollments, dpoDocuments };
+}
+
+const { dpoPrograms, dpoEnrollments, dpoDocuments } = buildDpoCatalog();
 const schedule: ScheduleEventRow[] = [
   {
     // DIG-24 — обычная пара с полным составом панели: корпус, email
@@ -2339,8 +2482,10 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     mspComments,
     // DIG-43 — афиша мероприятий вуза: 8 вымышленных событий и записи.
     events,
-    eventRegistrations,
-    exams,
+    eventRegistrations,    // DIG-42 — «Дополнительное образование»: 6 программ, 2 записи, 3 документа.
+    dpoPrograms,
+    dpoEnrollments,
+    dpoDocuments,    exams,
     settings,
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.
     disciplines: disciplineRows,
