@@ -97,15 +97,17 @@ describe('filterHelpSections — чистый поиск-фильтр', () => {
   });
 
   it('находит по заголовку и по тексту шагов без учёта регистра', () => {
-    // По заголовку.
-    expect(filterHelpSections('расписан').map((s) => s.id)).toEqual(['schedule']);
+    // По заголовку («перенос» — только в разделе «Расписание»).
+    expect(filterHelpSections('перенос').map((s) => s.id)).toEqual(['schedule']);
+    // Слово «расписан» встречается в нескольких разделах — фильтр широкий.
+    expect(filterHelpSections('расписан').map((s) => s.id)).toContain('schedule');
     // По тексту шага (канон статусов — только в разделе «Заявки и справки»).
     const requests = filterHelpSections('Выдана').map((s) => s.id);
     expect(requests).toContain('requests');
     // По тексту callout'а.
     expect(filterHelpSections('argon2id').map((s) => s.id)).toContain('login');
     // ВЕРХНИЙ регистр — то же самое (includes по нижнему регистру).
-    expect(filterHelpSections('РАСПИСАН').map((s) => s.id)).toEqual(['schedule']);
+    expect(filterHelpSections('ПЕРЕНОС').map((s) => s.id)).toEqual(['schedule']);
   });
 
   it('незнакомый запрос — пустой массив (на странице будет «Ничего не найдено»)', () => {
@@ -130,7 +132,8 @@ describe('пункт меню «Справка»', () => {
 
   it('иконка /guide назначена и не совпадает с fallback-«Домой»', () => {
     expect(sectionIcon('/guide')).not.toBe(sectionIcon('/totally-unknown'));
-    expect(typeof sectionIcon('/guide')).toBe('function');
+    // Lucide-иконка Compass (displayName пинит выбор, а не fallback).
+    expect(sectionIcon('/guide').displayName).toBe('Compass');
   });
 
   it('плашка «Концепт для конкурса» рисуется каркасом на всех страницах', () => {
