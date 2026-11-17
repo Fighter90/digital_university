@@ -8,6 +8,8 @@
 // convention), the mapping enum↔union is a pure function in the adapter.
 
 import type { CanonicalRequestStatus, RequestActor } from '../../lib/request-machine';
+/** DIG-43 — тип мероприятия живёт в клиентском словаре UI (lib/events). */
+import type { CampusEventKind } from '../../lib/events';
 
 export type Role = 'STUDENT' | 'STAFF';
 
@@ -681,5 +683,48 @@ export interface AuditLogRow {
   resourceRef: string;
   reason: DenialReason;
   outcome: 'DENIED';
+  createdAt: Date;
+}
+
+// ── DIG-43 — мероприятия вуза и запись (/events) ──────────────────────────────
+
+// Тип мероприятия переиспользуется клиентским словарём UI (lib/events.ts) —
+// тот же приём, что CanonicalRequestStatus из lib/request-machine.
+export type { CampusEventKind };
+
+/**
+ * Мероприятие вуза в афише /events (лекция, хакатон, карьерное или
+ * культурное событие). Публичный ключ — slug (детерминированный транслит
+ * названия + суффикс, msp-slug.ts; для каталога в концепте сиды фиксированы
+ * литералами), никогда cuid. Афиша общая для авторизованных (чтение —
+ * любой вошедший), поэтому slug — единственный сегмент URL карточки.
+ */
+export interface EventRow {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  startsAt: Date;
+  endsAt: Date;
+  /** Аудитория/площадка; для онлайн-событий — подпись «Онлайн-трансляция». */
+  location: string;
+  /** Онлайн-событие: карточка показывает «Онлайн» вместо аудитории. */
+  isOnline: boolean;
+  /** Ссылка на трансляцию (только для isOnline). */
+  onlineUrl: string | null;
+  /** Вместимость: число мест записи (в контракте — положительное). */
+  capacity: number;
+  /** Теги фильтрации (в концепте «Мой факультет» — тег факультета, «ИТ»/«ЭК»). */
+  tags: string[];
+  kind: CampusEventKind;
+}
+
+/**
+ * Запись студента на мероприятие. UNIQUE пара (мероприятие, студент):
+ * toggle создаёт/удаляет строку, дубликат невозможен (как голос «МСП»).
+ */
+export interface EventRegistrationRow {
+  eventId: string;
+  studentId: string;
   createdAt: Date;
 }

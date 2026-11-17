@@ -123,6 +123,20 @@ export {
   newMspSlug,
   normalizeMspSlug,
 } from './msp-slug';
+// DIG-43 — мероприятия вуза и запись (/events).
+export {
+  getEventsPage,
+  normalizeEventSlug,
+  openEventView,
+  parseEventsFilter,
+  toggleEventRegistrationForStudent,
+} from './events';
+export type {
+  EventDetail,
+  EventView,
+  EventsPageData,
+  ToggleEventRegistrationResult,
+} from './events';
 export { listSchedule, listExams } from './schedule';
 export { getSession, createRetakeRequest } from './session';
 export type {
@@ -356,4 +370,9 @@ export {
   /** DIG-68 — каталог студенческих стартапов «МСП» (/msp). */
   type MspCommentRow,
   type MspProjectRow,
-  type MspVoteRow,} from './types';
+  type MspVoteRow,
+  /** DIG-43 — мероприятия вуза и запись (/events). */
+  type CampusEventKind,
+  type EventRegistrationRow,
+  type EventRow,
+} from './types';

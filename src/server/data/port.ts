@@ -54,6 +54,9 @@ import type {
   MspCommentRow,
   MspProjectRow,
   MspVoteRow,
+  /** DIG-43 — мероприятия вуза и запись (/events). */
+  EventRegistrationRow,
+  EventRow,
 } from './types';
 
 /** DIG-48 — уведомление студенту, записываемое вместе с действием сотрудника. */
@@ -596,6 +599,36 @@ export interface DataDb {
       createdAt: Date;
     },
   ): Promise<MspProjectRow>;
+
+  // ── DIG-43: мероприятия вуза и запись (/events) ──────────────────────────
+  /**
+   * Вся афиша мероприятий — каталог по определению общий для
+   * авторизованных (осознанное исключение из owner-scope по образцу
+   * listMspProjects: вход проверяет events.ts до вызова, карточка
+   * события не содержит ничего сверх самой афиши). `from` — нижняя
+   * граница даты (undefined — все, включая прошедшие); результат
+   * отсортирован по startsAt по возрастанию (ties — по slug).
+   */
+  listEventsByRange(from?: Date): Promise<EventRow[]>;
+  /** Записи владельца (чип «Записан» и отметка на карточке события). */
+  listEventRegistrationsByStudent(studentId: string): Promise<EventRegistrationRow[]>;
+  /**
+   * Переключение записи владельца: запись → повторный вызов отменяет
+   * (UNIQUE пара мероприятие+студент, дубликат строки невозможен — строка
+   * либо создаётся, либо удаляется). null — мероприятия не существует.
+   * Когда мест не осталось (занято ≥ capacity) запись НЕ создаётся:
+   * { registered: false, taken } — слой событий превращает это в отказ
+   * «Мест нет» (кнопка на экране при нуле мест disabled).
+   */
+  toggleEventRegistration(
+    studentId: string,
+    eventId: string,
+  ): Promise<{ registered: boolean; taken: number } | null>;
+  /**
+   * Сколько студентов записано на мероприятие (агрегат: наружу из слоя
+   * данных уходит число, не чужие строки — по образцу listMspVotes).
+   */
+  listEventAttendeeCount(eventId: string): Promise<number>;
 
   // ── audit (append-only) ───────────────────────────────────────────────────
   appendAudit(

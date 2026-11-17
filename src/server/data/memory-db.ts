@@ -48,6 +48,9 @@ import type {
   MspCommentRow,
   MspProjectRow,
   MspVoteRow,
+  /** DIG-43 — мероприятия вуза и запись (/events). */
+  EventRegistrationRow,
+  EventRow,
 } from './types';
 import { canonicalRequestNumberSeq } from './canonical-request-number';
 export interface MemorySeed {
@@ -96,6 +99,10 @@ export interface MemorySeed {
   mspVotes?: MspVoteRow[];
   /** DIG-68 — комментарии к проектам каталога. */
   mspComments?: MspCommentRow[];
+  /** DIG-43 — афиша мероприятий вуза (/events). */
+  events?: EventRow[];
+  /** DIG-43 — записи студентов на мероприятия (UNIQUE пары). */
+  eventRegistrations?: EventRegistrationRow[];
 }
 
 export interface MemoryDataDb extends DataDb {
@@ -138,6 +145,8 @@ export function createMemoryDataDb(): MemoryDataDb {
   let mspProjects: MspProjectRow[] = [];
   let mspVotes: MspVoteRow[] = [];
   let mspComments: MspCommentRow[] = [];
+  let events: EventRow[] = [];
+  let eventRegistrations: EventRegistrationRow[] = [];
   let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
@@ -157,6 +166,9 @@ export function createMemoryDataDb(): MemoryDataDb {
   let mspCommentSeq = 0;
   const by = <T, K extends keyof T>(rows: T[], key: K, value: T[K]) =>
     rows.find((row) => row[key] === value) ?? null;
+  /** DIG-43 — число записанных на мероприятие (вход агрегата). */
+  const countAttendees = (eventId: string) =>
+    eventRegistrations.filter((r) => r.eventId === eventId).length;
 
   return {
     seed(seed: MemorySeed) {
@@ -196,6 +208,8 @@ export function createMemoryDataDb(): MemoryDataDb {
       mspProjects = seed.mspProjects ? seed.mspProjects.map(clone) : [];
       mspVotes = seed.mspVotes ? seed.mspVotes.map(clone) : [];
       mspComments = seed.mspComments ? seed.mspComments.map(clone) : [];
+      events = seed.events ? seed.events.map(clone) : [];
+      eventRegistrations = seed.eventRegistrations ? seed.eventRegistrations.map(clone) : [];
       audit = [];
     },
 
@@ -1016,6 +1030,53 @@ export function createMemoryDataDb(): MemoryDataDb {
       };
       mspProjects.push(row);
       return clone(row);
+    },
+
+    // ── DIG-43: мероприятия вуза и запись (/events) ────────────────────────
+    async listEventsByRange(from) {
+      const base = from ? from.getTime() : Number.NEGATIVE_INFINITY;
+      return events
+        .filter((e) => e.startsAt.getTime() >= base)
+        .sort(
+          (a, b) =>
+            a.startsAt.getTime() - b.startsAt.getTime() ||
+            (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0),
+        )
+        .map(clone);
+    },
+    async listEventRegistrationsByStudent(studentId) {
+      return eventRegistrations
+        .filter((r) => r.studentId === studentId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map(clone);
+    },
+    // Переключение записи: пара (мероприятие, студент) всегда 0/1 —
+    // повторный вызов отменяет запись (строка удаляется), дубликат
+    // невозможен. Мест нет (занято ≥ capacity) → запись НЕ создаётся:
+    // { registered: false, taken } (защита от гонки двух вкладок; кнопка
+    // на экране при нуле мест disabled).
+    async toggleEventRegistration(studentId, eventId) {
+      const event = by(events, 'id', eventId);
+      if (!event) return null;
+      const exists = eventRegistrations.some(
+        (r) => r.eventId === eventId && r.studentId === studentId,
+      );
+      if (exists) {
+        eventRegistrations = eventRegistrations.filter(
+          (r) => !(r.eventId === eventId && r.studentId === studentId),
+        );
+        return { registered: false, taken: countAttendees(eventId) };
+      }
+      const taken = countAttendees(eventId);
+      if (taken >= event.capacity) {
+        return { registered: false, taken };
+      }
+      eventRegistrations.push({ eventId, studentId, createdAt: new Date() });
+      return { registered: true, taken: taken + 1 };
+    },
+    // Агрегат: наружу уходит число записанных, не чужие строки.
+    async listEventAttendeeCount(eventId) {
+      return countAttendees(eventId);
     },
 
     async appendAudit(event) {
