@@ -203,6 +203,12 @@
   --du-dur: 180ms;
   --du-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
+  /* DIG-71: длительности микро-анимаций и стандартная кривая ease-out */
+  --du-fast: 150ms;
+  --du-base: 250ms;
+  --du-slow: 400ms;
+  --ease-out: cubic-bezier(0, 0, 0.58, 1);
+
   /* типографика */
   --du-tracking-heading: -0.025em;
   --radius: 1rem;
@@ -300,7 +306,7 @@
       }
     }
     .animate-rise {
-      animation: du-rise 420ms var(--du-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+      animation: du-rise 400ms var(--du-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
       animation-delay: var(--du-rise-delay, 0ms);
     }
   }
@@ -344,5 +350,126 @@
   .stepper-done:not(:first-child)::before,
   .stepper-current:not(:first-child)::before {
     background: var(--du-success);
+  }
+
+  /* ============================================================
+     DIG-71 — микро-анимации кабинета: shimmer скелетонов, качание
+     колокольчика, пульс-точка счётчика, press-отклик кнопок и
+     карточек, раскрытие аккордеона. Анимируются ТОЛЬКО transform и
+     opacity (композиционные свойства). Все новые правила живут
+     внутри no-preference: при prefers-reduced-motion: reduce и в
+     режиме «Уменьшить анимацию» (html.reduce-motion, dark.css)
+     классы не применяются вовсе — контент никогда не скрыт.
+     ============================================================ */
+  @media (prefers-reduced-motion: no-preference) {
+    /* скелетоны: пробег световой полосы поверх bg-muted (только transform) */
+    @keyframes du-shimmer {
+      from {
+        transform: translateX(-100%);
+      }
+      to {
+        transform: translateX(100%);
+      }
+    }
+    .animate-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .animate-shimmer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgb(255 255 255 / 0.45) 50%,
+        transparent 100%
+      );
+      animation: du-shimmer 1.6s var(--ease-out, cubic-bezier(0, 0, 0.58, 1)) infinite;
+    }
+    /* колокольчик: однократное деликатное качание при unread > 0 */
+    @keyframes du-bell-swing {
+      0% {
+        transform: rotate(0);
+      }
+      20% {
+        transform: rotate(12deg);
+      }
+      45% {
+        transform: rotate(-9deg);
+      }
+      70% {
+        transform: rotate(5deg);
+      }
+      100% {
+        transform: rotate(0);
+      }
+    }
+    .animate-bell {
+      transform-origin: 50% 3px;
+      /* 250ms пауза — качание начинается после появления шапки */
+      animation: du-bell-swing 400ms var(--ease-out, cubic-bezier(0, 0, 0.58, 1)) 250ms 1 both;
+    }
+    /* пульс-точка у счётчика: расходящееся кольцо (scale + opacity) */
+    @keyframes du-dot-pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.55;
+      }
+      100% {
+        transform: scale(2.2);
+        opacity: 0;
+      }
+    }
+    .du-pulse-dot {
+      position: relative;
+    }
+    .du-pulse-dot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      /* тот же oklch, что у --color-coral-500 (bg бейджа) */
+      background-color: oklch(0.665 0.165 27);
+      animation: du-dot-pulse 1.8s var(--ease-out, cubic-bezier(0, 0, 0.58, 1)) infinite;
+    }
+    /* press-отклик кнопок и карточек: сжатие 2% на active. Свой список
+       transition (включая цвета) перекрывает transition-colors и прочие
+       Tailwind-классы переходов, чтобы hover-цвета тоже жили на --du-fast. */
+    .press-scale {
+      transition:
+        transform var(--du-fast, 150ms) var(--ease-out, cubic-bezier(0, 0, 0.58, 1)),
+        box-shadow var(--du-fast, 150ms) var(--ease-out, cubic-bezier(0, 0, 0.58, 1)),
+        background-color var(--du-fast, 150ms) var(--ease-out, cubic-bezier(0, 0, 0.58, 1)),
+        border-color var(--du-fast, 150ms) var(--ease-out, cubic-bezier(0, 0, 0.58, 1)),
+        color var(--du-fast, 150ms) var(--ease-out, cubic-bezier(0, 0, 0.58, 1));
+    }
+    .press-scale:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    /* аккордеон <details>: раскрытие грид-строк 0fr→1fr при открытии
+       (анимация стартует, когда контент становится отрендеренным;
+       закрытие остаётся мгновенным — нативное поведение <details>) */
+    @keyframes du-accordion-open {
+      from {
+        grid-template-rows: 0fr;
+        opacity: 0;
+      }
+      to {
+        grid-template-rows: 1fr;
+        opacity: 1;
+      }
+    }
+    .du-accordion-body {
+      display: grid;
+      grid-template-rows: 1fr;
+      animation: du-accordion-open var(--du-base, 250ms)
+        var(--ease-out, cubic-bezier(0, 0, 0.58, 1));
+    }
+    .du-accordion-body > * {
+      min-height: 0;
+      overflow: hidden;
+    }
   }
 }
