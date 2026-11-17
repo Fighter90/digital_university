@@ -242,6 +242,8 @@ export function requestIconKindForTypeCode(typeCode: string): RequestIconKind {
   if (typeCode.startsWith('GRADES')) return 'grades';
   if (typeCode.startsWith('DIPLOMA')) return 'diploma';
   if (typeCode.startsWith('ACADEMIC') || typeCode.startsWith('STMT')) return 'statement';
+  // DIG-41 — заявление на материальную помощь: тоже заявление, не справка.
+  if (typeCode.startsWith('MATERIAL')) return 'statement';
   if (typeCode.startsWith('DORM')) return 'dormitory';
   return 'certificate';
 }

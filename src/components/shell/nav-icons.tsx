@@ -12,11 +12,12 @@ import {
   LayoutDashboard,
   ListChecks,
   Megaphone,
-  MessagesSquare,
   MessageSquareHeart,
+  MessagesSquare,
   Rocket,
   Sparkles,
   UserRound,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -27,6 +28,7 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   '/tasks': ListChecks,
   '/schedule': CalendarDays,
   '/grades': GraduationCap,
+  '/finance': Wallet,
   '/requests': FileText,
   '/notifications': Bell,
   '/deanery': MessagesSquare,

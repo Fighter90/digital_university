@@ -208,6 +208,8 @@ export { searchCabinet } from './search';
 export type { SearchResponse, SearchGroup, SearchHit, SearchHitKind } from '@/lib/search-core';
 export { getServicesPage, toggleFavoriteService, MAX_FAVORITES } from './services';
 export type { ServicesPageData, ServiceToggleResult } from './services';
+export { getFinancePage } from './finance';
+export type { FinancePageData, FinanceStudentView } from './finance';
 export {
   getCertificatePdfInput,
   getOrCreateCertificateForRequest,
@@ -354,5 +356,4 @@ export {
   /** DIG-68 — каталог студенческих стартапов «МСП» (/msp). */
   type MspCommentRow,
   type MspProjectRow,
-  type MspVoteRow,
-} from './types';
+  type MspVoteRow,} from './types';

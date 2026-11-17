@@ -14,6 +14,7 @@ export const CABINET_SECTIONS: CabinetSection[] = [
   { href: '/tasks', label: 'Задачи' },
   { href: '/schedule', label: 'Расписание' },
   { href: '/grades', label: 'Успеваемость' },
+  { href: '/finance', label: 'Финансы' },
   { href: '/requests', label: 'Заявки и справки' },
   { href: '/notifications', label: 'Уведомления' },
   { href: '/deanery', label: 'Связь с деканатом' },
@@ -64,8 +65,13 @@ export function tabsForRole(role: 'STUDENT' | 'STAFF'): CabinetSection[] {
 // DIG-70 — «Справка» в «Ещё»: /tasks не входит в нижний таб-бар, остальные —
 // второстепенные разделы кабинета. «Справка» рядом с «Вопросами и ответами»:
 // FAQ отвечает точечно, гайд — последовательно.
+
+// Разделы, доступные через «Ещё» на мобильном. DIG-34 — «Задачи» первой:
+// экран /tasks не входит в нижний таб-бар. DIG-41 — «Финансы» сразу после
+// задач (деньги и сроки — actionable-разделы).
 export const MORE_SECTIONS: CabinetSection[] = [
   { href: '/tasks', label: 'Задачи' },
+  { href: '/finance', label: 'Финансы' },
   { href: '/notifications', label: 'Уведомления' },
   { href: '/deanery', label: 'Связь с деканатом' },
   // DIG-40 — канал обратной связи руководству (см. комментарий выше).
