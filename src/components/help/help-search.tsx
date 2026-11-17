@@ -86,7 +86,7 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
   const [query, setQuery] = useState('');
   const trimmed = query.trim();
   // Чистый фильтр живёт в lib/help-content — его покрывают юнит-тесты напрямую.
-  const results = useMemo(() => filterHelpSections(trimmed), [trimmed]);
+  const results = useMemo(() => filterHelpSections(trimmed, sections), [trimmed, sections]);
   const searching = trimmed !== '';
 
   return (

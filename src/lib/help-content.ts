@@ -305,11 +305,15 @@ export const GUIDE_SECTIONS: HelpSection[] = [
  * Чистый фильтр разделов по запросу: простое вхождение по нижнему регистру
  * в заголовок, описание, тексты шагов, ссылки и callout'ы. Пустая строка
  * (и одни пробелы) возвращает все разделы. Порядок каталога сохраняется.
+ * Источник по умолчанию — GUIDE_SECTIONS (страница передаёт его явно).
  */
-export function filterHelpSections(query: string): HelpSection[] {
+export function filterHelpSections(
+  query: string,
+  all: HelpSection[] = GUIDE_SECTIONS,
+): HelpSection[] {
   const normalized = query.trim().toLowerCase();
-  if (normalized === '') return [...GUIDE_SECTIONS];
-  return GUIDE_SECTIONS.filter((section) => sectionSearchText(section).includes(normalized));
+  if (normalized === '') return [...all];
+  return all.filter((section) => sectionSearchText(section).includes(normalized));
 }
 
 /** Весь искомый текст раздела одной строкой (заголовок + шаги + callout'ы). */
