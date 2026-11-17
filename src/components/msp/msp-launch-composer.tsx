@@ -18,7 +18,7 @@ import {
   MIN_MSP_DESCRIPTION_LENGTH,
   MIN_MSP_TAGLINE_LENGTH,
   MIN_MSP_TITLE_LENGTH,
-} from '@/server/data';
+} from '@/lib/msp';
 
 const buttonClass =
   'inline-flex select-none items-center justify-center gap-2 rounded-button bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-soft transition-colors hover:bg-accent-strong disabled:pointer-events-none disabled:opacity-50';

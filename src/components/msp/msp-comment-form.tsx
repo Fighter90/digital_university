@@ -7,7 +7,7 @@
 import { useActionState } from 'react';
 
 import { addMspCommentAction, type MspActionState } from '@/server/actions/msp';
-import { MAX_MSP_COMMENT_LENGTH } from '@/server/data';
+import { MAX_MSP_COMMENT_LENGTH } from '@/lib/msp';
 
 export function MspCommentForm({ projectId }: { projectId: string }) {
   const [state, formAction, isPending] = useActionState<MspActionState, FormData>(

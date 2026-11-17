@@ -18,21 +18,37 @@ import { denyAccess } from './access';
 import type { DataDb } from './port';
 import { newMspSlug } from './msp-slug';
 import type { DataCtx, MspCommentRow, MspProjectRow } from './types';
+// Границы полей живут в lib/msp (клиентский словарь форм) — слой данных
+// и клиентские компоненты используют ОДНИ значения.
+import {
+  MAX_MSP_COMMENT_LENGTH,
+  MAX_MSP_DESCRIPTION_LENGTH,
+  MAX_MSP_TAGLINE_LENGTH,
+  MAX_MSP_TAG_LENGTH,
+  MAX_MSP_TAGS,
+  MAX_MSP_TITLE_LENGTH,
+  MIN_MSP_COMMENT_LENGTH,
+  MIN_MSP_DESCRIPTION_LENGTH,
+  MIN_MSP_TAGLINE_LENGTH,
+  MIN_MSP_TAG_LENGTH,
+  MIN_MSP_TITLE_LENGTH,
+} from '@/lib/msp';
 
 const RESOURCE = 'msp-project';
 
-// ── границы полей (едины для actions и слоя данных) ──────────────────────────
-export const MIN_MSP_TITLE_LENGTH = 3;
-export const MAX_MSP_TITLE_LENGTH = 80;
-export const MIN_MSP_TAGLINE_LENGTH = 5;
-export const MAX_MSP_TAGLINE_LENGTH = 120;
-export const MIN_MSP_DESCRIPTION_LENGTH = 20;
-export const MAX_MSP_DESCRIPTION_LENGTH = 2000;
-export const MAX_MSP_TAGS = 5;
-export const MIN_MSP_TAG_LENGTH = 2;
-export const MAX_MSP_TAG_LENGTH = 24;
-export const MIN_MSP_COMMENT_LENGTH = 1;
-export const MAX_MSP_COMMENT_LENGTH = 1000;
+export {
+  MAX_MSP_COMMENT_LENGTH,
+  MAX_MSP_DESCRIPTION_LENGTH,
+  MAX_MSP_TAGLINE_LENGTH,
+  MAX_MSP_TAG_LENGTH,
+  MAX_MSP_TAGS,
+  MAX_MSP_TITLE_LENGTH,
+  MIN_MSP_COMMENT_LENGTH,
+  MIN_MSP_DESCRIPTION_LENGTH,
+  MIN_MSP_TAGLINE_LENGTH,
+  MIN_MSP_TAG_LENGTH,
+  MIN_MSP_TITLE_LENGTH,
+};
 
 /** Сортировка ленты: query-параметр ?sort= (по умолчанию «Новые»). */
 export type MspSort = 'new' | 'top';
