@@ -22,7 +22,8 @@ import type {
   CertificateRow,
   CanonicalRequestEventRow,
   CanonicalRequestRow,
-  CanonicalRequestTypeRow,  DisciplineElementRow,
+  CanonicalRequestTypeRow,
+  DisciplineElementRow,
   DisciplineRow,
   ExamSessionRow,
   GradeRow,
@@ -41,7 +42,13 @@ import type {
   TicketMessageRow,
   TicketRow,
   TicketStatus,
-  TicketSubject,} from './types';
+  TicketSubject,
+  /** DIG-40 — обратная связь руководству (/feedback). */
+  FeedbackKind,
+  FeedbackRow,
+  FeedbackStatus,
+  FeedbackTarget,
+} from './types';
 
 /** DIG-21 — полуинтервал периода расписания [from, to) в инстантах времени. */
 export interface SchedulePeriod {
@@ -230,6 +237,44 @@ export interface DataDb {
     authorRole: TicketMessageRow['authorRole'],
     readAt: Date,
   ): Promise<boolean>;
+
+  // ── DIG-40: feedback — предложения/жалобы руководству (/feedback) ────────
+  /**
+   * Подписанные обращения владельца, свежие сверху. Анонимные строки
+   * (studentId = null) не попадают ни в чей список — у них нет владельца.
+   */
+  listFeedbackByStudent(studentId: string): Promise<FeedbackRow[]>;
+  /**
+   * Публичная лента решённых предложений («Что мы изменили по вашим
+   * предложениям») — ОСОЗНАННОЕ исключение из owner-scope по образцу
+   * findCertificateByCode: лента по определению общая, наружу из слоя
+   * данных уходит только представление без автора (см. feedback.ts),
+   * вызывать разрешено ТОЛЬКО getFeedbackPage.
+   */
+  listPublishedFeedbackOutcomes(): Promise<FeedbackRow[]>;
+  findFeedbackByStudentAndNumber(studentId: string, number: string): Promise<FeedbackRow | null>;
+  /** DIG-40 — probe по публичному номеру БЕЗ владельца (только аудит). */
+  probeFeedbackByNumber(number: string): Promise<FeedbackRow | null>;
+  /**
+   * Создание обращения: `studentId = null` — анонимное (НИКАКАЯ связь с
+   * пользователем не записывается). Номер и срок ответа передаёт слой
+   * данных; id назначает адаптер.
+   */
+  appendFeedbackByStudent(
+    studentId: string | null,
+    input: {
+      number: string;
+      kind: FeedbackKind;
+      target: FeedbackTarget;
+      status: FeedbackStatus;
+      text: string;
+      attachments: string[];
+      isAnonymous: boolean;
+      dueAt: Date;
+      createdAt: Date;
+    },
+  ): Promise<FeedbackRow>;
+
   // ── grades / notifications / appeals (owner-scoped) ───────────────────────
   listGradesByStudent(studentId: string): Promise<GradeRow[]>;
   listNotificationsByStudent(studentId: string): Promise<NotificationRow[]>;

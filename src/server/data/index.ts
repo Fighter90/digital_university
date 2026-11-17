@@ -62,6 +62,27 @@ export {
   isValidTicketNumber,
   TICKET_NUMBER_PATTERN,
 } from './ticket-number';
+export {
+  getFeedbackPage,
+  createFeedback,
+  openFeedbackCard,
+  getFeedbackSentView,
+  MIN_FEEDBACK_TEXT_LENGTH,
+  MAX_FEEDBACK_TEXT_LENGTH,
+} from './feedback';
+export type {
+  FeedbackPageData,
+  FeedbackOutcomeView,
+  FeedbackSentView,
+  CreateFeedbackInput,
+  CreateFeedbackResult,
+} from './feedback';
+export {
+  newFeedbackNumber,
+  normalizeFeedbackNumber,
+  isValidFeedbackNumber,
+  FEEDBACK_NUMBER_PATTERN,
+} from './feedback-number';
 export { listSchedule, listExams } from './schedule';
 export { getSession, createRetakeRequest } from './session';
 export type {
@@ -112,12 +133,7 @@ export type {
   TodayLessonView,
   TodayView,
 } from './dashboard';
-export {
-  getNewsPage,
-  getNewsArticle,
-  markNewsRead,
-  listDeaneryNews,
-} from './news';
+export { getNewsPage, getNewsArticle, markNewsRead, listDeaneryNews } from './news';
 export type {
   DeaneryNewsItem,
   NewsArticleData,
@@ -258,4 +274,9 @@ export {
   type TicketRow,
   type TicketMessageRow,
   type TicketStatus,
-  type TicketSubject,} from './types';
+  type TicketSubject,
+  type FeedbackRow,
+  type FeedbackKind,
+  type FeedbackTarget,
+  type FeedbackStatus,
+} from './types';

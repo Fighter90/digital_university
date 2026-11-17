@@ -9,6 +9,7 @@ import {
   House,
   ListChecks,
   MessagesSquare,
+  MessageSquareHeart,
   Sparkles,
   UserRound,
   type LucideIcon,
@@ -24,6 +25,8 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   '/requests': FileText,
   '/notifications': Bell,
   '/deanery': MessagesSquare,
+  // DIG-40 — канал обратной связи руководству.
+  '/feedback': MessageSquareHeart,
   '/help': CircleHelp,
   '/people': Contact,
   '/ai-assistant': Sparkles,
