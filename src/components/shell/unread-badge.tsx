@@ -68,7 +68,8 @@ export function UnreadBadge({ count: initialCount, variant = 'floating' }: Unrea
       aria-hidden="true"
       className={cn(
         position,
-        'grid h-4 min-w-4 place-items-center rounded-full bg-coral-500 px-1 text-[10px] leading-none font-semibold text-white',
+        // DIG-71: пульс-точка — расходящееся кольцо у счётчика непрочитанных
+        'du-pulse-dot grid h-4 min-w-4 place-items-center rounded-full bg-coral-500 px-1 text-[10px] leading-none font-semibold text-white',
       )}
     >
       {count > 99 ? '99+' : count}

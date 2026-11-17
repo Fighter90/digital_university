@@ -105,104 +105,110 @@ export function GradebookList({
               </span>
             </summary>
 
-            <div className="border-t border-border px-4 py-3 sm:px-5">
-              {/* ── Десктоп: таблица ─────────────────────────────────────── */}
-              <div
-                className="hidden md:block"
-                data-testid={`gradebook-table-${testId.replace('semester-accordion-', '')}`}
-              >
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs uppercase text-muted-foreground">
-                      <th scope="col" className="pb-2 pr-3 font-semibold">
-                        Дисциплина
-                      </th>
-                      <th scope="col" className="pb-2 pr-3 font-semibold">
-                        Контроль
-                      </th>
-                      <th scope="col" className="pb-2 pr-3 text-right font-semibold">
-                        Кредиты
-                      </th>
-                      <th scope="col" className="pb-2 pr-3 text-right font-semibold">
-                        Итог
-                      </th>
-                      <th scope="col" className="pb-2 text-right font-semibold">
-                        Дата
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {semester.disciplines.map((discipline) => (
-                      <tr
-                        key={discipline.disciplineCode}
-                        data-testid={`gradebook-row-${discipline.disciplineCode}`}
-                        className="border-t border-border transition-colors hover:bg-muted/30"
-                      >
-                        <td className="py-2.5 pr-3">
-                          <Link
-                            href={`/grades/${discipline.disciplineCode}`}
-                            className="font-semibold text-foreground underline-offset-2 hover:text-accent-ink hover:underline"
-                          >
-                            {discipline.disciplineName}
-                          </Link>
-                        </td>
-                        <td className="py-2.5 pr-3 text-muted-foreground">
-                          {discipline.controlTypeLabel}
-                        </td>
-                        <td className="py-2.5 pr-3 text-right text-muted-foreground">
-                          {discipline.credits}
-                        </td>
-                        <td className="py-2.5 pr-3 text-right">
-                          <GradeBadge grade={discipline.finalGrade} />
-                        </td>
-                        <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">
-                          {discipline.completedAt ? formatScoreDate(discipline.completedAt) : '—'}
-                        </td>
+            {/* DIG-71: обёртка раскрытия — грид-строки 0fr→1fr при открытии
+                семестра (globals.css .du-accordion-body); закрытие мгновенное. */}
+            <div className="du-accordion-body">
+              <div className="border-t border-border px-4 py-3 sm:px-5">
+                {/* ── Десктоп: таблица ─────────────────────────────────────── */}
+                <div
+                  className="hidden md:block"
+                  data-testid={`gradebook-table-${testId.replace('semester-accordion-', '')}`}
+                >
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase text-muted-foreground">
+                        <th scope="col" className="pb-2 pr-3 font-semibold">
+                          Дисциплина
+                        </th>
+                        <th scope="col" className="pb-2 pr-3 font-semibold">
+                          Контроль
+                        </th>
+                        <th scope="col" className="pb-2 pr-3 text-right font-semibold">
+                          Кредиты
+                        </th>
+                        <th scope="col" className="pb-2 pr-3 text-right font-semibold">
+                          Итог
+                        </th>
+                        <th scope="col" className="pb-2 text-right font-semibold">
+                          Дата
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* ── Мобильный: карточки (360 px) ─────────────────────────── */}
-              <ul
-                className="flex flex-col gap-2.5 md:hidden"
-                data-testid={`gradebook-cards-${testId.replace('semester-accordion-', '')}`}
-              >
-                {semester.disciplines.map((discipline) => (
-                  <li key={discipline.disciplineCode}>
-                    <Link
-                      href={`/grades/${discipline.disciplineCode}`}
-                      data-testid={`gradebook-card-${discipline.disciplineCode}`}
-                      className="lift-hover flex items-center justify-between gap-3 rounded-card border border-border bg-background p-3.5 transition-colors hover:border-coral-200 hover:bg-coral-50"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-foreground">
-                          {discipline.disciplineName}
-                        </span>
-                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                          <span className="rounded-pill bg-muted px-2 py-0.5 font-medium">
+                    </thead>
+                    <tbody>
+                      {semester.disciplines.map((discipline) => (
+                        <tr
+                          key={discipline.disciplineCode}
+                          data-testid={`gradebook-row-${discipline.disciplineCode}`}
+                          className="border-t border-border transition-colors hover:bg-muted/30"
+                        >
+                          <td className="py-2.5 pr-3">
+                            <Link
+                              href={`/grades/${discipline.disciplineCode}`}
+                              className="font-semibold text-foreground underline-offset-2 hover:text-accent-ink hover:underline"
+                            >
+                              {discipline.disciplineName}
+                            </Link>
+                          </td>
+                          <td className="py-2.5 pr-3 text-muted-foreground">
                             {discipline.controlTypeLabel}
-                          </span>
-                          <span>
-                            {discipline.credits} {pluralRu(discipline.credits, CREDIT_FORMS)}
-                          </span>
-                          <span className="font-mono text-[11px] text-muted-foreground">
+                          </td>
+                          <td className="py-2.5 pr-3 text-right text-muted-foreground">
+                            {discipline.credits}
+                          </td>
+                          <td className="py-2.5 pr-3 text-right">
+                            <GradeBadge grade={discipline.finalGrade} />
+                          </td>
+                          <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">
                             {discipline.completedAt ? formatScoreDate(discipline.completedAt) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* ── Мобильный: карточки (360 px) ─────────────────────────── */}
+                <ul
+                  className="flex flex-col gap-2.5 md:hidden"
+                  data-testid={`gradebook-cards-${testId.replace('semester-accordion-', '')}`}
+                >
+                  {semester.disciplines.map((discipline) => (
+                    <li key={discipline.disciplineCode}>
+                      <Link
+                        href={`/grades/${discipline.disciplineCode}`}
+                        data-testid={`gradebook-card-${discipline.disciplineCode}`}
+                        className="lift-hover flex items-center justify-between gap-3 rounded-card border border-border bg-background p-3.5 transition-colors hover:border-coral-200 hover:bg-coral-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold text-foreground">
+                            {discipline.disciplineName}
+                          </span>
+                          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                            <span className="rounded-pill bg-muted px-2 py-0.5 font-medium">
+                              {discipline.controlTypeLabel}
+                            </span>
+                            <span>
+                              {discipline.credits} {pluralRu(discipline.credits, CREDIT_FORMS)}
+                            </span>
+                            <span className="font-mono text-[11px] text-muted-foreground">
+                              {discipline.completedAt
+                                ? formatScoreDate(discipline.completedAt)
+                                : '—'}
+                            </span>
                           </span>
                         </span>
-                      </span>
-                      <GradeBadge grade={discipline.finalGrade} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                        <GradeBadge grade={discipline.finalGrade} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
 
-              {hasGrades ? null : (
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Оценок в семестре ещё нет — итог появится, когда деканат выставит оценки.
-                </p>
-              )}
+                {hasGrades ? null : (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Оценок в семестре ещё нет — итог появится, когда деканат выставит оценки.
+                  </p>
+                )}
+              </div>
             </div>
           </details>
         );
