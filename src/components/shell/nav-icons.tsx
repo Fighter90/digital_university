@@ -1,6 +1,7 @@
 import {
   Bell,
   CalendarDays,
+  CalendarHeart,
   CircleHelp,
   ClipboardList,
   Compass,
@@ -37,6 +38,8 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   '/guide': Compass,
   // DIG-68 — каталог студенческих стартапов «МСП».
   '/msp': Rocket,
+  // DIG-43 — афиша мероприятий вуза и запись (/events).
+  '/events': CalendarHeart,
   '/people': Contact,
   '/ai-assistant': Sparkles,
   '/profile': UserRound,

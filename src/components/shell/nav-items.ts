@@ -75,6 +75,8 @@ export const MORE_SECTIONS: CabinetSection[] = [
   { href: '/guide', label: 'Справка' },
   // DIG-68 — каталог студенческих стартапов «МСП» (/msp).
   { href: '/msp', label: 'МСП' },
+  // DIG-43 — афиша мероприятий вуза и запись (/events).
+  { href: '/events', label: 'Мероприятия' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
   { href: '/profile', label: 'Профиль' },
