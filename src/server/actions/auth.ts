@@ -77,7 +77,9 @@ export async function signInAction(
     jar.set(buildClearedRoleHintCookie());
   }
 
-  redirect(safeNextPath(String(formData.get('next') ?? '')) ?? '/dashboard');
+  // Роль определяет дефолтный лендинг: сотрудник — сразу в кабинет деканата.
+  const fallback = result.user.role === 'STAFF' ? '/dashboard' : '/staff';
+  redirect(safeNextPath(String(formData.get('next') ?? '')) ?? fallback);
 }
 
 // DIG-55: both sign-out actions land on /login?signedOut=1 — the login screen

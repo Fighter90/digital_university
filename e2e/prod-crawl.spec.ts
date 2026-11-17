@@ -277,7 +277,7 @@ const PAGE_MARKER: Record<string, RegExp> = {
   '/grades': /^Успеваемость/,
   '/requests': /^Мои заявки/,
   '/notifications': /^Уведомления/,
-  '/deanery': /^Связь с деканатом/,
+  '/deanery': /^Обращения в деканат/,
   '/ai-assistant': /^AI-ассистент/,
   '/profile': /^Профиль/,
   '/more': /^Ещё/,

@@ -33,7 +33,11 @@ export default async function StaffRequestCardPage({
   if (!detail) notFound();
   const { request, student, events, contacts } = detail;
 
-  const canPdf = request.type === 'CERTIFICATE' && request.status === 'COMPLETED';
+  // Канон DIG-30: справка считается готовой к PDF в статусаx ISSUED (выдана)
+  // и COMPLETED (legacy-словарь); SUBMITTED/IN_PROGRESS — рано.
+  const canPdf =
+    request.type === 'CERTIFICATE' &&
+    (request.status === 'ISSUED' || request.status === 'COMPLETED');
 
   return (
     <div>
