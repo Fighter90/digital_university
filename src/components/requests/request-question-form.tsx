@@ -5,6 +5,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { t, type Locale } from '@/lib/i18n';
 import { MessageCircleQuestion } from 'lucide-react';
 
 import type { RequestQuestionState } from '@/server/actions/requests';
@@ -12,9 +13,12 @@ import type { RequestQuestionState } from '@/server/actions/requests';
 export function RequestQuestionForm({
   requestId,
   action,
+  locale = 'ru',
 }: {
   requestId: string;
   action: (prevState: RequestQuestionState, formData: FormData) => Promise<RequestQuestionState>;
+  /** DIG-69 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   const [state, formAction, pending] = useActionState<RequestQuestionState, FormData>(action, null);
 
@@ -52,7 +56,7 @@ export function RequestQuestionForm({
             data-testid="request-question-submit"
             className="rounded-button border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600 disabled:opacity-60"
           >
-            {pending ? 'Отправляем…' : 'Отправить вопрос'}
+            {pending ? t(locale, 'btn.submitting') : t(locale, 'btn.askQuestion')}
           </button>
           {state && !state.ok ? (
             <p role="alert" className="text-xs text-error-ink">

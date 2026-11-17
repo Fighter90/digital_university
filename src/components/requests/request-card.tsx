@@ -29,9 +29,15 @@ import { cancelRequestAction } from '@/server/actions/requests';
 import {
   type RequestCardView,
   type RequestIconKind,
+  nextActionLineLocalized,
   unifyRequestStatus,
 } from '@/lib/requests-view';
-import { REQUEST_STATUS_LABELS, REQUEST_STATUS_TONES } from '@/lib/request-labels';
+import {
+  REQUEST_STATUS_LABELS,
+  REQUEST_STATUS_TONES,
+  formatRequestDate,
+} from '@/lib/request-labels';
+import { requestStatusLabel, t, type Locale } from '@/lib/i18n';
 import { Icon } from '@/components/ui/icon';
 import { RequestStepper } from './request-stepper';
 import { RequestTransitionButton } from './request-transition-button';
@@ -46,7 +52,14 @@ const ICONS: Record<RequestIconKind, LucideIcon> = {
   other: MessageSquareText,
 };
 
-export function RequestCard({ request }: { request: RequestCardView }) {
+export function RequestCard({
+  request,
+  locale = 'ru',
+}: {
+  request: RequestCardView;
+  /** DIG-69 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const IconCmp = ICONS[request.iconKind];
   const isFix = request.isFix;
   // Единый словарь на входе в экран: даже если вид приехал с легаси-
@@ -54,6 +67,24 @@ export function RequestCard({ request }: { request: RequestCardView }) {
   // покажут только канонические метки — «Выполнена/Требует правок»
   // на экране «Мои заявки» невозможны.
   const status = unifyRequestStatus(request.status);
+  // DIG-69: на EN строка следующего действия и даты пересобираются по
+  // словарю (агрегатор слоя данных не трогаем — он собирает RU-вид).
+  const nextAction =
+    locale === 'en'
+      ? nextActionLineLocalized(
+          {
+            status: request.status,
+            readyBy: request.readyByISO ? new Date(request.readyByISO) : null,
+            reason: request.reason,
+            updatedAt: new Date(request.updatedAtISO),
+          },
+          locale,
+        )
+      : request.nextAction;
+  const createdAtLabel =
+    locale === 'en'
+      ? formatRequestDate(new Date(request.createdAtISO), locale)
+      : request.createdAtLabel;
 
   return (
     <article
@@ -71,7 +102,7 @@ export function RequestCard({ request }: { request: RequestCardView }) {
         className="absolute inset-0 z-10 rounded-card focus-visible:outline-2 focus-visible:outline-coral-600"
       >
         <span className="sr-only">
-          Открыть заявку {request.number} — {request.title}
+          {t(locale, 'card.openAria', { number: request.number, title: request.title })}
         </span>
       </Link>
 
@@ -93,19 +124,19 @@ export function RequestCard({ request }: { request: RequestCardView }) {
                 REQUEST_STATUS_TONES[status]
               }`}
             >
-              {REQUEST_STATUS_LABELS[status]}
+              {locale === 'en' ? requestStatusLabel(locale, status) : REQUEST_STATUS_LABELS[status]}
             </span>
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
             <span className="font-mono">{request.number}</span>
             <span aria-hidden="true">·</span>
-            <span>подана {request.createdAtLabel}</span>
+            <span>{t(locale, 'card.submittedAt', { date: createdAtLabel })}</span>
           </p>
         </div>
       </div>
 
       <div className="mt-3">
-        <RequestStepper status={status} />
+        <RequestStepper status={status} locale={locale} />
       </div>
 
       <p
@@ -115,7 +146,7 @@ export function RequestCard({ request }: { request: RequestCardView }) {
         data-testid="request-next-action"
       >
         {isFix ? <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" /> : null}
-        <span>{request.nextAction}</span>
+        <span>{nextAction}</span>
       </p>
 
       {request.action ? (
@@ -127,7 +158,7 @@ export function RequestCard({ request }: { request: RequestCardView }) {
               className="inline-flex items-center gap-1.5 rounded-button bg-coral-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
             >
               <Download aria-hidden="true" className="size-4" />
-              Скачать PDF
+              {t(locale, 'card.downloadPdf')}
             </a>
           ) : null}
           {request.action === 'FIX' ? (
@@ -136,16 +167,16 @@ export function RequestCard({ request }: { request: RequestCardView }) {
               data-testid="request-action-fix"
               className="inline-flex items-center gap-1.5 rounded-button bg-coral-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
             >
-              Исправить
+              {t(locale, 'card.fix')}
             </Link>
           ) : null}
           {request.action === 'CANCEL' ? (
             <RequestTransitionButton
               action={cancelRequestAction}
               requestId={request.id}
-              label="Отменить"
-              pendingLabel="Отменяем…"
-              confirmText="Отменить заявку? Действие нельзя отменить."
+              label={t(locale, 'card.cancel')}
+              pendingLabel={t(locale, 'card.cancelPending')}
+              confirmText={t(locale, 'card.cancelConfirm')}
               testid="request-action-cancel"
             />
           ) : null}

@@ -6,13 +6,14 @@
 import type { Metadata } from 'next';
 
 import { HelpBrowser } from '@/components/help/help-browser';
+import { SectionTitle } from '@/components/shell/section-title';
 
 export const metadata: Metadata = { title: 'Вопросы и ответы — Цифровой деканат' };
 
 export default function HelpPage() {
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
-      <h1 className="text-xl font-bold sm:text-2xl">Вопросы и ответы</h1>
+      <SectionTitle href="/help" className="text-xl font-bold sm:text-2xl" />
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
         База знаний деканата: поиск понимает словоформы — стипендия, стипендии, стипендиальный
         найдут одно и то же.

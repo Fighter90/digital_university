@@ -8,6 +8,7 @@ import { AlertTriangle, Clock, Inbox, FileInput } from 'lucide-react';
 import { getStaffSummaryData, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { computeStaffSummary, type StaffSummary } from '@/lib/staff-summary';
+import { SectionTitle } from '@/components/shell/section-title';
 
 function formatAvgHours(hours: number | null): string {
   if (hours === null) return '—';
@@ -68,7 +69,7 @@ export default async function StaffSummaryPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">Сводка деканата</h1>
+      <SectionTitle href="/staff" className="text-xl font-bold text-neutral-900 sm:text-2xl" />
       <p className="mb-6 mt-1 text-sm text-neutral-600">
         Факультет {ctx.faculty ?? '—'} · заявки и обращения студентов вашего факультета. Все данные
         вымышленные.

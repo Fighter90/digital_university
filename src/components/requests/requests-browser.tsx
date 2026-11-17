@@ -12,15 +12,24 @@ import {
   REQUEST_FILTERS,
   filterRequests,
   requestFilterCounts,
+  requestFilterLabel,
   type RequestCardView,
   type RequestFilterKey,
 } from '@/lib/requests-view';
+import { t, type Locale } from '@/lib/i18n';
 import { Chip } from '@/components/ui/chip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { riseDelayStyle } from '@/lib/motion';
 import { RequestCard } from './request-card';
 
-export function RequestsBrowser({ cards }: { cards: RequestCardView[] }) {
+export function RequestsBrowser({
+  cards,
+  locale = 'ru',
+}: {
+  cards: RequestCardView[];
+  /** DIG-69 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<RequestFilterKey>('ALL');
 
@@ -38,8 +47,8 @@ export function RequestsBrowser({ cards }: { cards: RequestCardView[] }) {
         <input
           data-testid="requests-search"
           type="search"
-          aria-label="Поиск по номеру и названию заявки"
-          placeholder="Номер или название: ЗД-2026, военкомат…"
+          aria-label={t(locale, 'requests.searchAria')}
+          placeholder={t(locale, 'requests.searchPlaceholder')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="h-11 w-full rounded-button border border-border bg-card pl-10 pr-3 text-sm text-foreground shadow-soft outline-none transition-colors placeholder:text-muted-foreground focus:border-muted-foreground/40"
@@ -49,12 +58,12 @@ export function RequestsBrowser({ cards }: { cards: RequestCardView[] }) {
       <div
         data-testid="requests-filters"
         role="group"
-        aria-label="Фильтры заявок"
+        aria-label={t(locale, 'requests.filtersAria')}
         className="mt-3 flex gap-2 overflow-x-auto pb-1"
       >
-        {REQUEST_FILTERS.map(({ key, label }) => (
+        {REQUEST_FILTERS.map(({ key }) => (
           <Chip key={key} active={filter === key} onClick={() => setFilter(key)}>
-            {label}
+            {requestFilterLabel(locale, key)}
             <span
               aria-hidden="true"
               className={`min-w-5 rounded-pill px-1.5 text-center text-xs font-bold ${
@@ -73,8 +82,8 @@ export function RequestsBrowser({ cards }: { cards: RequestCardView[] }) {
         <EmptyState
           className="mt-4"
           icon={Search}
-          title="Ничего не найдено"
-          description="Попробуйте другой номер или название — или сбросьте фильтр."
+          title={t(locale, 'empty.noMatchTitle')}
+          description={t(locale, 'empty.noMatchDesc')}
           action={
             <button
               type="button"
@@ -86,7 +95,7 @@ export function RequestsBrowser({ cards }: { cards: RequestCardView[] }) {
               className="inline-flex items-center gap-1.5 rounded-button border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted"
             >
               <X aria-hidden="true" className="size-4" />
-              Сбросить фильтры
+              {t(locale, 'empty.resetFilters')}
             </button>
           }
         />
@@ -94,7 +103,7 @@ export function RequestsBrowser({ cards }: { cards: RequestCardView[] }) {
         <ul data-testid="requests-list" className="mt-4 flex flex-col gap-3">
           {visible.map((request, index) => (
             <li key={request.id} className="animate-rise" style={riseDelayStyle(index)}>
-              <RequestCard request={request} />
+              <RequestCard request={request} locale={locale} />
             </li>
           ))}
         </ul>

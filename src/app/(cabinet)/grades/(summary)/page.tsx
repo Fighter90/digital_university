@@ -43,6 +43,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { Tooltip } from '@/components/ui/tooltip';
 import { GradeInsightCard } from '@/components/performance/grade-insight-card';
+import { SectionTitle } from '@/components/shell/section-title';
 import { dataDb } from '@/server/data/db';
 import { getGradeInsight, getPerformance, listExams, requireDataCtx } from '@/server/data';
 import type { GradeInsight } from '@/lib/grade-insight';
@@ -70,7 +71,7 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
   if (ctx.role === 'STAFF') {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Успеваемость</h1>
+        <SectionTitle href="/grades" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <EmptyState
           title="Экран доступен студентам"
           description="Оценки и успеваемость показываются по учебной группе студента. Кабинет сотрудника с ведомостями — отдельная задача."
@@ -106,7 +107,7 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
       console.error('[grades] render failed', error);
       return (
         <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-8">
-          <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Успеваемость</h1>
+          <SectionTitle href="/grades" className="text-xl font-bold tracking-heading sm:text-2xl" />
           <ErrorState
             title="Успеваемость не загрузилась"
             description="Обновите страницу — если ошибка повторится, сообщите в деканат."
@@ -197,7 +198,7 @@ function GradesView({
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
       <header className="flex animate-rise flex-col gap-3">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Успеваемость</h1>
+        <SectionTitle href="/grades" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <nav aria-label="Семестры" className="flex flex-wrap gap-2">
           {pills.map((pill) => {
             const active =

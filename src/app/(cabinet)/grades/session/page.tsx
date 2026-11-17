@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { ConsultationList } from '@/components/session/consultation-list';
+import { SectionTitle } from '@/components/shell/section-title';
 import { ExamTimeline } from '@/components/session/exam-timeline';
 import { RetakeList } from '@/components/session/retake-list';
 import { CalendarSubscribeCard } from '@/components/session/calendar-subscribe-card';
@@ -42,7 +43,10 @@ async function SessionContent() {
   if (ctx.role === 'STAFF') {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Сессия</h1>
+        <SectionTitle
+          href="/grades/session"
+          className="text-xl font-bold tracking-heading sm:text-2xl"
+        />
         <EmptyState
           title="Экран доступен студентам"
           description="Расписание сессии, допуски и пересдачи показываются по учебной группе студента. Кабинет сотрудника с ведомостями — отдельная задача."
@@ -59,7 +63,10 @@ async function SessionContent() {
     console.error('[session] render failed', error);
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Сессия</h1>
+        <SectionTitle
+          href="/grades/session"
+          className="text-xl font-bold tracking-heading sm:text-2xl"
+        />
         <ErrorState
           title="Сессия не загрузилась"
           description="Обновите страницу — если ошибка повторится, сообщите в деканат."
@@ -119,7 +126,10 @@ function SessionView({ data, feedUrl }: { data: SessionData; feedUrl: string | n
   if (isEmpty) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Сессия</h1>
+        <SectionTitle
+          href="/grades/session"
+          className="text-xl font-bold tracking-heading sm:text-2xl"
+        />
         <EmptyState
           title="Сессия не запланирована"
           description="Экзамены, зачёты и консультации появятся здесь, когда деканат опубликует расписание сессии."
@@ -132,7 +142,10 @@ function SessionView({ data, feedUrl }: { data: SessionData; feedUrl: string | n
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
       {/* ── Шапка: сезон · диапазон, отсчёт ───────────────────────────────── */}
       <header className="flex animate-rise flex-col gap-2">
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">Сессия</h1>
+        <SectionTitle
+          href="/grades/session"
+          className="text-xl font-bold tracking-heading sm:text-2xl"
+        />
         <p
           data-testid="session-title"
           className="flex flex-wrap items-baseline gap-x-2 text-sm text-muted-foreground"

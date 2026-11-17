@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { LogOut, Settings, UserRound } from 'lucide-react';
 import { signOutAction } from '@/server/actions/auth';
 import type { ShellUser } from '@/lib/user';
+import { t, type Locale } from '@/lib/i18n';
 
 // DIG-14: меню аватара (Профиль, Настройки, Выйти). Доступно с клавиатуры:
 // Enter открывает, фокус уходит на первый пункт, Escape закрывает и
@@ -12,7 +13,7 @@ import type { ShellUser } from '@/lib/user';
 // DIG-55: «Выйти» больше не ссылка-заглушка на /login (та не завершала
 // сессию — на проде «Выйти не работает»), а submit-форма server action
 // signOutAction: удаляет сессию в БД и обе куки, редирект на /login?signedOut=1.
-export function UserMenu({ user }: { user: ShellUser }) {
+export function UserMenu({ user, locale = 'ru' }: { user: ShellUser; locale?: Locale }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const firstItemRef = useRef<HTMLAnchorElement>(null);
@@ -52,7 +53,7 @@ export function UserMenu({ user }: { user: ShellUser }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls="user-menu"
-        aria-label="Меню пользователя"
+        aria-label={t(locale, 'shell.userMenuAria')}
         onClick={() => setOpen((value) => !value)}
         className="grid size-8 shrink-0 place-items-center rounded-full bg-coral-100 text-xs font-semibold text-coral-700 ring-1 ring-coral-200 hover:bg-coral-200 focus-visible:outline-2 focus-visible:outline-coral-600 md:size-9 md:text-sm"
       >
@@ -63,7 +64,7 @@ export function UserMenu({ user }: { user: ShellUser }) {
         <div
           id="user-menu"
           role="menu"
-          aria-label="Меню пользователя"
+          aria-label={t(locale, 'shell.userMenuAria')}
           className="absolute top-11 right-0 z-50 w-52 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg"
         >
           <div className="border-b border-neutral-100 px-3 py-2">
@@ -79,7 +80,7 @@ export function UserMenu({ user }: { user: ShellUser }) {
             className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none"
             onClick={() => setOpen(false)}
           >
-            <UserRound className="size-4" aria-hidden="true" /> Профиль
+            <UserRound className="size-4" aria-hidden="true" /> {t(locale, 'menu.profile')}
           </Link>
           <Link
             role="menuitem"
@@ -87,7 +88,7 @@ export function UserMenu({ user }: { user: ShellUser }) {
             className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none"
             onClick={() => setOpen(false)}
           >
-            <Settings className="size-4" aria-hidden="true" /> Настройки
+            <Settings className="size-4" aria-hidden="true" /> {t(locale, 'menu.settings')}
           </Link>
           <div className="my-1 border-t border-neutral-100" role="separator" />
           {/* DIG-55: submit-форма server action signOutAction. ВАЖНО: кнопка НЕ
@@ -101,7 +102,7 @@ export function UserMenu({ user }: { user: ShellUser }) {
               role="menuitem"
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none"
             >
-              <LogOut className="size-4" aria-hidden="true" /> Выйти
+              <LogOut className="size-4" aria-hidden="true" /> {t(locale, 'shell.logout')}
             </button>
           </form>
         </div>

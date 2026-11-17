@@ -15,6 +15,7 @@ import { dataDb } from '@/server/data/db';
 import { RequestStatusBadge } from '@/components/request-status-badge';
 import { REQUEST_TYPE_LABELS, formatRequestDate } from '@/lib/request-labels';
 import { RequestStatusForm } from '@/components/staff/request-status-form';
+import { getLocale } from '@/lib/i18n/server';
 
 export default async function StaffRequestCardPage({
   params,
@@ -23,7 +24,10 @@ export default async function StaffRequestCardPage({
 }) {
   const { number: rawNumber } = await params;
   const number = normalizeRequestNumber(decodeURIComponent(rawNumber));
-  const ctx = await requireDataCtx(`/staff/requests/${rawNumber}`);
+  const [ctx, locale] = await Promise.all([
+    requireDataCtx(`/staff/requests/${rawNumber}`),
+    getLocale(),
+  ]);
 
   const detail = await getStaffRequestDetail(dataDb, ctx, number);
   if (!detail) notFound();
@@ -42,7 +46,7 @@ export default async function StaffRequestCardPage({
 
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono text-xs text-neutral-500">{request.number}</span>
-        <RequestStatusBadge status={request.status} />
+        <RequestStatusBadge status={request.status} locale={locale} />
       </div>
       <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">{request.title}</h1>
       <p className="mb-6 text-sm text-neutral-600">
@@ -103,7 +107,7 @@ export default async function StaffRequestCardPage({
       </div>
 
       <div className="mt-4">
-        <RequestStatusForm number={request.number} status={request.status} />
+        <RequestStatusForm number={request.number} status={request.status} locale={locale} />
       </div>
 
       <h2 className="mb-3 mt-6 text-base font-semibold text-neutral-900">История заявки</h2>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ShellUser } from '@/lib/user';
 import type { NotificationFeedItem } from '@/lib/notification-view';
+import { t, type Locale } from '@/lib/i18n';
 import { TopBar } from './top-bar';
 import { SideNav } from './side-nav';
 import { TabBar } from './tab-bar';
@@ -18,6 +19,8 @@ type ShellProps = {
   recentNotifications: NotificationFeedItem[];
   /** DIG-34 — открытые задачи для счётчика меню; 0 — пилюля скрыта. */
   tasksCount?: number;
+  /** DIG-69 — локаль интерфейса кабинета (cookie du-locale, дефолт ru). */
+  locale?: Locale;
   children: React.ReactNode;
 };
 
@@ -32,6 +35,7 @@ export function Shell({
   unreadCount,
   recentNotifications,
   tasksCount = 0,
+  locale = 'ru',
   children,
 }: ShellProps) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -58,20 +62,27 @@ export function Shell({
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-neutral-900 focus:shadow-lg focus:outline focus:outline-2 focus:outline-coral-600"
       >
-        К содержимому
+        {t(locale, 'shell.skipToContent')}
       </a>
 
       <TopBar
         user={user}
         unreadCount={unreadCount}
         recentNotifications={recentNotifications}
+        locale={locale}
         onOpenSearch={() => setSearchOpen(true)}
         onOpenAssistant={() => setAssistantOpen(true)}
         searchTriggerRef={searchTriggerRef}
       />
 
       <div className="mx-auto flex w-full max-w-[1440px]">
-        <SideNav unreadCount={unreadCount} tasksCount={tasksCount} />        <SideNav unreadCount={unreadCount} role={user.role} />        <main
+        <SideNav
+          unreadCount={unreadCount}
+          tasksCount={tasksCount}
+          role={user.role}
+          locale={locale}
+        />
+        <main
           id="main-content"
           tabIndex={-1}
           className="min-w-0 flex-1 px-3 pt-4 pb-28 focus:outline-none md:px-6 md:pt-6 md:pb-12"
@@ -81,7 +92,7 @@ export function Shell({
       </div>
 
       {/* DIG-48: таб-бар по роли сессии (у сотрудника — разделы деканата). */}
-      <TabBar role={user.role} />
+      <TabBar role={user.role} locale={locale} />
       {/* Плавающая кнопка ассистента — только студенту (у сотрудника свой кабинет). */}
       {user.role === 'STUDENT' && <AiFab onOpen={() => setAssistantOpen(true)} />}
       {/* DIG-62: AI-гид — вне <main>, чтобы краулер DIG-60 и геометрия

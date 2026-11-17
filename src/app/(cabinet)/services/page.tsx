@@ -15,6 +15,7 @@ import { MAX_FAVORITES } from '@/lib/services-catalog';
 import { ServicesBrowser } from '@/components/services/services-browser';
 import { ServiceCard } from '@/components/services/service-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SectionTitle } from '@/components/shell/section-title';
 
 export const metadata = { title: 'Каталог сервисов — Цифровой деканат' };
 
@@ -26,7 +27,7 @@ export default async function ServicesPage() {
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
-      <h1 className="text-xl font-bold sm:text-2xl">Каталог сервисов</h1>
+      <SectionTitle href="/services" className="text-xl font-bold sm:text-2xl" />
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
         Услуги деканата и вуза в одном месте — только то, что доступно вам как студенту.
       </p>

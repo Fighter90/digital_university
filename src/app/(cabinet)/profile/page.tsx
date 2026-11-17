@@ -3,8 +3,10 @@
 // изолированного слоя, скоупленного requireDataCtx() → session.user.id:
 // чужой профиль с этой страницы получить невозможно по построению.
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getLocale } from '@/lib/i18n/server';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SectionTitle } from '@/components/shell/section-title';
 import { MaskedStudentBadge } from '@/components/profile/masked-badge';
 import { ContactsForm } from '@/components/profile/contacts-form';
 import { DataErrorReport } from '@/components/profile/data-error-report';
@@ -13,12 +15,12 @@ import { dataDb } from '@/server/data/db';
 import { currentAcademicPeriod } from '@/lib/profile-format';
 
 export default async function ProfilePage() {
-  const ctx = await requireDataCtx('/profile');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/profile'), getLocale()]);
 
   if (ctx.role !== 'STUDENT') {
     return (
       <section className="mx-auto max-w-3xl px-4 py-8">
-        <h1 className="mb-1 text-xl font-bold sm:text-2xl">Профиль</h1>
+        <SectionTitle href="/profile" className="mb-1 text-xl font-bold sm:text-2xl" />
         <EmptyState
           title="Раздел доступен студентам"
           description="Профиль сотрудника ведётся в системе деканата."
@@ -34,7 +36,7 @@ export default async function ProfilePage() {
     // fail-closed на случай рассинхрона хранилищ (не должно происходить).
     return (
       <section className="mx-auto max-w-3xl px-4 py-8">
-        <h1 className="mb-1 text-xl font-bold sm:text-2xl">Профиль</h1>
+        <SectionTitle href="/profile" className="mb-1 text-xl font-bold sm:text-2xl" />
         <EmptyState
           title="Профиль временно недоступен"
           description="Попробуйте обновить страницу позже."
@@ -51,7 +53,7 @@ export default async function ProfilePage() {
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
-        <h1 className="text-xl font-bold sm:text-2xl">Профиль</h1>
+        <SectionTitle href="/profile" className="text-xl font-bold sm:text-2xl" />
         <p className="mt-1 text-sm text-neutral-600">
           Основные данные ведёт деканат — их можно только проверить. Контакты вы редактируете сами.
         </p>
@@ -122,6 +124,7 @@ export default async function ProfilePage() {
             phone={settings.phone}
             emailVisibleToStaff={settings.emailVisibleToStaff}
             phoneVisibleToStaff={settings.phoneVisibleToStaff}
+            locale={locale}
           />
         </CardContent>
       </Card>

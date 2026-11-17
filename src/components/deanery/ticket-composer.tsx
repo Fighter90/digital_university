@@ -8,6 +8,7 @@
 // делает redirect в чат нового обращения.
 
 import { useActionState, useMemo, useState } from 'react';
+import { t, type Locale } from '@/lib/i18n';
 
 import { createTicketAction, type TicketActionState } from '@/server/actions/deanery';
 import {
@@ -27,6 +28,8 @@ export interface TicketComposerProps {
   /** Стартовый текст — используется в тестах контракта подсказок. */
   initialBody?: string;
   initialSubject?: TicketSubject;
+  /** DIG-69 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 const buttonClass =
@@ -37,6 +40,7 @@ export function TicketComposer({
   disciplines,
   initialBody = '',
   initialSubject,
+  locale = 'ru',
 }: TicketComposerProps) {
   const [state, formAction, isPending] = useActionState<TicketActionState, FormData>(
     createTicketAction,
@@ -163,7 +167,7 @@ export function TicketComposer({
         ) : null}
 
         <button type="submit" disabled={isPending} className={buttonClass}>
-          {isPending ? 'Отправляем…' : 'Создать обращение'}
+          {isPending ? t(locale, 'btn.submitting') : t(locale, 'btn.createTicket')}
         </button>
         {state?.error ? (
           <p role="alert" className="text-sm font-medium text-error-ink">

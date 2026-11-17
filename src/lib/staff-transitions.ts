@@ -3,6 +3,7 @@
 // требуют причину — это продуктовое правило карточки заявки сотрудника.
 
 import type { RequestStatus } from '@/server/data/types';
+import { t } from '@/lib/i18n';
 
 /**
  * Разрешённые переходы по текущему статусу. COMPLETED и REJECTED —
@@ -69,3 +70,22 @@ export const TRANSITION_ACTION_TITLES: Record<Exclude<RequestStatus, 'SUBMITTED'
   REJECTED: 'Заявка отклонена',
   CANCELLED: 'Заявка отменена',
 };
+
+// DIG-69 — локализованные подписи переходов. RU — байт-в-байт прежние
+// записи (события истории сотрудников продолжают собираться серверно из
+// TRANSITION_ACTION_TITLES — слой данных не трогаем); EN — словарь i18n.
+export function transitionActionLabel(
+  locale: 'ru' | 'en',
+  to: Exclude<RequestStatus, 'SUBMITTED'>,
+): string {
+  if (locale === 'ru') return TRANSITION_ACTION_LABELS[to];
+  return t('en', `action.${to}`);
+}
+
+export function transitionActionTitle(
+  locale: 'ru' | 'en',
+  to: Exclude<RequestStatus, 'SUBMITTED'>,
+): string {
+  if (locale === 'ru') return TRANSITION_ACTION_TITLES[to];
+  return t('en', `taction.${to}`);
+}

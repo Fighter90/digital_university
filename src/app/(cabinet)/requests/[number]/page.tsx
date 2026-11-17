@@ -46,6 +46,7 @@ import {
 import { RequestStatusBadge } from '@/components/request-status-badge';
 import { REQUEST_TYPE_LABELS, formatRequestDate } from '@/lib/request-labels';
 import { RequestStepper } from '@/components/requests/request-stepper';
+import { getLocale } from '@/lib/i18n/server';
 import { RequestTransitionButton } from '@/components/requests/request-transition-button';
 import { CopyRequestNumber } from '@/components/requests/copy-request-number';
 import { RequestFixForm } from '@/components/requests/request-fix-form';
@@ -57,7 +58,8 @@ import {
   lastStaffActorName,
   requestParamsRows,
   requestWizardView,
-} from '@/lib/request-card-view';import { personHrefByFullName } from '@/lib/people-catalog';
+} from '@/lib/request-card-view';
+import { personHrefByFullName } from '@/lib/people-catalog';
 export default async function RequestDetailPage({
   params,
 }: {
@@ -65,10 +67,10 @@ export default async function RequestDetailPage({
 }) {
   const { number: rawNumber } = await params;
   const number = normalizeRequestNumber(decodeRequestNumberParam(rawNumber));
-  const ctx = await requireDataCtx(`/requests/${rawNumber}`);
+  const [ctx, locale] = await Promise.all([requireDataCtx(`/requests/${rawNumber}`), getLocale()]);
 
   if (isValidCanonicalRequestNumber(number)) {
-    return renderCanonical(number, ctx);
+    return renderCanonical(number, ctx, locale);
   }
 
   const request = await getRequestByNumber(dataDb, ctx, number);
@@ -96,7 +98,7 @@ export default async function RequestDetailPage({
 
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono text-xs text-neutral-500">{request.number}</span>
-        <RequestStatusBadge status={request.status} />
+        <RequestStatusBadge status={request.status} locale={locale} />
       </div>
       <h1 className="mb-1 text-xl font-bold sm:text-2xl">{request.title}</h1>
       <p className="mb-6 text-sm text-neutral-600">
@@ -183,7 +185,11 @@ export default async function RequestDetailPage({
 
 // ── DIG-32/33: карточка канонической заявки «ЗД-…» ───────────────────────────
 
-async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof requireDataCtx>>) {
+async function renderCanonical(
+  number: string,
+  ctx: Awaited<ReturnType<typeof requireDataCtx>>,
+  locale: 'ru' | 'en',
+) {
   // Чтение owner-scoped: чужой и несуществующий номер → одинаковый 404,
   // попытка чужой — в аудите (контракт canonical-requests, DIG-30).
   const request = await getCanonicalRequestByNumber(dataDb, ctx, number);
@@ -256,7 +262,7 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
         </p>
 
         <div className="mt-5">
-          <RequestStepper status={request.status} />
+          <RequestStepper status={request.status} locale={locale} />
         </div>
 
         {/* Ожидаемая дата и менеджер заявки (DIG-33). */}
@@ -288,7 +294,7 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
 
         {/* Форма исправления прямо в карточке (DIG-33). */}
         {isFix && isStudent ? (
-          <RequestFixForm requestId={request.id} action={resubmitRequestAction} />
+          <RequestFixForm requestId={request.id} action={resubmitRequestAction} locale={locale} />
         ) : null}
 
         {/* Блок готового документа: превью, скачать, проверить, email (DIG-33). */}
@@ -355,7 +361,11 @@ async function renderCanonical(number: string, ctx: Awaited<ReturnType<typeof re
 
         {/* Вопрос по заявке — обращение с привязкой к номеру (DIG-33). */}
         {isStudent ? (
-          <RequestQuestionForm requestId={request.id} action={createRequestQuestionAction} />
+          <RequestQuestionForm
+            requestId={request.id}
+            action={createRequestQuestionAction}
+            locale={locale}
+          />
         ) : null}
       </div>
 

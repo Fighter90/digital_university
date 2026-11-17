@@ -7,7 +7,9 @@
 // «Главную». Настройки применяются сразу: каждая мутация перевалидирует
 // страницы, вид/тема — и root layout (классы на <html>).
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getLocale } from '@/lib/i18n/server';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SectionTitle } from '@/components/shell/section-title';
 import { ExternalLink } from 'lucide-react';
 import { headers } from 'next/headers';
 import { NotificationSettings } from '@/components/profile/notification-settings';
@@ -44,12 +46,12 @@ export default async function SettingsPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const ctx = await requireDataCtx('/settings');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/settings'), getLocale()]);
 
   if (ctx.role !== 'STUDENT') {
     return (
       <section className="mx-auto max-w-3xl px-4 py-8">
-        <h1 className="mb-1 text-xl font-bold sm:text-2xl">Настройки</h1>
+        <SectionTitle href="/settings" className="mb-1 text-xl font-bold sm:text-2xl" />
         <EmptyState
           title="Раздел доступен студентам"
           description="Настройки кабинета сотрудника настраиваются в системе деканата."
@@ -79,13 +81,13 @@ export default async function SettingsPage({
     <section className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-xl font-bold sm:text-2xl">Настройки</h1>
+          <SectionTitle href="/settings" className="text-xl font-bold sm:text-2xl" />
           <p className="mt-1 text-sm text-neutral-600">
             Виджеты главной, уведомления, безопасность, вид кабинета и MCP-интеграции ассистента.
             Изменения сохраняются и применяются сразу.
           </p>
         </div>
-        <SettingsTabs active={tab} />
+        <SettingsTabs active={tab} locale={locale} />
       </div>
 
       {tab === 'home' && (
