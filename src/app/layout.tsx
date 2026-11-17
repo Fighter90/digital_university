@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ConceptBanner } from '@/components/concept-banner';
+import { getLocale } from '@/lib/i18n/server';
 import {
   appearanceClasses,
   getAppliedAppearance,
@@ -64,16 +65,18 @@ export default async function RootLayout({
   // DIG-44: тема, размер шрифта и «уменьшить анимацию» применяются server-side
   // к <html> (до первой отрисовки) из настроек владельца сессии; аноним и
   // сотрудник получают значения по умолчанию. Системная тема — инлайн-скрипт.
+  // DIG-69: локаль интерфейса из cookie (дефолт ru) — lang у <html> и плашка.
   const appearance = await getAppliedAppearance();
+  const locale = await getLocale();
   const htmlClasses = [inter.variable, 'antialiased', ...appearanceClasses(appearance)];
 
   return (
-    <html lang="ru" className={htmlClasses.join(' ')}>
+    <html lang={locale} className={htmlClasses.join(' ')}>
       <body className="antialiased">
         {appearance.theme === 'SYSTEM' && (
           <script dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }} />
         )}
-        <ConceptBanner />
+        <ConceptBanner locale={locale} />
         {children}
       </body>
     </html>

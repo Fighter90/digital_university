@@ -4,6 +4,7 @@ import { ensureAppData } from '@/server/data/bootstrap';
 import { getTasks, resolveShellUser, toDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { getNotificationFeed } from '@/server/notifications';
+import { getLocale } from '@/lib/i18n/server';
 import { Shell } from '@/components/shell/shell';
 
 // DIG-34: счётчик открытых задач для меню — fail-soft: сбой слоя данных не
@@ -33,10 +34,11 @@ async function openTasksCount(user: AuthUser): Promise<number> {
 // уведомлений для панели колокольчика (getNotificationFeed — fail-soft).
 export default async function CabinetLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const user = await requireUser();
-  const [shellUser, feed, tasksCount] = await Promise.all([
+  const [shellUser, feed, tasksCount, locale] = await Promise.all([
     resolveShellUser(dataDb, user),
     getNotificationFeed(),
     openTasksCount(user),
+    getLocale(),
   ]);
 
   return (
@@ -45,6 +47,7 @@ export default async function CabinetLayout({ children }: Readonly<{ children: R
       unreadCount={feed.count}
       recentNotifications={feed.items}
       tasksCount={tasksCount}
+      locale={locale}
     >
       {children}
     </Shell>

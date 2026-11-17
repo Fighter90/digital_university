@@ -130,10 +130,10 @@ export function sectionTitle(locale: Locale, pathname: string, fallback?: string
 }
 
 /** Пункт меню по префиксу пути. RU — байт-в-байт прежние подписи nav-items. */
-export function navLabel(locale: Locale, pathname: string, fallback: string): string {
-  if (locale === 'ru') return fallback;
+export function navLabel(locale: Locale, pathname: string, fallback?: string): string {
   const key = longestPrefixMatch(pathname, MENU_KEY_BY_HREF);
-  return key ? t('en', key) : fallback;
+  if (key) return t(locale, key);
+  return fallback ?? pathname;
 }
 
 // ── статусы заявок и обращения ──────────────────────────────────────────────
