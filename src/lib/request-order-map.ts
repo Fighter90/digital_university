@@ -18,6 +18,9 @@ const ORDER_TYPE_BY_SERVICE: Record<string, OrderTarget> = {
   'cert-defer': { typeCode: 'CERT_ENROLLMENT', preset: { purpose: 'для военкомата' } },
   'cert-grades': { typeCode: 'GRADES_EXTRACT' },
   'stmt-academic-leave': { typeCode: 'ACADEMIC_LEAVE' },
+  // DIG-41 — действия экрана «Финансы» (/finance).
+  'fin-material-aid': { typeCode: 'MATERIAL_AID' },
+  'fin-scholarship-cert': { typeCode: 'SCHOLARSHIP_CERT' },
 };
 
 /**
@@ -37,6 +40,8 @@ export const REQUEST_TYPE_HINTS: Record<string, string> = {
   GRADES_EXTRACT: 'Официальная выписка оценок и среднего балла за все сессии',
   DIPLOMA_COPY: 'Заверенная копия диплома для работодателя или госорганов',
   ACADEMIC_LEAVE: 'Заявление на перерыв в учёбе до одного года с сохранением статуса',
+  MATERIAL_AID: 'Единовременная поддержка из фонда вуза по заявлению студента',
+  SCHOLARSHIP_CERT: 'Сумма назначенной стипендии и срок её выплаты',
 };
 
 const FALLBACK_TYPE_HINT = 'Официальный документ деканата';

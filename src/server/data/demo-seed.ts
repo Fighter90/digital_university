@@ -48,7 +48,6 @@ import type {
   MspVoteRow,
 } from './types';
 import { newMspSlug } from './msp-slug';
-
 export const DEMO_PASSWORDS = {
   'anna.smirnova': 'anna-demo-2026',
   'ilya.petrov': 'ilya-demo-2026',
@@ -1835,6 +1834,48 @@ function buildCanonicalRequests(): {
           { key: 'period', label: 'Период', type: 'text', required: true, maxLength: 60 },
           { key: 'reason', label: 'Причина', type: 'text', required: true },
           { key: 'from', label: 'Дата начала', type: 'date', required: true },
+        ],
+      },
+    },
+    // DIG-41 — действия экрана «Финансы» (/finance): материальная помощь
+    // и справка о размере стипендии ведут в мастер заявки с предвыбором.
+    {
+      id: 'crt-material-aid',
+      code: 'MATERIAL_AID',
+      name: 'Заявление на материальную помощь',
+      etaDays: 3,
+      format: 'PAPER',
+      isInstant: false,
+      formSchema: {
+        keyField: 'reason',
+        fields: [
+          {
+            key: 'reason',
+            label: 'Причина обращения',
+            type: 'text',
+            required: true,
+            maxLength: 200,
+          },
+        ],
+      },
+    },
+    {
+      id: 'crt-scholarship-cert',
+      code: 'SCHOLARSHIP_CERT',
+      name: 'Справка о размере стипендии',
+      etaDays: 2,
+      format: 'ELECTRONIC',
+      isInstant: false,
+      formSchema: {
+        keyField: 'purpose',
+        fields: [
+          {
+            key: 'purpose',
+            label: 'Назначение',
+            type: 'enum',
+            required: true,
+            options: ['для банка', 'для соцзащиты', 'для визового центра', 'по месту требования'],
+          },
         ],
       },
     },

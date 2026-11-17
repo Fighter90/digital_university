@@ -212,6 +212,15 @@ describe('nav config (cabinet shell)', () => {
     expect(CABINET_SECTIONS[1]?.href).toBe('/tasks');
   });
 
+  it('DIG-41: раздел «Финансы» в полном меню (после «Успеваемости») и в «Ещё»', () => {
+    const finance = CABINET_SECTIONS.find((s) => s.href === '/finance');
+    expect(finance?.label).toBe('Финансы');
+    const gradesIndex = CABINET_SECTIONS.findIndex((s) => s.href === '/grades');
+    expect(CABINET_SECTIONS[gradesIndex + 1]?.href).toBe('/finance');
+    // Мобильный путь: раздел доступен через «Ещё».
+    expect(MORE_SECTIONS.some((s) => s.href === '/finance')).toBe(true);
+  });
+
   it('mobile tab bar is exactly: Главная, Расписание, Оценки, Заявки, Ещё', () => {
     expect(TAB_SECTIONS.map((t) => t.label)).toEqual([
       'Главная',
@@ -222,11 +231,14 @@ describe('nav config (cabinet shell)', () => {
     ]);
   });
 
-  it('«Ещё» covers Задачи, Уведомления, Связь с деканатом, Обратная связь, Вопросы и ответы, Справка, МСП, Справочник, AI-ассистент, Профиль, Настройки', () => {
+  it('«Ещё» covers Задачи, Финансы, Уведомления, Связь с деканатом, Обратная связь, Вопросы и ответы, Справка, МСП, Справочник, AI-ассистент, Профиль, Настройки', () => {
     expect(MORE_SECTIONS.map((s) => s.href)).toEqual([
       '/tasks',
+      // DIG-41 — «Финансы» сразу после задач (деньги и сроки — actionable).
+      '/finance',
       '/notifications',
       '/deanery',
+      // DIG-40 — канал обратной связи руководству.
       '/feedback',
       '/help',
       // DIG-70 — «Справка» (гайд «Как пользоваться кабинетом») в «Ещё».
@@ -239,7 +251,6 @@ describe('nav config (cabinet shell)', () => {
       '/settings',
     ]);
   });
-
   // DIG-40 (приёмка): пункт меню канала обратной связи однозначно объясняет
   // назначение — в аудированном ЛК он назывался «Выразительная кнопка».
   it('DIG-68: пункт меню «МСП» присутствует в кабинете и в «Ещё»', () => {
