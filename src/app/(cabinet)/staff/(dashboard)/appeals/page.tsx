@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { getStaffAppeals, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { formatRequestDate } from '@/lib/request-labels';
-import { APPEAL_STATUS_BADGES } from '@/lib/appeal-status';
+import { appealStatusBadge } from '@/lib/appeal-status';
+import { getLocale } from '@/lib/i18n/server';
 import { SectionTitle } from '@/components/shell/section-title';
 
 export default async function StaffAppealsPage() {
-  const ctx = await requireDataCtx('/staff/appeals');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/staff/appeals'), getLocale()]);
   const items = await getStaffAppeals(dataDb, ctx);
 
   return (
@@ -31,7 +32,7 @@ export default async function StaffAppealsPage() {
       ) : (
         <ul className="flex flex-col gap-2" data-testid="staff-appeals-list">
           {items.map(({ appeal, student, lastAt }) => {
-            const badge = APPEAL_STATUS_BADGES[appeal.status];
+            const badge = appealStatusBadge(locale, appeal.status);
             return (
               <li key={appeal.id}>
                 <Link

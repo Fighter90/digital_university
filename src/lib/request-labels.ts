@@ -59,7 +59,20 @@ const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
   timeZone: REQUEST_TIME_ZONE,
 });
 
-/** «16 ноября, 10:05 МСК» — единственный формат времени заявок. */
-export function formatRequestDate(value: Date): string {
-  return `${dateTimeFormatter.format(value)} МСК`;
+const dateTimeFormatterEn = new Intl.DateTimeFormat('en-US', {
+  day: 'numeric',
+  month: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: REQUEST_TIME_ZONE,
+});
+
+/**
+ * «16 ноября, 10:05 МСК» — единственный формат времени заявок.
+ * DIG-69: locale='en' → en-US и суффикс «MSK»; RU — байт-в-байт прежний.
+ */
+export function formatRequestDate(value: Date, locale: 'ru' | 'en' = 'ru'): string {
+  return locale === 'en'
+    ? `${dateTimeFormatterEn.format(value)} MSK`
+    : `${dateTimeFormatter.format(value)} МСК`;
 }

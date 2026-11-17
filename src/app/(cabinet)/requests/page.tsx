@@ -33,6 +33,8 @@ import {
   type WizardTypeDto,
 } from '@/components/requests/order-wizard';
 import { orderTargetForService } from '@/lib/request-order-map';
+import { t } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 
 export const metadata = { title: 'Мои заявки — Цифровой деканат' };
 
@@ -42,7 +44,7 @@ export default async function RequestsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = (await searchParams) ?? {};
-  const ctx = await requireDataCtx('/requests');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/requests'), getLocale()]);
   const { cards } = await getRequestsScreen(dataDb, ctx);
 
   // DIG-31 — мастер только студенту: параметр (строка или первый элемент
@@ -84,7 +86,7 @@ export default async function RequestsPage({
       className="inline-flex items-center gap-1.5 rounded-button bg-coral-600 px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
     >
       <FileText aria-hidden="true" className="size-4" />
-      Заказать справку
+      {t(locale, 'cta.orderCertificate')}
     </Link>
   );
 
@@ -105,21 +107,21 @@ export default async function RequestsPage({
         {ctx.role === 'STAFF' ? (
           <EmptyState
             className="mt-8"
-            title="Заявки студентов"
-            description="Раздел показывает заявки студента: у сотрудника он пуст. Чтение списков сотрудником фиксируется в журнале доступа."
+            title={t(locale, 'empty.requestsStaffTitle')}
+            description={t(locale, 'empty.requestsStaffDesc')}
           />
         ) : cards.length === 0 ? (
           <EmptyState
             className="mt-8"
             icon={FileText}
             illustration="no-requests"
-            title="Заявок пока нет"
-            description="Закажите справку или напишите заявление — заявка появится здесь вместе со сроком готовности."
+            title={t(locale, 'empty.requestsTitle')}
+            description={t(locale, 'empty.requestsDesc')}
             action={orderCta('requests-empty-order-cta')}
           />
         ) : (
           <div className="mt-5">
-            <RequestsBrowser cards={cards} />
+            <RequestsBrowser cards={cards} locale={locale} />
           </div>
         )}
       </section>

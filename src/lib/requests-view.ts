@@ -11,6 +11,7 @@
 import type { RequestStatus, RequestType } from '@/server/data/types';
 import type { CanonicalRequestStatus } from '@/lib/request-machine';
 import { formatReadyBy } from '@/lib/request-sla';
+import { formatDate, t } from '@/lib/i18n';
 
 export type UnifiedRequestStatus = CanonicalRequestStatus;
 
@@ -44,13 +45,7 @@ const FILTER_BUCKETS: Record<RequestFilterKey, readonly UnifiedRequestStatus[] |
 // ── карточка (сериализуемый вид для клиента: только строки) ──────────────────
 
 export type RequestIconKind =
-  | 'certificate'
-  | 'statement'
-  | 'grades'
-  | 'diploma'
-  | 'practice'
-  | 'dormitory'
-  | 'other';
+  'certificate' | 'statement' | 'grades' | 'diploma' | 'practice' | 'dormitory' | 'other';
 
 export type RequestCardAction = 'DOWNLOAD' | 'FIX' | 'CANCEL';
 
@@ -115,7 +110,13 @@ export function requestPipelineStep(status: RequestStatus): number | null {
   }
 }
 
-const PENDING_STEPS: readonly RequestStepperStepState[] = ['pending', 'pending', 'pending', 'pending', 'pending'];
+const PENDING_STEPS: readonly RequestStepperStepState[] = [
+  'pending',
+  'pending',
+  'pending',
+  'pending',
+  'pending',
+];
 
 /**
  * Состояния пяти шагов степпера для статуса. Защита от утечки легаси-
@@ -181,6 +182,57 @@ export function nextActionLine(input: {
     case 'SUBMITTED':
       return readyBy ? `Готовность до ${formatReadyBy(readyBy)}` : 'Ожидает приёма деканатом';
   }
+}
+
+// DIG-69 — локализованная строка следующего действия. RU — байт-в-байт
+// прежняя nextActionLine (агрегатор слоя данных продолжает собирать её
+// серверно); EN — те же состояния по словарю i18n и en-US-датам.
+export function nextActionLineLocalized(
+  input: {
+    status: RequestStatus;
+    readyBy: Date | null;
+    reason: string | null;
+    updatedAt: Date;
+  },
+  locale: 'ru' | 'en',
+): string {
+  if (locale === 'ru') return nextActionLine(input);
+  const { status, readyBy, reason, updatedAt } = input;
+  const until = readyBy ? formatDate('en', readyBy) : null;
+  switch (unifyRequestStatus(status)) {
+    case 'NEEDS_FIX':
+      return reason ? t('en', 'next.NEEDS_FIX', { reason }) : t('en', 'next.NEEDS_FIX_BARE');
+    case 'REJECTED':
+      return reason ? t('en', 'next.REJECTED', { reason }) : t('en', 'next.REJECTED_BARE');
+    case 'READY':
+      return t('en', 'next.READY');
+    case 'ISSUED':
+      return t('en', 'next.ISSUED', { date: formatDate('en', updatedAt) });
+    case 'CANCELLED':
+      return t('en', 'next.CANCELLED', { date: formatDate('en', updatedAt) });
+    case 'ACCEPTED':
+      return until
+        ? t('en', 'next.ACCEPTED_UNTIL', { date: until })
+        : t('en', 'next.ACCEPTED_BARE');
+    case 'IN_PROGRESS':
+      return until
+        ? t('en', 'next.IN_PROGRESS_UNTIL', { date: until })
+        : t('en', 'next.IN_PROGRESS_BARE');
+    case 'SUBMITTED':
+      return until
+        ? t('en', 'next.SUBMITTED_UNTIL', { date: until })
+        : t('en', 'next.SUBMITTED_BARE');
+  }
+}
+
+/** DIG-69 — подпись фильтра-корзины по локали (RU — прежняя метка). */
+export function requestFilterLabel(locale: 'ru' | 'en', key: RequestFilterKey): string {
+  return t(locale, `filter.${key}`);
+}
+
+/** DIG-69 — подпись шага конвейера по локали (RU — прежние метки канона). */
+export function pipelineStepLabel(locale: 'ru' | 'en', status: UnifiedRequestStatus): string {
+  return t(locale, `status.${status}`);
 }
 
 // ── иконки типов ─────────────────────────────────────────────────────────────
@@ -254,7 +306,9 @@ export function filterRequests(
 ): RequestCardView[] {
   const bucket = FILTER_BUCKETS[filter];
   return cards
-    .filter((card) => (bucket === null || bucket.includes(card.status)) && matchRequest(card, query))
+    .filter(
+      (card) => (bucket === null || bucket.includes(card.status)) && matchRequest(card, query),
+    )
     .sort((a, b) => {
       const fixDelta = Number(b.status === 'NEEDS_FIX') - Number(a.status === 'NEEDS_FIX');
       if (fixDelta !== 0) return fixDelta;

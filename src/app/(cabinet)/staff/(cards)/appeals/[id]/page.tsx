@@ -10,7 +10,8 @@ import { notFound } from 'next/navigation';
 import { getStaffAppealThread, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { formatRequestDate } from '@/lib/request-labels';
-import { APPEAL_STATUS_BADGES } from '@/lib/appeal-status';
+import { appealStatusBadge } from '@/lib/appeal-status';
+import { getLocale } from '@/lib/i18n/server';
 import { AppealReplyForm, AppealResolveForm } from '@/components/staff/appeal-forms';
 import { cn } from '@/lib/utils';
 
@@ -21,12 +22,12 @@ export default async function StaffAppealThreadPage({
 }) {
   const { id: rawId } = await params;
   const appealId = decodeURIComponent(rawId).trim();
-  const ctx = await requireDataCtx(`/staff/appeals/${rawId}`);
+  const [ctx, locale] = await Promise.all([requireDataCtx(`/staff/appeals/${rawId}`), getLocale()]);
 
   const thread = await getStaffAppealThread(dataDb, ctx, appealId);
   if (!thread) notFound();
   const { appeal, student, messages } = thread;
-  const badge = APPEAL_STATUS_BADGES[appeal.status];
+  const badge = appealStatusBadge(locale, appeal.status);
 
   return (
     <div>

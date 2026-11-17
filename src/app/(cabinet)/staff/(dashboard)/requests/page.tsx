@@ -19,6 +19,8 @@ import {
 } from '@/lib/staff-sla';
 import type { RequestStatus, RequestType } from '@/server/data/types';
 import { takeInProgressAction } from '@/server/actions/staff';
+import { transitionActionLabel } from '@/lib/staff-transitions';
+import { getLocale } from '@/lib/i18n/server';
 import { SectionTitle } from '@/components/shell/section-title';
 
 const DUE_OPTIONS: Array<{ value: QueueDueFilter; label: string }> = [
@@ -90,7 +92,7 @@ export default async function StaffQueuePage({
 }: {
   searchParams: Promise<{ type?: string; due?: string }>;
 }) {
-  const ctx = await requireDataCtx('/staff/requests');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/staff/requests'), getLocale()]);
   const params = (await searchParams) ?? {};
   const filters = { type: parseQueueTypeFilter(params.type), due: parseQueueDueFilter(params.due) };
   const now = new Date();
@@ -199,7 +201,7 @@ export default async function StaffQueuePage({
                               <span className="font-mono text-xs text-neutral-500">
                                 {request.number}
                               </span>
-                              <RequestStatusBadge status={request.status} />
+                              <RequestStatusBadge status={request.status} locale={locale} />
                               {slaChip(request, now)}
                             </div>
                             <Link
@@ -230,7 +232,7 @@ export default async function StaffQueuePage({
                                 type="submit"
                                 className="shrink-0 rounded-button bg-coral-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
                               >
-                                Взять в работу
+                                {transitionActionLabel(locale, 'IN_PROGRESS')}
                               </button>
                             </form>
                           )}
