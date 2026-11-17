@@ -14,6 +14,7 @@ import {
   Megaphone,
   MessagesSquare,
   MessageSquareHeart,
+  Rocket,
   Sparkles,
   UserRound,
   type LucideIcon,
@@ -34,6 +35,8 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   '/help': CircleHelp,
   // DIG-70 — «Справка»: детальный гайд «Как пользоваться кабинетом».
   '/guide': Compass,
+  // DIG-68 — каталог студенческих стартапов «МСП».
+  '/msp': Rocket,
   '/people': Contact,
   '/ai-assistant': Sparkles,
   '/profile': UserRound,
