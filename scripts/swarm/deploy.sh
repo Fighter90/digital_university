@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Deploy digital_university to the production server (ostrovok.store).
 # Requires: ssh key access to DIG_SERVER_HOST (root), rsync, docker on the server.
-# Env: DIG_SERVER_HOST (default 186.243.219.107), DIG_DEPLOY_KEY (~/.ssh/dig_deploy).
+# Env: DIG_SERVER_HOST (ОБЯЗАТЕЛЬНО, без дефолта — не публикуем инфраструктуру), DIG_SERVER_USER (default root), DIG_DEPLOY_KEY (~/.ssh/dig_deploy).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-HOST="${DIG_SERVER_HOST:-186.243.219.107}"
+if [ -z "${DIG_SERVER_HOST:-}" ]; then
+  echo "DIG_SERVER_HOST is not set — не публикуем адрес сервера в репозитории" >&2
+  exit 2
+fi
+HOST="${DIG_SERVER_HOST}"
 USER_="${DIG_SERVER_USER:-root}"
 KEY="${DIG_DEPLOY_KEY:-$HOME/.ssh/dig_deploy}"
 DIR="/opt/digital-university"

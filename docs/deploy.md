@@ -11,9 +11,9 @@
 | Параметр | Значение |
 |---|---|
 | Провайдер | Timeweb Cloud, VM «Digital University» (id 9566609) |
-| IP | 186.243.219.107 |
+| IP / хост | переменная окружения `DIG_SERVER_HOST` (не публикуется в репозитории) |
 | ОС | Ubuntu 26.04, 1 vCPU, 889 МБ RAM + **swap 2G** |
-| Доступ | `ssh -i ~/.ssh/dig_deploy root@186.243.219.107` (пароль как резерв) |
+| Доступ | `ssh -i ~/.ssh/dig_deploy $DIG_SERVER_USER@$DIG_SERVER_HOST` (пароль как резерв) |
 | Каталог | `/opt/digital-university` |
 | Стек | Docker 29 + Compose 2.40 |
 
@@ -21,8 +21,8 @@
 
 | Запись | Тип | Значение | TTL |
 |---|---|---|---|
-| ostrovok.store | A | 186.243.219.107 | 600 |
-| www.ostrovok.store | A | 186.243.219.107 | 600 |
+| ostrovok.store | A | $DIG_SERVER_HOST | 600 |
+| www.ostrovok.store | A | $DIG_SERVER_HOST | 600 |
 
 Управление: `PATCH/POST https://api.timeweb.cloud/api/v1/domains/ostrovok.store/dns-records`,
 токен в `TIMEWEB_API_KEY` (окружение). MX/TXT Timeweb не трогаем.
