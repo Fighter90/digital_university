@@ -8,30 +8,17 @@ import { useActionState, useState } from 'react';
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { signInAction, type SignInFormState } from '@/server/actions/auth';
 import { cn } from 'cn';
+import { TEST_ACCOUNTS } from './test-accounts';
 
 /**
  * Публичные (вымышленные по правилам AGENTS.md) демо-данные из
  * src/server/data/demo-seed.ts — чипы заполняют форму, чтобы жюри могло
  * войти одним кликом. Это НЕ секреты: пароли прототипа публичны by design.
  * DIG-50: логины/пароли едины для demo-набора DIG-12 и сида БД
- * (prisma/seed-data.ts) — одни и те же чипы работают и на memory-store,
- * и на prisma-проде (anna.smirnova / ilya.petrov / dean.kovaleva).
+ * (prisma/seed-data.ts). DIG-81 (BUG-07): канон «ФИО ↔ логины» живёт в
+ * ./test-accounts — его же импортирует тест согласованности сида.
  */
-export const TEST_ACCOUNTS = [
-  {
-    label: 'Анна Ковалёва · ПИ-21',
-    login: 'anna.smirnova',
-    password: 'anna-demo-2026',
-    role: 'STUDENT',
-  },
-  {
-    label: 'Илья Смирнов · ЭК-11',
-    login: 'ilya.petrov',
-    password: 'ilya-demo-2026',
-    role: 'STUDENT',
-  },
-  { label: 'Сотрудник деканата', login: 'dean.kovaleva', password: 'dean-demo-2026', role: 'STAFF' },
-] as const;
+export { TEST_ACCOUNTS };
 
 const FIELD_CLASS =
   'h-12 w-full rounded-button border border-input bg-card px-4 text-[15px] text-foreground placeholder:text-foreground-muted focus:border-muted-foreground/40 focus:outline-none';

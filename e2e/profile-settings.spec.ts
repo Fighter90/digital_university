@@ -44,10 +44,10 @@ test('profile: own data only, badge masked until «Показать», one error
   await expect(page.getByRole('heading', { level: 1, name: 'Профиль' })).toBeVisible();
 
   // Свои данные (Anna), а не Ильи.
-  await expect(page.getByText('Анна Ковалёва').first()).toBeVisible();
+  await expect(page.getByText('Анна Смирнова').first()).toBeVisible();
   await expect(page.getByText('ПИ-21').first()).toBeVisible();
   const body = await page.locator('main').innerText();
-  expect(body).not.toContain('Илья Смирнов');
+  expect(body).not.toContain('Илья Петров');
   expect(body).not.toContain('ЭК-11');
 
   // Зачётка маскирована, кнопка раскрывает и прячет значение.

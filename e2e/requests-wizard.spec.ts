@@ -42,13 +42,11 @@ test('заказ справки для военкомата: предвыбор 
   await expect(page.getByTestId('wizard-field-purpose')).toHaveValue('для военкомата');
   await page.getByTestId('wizard-destination').fill('Военкомат по месту учёбы');
   await page.getByTestId('wizard-comment').fill('Справка нужна для отсрочки');
-  await page
-    .getByTestId('wizard-files')
-    .setInputFiles({
-      name: 'заявление.pdf',
-      mimeType: 'application/pdf',
-      buffer: Buffer.from('demo-bytes'),
-    });
+  await page.getByTestId('wizard-files').setInputFiles({
+    name: 'заявление.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('demo-bytes'),
+  });
   await expect(page.getByTestId('wizard-files-list')).toContainText('заявление.pdf');
 
   await page.getByTestId('wizard-next').click();
@@ -59,7 +57,7 @@ test('заказ справки для военкомата: предвыбор 
   await expect(paramsSummary).toContainText('для военкомата');
   await expect(paramsSummary).toContainText('Военкомат по месту учёбы');
   await expect(paramsSummary).toContainText('PDF в кабинете');
-  await expect(page.getByTestId('wizard-summary-profile')).toContainText('Илья Смирнов');
+  await expect(page.getByTestId('wizard-summary-profile')).toContainText('Илья Петров');
 
   // Без согласия «Данные верны» отправка недоступна.
   await expect(page.getByTestId('wizard-submit')).toBeDisabled();

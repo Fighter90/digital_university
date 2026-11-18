@@ -133,7 +133,7 @@ test.describe('DIG-36: лента новостей', () => {
   test('страница новости: вложение и «Поделиться ссылкой»', async ({ page }) => {
     await signIn(page, ANNA.login, ANNA.password, '/news/retake-order');
     await expect(page.getByRole('heading', { level: 1, name: /порядок пересдач/i })).toBeVisible();
-    await expect(page.getByText('Мария Петрова').first()).toBeVisible();
+    await expect(page.getByText('Мария Ковалёва').first()).toBeVisible();
 
     const attachment = page.getByTestId('news-attachments').getByRole('link').first();
     await expect(attachment).toBeVisible();

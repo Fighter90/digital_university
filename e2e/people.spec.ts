@@ -75,7 +75,7 @@ test.describe('DIG-37: справочник людей', () => {
     const deaneryIds = await list
       .getByTestId(/^person-card-/)
       .evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
-    expect(deaneryIds).toContain('person-card-staff-petrova');
+    expect(deaneryIds).toContain('person-card-staff-kovaleva');
     expect(deaneryIds).not.toContain('person-card-staff-gavrilov');
 
     // «Ваш менеджер» у менеджера программы Анны.
@@ -205,14 +205,14 @@ test.describe('DIG-37: справочник людей', () => {
 
   test('переход из заявки к карточке сотрудника деканата', async ({ page }) => {
     await signIn(page, ANNA.login, ANNA.password, '/requests');
-    // Заявка Анны с историей, где действовала Мария Петрова.
+    // Заявка Анны с историей, где действовала Мария Ковалёва.
     await page.getByRole('link', { name: /Заявление на место в общежитии/ }).click();
     await expect(page).toHaveURL(/\/requests\//);
-    const actorLink = page.getByRole('link', { name: 'Мария Петрова' }).first();
+    const actorLink = page.getByRole('link', { name: 'Мария Ковалёва' }).first();
     await expect(actorLink).toBeVisible();
     await actorLink.click();
-    await expect(page).toHaveURL(/\/people\/staff-petrova$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Мария Петрова' })).toBeVisible();
+    await expect(page).toHaveURL(/\/people\/staff-kovaleva$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Мария Ковалёва' })).toBeVisible();
   });
 
   test('неизвестный человек отвечает 404', async ({ page }) => {

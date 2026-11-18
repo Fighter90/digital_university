@@ -11,7 +11,7 @@ const REQUEST_NUMBER_RE = /SR-\d{4}-[A-Z0-9]{5}/;
 /** Вход тестового студента через форму (единые демо-креды, DIG-50). */
 async function signIn(page: Page) {
   await page.goto('/login');
-  await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+  await page.getByRole('button', { name: 'Анна Смирнова · ПИ-21' }).click();
   await expect(page.getByLabel('Логин')).toHaveValue('anna.smirnova');
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });

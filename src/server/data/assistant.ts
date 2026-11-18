@@ -63,7 +63,7 @@ const ASSISTANT_ORDER_EVENT_MESSAGE = 'Заявка подана через AI-�
 
 // ── Контекст чата ───────────────────────────────────────────────────────────
 
-/** Первое слово ФИО: «Анна Ковалёва» → «Анна». */
+/** Первое слово ФИО: «Анна Смирнова» → «Анна». */
 function firstNameOf(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] ?? fullName;
 }

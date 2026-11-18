@@ -48,7 +48,7 @@ async function waitMobileHydrated(page: Page) {
 async function signIn(page: Page) {
   await expect(async () => {
     await page.goto('/login');
-    await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+    await page.getByRole('button', { name: 'Анна Смирнова · ПИ-21' }).click();
     await page.getByRole('button', { name: 'Войти', exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard$/, { timeout: 10_000 });
   }).toPass({ timeout: 60_000 });

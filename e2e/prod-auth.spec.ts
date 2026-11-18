@@ -69,7 +69,7 @@ test.describe('DIG-50: prod build on the prisma store — desktop-1440', () => {
       await page.keyboard.press('Enter');
       await expect(menu).toBeVisible();
     }).toPass({ timeout: 15000 });
-    await expect(menu).toContainText('Анна Ковалёва');
+    await expect(menu).toContainText('Анна Смирнова');
   });
 
   test('изоляция: сессия Ильи — не сессия Анны, чужой номер заявки даёт 404', async ({

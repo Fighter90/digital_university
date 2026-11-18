@@ -303,7 +303,7 @@ test.describe('DIG-60: полный обход сайта', () => {
 
     // Один вход на воркер: демо-креды сида (кнопка автозаполнения на /login).
     await userPage.goto('/login');
-    await userPage.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+    await userPage.getByRole('button', { name: 'Анна Смирнова · ПИ-21' }).click();
     await userPage.getByRole('button', { name: 'Войти', exact: true }).click();
     await userPage.waitForURL(/\/dashboard$/, { timeout: 30_000 });
   });

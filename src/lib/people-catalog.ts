@@ -139,12 +139,12 @@ export const PEOPLE: PersonEntry[] = [
 
   // ── Деканаты и службы (факультеты демо-набора: ИТ и ЭК) ─────────────────
   {
-    id: 'staff-petrova',
+    id: 'staff-kovaleva',
     kind: 'STAFF',
-    fullName: 'Мария Петрова',
+    fullName: 'Мария Ковалёва',
     position: 'Специалист деканата',
     department: 'Деканат факультета ИТ',
-    email: 'maria.petrova@example.edu',
+    email: 'maria.kovaleva@example.edu',
     phone: '+7 495 010-21-22',
     room: '214',
     consultationHours: 'Пн–Пт 09:00–17:00, каб. 214',

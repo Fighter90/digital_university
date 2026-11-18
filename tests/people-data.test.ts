@@ -22,7 +22,7 @@ const shift = (days: number, hour: number): Date => {
 const anna: StudentRow = {
   id: 'st-anna',
   login: 'anna.smirnova',
-  fullName: 'Анна Ковалёва',
+  fullName: 'Анна Смирнова',
   email: 'anna.kovaleva@example.edu',
   groupName: 'ПИ-21',
   course: 2,
@@ -151,7 +151,7 @@ describe('getPeopleDirectory — полный справочник', () => {
     const byId = new Map(data.people.map((p) => [p.id, p]));
     expect(byId.get('staff-belova')!.isMyManager).toBe(true);
     expect(byId.get('staff-romanova')!.isMyManager).toBe(false);
-    expect(byId.get('staff-petrova')!.isMyDeanery).toBe(true);
+    expect(byId.get('staff-kovaleva')!.isMyDeanery).toBe(true);
     expect(byId.get('staff-gavrilov')!.isMyDeanery).toBe(false);
     // Общие службы (без факультета) — не «мой деканат».
     expect(byId.get('staff-titova')!.isMyDeanery).toBe(false);
@@ -177,7 +177,7 @@ describe('getPeopleDirectory — полный справочник', () => {
       expect(person.myDisciplines).toEqual([]);
     }
     const byId = new Map(data.people.map((p) => [p.id, p]));
-    expect(byId.get('staff-petrova')!.isMyDeanery).toBe(true);
+    expect(byId.get('staff-kovaleva')!.isMyDeanery).toBe(true);
     expect(byId.get('staff-gavrilov')!.isMyDeanery).toBe(false);
   });
 
@@ -265,7 +265,7 @@ describe('getPersonCard — карточка человека', () => {
 
   it('сотрудник деканата: «его деканат» — по факультету сотрудника', async () => {
     const db = seedDb();
-    const petrova = await getPersonCard(db, deanCtx, 'staff-petrova');
+    const petrova = await getPersonCard(db, deanCtx, 'staff-kovaleva');
     expect(petrova!.isMyDeanery).toBe(true);
     const gavrilov = await getPersonCard(db, deanCtx, 'staff-gavrilov');
     expect(gavrilov!.isMyDeanery).toBe(false);

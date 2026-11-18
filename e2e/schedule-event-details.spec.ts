@@ -14,7 +14,7 @@ import { test as base, expect, type Page } from '@playwright/test';
 // удаление), «Добавить в календарь» (.ics), «Спросить AI об этой паре».
 
 /**
- * Вход тестового студента (Анна Ковалёва · ПИ-21). Один заход на воркер
+ * Вход тестового студента (Анна Смирнова · ПИ-21). Один заход на воркер
  * (см. фикстуру storageState ниже): per-IP rate limiter входа на сервере —
  * 30 попыток / 15 минут с одного IP, а параллельные воркеры долбят логин
  * с одного localhost. Проштучный вход каждого теста с toPass-повторами
@@ -24,7 +24,7 @@ import { test as base, expect, type Page } from '@playwright/test';
 async function signIn(page: Page) {
   await expect(async () => {
     await page.goto('/login');
-    await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+    await page.getByRole('button', { name: 'Анна Смирнова · ПИ-21' }).click();
     await page.getByRole('button', { name: 'Войти', exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard$/, { timeout: 10_000 });
   }).toPass({
@@ -96,7 +96,7 @@ test.describe('desktop 1440 — панель из вида «Неделя»', ()
     await expect(dialog).toContainText('Было: ауд. 214, 12:00');
     await expect(dialog).toContainText('Стало: ауд. 305, 12:00');
     await expect(dialog).toContainText('Причина: Аудитория 214 занята факультетским мероприятием');
-    await expect(dialog).toContainText('Изменил(а): Мария Петрова (деканат)');
+    await expect(dialog).toContainText('Изменил(а): Мария Ковалёва (деканат)');
     // аудитория и корпус с «Как пройти»
     await expect(dialog).toContainText('ауд. 305');
     await expect(dialog).toContainText('Главный корпус');
