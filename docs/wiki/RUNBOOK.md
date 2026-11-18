@@ -16,7 +16,7 @@ curl https://ostrovok.store/api/health   # {"ok":true,"authStore":"prisma"}
 
 ## Секреты сервера (/opt/digital-university/.env, chmod 600)
 > Адрес сервера и ключи не публикуются в репозитории: экспортируйте `DIG_SERVER_HOST` / `DIG_SERVER_USER` / держите ключ `~/.ssh/dig_deploy` вне git.
-- `DATABASE_URL=postgresql://university:seedpass@db:5432/university`
+- `DATABASE_URL=postgresql://university:<db-password>@db:5432/university` — значение пароля только в серверном `.env` (в репозитории не публикуется; Postgres не проброшен наружу — доступ только внутри docker-сети)
 - `AUTH_SECRET` — HMAC role-hint. **Без него staff получает 403 (fail-closed)!**
 - `OPENROUTER_API_KEY` — плавающий AI-ассистент (RAG по справке).
 
