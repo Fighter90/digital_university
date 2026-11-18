@@ -22,6 +22,8 @@ export const ru = {
   'menu.guide': 'Справка',
   'menu.people': 'Справочник',
   'menu.aiAssistant': 'AI-ассистент',
+  // DIG-73 — страница документации MCP.
+  'menu.mcp': 'Подключить ассистента (MCP)',
   'menu.profile': 'Профиль',
   'menu.settings': 'Настройки',
   'menu.more': 'Ещё',
@@ -44,6 +46,8 @@ export const ru = {
   'title.feedback': 'Обратная связь руководству',
   'title.help': 'Вопросы и ответы',
   'title.guide': 'Как пользоваться кабинетом',
+  // DIG-73 — страница документации MCP.
+  'title.mcp': 'Подключение ассистента (MCP)',
   'title.people': 'Справочник',
   'title.profile': 'Профиль',
   'title.settings': 'Настройки',

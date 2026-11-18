@@ -84,9 +84,12 @@ export const MORE_SECTIONS: CabinetSection[] = [
   // DIG-68 — каталог студенческих стартапов «МСП» (/msp).
   { href: '/msp', label: 'МСП' },
   // DIG-43 — афиша мероприятий вуза и запись (/events).
-  { href: '/events', label: 'Мероприятия' },  // DIG-42 — «Дополнительное образование» (/dpo).
-  { href: '/dpo', label: 'Доп. образование' },  { href: '/people', label: 'Справочник' },
+  { href: '/events', label: 'Мероприятия' }, // DIG-42 — «Дополнительное образование» (/dpo).
+  { href: '/dpo', label: 'Доп. образование' },
+  { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
+  // DIG-73 — документация MCP: заметный вход на страницу-инструкцию /mcp.
+  { href: '/mcp', label: 'Подключить ассистента (MCP)' },
   { href: '/profile', label: 'Профиль' },
   { href: '/settings', label: 'Настройки' },
 ];

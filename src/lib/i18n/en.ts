@@ -23,6 +23,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'menu.guide': 'Guide',
   'menu.people': 'Directory',
   'menu.aiAssistant': 'AI assistant',
+  // DIG-73 — MCP documentation page.
+  'menu.mcp': 'Connect your assistant (MCP)',
   'menu.profile': 'Profile',
   'menu.settings': 'Settings',
   'menu.more': 'More',
@@ -45,6 +47,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'title.feedback': 'Feedback to the management',
   'title.help': 'FAQ',
   'title.guide': 'How to use the cabinet',
+  // DIG-73 — MCP documentation page.
+  'title.mcp': 'Connect your assistant (MCP)',
   'title.people': 'Directory',
   'title.profile': 'Profile',
   'title.settings': 'Settings',
