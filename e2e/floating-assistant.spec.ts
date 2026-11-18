@@ -91,7 +91,9 @@ test.describe('DIG-72: FAB и попап-чат — мобильный 360', () 
   test('на экране /ai-assistant FAB скрыт — вход не дублируется', async ({ page }) => {
     await signIn(page, '/ai-assistant');
     await expect(page).toHaveURL(/\/ai-assistant$/);
-    await expect(page.getByRole('button', { name: 'AI-ассистент' })).toHaveCount(0);
+    // Плавающая кнопка скрыта; остаётся только иконка AI в шапке (DIG-46).
+    await expect(page.locator('button[aria-label="AI-ассистент"].fixed')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'AI-ассистент' })).toHaveCount(1);
   });
 });
 
