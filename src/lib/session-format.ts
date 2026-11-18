@@ -2,6 +2,9 @@
 // сессия»). Чистые функции БЕЗ серверных импортов: сезон и диапазон сессии,
 // обратный отсчёт, причина недопуска, подписи и цвета статус-пилюль.
 // Словесные подписи обязательны: цвет — не единственный носитель смысла.
+// DIG-79 (BUG-02/12): настенные компоненты дат берутся в явной зоне
+// Europe/Moscow — сервер и браузер рендерят одинаковые строки (React #418).
+import { moscowParts, type MoscowParts } from '@/lib/schedule-time';
 import type { ExamKind } from '@/server/data/types';
 
 /** Статус контрольной на таймлайне сессии. */
@@ -21,10 +24,7 @@ export interface ExamStatusView {
 }
 
 /** Пилюля статуса по правилам макета: зелёный / красный / зелёный / янтарный. */
-export function examStatusView(
-  status: SessionExamStatus,
-  score: number | null,
-): ExamStatusView {
+export function examStatusView(status: SessionExamStatus, score: number | null): ExamStatusView {
   switch (status) {
     case 'ADMITTED':
       return { label: 'Допущен', badge: 'success' };
@@ -66,24 +66,24 @@ const MONTHS_GENITIVE = [
 
 /** «5 декабря» — дата контрольной на таймлайне. */
 export function formatSessionDate(date: Date): string {
-  return `${date.getDate()} ${MONTHS_GENITIVE[date.getMonth()]}`;
+  const p = moscowParts(date);
+  return `${p.day} ${MONTHS_GENITIVE[p.month - 1]}`;
 }
 
 /** «09:40» — время начала. */
 export function formatSessionTime(date: Date): string {
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
+  const p = moscowParts(date);
+  return `${pad2(p.hour)}:${pad2(p.minute)}`;
 }
 
 /**
- * Сезон сессии по месяцу первой контрольной: декабрь–февраль — «Зимняя
- * сессия», май–июнь — «Летняя сессия», остальное — просто «Сессия».
+ * Сезон сессии по московскому месяцу первой контрольной: декабрь–февраль —
+ * «Зимняя сессия», май–июнь — «Летняя сессия», остальное — просто «Сессия».
  */
 export function seasonTitleOf(firstExamDate: Date): string {
-  const month = firstExamDate.getMonth();
-  if (month === 11 || month === 0 || month === 1) return 'Зимняя сессия';
-  if (month === 4 || month === 5) return 'Летняя сессия';
+  const month = moscowParts(firstExamDate).month; // 1..12
+  if (month === 12 || month === 1 || month === 2) return 'Зимняя сессия';
+  if (month === 5 || month === 6) return 'Летняя сессия';
   return 'Сессия';
 }
 
@@ -92,28 +92,30 @@ export function seasonTitleOf(firstExamDate: Date): string {
  * «5 – 9 января»; одна дата — «22 декабря».
  */
 export function formatSessionRange(from: Date, to: Date): string {
-  const start = formatSessionDate(from);
-  if (sameDay(from, to)) return start;
-  if (from.getMonth() === to.getMonth() && from.getFullYear() === to.getFullYear()) {
-    return `${from.getDate()} – ${to.getDate()} ${MONTHS_GENITIVE[to.getMonth()]}`;
+  const a = moscowParts(from);
+  const start = `${a.day} ${MONTHS_GENITIVE[a.month - 1]}`;
+  const b = moscowParts(to);
+  if (sameMoscowDay(a, b)) return start;
+  if (a.month === b.month && a.year === b.year) {
+    return `${a.day} – ${b.day} ${MONTHS_GENITIVE[b.month - 1]}`;
   }
   return `${start} – ${formatSessionDate(to)}`;
 }
 
-const sameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
+const sameMoscowDay = (a: MoscowParts, b: MoscowParts) =>
+  a.year === b.year && a.month === b.month && a.day === b.day;
 
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+const pad2 = (n: number): string => String(n).padStart(2, '0');
+
+/** Номер московского календарного дня («дней от эпохи») — для разницы дней. */
+function moscowDayNumber(date: Date): number {
+  const p = moscowParts(date);
+  return Math.round(Date.UTC(p.year, p.month - 1, p.day) / 86_400_000);
 }
 
-/** Календарных дней до контрольной (отрицательное — дата прошла). */
+/** Календарных дней до контрольной по московскому календарю (отрицательное — дата прошла). */
 function calendarDaysLeft(date: Date, now: Date): number {
-  return Math.round((startOfDay(date).getTime() - startOfDay(now).getTime()) / 86_400_000);
+  return moscowDayNumber(date) - moscowDayNumber(now);
 }
 
 export interface ExamCountdown {

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowRight, DoorOpen, User } from 'lucide-react';
 
 import { formatSessionDate, formatSessionTime } from '@/lib/session-format';
+import { moscowParts } from '@/lib/schedule-time';
 import type { SessionExamItem } from '@/server/data/session';
 import { Badge } from '@/components/ui/badge';
 
@@ -27,7 +28,7 @@ export function ExamTimeline({ exams }: { exams: SessionExamItem[] }) {
           {/* Дата: крупный день + месяц (на мобильном — в строку с контентом). */}
           <div className="flex shrink-0 items-center gap-2 sm:w-16 sm:flex-col sm:items-center sm:gap-0 sm:pt-0.5">
             <span className="text-xl font-extrabold leading-none tracking-heading">
-              {exam.date.getDate()}
+              {moscowParts(exam.date).day}
             </span>
             <span className="text-xs text-muted-foreground">
               {formatSessionDate(exam.date).split(' ')[1]}

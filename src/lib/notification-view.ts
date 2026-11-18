@@ -2,6 +2,9 @@
 // по дням, формат времени и сериализация строки ленты. Модуль без React и без
 // серверных импортов (кроме type-only из слоя данных): одна и та же функция
 // работает на экране /notifications, в панели колокольчика и в юнит-тестах.
+// DIG-79 (BUG-02/12): HH:MM и календарные дни считаются в явной зоне
+// Europe/Moscow — SSR и гидрация рендерят одинаковые строки (React #418).
+import { moscowParts } from '@/lib/schedule-time';
 import type { NotificationRow, NotificationType } from '@/server/data/types';
 
 /** Панель колокольчика показывает последние 5 уведомлений (задача DIG-35). */
@@ -87,12 +90,15 @@ export interface NotificationDayGroup {
   items: NotificationFeedItem[];
 }
 
-const startOfDay = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+/** Номер московского календарного дня («дней от эпохи») — для разницы дней. */
+function moscowDayNumber(date: Date): number {
+  const p = moscowParts(date);
+  return Math.round(Date.UTC(p.year, p.month - 1, p.day) / 86_400_000);
+}
 
-/** Сколько КАЛЕНДАРНЫХ дней прошло с `from` до `to` (может быть 0 и отрицательным). */
+/** Сколько КАЛЕНДАРНЫХ дней прошло с `from` до `to` по Москве (может быть 0 и отрицательным). */
 function calendarDaysBetween(from: Date, to: Date): number {
-  const diff = startOfDay(to).getTime() - startOfDay(from).getTime();
-  return Math.round(diff / 86_400_000);
+  return moscowDayNumber(to) - moscowDayNumber(from);
 }
 
 /**
@@ -126,12 +132,13 @@ export function groupNotificationsByDay(
   return groups.filter((g) => g.items.length > 0);
 }
 
-/** Время строки: сегодня и вчера — HH:MM, ранее — DD.MM. */
+/** Время строки: сегодня и вчера — HH:MM, ранее — DD.MM (обе метки — по Москве). */
 export function formatNotificationTime(createdAt: string | Date, now: Date): string {
   const created = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
-  const hhmm = `${String(created.getHours()).padStart(2, '0')}:${String(created.getMinutes()).padStart(2, '0')}`;
+  const p = moscowParts(created);
+  const hhmm = `${pad2(p.hour)}:${pad2(p.minute)}`;
   if (calendarDaysBetween(created, now) <= 1) return hhmm;
-  const dd = String(created.getDate()).padStart(2, '0');
-  const mm = String(created.getMonth() + 1).padStart(2, '0');
-  return `${dd}.${mm}`;
+  return `${pad2(p.day)}.${pad2(p.month)}`;
 }
+
+const pad2 = (n: number): string => String(n).padStart(2, '0');
