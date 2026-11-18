@@ -52,7 +52,7 @@ Server action `askFloatingAssistant` вызывает OpenRouter chat-completion
 #### Scenario: Ключ только на сервере
 
 - WHEN выполняется сборка и grep по репозиторию
-- THEN ни одного значения ключа в коде нет (grep по префиксу `sk-or-` пуст),
+- THEN ни одного значения ключа в коде нет (grep репозитория по реальному префиксу ключей OpenRouter пуст),
   в `.env.example` — только имя переменной
 
 #### Scenario: Таймаут и без повторов

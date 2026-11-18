@@ -107,7 +107,7 @@ cat backup-YYYY-MM-DD.sql | ssh … "cd /opt/… && docker compose -f deploy/doc
 - Серверный `.env` chmod 600; никогда не rsync-те локальный `.env` на сервер (ключ `--exclude .env` обязателен).
 - `AUTH_SECRET` вращается стандартно: смена инвалидирует только role-hint куки (пользователи перелогинятся); session-токены не зависят от секрета.
 - Аудит отказов — таблица `AuditLog` (OWNERSHIP_DENIED / OUTSIDE_FACULTY / ROLE_MISMATCH / NOT_FOUND): просмотр аномалий — `SELECT reason, count(*) FROM "AuditLog" GROUP BY 1 ORDER BY 2 DESC LIMIT 10;`.
-- Ключи AI (`OPENROUTER_API_KEY`) не логируются; grep-аудит репозитория по `sk-or-` — пуст.
+- Ключи AI (`OPENROUTER_API_KEY`) не логируются; grep-аудит репозитория по реальному префиксу ключей OpenRouter — пуст.
 - Репозиторий: удаляйте смерженные ветки; SHA голов — в `docs/BRANCHES-ARCHIVE.md`.
 
 ## 7. Диагностика типовых инцидентов

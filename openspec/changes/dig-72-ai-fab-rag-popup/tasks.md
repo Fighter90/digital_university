@@ -32,4 +32,4 @@
 
 - [x] vitest (новые + регресс), lint, typecheck, gates
 - [x] e2e: floating-assistant, assistant, cabinet-shell, ai-guide — зелёные
-- [x] grep репозитория по `sk-or-` пуст; ключ только в env
+- [x] grep репозитория по реальному префиксу ключей OpenRouter пуст; ключ только в env

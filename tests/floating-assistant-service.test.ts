@@ -14,7 +14,8 @@ import {
 } from '@/server/ai/floating-assistant';
 import { FLOATING_SYSTEM_PROMPT } from '@/lib/floating-assistant-knowledge';
 
-// Ключ-заглушка без префикса реальных ключей (в репо grep по 'sk-or-' пуст).
+// Ключ-заглушка без префикса реальных ключей OpenRouter (grep репозитория
+// по реальному префиксу пуст — проверяет security-гейт).
 const KEY = 'test-openrouter-key-not-real';
 
 function completion(answer: string): Response {
