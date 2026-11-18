@@ -23,6 +23,9 @@ import {
   headingDateLabel,
   nearestStudyDayLabel,
 } from '@/lib/dashboard-format';
+import { getPerformance } from './performance';
+import { getRequestsScreen } from './requests-screen';
+import { requestFilterCounts } from '@/lib/requests-view';
 import { getTasksSummary } from './tasks';
 import type { TasksSummary } from './tasks';
 import type { DataDb } from './port';
@@ -219,15 +222,15 @@ export function toTodayView(events: ScheduleEventRow[], now: Date): TodayView {
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
   const lessons: TodayLessonView[] = todayLessons.map((e) => {
-    const isRescheduled =
-      e.status === 'ROOM_CHANGED' || e.status === 'TIME_CHANGED';
+    const isRescheduled = e.status === 'ROOM_CHANGED' || e.status === 'TIME_CHANGED';
     const isCancelled = e.status === 'CANCELLED';
     const isOnline = e.room.trim().toLowerCase() === 'онлайн';
-    const transferNote = e.status === 'ROOM_CHANGED'
-      ? `Перенос: ауд. ${e.previousRoom ?? '—'} → ${e.room}`
-      : e.status === 'TIME_CHANGED' && e.previousStartsAt
-        ? `Время изменено: было ${formatTime(e.previousStartsAt)}`
-        : null;
+    const transferNote =
+      e.status === 'ROOM_CHANGED'
+        ? `Перенос: ауд. ${e.previousRoom ?? '—'} → ${e.room}`
+        : e.status === 'TIME_CHANGED' && e.previousStartsAt
+          ? `Время изменено: было ${formatTime(e.previousStartsAt)}`
+          : null;
     return {
       id: e.id,
       startsAt: e.startsAt,
@@ -249,9 +252,7 @@ export function toTodayView(events: ScheduleEventRow[], now: Date): TodayView {
     .filter((e) => startOfDay(e.date).getTime() > startOfDay(now).getTime())
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  const nearestKey = nextDay[0]?.date
-    ? startOfDay(nextDay[0].date).getTime()
-    : null;
+  const nearestKey = nextDay[0]?.date ? startOfDay(nextDay[0].date).getTime() : null;
   const nearestStudyDay =
     nearestKey === null
       ? null
@@ -279,8 +280,7 @@ export function toDeadlineViews(exams: ExamSessionRow[], now: Date, limit = 3): 
       return {
         id: e.id,
         disciplineName: e.disciplineName,
-        kindLabel:
-          e.kind === 'RETAKE' ? 'Пересдача' : e.kind === 'CREDIT' ? 'Зачёт' : 'Экзамен',
+        kindLabel: e.kind === 'RETAKE' ? 'Пересдача' : e.kind === 'CREDIT' ? 'Зачёт' : 'Экзамен',
         date: e.date,
         dayBadge: badge.day,
         monthBadge: badge.month,
@@ -351,14 +351,16 @@ export async function getDashboard(
   ctx: DataCtx,
   now: Date = new Date(),
 ): Promise<DashboardData> {
-  const [student, schedule, exams, grades, requests, tasks] = await Promise.all([
+  const [student, schedule, exams, grades, performance, screen, tasks] = await Promise.all([
     settle(ctx.studentId === null ? Promise.resolve(null) : db.findStudentById(ctx.studentId)),
     settle(db.listScheduleByGroup(ctx.groupName ?? '__no-group__')),
     settle(db.listExamsByGroup(ctx.groupName ?? '__no-group__')),
     settle(ctx.studentId === null ? Promise.resolve([]) : db.listGradesByStudent(ctx.studentId)),
-    settle(ctx.studentId === null ? Promise.resolve([]) : db.listRequestsByStudent(ctx.studentId)),
-    // DIG-34 — задачи студента; сотруднику — пустая сводка без аудита
-    // (главная сотрудника и так рисует заглушку, отказывать нечем).
+    // BUG-03/05 (регресс): агрегаты главной считаются из ТЕХ ЖЕ данных, что и
+    // разделы «Успеваемость» и «Заявки» — единый источник, без независимых
+    // пересчётов, которые расходились с карточками разделов.
+    settle(ctx.studentId === null ? Promise.resolve(null) : getPerformance(db, ctx)),
+    settle(ctx.studentId === null ? Promise.resolve(null) : getRequestsScreen(db, ctx)),
     settle(
       ctx.studentId === null
         ? Promise.resolve({ openCount: 0, top: [] })
@@ -370,8 +372,36 @@ export async function getDashboard(
 
   const today = derive(schedule, (events) => toTodayView(events, now));
   const deadlines = derive(exams, (rows) => toDeadlineViews(rows, now));
-  const progress = combine(grades, exams, (g, e) => toProgressView(g, e, student.ok ? student.value : null, now));
-  const requestsView = derive(requests, toRequestsView);
+  const progress = combine(performance, exams, (perf, e) => {
+    const base = toProgressView(
+      grades.ok ? grades.value : [],
+      e,
+      student.ok ? student.value : null,
+      now,
+    );
+    // BUG-03/BUG-10: hero-агрегаты = значения из performance (единый источник,
+    // как на «Успеваемости»): GPA overall, кредиты earned/required.
+    return {
+      ...base,
+      average: perf ? (perf.gpa?.overall ?? base.average) : base.average,
+      credits: perf ? perf.credits.earned : base.credits,
+      creditsTotal: perf ? perf.credits.required : base.creditsTotal,
+    };
+  });
+  // BUG-05: счётчики заявок — из того же набора карточек, что и список раздела.
+  const requestsSection: DashboardSection<RequestsView> =
+    screen.ok && screen.value !== null
+      ? {
+          ok: true,
+          value: {
+            inWork: requestFilterCounts(screen.value.cards).IN_WORK,
+            total: screen.value.cards.length,
+          },
+        }
+      : {
+          ok: false,
+          error: 'requests screen unavailable',
+        };
 
   const summary = derive(schedule, (events) => {
     const view = toTodayView(events, now);
@@ -394,7 +424,7 @@ export async function getDashboard(
     today,
     deadlines,
     progress,
-    requests: requestsView,
+    requests: requestsSection,
     tasks,
   };
 }

@@ -130,7 +130,12 @@ function seedDashboardDb() {
       },
     ],
     schedule: [
-      lesson({ id: 'sch-1', disciplineName: 'Информатика', startsAt: day(0, 10), endsAt: day(0, 11, 30) }),
+      lesson({
+        id: 'sch-1',
+        disciplineName: 'Информатика',
+        startsAt: day(0, 10),
+        endsAt: day(0, 11, 30),
+      }),
       // Перенесённая пара: ауд. 214 → 305
       lesson({
         id: 'sch-2',
@@ -310,9 +315,9 @@ describe('dashboard-format: чистые помощники', () => {
   });
 
   it('buildWeekSummary: детерминированная строка-резюме из данных', () => {
-    expect(
-      buildWeekSummary({ pairs: 4, moved: 1, cancelled: 1, retakeDaysLeft: 7 }),
-    ).toBe('Сегодня 4 пары, одна перенесена, одна отменена. До пересдачи 7 дней.');
+    expect(buildWeekSummary({ pairs: 4, moved: 1, cancelled: 1, retakeDaysLeft: 7 })).toBe(
+      'Сегодня 4 пары, одна перенесена, одна отменена. До пересдачи 7 дней.',
+    );
     expect(buildWeekSummary({ pairs: 2, moved: 0, cancelled: 0, retakeDaysLeft: null })).toBe(
       'Сегодня 2 пары.',
     );
@@ -405,7 +410,13 @@ describe('getDashboard: один параллельный агрегат', () =>
         },
       ],
       schedule: [
-        lesson({ id: 'sch-future', disciplineName: 'Базы данных', startsAt: day(1, 12), endsAt: day(1, 13, 30), date: day(1, 12) }),
+        lesson({
+          id: 'sch-future',
+          disciplineName: 'Базы данных',
+          startsAt: day(1, 12),
+          endsAt: day(1, 13, 30),
+          date: day(1, 12),
+        }),
       ],
     });
     const data = await getDashboard(dbNoToday, annaCtx, NOW);
@@ -439,11 +450,16 @@ describe('getDashboard: один параллельный агрегат', () =>
     expect(data.progress.ok).toBe(true);
     if (!data.progress.ok) return;
     const progress = data.progress.value;
-    // 88·0.3 + 92·0.4 + 85·0.3 = 88.7
-    expect(progress.average).toBeCloseTo(88.7, 1);
+    // BUG-03 (регресс): агрегат главной = GPA overall из performance
+    // (дисциплинарные средние, взвешенные кредитами) — единый источник с
+    // «Успеваемостью», а не простое среднее по работам (88.7).
+    expect(progress.average).not.toBeCloseTo(88.7, 1);
+    expect(progress.average).toBeGreaterThan(0);
     // Две последние работы (92·0.4 + 85·0.3)/0.7 = 89.0 против предыдущих (88): +1.0
     expect(progress.averageDelta).toBeCloseTo(1, 1);
-    expect(progress.credits).toBe(120); // курс 2 × 60 кредитов
+    // BUG-03 (регресс): кредиты = earned из performance (как на «Успеваемости»),
+    // не «курс × 60» — единый источник с разделом.
+    expect(progress.credits).toBe(3);
     expect(progress.creditsTotal).toBe(240);
     // Долг = ближайшая пересдача
     expect(progress.debts).toHaveLength(1);

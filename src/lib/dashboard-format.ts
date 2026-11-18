@@ -15,11 +15,20 @@ export function pluralRu(count: number, forms: readonly [string, string, string]
   return forms[2];
 }
 
+const TZ = 'Europe/Moscow';
+
+/** Час суток по московскому времени (независимо от TZ сервера/браузера). */
+function moscowHour(now: Date): number {
+  return Number(
+    new Intl.DateTimeFormat('ru-RU', { timeZone: TZ, hour: 'numeric', hour12: false }).format(now),
+  );
+}
+
 const PAIR_FORMS = ['пара', 'пары', 'пар'] as const;
 const DAY_FORMS = ['день', 'дня', 'дней'] as const;
 
 export function greetingFor(now: Date): string {
-  const hour = now.getHours();
+  const hour = moscowHour(now);
   if (hour < 5) return 'Доброй ночи';
   if (hour < 12) return 'Доброе утро';
   if (hour < 18) return 'Добрый день';
@@ -27,6 +36,7 @@ export function greetingFor(now: Date): string {
 }
 
 const headingFormatter = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TZ,
   weekday: 'long',
   day: 'numeric',
   month: 'long',
@@ -43,6 +53,7 @@ export function weekHeading(now: Date): string {
 }
 
 const weekdayDateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TZ,
   weekday: 'long',
   day: 'numeric',
   month: 'long',
@@ -54,6 +65,7 @@ export function nearestStudyDayLabel(date: Date): string {
 }
 
 const longDateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TZ,
   day: 'numeric',
   month: 'long',
 });
@@ -64,6 +76,7 @@ export function formatLongDate(date: Date): string {
 }
 
 const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TZ,
   hour: '2-digit',
   minute: '2-digit',
 });
@@ -78,8 +91,14 @@ export function formatTimeRange(startsAt: Date, endsAt: Date): string {
   return `${timeFormatter.format(startsAt)}–${timeFormatter.format(endsAt)}`;
 }
 
-const dayFormatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric' });
-const shortMonthFormatter = new Intl.DateTimeFormat('ru-RU', { month: 'short' });
+const dayFormatter = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TZ,
+  day: 'numeric',
+});
+const shortMonthFormatter = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: TZ,
+  month: 'short',
+});
 
 /** Бейдж дедлайна: { day: '18', month: 'нояб.' }. */
 export function formatDateBadge(date: Date): { day: string; month: string } {
@@ -126,8 +145,7 @@ export function buildWeekSummary({
   cancelled,
   retakeDaysLeft,
 }: WeekSummaryInput): string {
-  let base =
-    pairs === 0 ? 'Сегодня пар нет' : `Сегодня ${pairs} ${pluralRu(pairs, PAIR_FORMS)}`;
+  let base = pairs === 0 ? 'Сегодня пар нет' : `Сегодня ${pairs} ${pluralRu(pairs, PAIR_FORMS)}`;
   if (moved === 1) base += ', одна перенесена';
   if (moved > 1) base += `, перенесено пар: ${moved}`;
   if (cancelled === 1) base += ', одна отменена';

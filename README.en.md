@@ -26,7 +26,7 @@ https://ostrovok.store — Timeweb Cloud VM + Docker Compose + Caddy (auto-TLS).
 
 | Section | Audience |
 |---|---|
-| [`docs/help.md`](docs/help.md) | Student: sign-in, schedule, grades, requests, notifications, QR certificates |
+| [`docs/help.md`](docs/help.md) | Student: sign-in, schedule, grades, requests, notifications, verifiable certificates |
 | [`docs/assistant.md`](docs/assistant.md) | Digital assistant: capabilities, example queries, limitations, MCP integrations |
 | [`docs/architecture.md`](docs/architecture.md) | Developer: Next.js 15, Prisma, data layers, DB schema |
 | [`docs/security.md`](docs/security.md) | Security in plain words: IDOR, passwords, keys |
@@ -102,7 +102,7 @@ docker compose -f deploy/docker-compose.yml --profile tools up --build
 
 | Login | Password | Who |
 |---|---|---|
-| `anna.smirnova` | `anna-demo-2026` | Anna Smirnova, 2nd-year CS student |
+| `anna.smirnova` | `anna-demo-2026` | Anna Kovaleva, 2nd-year CS student |
 | `ilya.petrov` | `ilya-demo-2026` | Ilya Petrov, student with debts and retakes |
 | `dean.kovaleva` | `dean-demo-2026` | Deanery staff member (staff cabinet `/staff`) |
 

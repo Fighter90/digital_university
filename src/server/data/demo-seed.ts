@@ -48,10 +48,11 @@ import type {
   MspVoteRow,
   /** DIG-43 — мероприятия вуза и запись (/events). */
   EventRegistrationRow,
-  EventRow,  /** DIG-42 — «Дополнительное образование» (/dpo). */
+  EventRow /** DIG-42 — «Дополнительное образование» (/dpo). */,
   DpoDocumentRow,
   DpoEnrollmentRow,
-  DpoProgramRow,} from './types';
+  DpoProgramRow,
+} from './types';
 import { newMspSlug } from './msp-slug';
 export const DEMO_PASSWORDS = {
   'anna.smirnova': 'anna-demo-2026',
@@ -108,6 +109,49 @@ const students: StudentRow[] = [
     studyForm: 'очная',
     funding: 'контракт',
     gradebookNumber: '20254567',
+  },
+  // BUG-11 (регресс): группа ЭК-11 не должна быть вырожденной — рейтинг «1 из 1»
+  {
+    id: 'st-ek11-a',
+    login: 'ek11.orlova',
+    fullName: 'Дарья Орлова',
+    email: 'd.orlova@example.edu',
+    groupName: 'ЭК-11',
+    course: 1,
+    faculty: 'ЭК',
+    program: 'Экономика',
+    programCode: '38.03.01',
+    studyForm: 'очная',
+    funding: 'бюджет',
+    gradebookNumber: '20255101',
+  },
+  {
+    id: 'st-ek11-b',
+    login: 'ek11.beketov',
+    fullName: 'Артём Бекетов',
+    email: 'a.beketov@example.edu',
+    groupName: 'ЭК-11',
+    course: 1,
+    faculty: 'ЭК',
+    program: 'Экономика',
+    programCode: '38.03.01',
+    studyForm: 'очная',
+    funding: 'контракт',
+    gradebookNumber: '20255102',
+  },
+  {
+    id: 'st-ek11-c',
+    login: 'ek11.tsareva',
+    fullName: 'Полина Царёва',
+    email: 'p.tsareva@example.edu',
+    groupName: 'ЭК-11',
+    course: 1,
+    faculty: 'ЭК',
+    program: 'Экономика',
+    programCode: '38.03.01',
+    studyForm: 'очная',
+    funding: 'бюджет',
+    gradebookNumber: '20255103',
   },
 ];
 
@@ -764,7 +808,7 @@ const notifications: NotificationRow[] = [
     studentId: 'st-anna',
     type: 'SCHEDULE',
     title: 'Пара «Базы данных» перенесена в ауд. Б-204',
-    body: 'Сегодня практика «Базы данных» в 12:00 пройдёт в Б-204 вместо А-312 (замена от деканата).',
+    body: 'Практика «Базы данных» 20 ноября перенесена на 17:00, ауд. 212 (замена от деканата).',
     isRead: false,
     createdAt: day(0, 8, 5),
     link: '/schedule',
@@ -776,7 +820,7 @@ const notifications: NotificationRow[] = [
     studentId: 'st-anna',
     type: 'REQUEST',
     title: 'Справка для военкомата готова',
-    body: 'Справка оформлена: PDF с QR-кодом доступен в карточке заявки, забрать можно в каб. 214.',
+    body: 'Справка оформлена: PDF с кодом проверки доступен в карточке заявки, забрать можно в каб. 214.',
     isRead: false,
     createdAt: day(0, 10, 40),
     link: '/requests',
@@ -828,7 +872,7 @@ const notifications: NotificationRow[] = [
     studentId: 'st-anna',
     type: 'DEADLINE',
     title: 'Долг по коллоквиуму «Информатика» — до начала сессии',
-    body: 'Коллоквиум сдан на 3/10: до закрытия долга нет допуска к экзамену. Пересдача 21 декабря, ауд. А-401.',
+    body: 'Коллоквиум сдан на 3/10: до закрытия долга нет допуска к экзамену. Пересдача 25 ноября, каб. 305.',
     isRead: true,
     createdAt: day(-7, 10, 0),
     link: '/grades',
@@ -1672,7 +1716,7 @@ function buildEvents(): { events: EventRow[]; eventRegistrations: EventRegistrat
   return { events, eventRegistrations };
 }
 
-const { events, eventRegistrations } = buildEvents();// DIG-42 — «Дополнительное образование» (/dpo): 6 вымышленных программ
+const { events, eventRegistrations } = buildEvents(); // DIG-42 — «Дополнительное образование» (/dpo): 6 вымышленных программ
 // (названия обобщённые, никаких реальных провайдеров), 2 записи Анны с
 // демо-прогрессом (60 % и 10 %) и 3 её документа (договор, акт, сертификат).
 // Реальной зачисляемости и оплаты нет: «Записаться» только ставит строку
@@ -2482,10 +2526,11 @@ export async function seedDemoData(db: MemoryDataDb, authStore: AuthStore): Prom
     mspComments,
     // DIG-43 — афиша мероприятий вуза: 8 вымышленных событий и записи.
     events,
-    eventRegistrations,    // DIG-42 — «Дополнительное образование»: 6 программ, 2 записи, 3 документа.
+    eventRegistrations, // DIG-42 — «Дополнительное образование»: 6 программ, 2 записи, 3 документа.
     dpoPrograms,
     dpoEnrollments,
-    dpoDocuments,    exams,
+    dpoDocuments,
+    exams,
     settings,
     // DIG-25 — справочники успеваемости: дисциплины с кредитами и план контроля.
     disciplines: disciplineRows,

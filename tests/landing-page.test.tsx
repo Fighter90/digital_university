@@ -17,7 +17,14 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 
 import { ConceptBanner } from '@/components/concept-banner';
-import LandingPage from '@/app/page';
+import { LandingContent } from '@/components/landing/landing-content';
+
+// Лендинг читает локаль из cookies (du-locale) — в jsdom мокаем RU по умолчанию.
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(async () => ({
+    get: (name: string) => (name === 'du-locale' ? { name, value: 'ru' } : undefined),
+  })),
+}));
 import { Reveal } from '@/components/landing/reveal';
 
 afterEach(cleanup);
@@ -28,7 +35,7 @@ function renderLanding() {
   return render(
     <>
       <ConceptBanner />
-      <LandingPage />
+      <LandingContent locale="ru" />
     </>,
   );
 }
@@ -74,7 +81,7 @@ describe('LandingPage — 5 карточек преимуществ (DIG-57)', (
     { title: 'Расписание', hint: /пар|занят|недел/i },
     { title: 'Оценки', hint: /оценк|успева|балл/i },
     { title: 'Заявки', hint: /заявк|деканат|статус/i },
-    { title: 'Справки с QR', hint: /QR|справк/i },
+    { title: 'Справки с проверкой подлинности', hint: /QR|справк/i },
     { title: 'AI-ассистент', hint: /AI|вопрос|ассистент/i },
   ];
 
