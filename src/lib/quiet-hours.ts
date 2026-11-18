@@ -1,6 +1,9 @@
 // DIG-44 — тихие часы: окно времени, в котором уведомления в кабинете не
 // генерируются. Чистые функции (без React и серверных импортов) — окно
 // поддерживает переход через полночь (22:00 → 08:00).
+// DIG-79 (BUG-02/12): «сейчас» переводится в московскую минуту суток —
+// окно не съезжает на поясе сервера (в проде без TZ это был UTC).
+import { moscowParts } from '@/lib/schedule-time';
 
 export interface QuietHours {
   enabled: boolean;
@@ -35,7 +38,8 @@ function minutesOf(time: string): number {
  */
 export function isWithinQuietHours(quiet: QuietHours, now: Date): boolean {
   if (!quiet.enabled || !isValidQuietHours(quiet)) return false;
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const p = moscowParts(now);
+  const nowMinutes = p.hour * 60 + p.minute;
   const from = minutesOf(quiet.from);
   const to = minutesOf(quiet.to);
   if (from < to) return nowMinutes >= from && nowMinutes < to;

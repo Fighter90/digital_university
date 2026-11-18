@@ -7,8 +7,11 @@
 //  - экранирование \ ; , и переводов строк в текстовых значениях;
 //  - свёртка длинных строк: не длиннее 75 символов, продолжение — CRLF+пробел
 //    (развёртывание восстанавливает исходную строку);
-//  - плавающее локальное время (DTSTART без Z и без TZID) — события
-//    попадают в календарь в локальном часовом поясе подписчика.
+//  - плавающее локальное время (DTSTART без Z и без TZID) — настенные
+//    компоненты берутся в зоне Europe/Moscow (DIG-79, BUG-02/12): события
+//    попадают в календарь в московском времени независимо от пояса машины,
+//    где построен файл.
+import { moscowParts } from '@/lib/schedule-time';
 
 export interface IcsEventInput {
   /** Стабильный глобальный идентификатор события (UID обязателен). */
@@ -41,12 +44,12 @@ export function icsEscape(text: string): string {
     .replace(/\n/g, '\\n');
 }
 
-/** Плавающее локальное время: 20261222T100000. */
+/** Плавающее локальное время (Москва): 20261222T100000. */
 export function icsDateTime(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
+  const p = moscowParts(date);
   return (
-    `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}` +
-    `T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`
+    `${p.year}${pad(p.month)}${pad(p.day)}` + `T${pad(p.hour)}${pad(p.minute)}${pad(p.second)}`
   );
 }
 
