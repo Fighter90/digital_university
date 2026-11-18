@@ -349,12 +349,15 @@ describe('ответ-заявка', () => {
 });
 
 describe('ответ-FAQ', () => {
-  it('ссылка на статью FAQ про академический отпуск', () => {
+  it('ссылка на базу знаний (/help): карточка самодостаточна, ссылка не 404', () => {
     const reply = buildAssistantReply('Как оформить академический отпуск?', anna);
     const card = reply.cards[0]!;
     expect(card.type).toBe('faq');
     if (card.type !== 'faq') return;
-    expect(card.articleHref).toBe('/faq/akademicheskiy-otpusk');
+    // Регресс: карточка ссылалась на /faq/akademicheskiy-otpusk — маршрут
+    // удалён в DIG-38 (FAQ переехал в /help), клик по карточке давал 404.
+    // База знаний без отдельной статьи об отпуске — ведём в корень /help.
+    expect(card.articleHref).toBe('/help');
     expect(card.bullets.length).toBeGreaterThanOrEqual(3);
     expect(reply.sources).toEqual(['база знаний FAQ']);
   });
