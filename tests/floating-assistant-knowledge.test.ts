@@ -51,9 +51,11 @@ describe('retrieval (лексический скоринг)', () => {
     expect(top.some((c) => c.id === 'guide:schedule')).toBe(true);
   });
 
-  it('английский/латинский ключ MCP находит раздел про ICS и MCP', () => {
+  it('английский/латинский ключ MCP находит раздел про подключение ассистента', () => {
     const top = retrieveKnowledgeChunks('Как настроить MCP для своего ассистента?', 3);
-    expect(top.some((c) => c.id === 'guide:calendar')).toBe(true);
+    // DIG-73: у справки появился выделенный раздел «mcp» — он теперь лучший
+    // ответ на запрос про настройку MCP (раньше был только чанк guide:calendar).
+    expect(top.some((c) => c.id === 'guide:mcp')).toBe(true);
   });
 
   it('возвращает не больше лимита и только чанки со скором выше нуля', () => {

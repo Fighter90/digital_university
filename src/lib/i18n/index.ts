@@ -73,6 +73,8 @@ const TITLE_BY_HREF: readonly PrefixKey[] = [
   { href: '/feedback', key: 'title.feedback' },
   { href: '/help', key: 'title.help' },
   { href: '/guide', key: 'title.guide' },
+  // DIG-73 — страница документации MCP.
+  { href: '/mcp', key: 'title.mcp' },
   { href: '/people', key: 'title.people' },
   { href: '/profile', key: 'title.profile' },
   { href: '/settings', key: 'title.settings' },
@@ -97,6 +99,8 @@ const MENU_KEY_BY_HREF: readonly PrefixKey[] = [
   { href: '/feedback', key: 'menu.feedback' },
   { href: '/help', key: 'menu.help' },
   { href: '/guide', key: 'menu.guide' },
+  // DIG-73 — страница документации MCP.
+  { href: '/mcp', key: 'menu.mcp' },
   { href: '/people', key: 'menu.people' },
   { href: '/profile', key: 'menu.profile' },
   { href: '/settings', key: 'menu.settings' },
