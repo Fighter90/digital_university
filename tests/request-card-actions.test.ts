@@ -99,10 +99,10 @@ describe('sendRequestDocumentByEmail: отправка готового доку
   it('мгновенная READY: успех с email профиля и кабинетное уведомление', async () => {
     const certNumber = formatCanonicalRequestNumber(year, 1); // READY «для банка»
     const result = await sendRequestDocumentByEmail(db, anna, certNumber);
-    expect(result).toEqual({ ok: true, email: 'anna.kovaleva@example.edu' });
+    expect(result).toEqual({ ok: true, email: 'anna.smirnova@example.edu' });
 
     const notifications = await db.listNotificationsByStudent('st-anna');
-    const sent = notifications.find((n) => n.body.includes('anna.kovaleva@example.edu'));
+    const sent = notifications.find((n) => n.body.includes('anna.smirnova@example.edu'));
     expect(sent).toBeDefined();
     expect(sent!.body).toContain(certNumber);
     expect(sent!.link).toBe(`/requests/${certNumber}`);

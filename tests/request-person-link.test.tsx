@@ -73,7 +73,7 @@ function requestFixture(): ServiceRequestRow {
     type: 'CERTIFICATE',
     title: 'Справка об обучении',
     status: 'IN_PROGRESS',
-    assignee: 'Мария Петрова',
+    assignee: 'Мария Ковалёва',
     resultNote: null,
     createdAt: new Date(2026, 10, 10, 10, 0),
     updatedAt: new Date(2026, 10, 11, 12, 0),
@@ -87,22 +87,22 @@ describe('заявка → карточка человека (DIG-37)', () => {
       {
         id: 'evt-1',
         actorRole: 'STUDENT',
-        actorName: 'Анна Ковалёва',
+        actorName: 'Анна Смирнова',
         message: 'Заявка подана через личный кабинет',
         createdAt: new Date(2026, 10, 10, 10, 0),
       },
       {
         id: 'evt-2',
         actorRole: 'STAFF',
-        actorName: 'Мария Петрова',
+        actorName: 'Мария Ковалёва',
         message: 'Передано в деканат',
         createdAt: new Date(2026, 10, 11, 12, 0),
       },
     ];
 
     const html = await renderPage();
-    expect(html).toContain('href="/people/staff-petrova"');
-    expect(html).toContain('Мария Петрова');
+    expect(html).toContain('href="/people/staff-kovaleva"');
+    expect(html).toContain('Мария Ковалёва');
     // Имя студента — не ссылка на справочник сотрудников.
     expect(html).not.toContain('href="/people/st-anna"');
   });

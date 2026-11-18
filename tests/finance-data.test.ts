@@ -49,7 +49,7 @@ describe('getFinancePage: студент (DIG-41)', () => {
     const data = await getFinancePage(db, annaCtx);
 
     expect(data.student).not.toBeNull();
-    expect(data.student?.fullName).toBe('Анна Ковалёва');
+    expect(data.student?.fullName).toBe('Анна Смирнова');
     expect(data.student?.groupName).toBe('ПИ-21');
     expect(data.bundle).not.toBeNull();
     expect(data.bundle!.summary.isContract).toBe(false);
@@ -63,7 +63,7 @@ describe('getFinancePage: студент (DIG-41)', () => {
     const db = await seededDb();
     const data = await getFinancePage(db, ilyaCtx);
 
-    expect(data.student?.fullName).toBe('Илья Смирнов');
+    expect(data.student?.fullName).toBe('Илья Петров');
     expect(data.bundle!.summary.isContract).toBe(true);
     expect(data.bundle!.contract!.payments.length).toBeGreaterThanOrEqual(2);
     expect(data.bundle!.summary.debt).not.toBeNull();

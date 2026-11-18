@@ -124,7 +124,7 @@ const NEWS: NewsEntry[] = [
     group: 'ПИ-21',
     faculty: null,
     source: 'Деканат',
-    authorName: 'Мария Петрова',
+    authorName: 'Мария Ковалёва',
     publishedAt: date(12, 9),
     important: true,
     attachments: [
@@ -170,7 +170,7 @@ const NEWS: NewsEntry[] = [
     group: 'ПИ-21',
     faculty: null,
     source: 'Деканат',
-    authorName: 'Мария Петрова',
+    authorName: 'Мария Ковалёва',
     publishedAt: date(13, 10),
   },
   {
@@ -223,7 +223,7 @@ const NEWS: NewsEntry[] = [
     group: 'ЭК-11',
     faculty: null,
     source: 'Деканат',
-    authorName: 'Мария Петрова',
+    authorName: 'Мария Ковалёва',
     publishedAt: date(11, 9),
     important: true,
   },

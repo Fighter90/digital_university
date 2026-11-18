@@ -15,9 +15,9 @@ async function signIn(page: Page, chip: RegExp) {
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
 }
 
-const ANNA = /Анна Ковалёва · ПИ-21/;
+const ANNA = /Анна Смирнова · ПИ-21/;
 const STAFF = /Сотрудник деканата/;
-const DB_ROOM_TITLE = 'Пара «Базы данных» перенесена в ауд. Б-204';
+const DB_ROOM_TITLE = 'Пара «Программирование» перенесена в ауд. 305';
 const MILITARY_CERT_TITLE = 'Справка для военкомата готова';
 const DORM_PAYMENT_TITLE = 'Оплата за общежитие — до 25 ноября';
 

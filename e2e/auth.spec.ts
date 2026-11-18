@@ -45,8 +45,8 @@ test('wrong credentials report the uniform error without revealing the cause', a
 // собраны в desktop-серию (мобильный воркер идёт параллельно и пропускает
 // её), чтобы не уронить друг друга и соседние спеки.
 
-const ANNA_CHIP = 'Анна Ковалёва · ПИ-21';
-const ILYA_CHIP = 'Илья Смирнов · ЭК-11';
+const ANNA_CHIP = 'Анна Смирнова · ПИ-21';
+const ILYA_CHIP = 'Илья Петров · ЭК-11';
 const STAFF_CHIP = 'Сотрудник деканата';
 const SUBMIT = { name: 'Войти', exact: true } as const;
 

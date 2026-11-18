@@ -34,8 +34,8 @@ const ITEMS: NotificationFeedItem[] = [
   {
     id: 'n-1',
     type: 'SCHEDULE',
-    title: 'Пара «Базы данных» перенесена в ауд. Б-204',
-    body: 'Сегодня практика в 12:00 — Б-204 вместо А-312.',
+    title: 'Пара «Программирование» перенесена в ауд. 305',
+    body: 'Сегодня лаборатория в 12:00 — ауд. 305 вместо 214.',
     isRead: false,
     important: true,
     actionLabel: 'Открыть расписание',
@@ -68,7 +68,7 @@ const ITEMS: NotificationFeedItem[] = [
     id: 'n-4',
     type: 'NEWS',
     title: 'Открыта запись на консультации перед сессией',
-    body: 'Слоты с 18 декабря через «Связь с деканатом».',
+    body: 'Консультации уже в расписании группы, запись — через «Связь с деканатом».',
     isRead: true,
     important: false,
     actionLabel: null,
@@ -138,7 +138,7 @@ describe('NotificationsScreen — фильтры', () => {
     expect(screen.getByText('Оплата за общежитие — до 25 ноября')).toBeInTheDocument();
     expect(screen.queryByText('Справка для военкомата готова')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('Пара «Базы данных» перенесена в ауд. Б-204'),
+      screen.queryByText('Пара «Программирование» перенесена в ауд. 305'),
     ).not.toBeInTheDocument();
   });
 
@@ -154,7 +154,7 @@ describe('NotificationsScreen — фильтры', () => {
     render(<NotificationsScreen initialItems={ITEMS} />);
     fireEvent.click(screen.getByRole('button', { name: 'Учёба' }));
     expect(screen.getAllByTestId('notification-item')).toHaveLength(1);
-    expect(screen.getByText('Пара «Базы данных» перенесена в ауд. Б-204')).toBeInTheDocument();
+    expect(screen.getByText('Пара «Программирование» перенесена в ауд. 305')).toBeInTheDocument();
   });
 
   it('пустой результат фильтра виден, когда строк под фильтр нет', () => {

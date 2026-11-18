@@ -128,7 +128,7 @@ test('публичная страница /verify открывает ввод к
 test('«Отправить на email» фиксирует отправку на адрес профиля', async ({ page }) => {
   await signIn(page, 'ilya.petrov', 'ilya-demo-2026', `/requests/${ILYA_READY}`);
   await page.getByTestId('request-email-send').click();
-  await expect(page.getByTestId('request-email-success')).toContainText('ilya.smirnov@example.edu');
+  await expect(page.getByTestId('request-email-success')).toContainText('ilya.petrov@example.edu');
 });
 
 test('«Задать вопрос по заявке» создаёт обращение с номером', async ({ page }) => {

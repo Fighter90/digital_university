@@ -106,14 +106,14 @@ test.describe.serial('DIG-39: список и чат обращения (Анн�
     // Реплика менеджера: ФИО + подпись роли «Менеджер программы» + вложение.
     const staffMessage = message.filter({ hasText: 'Менеджер программы' });
     await expect(staffMessage).toHaveCount(1);
-    await expect(staffMessage).toContainText('Мария Петрова');
+    await expect(staffMessage).toContainText('Мария Ковалёва');
     await expect(staffMessage).toContainText('Заявление принято в работу');
     await expect(
       staffMessage.getByTestId('ticket-attachment').filter({ hasText: 'скан-заявления.pdf' }),
     ).toBeVisible();
     // Реплика студента: вложение и статус «Прочитано» (менеджер её видел).
     const studentMessage = message.filter({ hasText: 'справка-с-места-учёбы.pdf' });
-    await expect(studentMessage).toContainText('Анна Ковалёва');
+    await expect(studentMessage).toContainText('Анна Смирнова');
     await expect(studentMessage.getByTestId('message-read')).toHaveText('Прочитано');
 
     // Десктоп ≥1024 px: две панели — слева список обращений, справа чат.

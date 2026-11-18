@@ -9,7 +9,7 @@ import { expect, test, type Page } from '@playwright/test';
 /** Вход тестового студента через чип демо-аккаунта (см. e2e/cabinet-shell.spec.ts). */
 async function signIn(page: Page) {
   await page.goto('/login');
-  await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+  await page.getByRole('button', { name: 'Анна Смирнова · ПИ-21' }).click();
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 });
 }

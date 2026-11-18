@@ -27,7 +27,7 @@ test.beforeAll(async ({ browser }, workerInfo) => {
   // (поля пустые → «Войти» возвращает ошибку формы): ретраим весь сценарий.
   await expect(async () => {
     await page.goto('/login');
-    await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+    await page.getByRole('button', { name: 'Анна Смирнова · ПИ-21' }).click();
     await expect(page.getByLabel('Логин')).toHaveValue('anna.smirnova', { timeout: 3_000 });
     await page.getByRole('button', { name: 'Войти', exact: true }).click();
     await page.waitForURL(/\/dashboard$/, { timeout: 10_000 });
@@ -51,7 +51,7 @@ test.use({
 async function signIn(page: Page) {
   await page.goto('/dashboard');
   if (!page.url().includes('/login')) return;
-  await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+  await page.getByRole('button', { name: 'Анна Смирнова · ПИ-21' }).click();
   await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 }
