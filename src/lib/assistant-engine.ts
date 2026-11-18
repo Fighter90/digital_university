@@ -536,7 +536,7 @@ function faqReply(_question: string, ctx: AssistantContext): AssistantReply {
         type: 'faq',
         title: 'Как оформить академический отпуск',
         articleTitle: 'Академический отпуск: порядок оформления',
-        articleHref: '/faq/akademicheskiy-otpusk',
+        articleHref: '/help',
         bullets: [
           'Напишите заявление на академический отпуск в деканате (или в кабинете: «Заявки и справки»).',
           'Приложите документы-основания: по медицине — заключение ВКК, по призыву — повестка, по семье — подтверждающие документы.',

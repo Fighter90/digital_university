@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import os from 'node:os';
+import path from 'node:path';
 
 // DIG-72 — e2e «Плавающая кнопка AI-ассистента (FAB) с попап-чатом»
 // (чёрный ящик, приёмка задачи):
@@ -17,14 +19,22 @@ import { expect, test, type Page } from '@playwright/test';
 
 const ANNA = { login: 'anna.smirnova', password: 'anna-demo-2026' };
 
+// Машина под нагрузкой роя (параллельные executor'ы и сборки): логин и
+// первый рендер могут идти по 10+ секунд — дефолтные 30 c на тест мало.
+test.setTimeout(120_000);
+
 async function signIn(page: Page, target = '/dashboard') {
-  await page.goto(`/login?next=${encodeURIComponent(target)}`);
-  await page.getByLabel('Логин').fill(ANNA.login);
-  await page.getByLabel('Пароль', { exact: true }).fill(ANNA.password);
-  await page.getByRole('button', { name: 'Войти', exact: true }).click();
-  await page.waitForURL((u) => u.pathname === new URL(target, page.url()).pathname, {
-    timeout: 15_000,
-  });
+  // Свежий сервер отдаёт страницу медленно: «Войти» может отправиться до
+  // гидрации React (server action не привязан) — ретраим весь сценарий.
+  await expect(async () => {
+    await page.goto(`/login?next=${encodeURIComponent(target)}`);
+    await page.getByLabel('Логин').fill(ANNA.login);
+    await page.getByLabel('Пароль', { exact: true }).fill(ANNA.password);
+    await page.getByRole('button', { name: 'Войти', exact: true }).click();
+    await page.waitForURL((u) => u.pathname === new URL(target, page.url()).pathname, {
+      timeout: 10_000,
+    });
+  }).toPass({ timeout: 60_000 });
 }
 
 test.describe('DIG-72: FAB и попап-чат — мобильный 360', () => {
@@ -91,7 +101,9 @@ test.describe('DIG-72: FAB и попап-чат — мобильный 360', () 
   test('на экране /ai-assistant FAB скрыт — вход не дублируется', async ({ page }) => {
     await signIn(page, '/ai-assistant');
     await expect(page).toHaveURL(/\/ai-assistant$/);
-    await expect(page.getByRole('button', { name: 'AI-ассистент' })).toHaveCount(0);
+    // Плавающая кнопка скрыта; остаётся только иконка AI в шапке (DIG-46).
+    await expect(page.locator('button[aria-label="AI-ассистент"].fixed')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'AI-ассистент' })).toHaveCount(1);
   });
 });
 

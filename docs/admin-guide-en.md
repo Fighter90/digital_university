@@ -107,7 +107,7 @@ Recovered from this guide (section 1.1): `AUTH_SECRET` — `openssl rand -base64
 - Server `.env` chmod 600; never rsync a local `.env` to the server (the `--exclude .env` flag is mandatory).
 - `AUTH_SECRET` rotation: changing it invalidates only role-hint cookies (users re-login); session tokens do not depend on the secret.
 - Denial audit — the `AuditLog` table: `SELECT reason, count(*) FROM "AuditLog" GROUP BY 1 ORDER BY 2 DESC LIMIT 10;` to spot anomalies.
-- AI keys (`OPENROUTER_API_KEY`) are never logged; the repo grep audit for `sk-or-` is empty.
+- AI keys (`OPENROUTER_API_KEY`) are never logged; the repo grep audit for the real OpenRouter key prefix is empty.
 - Repository hygiene: delete merged branches; the branch-head SHAs live in `docs/BRANCHES-ARCHIVE.md`.
 
 ## 7. Typical incident diagnostics

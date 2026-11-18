@@ -77,8 +77,9 @@ export async function signInAction(
     jar.set(buildClearedRoleHintCookie());
   }
 
-  // Роль определяет дефолтный лендинг: сотрудник — сразу в кабинет деканата.
-  const fallback = result.user.role === 'STAFF' ? '/dashboard' : '/staff';
+  // Роль определяет дефолтный лендинг: студент — в кабинет, сотрудник —
+  // сразу в кабинет деканата (регресс 63db150: ветки invertировались).
+  const fallback = result.user.role === 'STAFF' ? '/staff' : '/dashboard';
   redirect(safeNextPath(String(formData.get('next') ?? '')) ?? fallback);
 }
 

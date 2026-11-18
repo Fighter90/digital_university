@@ -23,10 +23,15 @@ let workerStorageState: string | undefined;
 test.beforeAll(async ({ browser }, workerInfo) => {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto('/login');
-  await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
-  await page.getByRole('button', { name: 'Войти', exact: true }).click();
-  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
+  // Свежий сервер отвечает медленно, чип может кликнуться до гидрации React
+  // (поля пустые → «Войти» возвращает ошибку формы): ретраим весь сценарий.
+  await expect(async () => {
+    await page.goto('/login');
+    await page.getByRole('button', { name: 'Анна Ковалёва · ПИ-21' }).click();
+    await expect(page.getByLabel('Логин')).toHaveValue('anna.smirnova', { timeout: 3_000 });
+    await page.getByRole('button', { name: 'Войти', exact: true }).click();
+    await page.waitForURL(/\/dashboard$/, { timeout: 10_000 });
+  }).toPass({ timeout: 60_000 });
   workerStorageState = path.join(
     os.tmpdir(),
     `dig46-auth-${workerInfo.project.name}-${workerInfo.workerIndex}.json`,
