@@ -149,9 +149,10 @@ test.describe('DIG-62: AI-гид по кабинету', () => {
     test.skip(testInfo.project.name !== 'mobile-360', 'mobile-360 only');
     await signIn(page);
 
-    // Плавающая кнопка — единственная «AI-ассистент»-ссылка с fixed-позиционированием
-    // (в шапке есть одноимённая иконка-ссылка, это не она).
-    const fab = page.locator('a[href="/ai-assistant"].fixed');
+    // Плавающая кнопка — единственная «AI-ассистент»-кнопка с fixed-
+    // позиционированием (в шапке есть одноимённая иконка, это не она).
+    // DIG-46: кнопка (не ссылка) открывает ассистента; DIG-72 — попап-чат.
+    const fab = page.getByRole('button', { name: 'AI-ассистент' }).last();
     await expect(fab).toBeVisible();
     const overlaps = async (
       a: { x: number; y: number; width: number; height: number },

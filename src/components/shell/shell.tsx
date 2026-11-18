@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import type { ShellUser } from '@/lib/user';
 import type { NotificationFeedItem } from '@/lib/notification-view';
 import { t, type Locale } from '@/lib/i18n';
@@ -11,6 +12,7 @@ import { AiFab } from './ai-fab';
 import { AiGuide } from './ai-guide';
 import { SearchPalette } from './search-palette';
 import { AssistantPanel } from '@/components/assistant/assistant-panel';
+import { FloatingAssistantPopup } from '@/components/assistant/floating-assistant-popup';
 
 type ShellProps = {
   user: ShellUser;
@@ -28,8 +30,11 @@ type ShellProps = {
 // Десктоп: верхняя панель + меню 212 px. Планшет: иконочный рельс.
 // Мобильный (<768): таб-бар + плавающая AI-кнопка. Первая таб-стоп —
 // skip-link «К содержимому» (доступность с клавиатуры).
-// DIG-46: AI-кнопки (плавающая и в шапке) открывают выезжающую панель
-// ассистента на любом экране; полный экран раздела — /ai-assistant.
+// DIG-46: кнопка AI в шапке открывает выезжающую панель ассистента с
+// карточками на любом экране; полный экран раздела — /ai-assistant.
+// DIG-72: плавающая кнопка (FAB) в правом нижнем углу открывает лёгкий
+// попап-чат по справке (RAG + OpenRouter); на экране /ai-assistant FAB
+// скрыт, чтобы не дублировать вход.
 export function Shell({
   user,
   unreadCount,
@@ -40,6 +45,11 @@ export function Shell({
 }: ShellProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  // DIG-72: отдельное состояние попап-чата FAB (панель DIG-46 — кнопка шапки).
+  const [fabOpen, setFabOpen] = useState(false);
+  // FAB скрыт на самом экране /ai-assistant: вход там уже есть.
+  const pathname = usePathname();
+  const showFab = user.role === 'STUDENT' && pathname !== '/ai-assistant';
   // Кнопка поиска: ссылка нужна палитре, чтобы вернуть фокус при закрытии.
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
@@ -93,8 +103,9 @@ export function Shell({
 
       {/* DIG-48: таб-бар по роли сессии (у сотрудника — разделы деканата). */}
       <TabBar role={user.role} locale={locale} />
-      {/* Плавающая кнопка ассистента — только студенту (у сотрудника свой кабинет). */}
-      {user.role === 'STUDENT' && <AiFab onOpen={() => setAssistantOpen(true)} />}
+      {/* DIG-72: плавающая кнопка попап-чата ассистента — только студенту
+          (у сотрудника свой кабинет); на /ai-assistant скрыта. */}
+      {showFab && <AiFab onOpen={() => setFabOpen(true)} />}
       {/* DIG-62: AI-гид — вне <main>, чтобы краулер DIG-60 и геометрия
           контента не видели его ссылки; только роль студента. DIG-65:
           флаг voiceAssistant прячет/показывает микрофон голосового ввода. */}
@@ -108,6 +119,11 @@ export function Shell({
         role={user.role}
       />
       <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} />
+      {/* DIG-72: попап-чат ассистента по справке (монтирован всегда —
+          история сессии живёт в памяти компонента и переживает закрытие). */}
+      {user.role === 'STUDENT' && (
+        <FloatingAssistantPopup open={fabOpen} onOpenChange={setFabOpen} />
+      )}
     </div>
   );
 }

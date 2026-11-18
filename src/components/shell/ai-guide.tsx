@@ -129,7 +129,7 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
           // без aria-modal), клик вне панели работает как раньше.
           tabIndex={-1}
           aria-modal={false}
-          className="fixed inset-x-3 bottom-[calc(8.25rem+env(safe-area-inset-bottom))] z-40 rounded-2xl border border-neutral-200 bg-card p-4 shadow-xl outline-none md:inset-x-auto md:bottom-6 md:right-6 md:w-96"
+          className="fixed inset-x-3 bottom-[calc(8.25rem+env(safe-area-inset-bottom))] z-40 rounded-2xl border border-neutral-200 bg-card p-4 shadow-xl outline-none md:inset-x-auto md:bottom-6 md:right-20 md:w-96"
         >
           <div className="flex items-start justify-between gap-2">
             <p className="flex items-center gap-2 text-sm font-extrabold tracking-heading">
@@ -328,7 +328,7 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
           onClick={() => setOpen(true)}
           aria-label="Открыть AI-гида"
           data-testid="ai-guide-pill"
-          className="fixed bottom-[calc(8.25rem+env(safe-area-inset-bottom))] right-3 z-40 inline-flex items-center gap-1.5 rounded-pill border border-neutral-200 bg-card px-3 py-2 text-xs font-semibold text-neutral-800 shadow-soft transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600 md:bottom-6 md:right-6"
+          className="fixed bottom-[calc(8.25rem+env(safe-area-inset-bottom))] right-3 z-40 inline-flex items-center gap-1.5 rounded-pill border border-neutral-200 bg-card px-3 py-2 text-xs font-semibold text-neutral-800 shadow-soft transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600 md:bottom-6 md:right-20"
         >
           <Sparkles className="size-3.5 text-coral-500" aria-hidden="true" />
           AI-гид

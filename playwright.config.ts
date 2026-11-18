@@ -26,6 +26,11 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
+        // DIG-72 (round 1): e2e никогда не ходят в реальный OpenRouter —
+        // сервер стартует с ПУСТЫМ ключом, action отвечает детерминированным
+        // fallback-режимом (подсказка из справки). Ключ из локального .env
+        // в прогон e2e не попадает.
+        env: { ...process.env, OPENROUTER_API_KEY: '' },
         // DIG-12 (round 2): e2e must verify the PRODUCTION contract. In
         // `next dev` (Turbopack) a notFound() page streams the not-found UI with
         // an HTTP 200 (dev-only artifact, flaky between runs), while the built

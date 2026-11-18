@@ -26,6 +26,9 @@
 | [`docs/security.md`](docs/security.md) | Безопасность простыми словами: IDOR, пароли, ключи |
 | [`docs/deploy.md`](docs/deploy.md) | Деплой: Docker Compose, Caddy, прод |
 | [`docs/figma-screens.md`](docs/figma-screens.md) | Карта «экран ↔ задача ↔ фрейм Figma» |
+| [`docs/user-guide-ru.md`](docs/user-guide-ru.md) · [`docs/user-guide-en.md`](docs/user-guide-en.md) | **Руководство пользователя**: все экраны студента и сотрудника пошагово (RU/EN) |
+| [`docs/admin-guide-ru.md`](docs/admin-guide-ru.md) · [`docs/admin-guide-en.md`](docs/admin-guide-en.md) | **Руководство администратора**: секреты, деплой, сид, бэкап, инциденты (RU/EN) |
+| [`docs/accompanying-docs-ru.md`](docs/accompanying-docs-ru.md) · [`docs/accompanying-docs-en.md`](docs/accompanying-docs-en.md) | **Сопроводительная документация**: карта документов, глоссарий, non-goals (RU/EN) |
 | [`docs/sdd/SDD-GUIDE.md`](docs/sdd/SDD-GUIDE.md) | Spec-driven процесс (OpenSpec) |
 | [`CHANGELOG.md`](CHANGELOG.md) · [`docs/ai-log/`](docs/ai-log/) | Что и когда делал рой |
 

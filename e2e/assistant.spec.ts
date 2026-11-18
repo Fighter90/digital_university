@@ -200,14 +200,20 @@ test.describe('DIG-46: экран /ai-assistant — студент', () => {
 });
 
 test.describe('DIG-46: floating panel on every screen', () => {
-  test('mobile 360: FAB opens the full-screen panel with a working chat', async ({ page }) => {
+  // DIG-72: плавающая кнопка внизу открывает лёгкий попап-чат по справке;
+  // панель с карточками DIG-46 открывается кнопкой AI в шапке (на любом
+  // экране), полный раздел — /ai-assistant.
+  test('mobile 360: header AI button opens the full-screen panel with a working chat', async ({
+    page,
+  }) => {
     // В теле теста test.skip принимает только булев флаг (колбэк — уровень
     // группы), поэтому вьюпорт берём из страницы.
     test.skip((await page.viewportSize())?.width !== 360, 'mobile-360 only');
     await signIn(page);
     await page.goto('/dashboard');
 
-    await page.getByRole('button', { name: 'AI-ассистент' }).last().click();
+    // Кнопка AI в шапке (первая по DOM; последняя — плавающая кнопка DIG-72).
+    await page.getByRole('button', { name: 'AI-ассистент' }).first().click();
     const dialog = page.getByRole('dialog', { name: 'AI-ассистент' });
     await expect(dialog).toBeVisible();
 

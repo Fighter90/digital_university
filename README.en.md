@@ -32,6 +32,9 @@ https://ostrovok.store — Timeweb Cloud VM + Docker Compose + Caddy (auto-TLS).
 | [`docs/security.md`](docs/security.md) | Security in plain words: IDOR, passwords, keys |
 | [`docs/deploy.md`](docs/deploy.md) | Deployment: Docker Compose, Caddy, production |
 | [`docs/figma-screens.md`](docs/figma-screens.md) | Screen ↔ task ↔ Figma frame map |
+| [`docs/user-guide-en.md`](docs/user-guide-en.md) · [`docs/user-guide-ru.md`](docs/user-guide-ru.md) | **User guide**: every student and staff screen step-by-step (EN/RU) |
+| [`docs/admin-guide-en.md`](docs/admin-guide-en.md) · [`docs/admin-guide-ru.md`](docs/admin-guide-ru.md) | **Administrator guide**: secrets, deploy, seed, backups, incidents (EN/RU) |
+| [`docs/accompanying-docs-en.md`](docs/accompanying-docs-en.md) · [`docs/accompanying-docs-ru.md`](docs/accompanying-docs-ru.md) | **Accompanying documentation**: the docs map, glossary, non-goals (EN/RU) |
 | [`docs/sdd/SDD-GUIDE.md`](docs/sdd/SDD-GUIDE.md) | Spec-driven process (OpenSpec) |
 | [`docs/wiki/`](docs/wiki/) | Wiki: architecture, swarm, modules guide, runbook |
 | [`CHANGELOG.md`](CHANGELOG.md) · [`docs/ai-log/`](docs/ai-log/) | What the swarm did and when |
