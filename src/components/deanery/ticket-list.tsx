@@ -93,7 +93,9 @@ export function TicketList({
                 <TicketStatusBadge status={ticket.status} locale={locale} />
               </div>
               <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <span className="min-w-0 truncate">{ticketSubjectLabel(ticket.subject, locale)}</span>
+                <span className="min-w-0 truncate">
+                  {ticketSubjectLabel(ticket.subject, locale)}
+                </span>
                 {ticket.unreadStaffCount > 0 ? (
                   <span
                     data-testid="ticket-unread"
@@ -119,7 +121,10 @@ export function TicketList({
                 </p>
               ) : null}
               <p className="mt-1 text-xs text-muted-foreground">
-                {formatTicketTimeLocalized(ticket.lastMessage?.createdAt ?? ticket.updatedAt, locale)}
+                {formatTicketTimeLocalized(
+                  ticket.lastMessage?.createdAt ?? ticket.updatedAt,
+                  locale,
+                )}
               </p>
             </Link>
           </li>

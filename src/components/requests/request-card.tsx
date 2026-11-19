@@ -39,10 +39,7 @@ import {
   formatRequestDate,
 } from '@/lib/request-labels';
 import { requestStatusLabel, t, type Locale } from '@/lib/i18n';
-import {
-  localizeRequestCardTitle,
-  localizeRequestReason,
-} from '@/lib/en-demo-content';
+import { localizeRequestCardTitle, localizeRequestReason } from '@/lib/en-demo-content';
 import { Icon } from '@/components/ui/icon';
 import { RequestStepper } from './request-stepper';
 import { RequestTransitionButton } from './request-transition-button';

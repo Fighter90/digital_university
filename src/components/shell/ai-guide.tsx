@@ -108,9 +108,10 @@ export function AiGuide({ userName, role, voiceEnabled = true, locale = 'ru' }: 
   if (role !== 'STUDENT') return null;
 
   // DIG-93: приветствие по локали — на EN имя из EN-маппинга демо-персон.
-  const localizedFirstName = (locale === 'en'
-    ? (enPersonName(userName).split(' ')[0] ?? userName)
-    : (userName.split(' ')[0] ?? userName));
+  const localizedFirstName =
+    locale === 'en'
+      ? (enPersonName(userName).split(' ')[0] ?? userName)
+      : (userName.split(' ')[0] ?? userName);
 
   const ask = (query: string) => {
     const scenario = matchAiGuideScenario(query, locale);

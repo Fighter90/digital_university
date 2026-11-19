@@ -173,9 +173,9 @@ describe('шаг 2 «Параметры»', () => {
     const input = screen.getByTestId('wizard-files');
     expect(input).toHaveAttribute('type', 'file');
     expect(input).toHaveAttribute('multiple');
-    expect(screen.getByTestId('wizard-destination').closest('div')?.parentElement?.textContent).toContain(
-      'до 5 файлов',
-    );
+    expect(
+      screen.getByTestId('wizard-destination').closest('div')?.parentElement?.textContent,
+    ).toContain('до 5 файлов');
     // Реальный выбор файлов покрывает e2e (setInputFiles): лимиты — общая
     // функция wizardFilesError, покрытая юнит-тестами схемы.
   });
@@ -266,12 +266,10 @@ describe('шаг 3 «Проверка»', () => {
   });
 
   it('ошибка сервера показывается алертом на шаге 3', async () => {
-    const action = vi.fn(
-      async (): Promise<RequestActionState> => ({
-        ok: false,
-        error: 'Выберите тип заявки из списка',
-      }),
-    );
+    const action = vi.fn(async (): Promise<RequestActionState> => ({
+      ok: false,
+      error: 'Выберите тип заявки из списка',
+    }));
     renderWizard(baseProps({ action }));
     fireEvent.click(next());
     fireEvent.click(next());

@@ -25,11 +25,7 @@ import {
   formatDateBadge,
 } from '@/lib/dashboard-format';
 import { t, type Locale } from '@/lib/i18n';
-import {
-  enDisciplineName,
-  enPersonName,
-  enScheduleNote,
-} from '@/lib/en-demo-content';
+import { enDisciplineName, enPersonName, enScheduleNote } from '@/lib/en-demo-content';
 import { getPerformance } from './performance';
 import { getRequestsScreen } from './requests-screen';
 import { requestFilterCounts } from '@/lib/requests-view';
@@ -349,8 +345,7 @@ export function toProgressView(
       // DIG-93 — EN-имя дисциплины по коду/каноническому имени.
       return {
         code,
-        disciplineName:
-          locale === 'en' ? enDisciplineName({ code, name }) : name,
+        disciplineName: locale === 'en' ? enDisciplineName({ code, name }) : name,
         average,
         level: disciplineLevel(average),
       };
@@ -423,10 +418,9 @@ export async function getDashboard(
   const firstName =
     student.ok && student.value
       ? // DIG-93 — приветствие по локали: EN-имя из словаря демо-персон.
-        (locale === 'en'
-          ? enPersonName(student.value.fullName)
-          : student.value.fullName
-        ).split(' ')[0] ?? null
+        ((locale === 'en' ? enPersonName(student.value.fullName) : student.value.fullName).split(
+          ' ',
+        )[0] ?? null)
       : null;
 
   const today = derive(schedule, (events) => toTodayView(events, now, locale));

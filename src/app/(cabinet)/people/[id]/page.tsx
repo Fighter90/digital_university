@@ -103,14 +103,23 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                   {t(locale, 'people.myManager')}
                 </Badge>
               ) : null}
-              {card.isMyTeacher ? <Badge status="info">{t(locale, 'people.teachesYou')}</Badge> : null}
+              {card.isMyTeacher ? (
+                <Badge status="info">{t(locale, 'people.teachesYou')}</Badge>
+              ) : null}
             </div>
             <p className="mt-1 text-sm text-neutral-700">{person.position}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{person.department}</p>
             <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <Badge status="neutral">{isTeacher ? t(locale, 'people.kind.TEACHER') : t(locale, 'people.kind.STAFF')}</Badge>
+              <Badge status="neutral">
+                {isTeacher ? t(locale, 'people.kind.TEACHER') : t(locale, 'people.kind.STAFF')}
+              </Badge>
               {person.isProgramManager && person.program ? (
-                <span>{t(locale, 'people.programManagerOf', { program: locale === 'en' && enFields?.program ? enFields.program : person.program })}</span>
+                <span>
+                  {t(locale, 'people.programManagerOf', {
+                    program:
+                      locale === 'en' && enFields?.program ? enFields.program : person.program,
+                  })}
+                </span>
               ) : null}
             </p>
           </div>
@@ -182,7 +191,9 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                 <Mail className="size-4" />
               </span>
               <span className="min-w-0">
-                <span className="block text-xs text-muted-foreground">{t(locale, 'people.email')}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {t(locale, 'people.email')}
+                </span>
                 <a
                   href={`mailto:${person.email}`}
                   className="font-medium text-foreground underline-offset-2 hover:underline"
@@ -200,8 +211,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                   <DoorOpen className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">{t(locale, 'people.room')}</span>
-                  <span className="font-medium text-foreground">{t(locale, 'people.roomShort', { room: person.room })}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t(locale, 'people.room')}
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {t(locale, 'people.roomShort', { room: person.room })}
+                  </span>
                 </span>
               </li>
             ) : null}
@@ -214,7 +229,9 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                   <Phone className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">{t(locale, 'people.phone')}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t(locale, 'people.phone')}
+                  </span>
                   <a
                     href={`tel:${person.phone.replace(/[^\d+]/g, '')}`}
                     className="font-medium text-foreground underline-offset-2 hover:underline"

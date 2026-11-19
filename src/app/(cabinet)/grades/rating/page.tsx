@@ -37,7 +37,10 @@ export default async function GroupRatingPage() {
   if (ctx.role === 'STAFF') {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-        <SectionTitle href="/grades/rating" className="text-xl font-bold tracking-heading sm:text-2xl" />
+        <SectionTitle
+          href="/grades/rating"
+          className="text-xl font-bold tracking-heading sm:text-2xl"
+        />
         <EmptyState
           title={t(locale, 'empty.staffOnlyTitle')}
           description={t(locale, 'gradebook.studentsOnlyDesc')}
@@ -53,7 +56,10 @@ export default async function GroupRatingPage() {
   if (!view || !view.hasAnyGrades) {
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-        <SectionTitle href="/grades/rating" className="text-xl font-bold tracking-heading sm:text-2xl" />
+        <SectionTitle
+          href="/grades/rating"
+          className="text-xl font-bold tracking-heading sm:text-2xl"
+        />
         <EmptyState
           icon={Trophy}
           title={t(locale, 'grades.rating.emptyTitle')}
@@ -66,7 +72,10 @@ export default async function GroupRatingPage() {
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
-      <SectionTitle href="/grades/rating" className="text-xl font-bold tracking-heading sm:text-2xl" />
+      <SectionTitle
+        href="/grades/rating"
+        className="text-xl font-bold tracking-heading sm:text-2xl"
+      />
 
       <div className="animate-rise rounded-card border border-border bg-card p-4 shadow-soft sm:p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 pb-2">
@@ -113,9 +122,7 @@ function RatingRow({ row, locale }: { row: GroupRatingRow; locale: 'ru' | 'en' }
       <td className="py-2.5 pr-3">
         <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-medium">
           {row.fullName}
-          {row.isViewer ? (
-            <Badge status="info">{t(locale, 'grades.rating.you')}</Badge>
-          ) : null}
+          {row.isViewer ? <Badge status="info">{t(locale, 'grades.rating.you')}</Badge> : null}
         </span>
         {ranked ? (
           <div

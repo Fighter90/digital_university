@@ -14,7 +14,15 @@ import { requireDataCtx, getOwnProfile, getOwnSettings } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { currentAcademicPeriod } from '@/lib/profile-format';
 import { t } from '@/lib/i18n';
-import { localizePersonName, localizedFaculty, localizedGroup, enDisciplineName, enProgramName, enStudyFormLabel, enFundingLabel } from '@/lib/en-demo-content';
+import {
+  localizePersonName,
+  localizedFaculty,
+  localizedGroup,
+  enDisciplineName,
+  enProgramName,
+  enStudyFormLabel,
+  enFundingLabel,
+} from '@/lib/en-demo-content';
 
 export default async function ProfilePage() {
   const [ctx, locale] = await Promise.all([requireDataCtx('/profile'), getLocale()]);
@@ -53,19 +61,14 @@ export default async function ProfilePage() {
   const groupLabel = localizedGroup(locale, profile.groupName);
   // DIG-93 — имя владельца по локали (карточка + инициалы аватара латиницей).
   const fullNameLabel = localizePersonName(locale, profile.fullName) || profile.fullName;
-  const programLabel =
-    locale === 'en' ? enProgramName(profile.program) : profile.program;
-  const direction = profile.programCode
-    ? `${profile.programCode} · ${programLabel}`
-    : programLabel;
+  const programLabel = locale === 'en' ? enProgramName(profile.program) : profile.program;
+  const direction = profile.programCode ? `${profile.programCode} · ${programLabel}` : programLabel;
 
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
       <div>
         <SectionTitle href="/profile" className="text-xl font-bold sm:text-2xl" />
-        <p className="mt-1 text-sm text-neutral-600">
-          {t(locale, 'profile.mainDesc')}
-        </p>
+        <p className="mt-1 text-sm text-neutral-600">{t(locale, 'profile.mainDesc')}</p>
       </div>
 
       {/* Карточка профиля */}
@@ -132,9 +135,7 @@ export default async function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle>{t(locale, 'profile.contacts.title')}</CardTitle>
-          <CardDescription>
-            {t(locale, 'profile.contacts.desc')}
-          </CardDescription>
+          <CardDescription>{t(locale, 'profile.contacts.desc')}</CardDescription>
         </CardHeader>
         <CardContent className="mt-3">
           <ContactsForm

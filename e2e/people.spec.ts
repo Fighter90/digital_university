@@ -87,10 +87,7 @@ test.describe('DIG-37: справочник людей', () => {
 
     // DIG-102 — вкладка «★ Избранное»: у Анны избранное пустое — честный
     // empty-state (чтение без мутаций, параллельные проекты безопасны).
-    await page
-      .getByTestId('people-filters')
-      .getByRole('button', { name: '★ Избранное' })
-      .click();
+    await page.getByTestId('people-filters').getByRole('button', { name: '★ Избранное' }).click();
     await expect(page.getByTestId('people-fav-empty')).toBeVisible();
     await expect(page.getByText('В избранном пока никого')).toBeVisible();
   });

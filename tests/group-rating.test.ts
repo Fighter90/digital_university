@@ -28,12 +28,7 @@ import {
 } from '@/lib/group-rating';
 import { getGroupRating, getPerformance } from '@/server/data/performance';
 import { createMemoryDataDb, type MemoryDataDb } from '@/server/data/memory-db';
-import type {
-  DataCtx,
-  DisciplineElementRow,
-  DisciplineRow,
-  GradeRow,
-} from '@/server/data/types';
+import type { DataCtx, DisciplineElementRow, DisciplineRow, GradeRow } from '@/server/data/types';
 
 // ── ctx владельца (ПИ-21) и студент чужой группы (ЭК-11) ────────────────────
 
@@ -97,11 +92,7 @@ const elements: DisciplineElementRow[] = [
   },
 ];
 
-const g = (
-  studentId: string,
-  elementCode: string,
-  score: number,
-): GradeRow => ({
+const g = (studentId: string, elementCode: string, score: number): GradeRow => ({
   id: `${studentId}-${elementCode}`,
   studentId,
   elementCode,
@@ -229,10 +220,7 @@ describe('buildGroupRatingRows: сортировка и места', () => {
 
   it('строка владельца помечена isViewer, остальные — нет', () => {
     const rows = buildGroupRatingRows(
-      [
-        entry('st-a', 'Анна Ковалёва', 90),
-        entry('st-b2', 'Борис Орлов', 70),
-      ],
+      [entry('st-a', 'Анна Ковалёва', 90), entry('st-b2', 'Борис Орлов', 70)],
       [member('st-a', 'Анна Ковалёва'), member('st-b2', 'Борис Орлов')],
       'st-b2',
     );
@@ -385,11 +373,7 @@ describe('getGroupRating: рейтинг своей группы', () => {
     });
     const view = await getGroupRating(db, annaCtx);
     expect(view!.rows.some((r) => r.studentId === 'st-ilya')).toBe(false);
-    expect(view!.rows.map((r) => r.studentId).sort()).toEqual([
-      'st-anna',
-      'st-boris',
-      'st-vera',
-    ]);
+    expect(view!.rows.map((r) => r.studentId).sort()).toEqual(['st-anna', 'st-boris', 'st-vera']);
     // И наоборот: Илья видит только свою группу.
     const ekView = await getGroupRating(db, ilyaCtx);
     expect(ekView!.groupName).toBe('ЭК-11');
@@ -403,8 +387,9 @@ describe('getGroupRating: рейтинг своей группы', () => {
     expect(await getGroupRating(db, staffCtx)).toBeNull();
     const audits = db.auditEvents();
     expect(audits.length).toBeGreaterThanOrEqual(1);
-    expect(audits.every((ev) => ev.reason === 'ROLE_MISMATCH' && ev.resourceType === 'performance'))
-      .toBe(true);
+    expect(
+      audits.every((ev) => ev.reason === 'ROLE_MISMATCH' && ev.resourceType === 'performance'),
+    ).toBe(true);
   });
 
   it('в группе нет ни одной оценки: все строки без места, hasAnyGrades=false', async () => {

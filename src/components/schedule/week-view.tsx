@@ -51,11 +51,7 @@ import {
 } from '@/lib/schedule-view';
 import { lessonKindLabel } from '@/lib/dashboard-format';
 import { t, type Locale } from '@/lib/i18n';
-import {
-  enDisciplineName,
-  enPersonName,
-  enScheduleNote,
-} from '@/lib/en-demo-content';
+import { enDisciplineName, enPersonName, enScheduleNote } from '@/lib/en-demo-content';
 import type { ScheduleKind } from '@/server/data/types';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -659,8 +655,7 @@ function LessonBlock({
   // поэтому модели не трогаем — локализуем только видимый рендер).
   const displayDiscipline = locale === 'en' ? enDisciplineName(event.discipline) : event.discipline;
   const displayNote = locale === 'en' ? enScheduleNote(event.note) : event.note;
-  const displayChangeNote =
-    locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote;
+  const displayChangeNote = locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote;
   const top = ((event.start - 480) / 60) * 64;
   const height = Math.max(0, ((Math.min(event.end, 1200) - Math.max(event.start, 480)) / 60) * 64);
   if (height <= 0) return null; // пара целиком вне сетки 08:00–20:00
@@ -726,8 +721,7 @@ function LessonDetails({ event, locale = 'ru' }: { event: ScheduleEventView; loc
   // DIG-93 — демо-контент по локали.
   const displayTeacher = locale === 'en' ? enPersonName(event.teacher) : event.teacher;
   const displayNote = locale === 'en' ? enScheduleNote(event.note) : event.note;
-  const displayChangeNote =
-    locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote;
+  const displayChangeNote = locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote;
   const rows: Array<[string, React.ReactNode]> = [
     [t(locale, 'schedule.details.type'), lessonKindLabel(event.kind, locale)],
     [t(locale, 'schedule.details.time'), event.timeLabel],

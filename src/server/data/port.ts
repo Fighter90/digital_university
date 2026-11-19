@@ -56,10 +56,11 @@ import type {
   MspVoteRow,
   /** DIG-43 — мероприятия вуза и запись (/events). */
   EventRegistrationRow,
-  EventRow,  /** DIG-42 — «Дополнительное образование» (/dpo). */
+  EventRow /** DIG-42 — «Дополнительное образование» (/dpo). */,
   DpoDocumentRow,
   DpoEnrollmentRow,
-  DpoProgramRow,} from './types';
+  DpoProgramRow,
+} from './types';
 
 /** DIG-48 — уведомление студенту, записываемое вместе с действием сотрудника. */
 export interface StaffNotificationInput {
@@ -642,7 +643,7 @@ export interface DataDb {
    * Сколько студентов записано на мероприятие (агрегат: наружу из слоя
    * данных уходит число, не чужие строки — по образцу listMspVotes).
    */
-  listEventAttendeeCount(eventId: string): Promise<number>;  // ── DIG-42: «Дополнительное образование» (/dpo) ──────────────────────────
+  listEventAttendeeCount(eventId: string): Promise<number>; // ── DIG-42: «Дополнительное образование» (/dpo) ──────────────────────────
   /**
    * Весь каталог программ ДПО — публичный контент (чтение — любой
    * вошедний, осознанное исключение из owner-scope, как listMspProjects:

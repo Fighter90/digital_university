@@ -201,9 +201,10 @@ describe('ListenDayButton (DIG-65)', () => {
       expect(status).toHaveTextContent('Голосовой движок недоступен');
       expect(status).toHaveAttribute('data-testid', 'listen-day-fallback');
       // Состояние честно сброшено: повторный клик снова пытается озвучить.
-      expect(
-        screen.getByRole('button', { name: 'Прослушать день' }),
-      ).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByRole('button', { name: 'Прослушать день' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
     } finally {
       vi.useRealTimers();
     }
@@ -235,9 +236,10 @@ describe('ListenDayButton (DIG-65)', () => {
         vi.advanceTimersByTime(2000);
       });
       expect(screen.queryByRole('status')).toBeNull();
-      expect(
-        screen.getByRole('button', { name: 'Остановить озвучку' }),
-      ).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: 'Остановить озвучку' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     } finally {
       vi.useRealTimers();
     }

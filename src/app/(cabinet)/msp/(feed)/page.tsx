@@ -34,18 +34,12 @@ export default async function MspPage({
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
       <header>
         <h1 className="text-xl font-bold tracking-heading sm:text-2xl">{t(locale, 'msp.title')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t(locale, 'msp.subtitle')}
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{t(locale, 'msp.subtitle')}</p>
       </header>
 
       <div className="mt-6 flex flex-col gap-6">
         {/* «Запуск дня» — max голосов, при равенстве самый свежий (не random). */}
-        <MspLaunchOfDay
-          view={page.launchOfDay}
-          canVote={canVote}
-          locale={locale}
-        />
+        <MspLaunchOfDay view={page.launchOfDay} canVote={canVote} locale={locale} />
 
         {/* Лента слева, композер запуска — правая панель на десктопе. */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
@@ -74,9 +68,7 @@ export default async function MspPage({
 
           <div className="flex min-w-0 flex-col gap-3">
             <MspLaunchComposer locale={locale} />
-            <p className="text-xs text-muted-foreground">
-              {t(locale, 'msp.vote.hint')}
-            </p>
+            <p className="text-xs text-muted-foreground">{t(locale, 'msp.vote.hint')}</p>
           </div>
         </div>
       </div>

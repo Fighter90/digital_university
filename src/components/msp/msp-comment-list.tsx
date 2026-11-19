@@ -42,8 +42,12 @@ export function MspCommentList({
           className="rounded-card border border-border bg-card p-4 shadow-soft"
         >
           <p className="text-sm font-semibold">{localizePersonName(locale, comment.authorName)}</p>
-          <p className="text-xs text-muted-foreground">{(locale === 'en' ? dateFormatterEn : dateFormatter).format(comment.createdAt)}</p>
-          <p className="mt-2 whitespace-pre-line text-sm text-foreground">{localizedMspComment(locale, comment)}</p>
+          <p className="text-xs text-muted-foreground">
+            {(locale === 'en' ? dateFormatterEn : dateFormatter).format(comment.createdAt)}
+          </p>
+          <p className="mt-2 whitespace-pre-line text-sm text-foreground">
+            {localizedMspComment(locale, comment)}
+          </p>
         </li>
       ))}
     </ul>

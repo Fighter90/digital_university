@@ -321,15 +321,13 @@ export function localizedMspProject(
   row: { id: string; title: string; tagline: string; description: string; tags: string[] },
 ): { title: string; tagline: string; description: string; tags: string[] } {
   const en = locale === 'en' ? enMspProject(row.id) : null;
-  if (!en) return { title: row.title, tagline: row.tagline, description: row.description, tags: row.tags };
+  if (!en)
+    return { title: row.title, tagline: row.tagline, description: row.description, tags: row.tags };
   return { title: en.title, tagline: en.tagline, description: en.description, tags: en.tags };
 }
 
 /** Текст комментария МСП по локали (сид-комментарии — по id). */
-export function localizedMspComment(
-  locale: Locale,
-  row: { id: string; body: string },
-): string {
+export function localizedMspComment(locale: Locale, row: { id: string; body: string }): string {
   if (locale !== 'en') return row.body;
   return enMspComment(row.id) ?? row.body;
 }
@@ -675,7 +673,8 @@ const FEEDBACK_TEXTS_EN: Record<string, string> = {
   'fb-anna-2': 'Thank you for the extra consultations before the session — they really helped!',
   'fb-ilya-1':
     'The projector in room 12 of the economics building does not read laptops — half of the classes start with fixing the hardware.',
-  'fb-anon-1': 'Please add a dark theme to the cabinet — evening shifts in the library would be easier on the eyes.',
+  'fb-anon-1':
+    'Please add a dark theme to the cabinet — evening shifts in the library would be easier on the eyes.',
 };
 
 /** Публичная лента «Что мы изменили»: пары предложение → результат по номеру. */
@@ -699,11 +698,9 @@ const FEEDBACK_OUTCOMES_EN: Record<string, { suggestion: string; outcome: string
   },
 };
 
-export function enFeedbackOutcome(
-  number: string,
-): { suggestion: string; outcome: string } | null {
+export function enFeedbackOutcome(number: string): { suggestion: string; outcome: string } | null {
   return FEEDBACK_OUTCOMES_EN[number] ?? null;
-};
+}
 
 export function enFeedbackText(id: string): string | null {
   return FEEDBACK_TEXTS_EN[id] ?? null;
@@ -1042,7 +1039,10 @@ export function localizeSessionData<D extends SessionDataLike>(locale: Locale, d
     })),
     retakes: data.retakes.map((retake) => ({
       ...retake,
-      disciplineName: enDisciplineName({ code: retake.disciplineCode, name: retake.disciplineName }),
+      disciplineName: enDisciplineName({
+        code: retake.disciplineCode,
+        name: retake.disciplineName,
+      }),
       note: enScheduleNote(retake.note),
     })),
     consultations: data.consultations.map((item) => ({
@@ -1052,7 +1052,6 @@ export function localizeSessionData<D extends SessionDataLike>(locale: Locale, d
     })),
   };
 }
-
 
 // Таблицы с русскими ключами/регэкспами — в src/lib/ru-translit.ts.
 
@@ -1087,8 +1086,8 @@ export function localizeNotification(
   locale: Locale,
   row: LocalizableNotification,
 ): LocalizedNotification {
-  const actionLabel = (row.actionLabel ?? null) === null ? null : row.actionLabel ?? null;
-  const enAction = actionLabel === null ? null : ACTION_LABELS_EN[actionLabel] ?? actionLabel;
+  const actionLabel = (row.actionLabel ?? null) === null ? null : (row.actionLabel ?? null);
+  const enAction = actionLabel === null ? null : (ACTION_LABELS_EN[actionLabel] ?? actionLabel);
   if (locale !== 'en') {
     return { title: row.title, body: row.body, actionLabel };
   }

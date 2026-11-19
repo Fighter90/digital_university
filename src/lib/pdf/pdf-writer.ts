@@ -55,10 +55,39 @@ interface TextOp {
  * опускаются (они рисуются видимой рамкой-заглушкой).
  */
 const CYRILLIC_LATIN: Record<string, string> = {
-  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z',
-  и: 'i', й: 'j', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r',
-  с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'c', ч: 'ch', ш: 'sh', щ: 'sch',
-  ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+  а: 'a',
+  б: 'b',
+  в: 'v',
+  г: 'g',
+  д: 'd',
+  е: 'e',
+  ё: 'e',
+  ж: 'zh',
+  з: 'z',
+  и: 'i',
+  й: 'j',
+  к: 'k',
+  л: 'l',
+  м: 'm',
+  н: 'n',
+  о: 'o',
+  п: 'p',
+  р: 'r',
+  с: 's',
+  т: 't',
+  у: 'u',
+  ф: 'f',
+  х: 'h',
+  ц: 'c',
+  ч: 'ch',
+  ш: 'sh',
+  щ: 'sch',
+  ъ: '',
+  ы: 'y',
+  ь: '',
+  э: 'e',
+  ю: 'yu',
+  я: 'ya',
 };
 
 function latinForTextLayer(text: string): string {
@@ -233,15 +262,16 @@ export class PdfWriter {
           `>> >> >>`,
       );
       const rects = ops
-        .map((op) => `q\n${colorOps(op.color)}\n${fmt(op.x)} ${fmt(this.height - op.y - op.h)} ${fmt(op.w)} ${fmt(op.h)} re\nf\nQ`)
-        .join('\n');
-      // Невидимый текстовый слой: 3 Tr — не заливать, не обводить, не клипать.
-      const texts = this.texts[i]!
         .map(
           (op) =>
-            `BT\n/F1 ${fmt(op.size)} Tf\n3 Tr\n${fmt(op.x)} ${fmt(op.y)} Td\n(${op.literal}) Tj\nET`,
+            `q\n${colorOps(op.color)}\n${fmt(op.x)} ${fmt(this.height - op.y - op.h)} ${fmt(op.w)} ${fmt(op.h)} re\nf\nQ`,
         )
         .join('\n');
+      // Невидимый текстовый слой: 3 Tr — не заливать, не обводить, не клипать.
+      const texts = this.texts[i]!.map(
+        (op) =>
+          `BT\n/F1 ${fmt(op.size)} Tf\n3 Tr\n${fmt(op.x)} ${fmt(op.y)} Td\n(${op.literal}) Tj\nET`,
+      ).join('\n');
       const stream = texts.length > 0 ? `${rects}\n${texts}` : rects;
       objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
     });

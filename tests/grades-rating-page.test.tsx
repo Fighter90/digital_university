@@ -39,7 +39,13 @@ function viewFixture(overrides?: Partial<GroupRatingView>): GroupRatingView {
       { studentId: 'st-boris', fullName: 'Борис Орлов', average: 95, place: 1, isViewer: false },
       { studentId: 'st-anna', fullName: 'Анна Ковалёва', average: 85, place: 2, isViewer: true },
       { studentId: 'st-vera', fullName: 'Вера Иванова', average: 70, place: 3, isViewer: false },
-      { studentId: 'st-gleb', fullName: 'Глеб Фёдоров', average: null, place: null, isViewer: false },
+      {
+        studentId: 'st-gleb',
+        fullName: 'Глеб Фёдоров',
+        average: null,
+        place: null,
+        isViewer: false,
+      },
     ],
     ...overrides,
   };
@@ -121,7 +127,13 @@ describe('страница /grades/rating: render contract', () => {
       viewFixture({
         hasAnyGrades: false,
         rows: [
-          { studentId: 'st-anna', fullName: 'Анна Ковалёва', average: null, place: null, isViewer: true },
+          {
+            studentId: 'st-anna',
+            fullName: 'Анна Ковалёва',
+            average: null,
+            place: null,
+            isViewer: true,
+          },
         ],
       }),
     );

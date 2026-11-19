@@ -12,12 +12,12 @@ import { requestNumberLabel } from '@/lib/requests-view';
 // ── факультеты / группы / учебные формы / основа обучения (сид) ─────────────
 
 export const FACULTY_EN: Record<string, string> = {
-  'ИТ': 'IT',
-  'ЭК': 'Economics',
-  'Дизайн': 'Design',
-  'Менеджмент': 'Management',
-  'Педагогика': 'Education',
-  'Безопасность': 'Security',
+  ИТ: 'IT',
+  ЭК: 'Economics',
+  Дизайн: 'Design',
+  Менеджмент: 'Management',
+  Педагогика: 'Education',
+  Безопасность: 'Security',
 };
 
 export const GROUP_EN: Record<string, string> = {
@@ -26,14 +26,14 @@ export const GROUP_EN: Record<string, string> = {
 };
 
 export const STUDY_FORM_EN: Record<string, string> = {
-  'очная': 'full-time',
+  очная: 'full-time',
   'очно-заочная': 'part-time',
-  'заочная': 'extramural',
+  заочная: 'extramural',
 };
 
 export const FUNDING_EN: Record<string, string> = {
-  'бюджет': 'state-funded',
-  'контракт': 'contract-based',
+  бюджет: 'state-funded',
+  контракт: 'contract-based',
 };
 
 // ── дисциплины и программы (сид) ─────────────────────────────────────────────
@@ -51,26 +51,26 @@ export const DISCIPLINE_EN_BY_CODE: Record<string, string> = {
 };
 
 export const DISCIPLINE_EN_BY_NAME: Record<string, string> = {
-  'Физика': 'Physics',
-  'История': 'History',
+  Физика: 'Physics',
+  История: 'History',
   'Дискретная математика': 'Discrete Mathematics',
   'Алгоритмы и структуры данных': 'Algorithms and Data Structures',
   'Математический анализ': 'Calculus',
   'Экономическая теория': 'Economic Theory',
-  'Информатика': 'Computer Science',
-  'Программирование': 'Programming',
+  Информатика: 'Computer Science',
+  Программирование: 'Programming',
   'Базы данных': 'Databases',
 };
 
 export const PROGRAM_EN: Record<string, string> = {
   'Прикладная информатика': 'Applied Computer Science',
-  'Экономика': 'Economics',
+  Экономика: 'Economics',
 };
 
 // ── источники новостей и адресаты обращений (сид/каталог) ────────────────────
 
 export const NEWS_SOURCES_EN: Record<string, string> = {
-  'Деканат': 'Deanery',
+  Деканат: 'Deanery',
   'Отдел стипендий': 'Scholarship office',
   'Куратор группы': 'Group curator',
   'Кафедра информатики': 'Computer science department',
@@ -79,7 +79,7 @@ export const NEWS_SOURCES_EN: Record<string, string> = {
   'Учёный совет ИТ': 'IT research board',
   'Учебно-вычислительный центр': 'Computing center',
   'Факультет ЭК': 'Economics faculty',
-  'Библиотека': 'Library',
+  Библиотека: 'Library',
   'Управление общежитий': 'Dormitory office',
   'ИТ-служба университета': 'University IT service',
 };
@@ -88,18 +88,18 @@ export const NEWS_SOURCES_EN: Record<string, string> = {
 
 /** Месяцы: RU-генитив в шаблонах → EN-название («18 ноября» → «November 18»). */
 export const RU_MONTH_TO_EN: Record<string, string> = {
-  'января': 'January',
-  'февраля': 'February',
-  'марта': 'March',
-  'апреля': 'April',
-  'мая': 'May',
-  'июня': 'June',
-  'июля': 'July',
-  'августа': 'August',
-  'сентября': 'September',
-  'октября': 'October',
-  'ноября': 'November',
-  'декабря': 'December',
+  января: 'January',
+  февраля: 'February',
+  марта: 'March',
+  апреля: 'April',
+  мая: 'May',
+  июня: 'June',
+  июля: 'July',
+  августа: 'August',
+  сентября: 'September',
+  октября: 'October',
+  ноября: 'November',
+  декабря: 'December',
 };
 
 /** «18 ноября» / «5 декабря» → «November 18» / «December 5» (иные строки — как есть). */
@@ -112,12 +112,12 @@ export function enDatePhrase(text: string): string {
 
 /** EN-подписи действий уведомлений (известные значения сида и рантайма). */
 export const ACTION_LABELS_EN: Record<string, string> = {
-  'Скачать': 'Download',
+  Скачать: 'Download',
   'Открыть расписание': 'Open schedule',
   'Открыть заявку': 'Open request',
-  'Открыть': 'Open',
-  'Ответить': 'Reply',
-  'Оплатить': 'Pay',
+  Открыть: 'Open',
+  Ответить: 'Reply',
+  Оплатить: 'Pay',
 };
 
 /** RU-имя типа заявки (сид canonical-requests) → EN-название; неизвестное — как есть. */
@@ -150,7 +150,10 @@ export const NOTIFICATION_TITLE_RULES_EN: ReadonlyArray<readonly [RegExp, string
   [/^Заявка на пересдачу создана$/, 'Retake request created'],
   [/^Заявка на «(.+)» создана$/, 'Request for "$1" created'],
   [/^Заявка «(.+)» — нужна доработка$/, 'Request "$1" — needs fixes'],
-  [/^Заявка на летнюю практику передана на кафедру$/, 'Summer internship request forwarded to the department'],
+  [
+    /^Заявка на летнюю практику передана на кафедру$/,
+    'Summer internship request forwarded to the department',
+  ],
   [/^Заявление на общежитие принято в работу$/, 'Dormitory application accepted for processing'],
   [/^Справка для военкомата готова$/, 'Military deferment certificate is ready'],
   [/^Документ отправлен на email$/, 'Document sent to email'],
@@ -158,9 +161,18 @@ export const NOTIFICATION_TITLE_RULES_EN: ReadonlyArray<readonly [RegExp, string
   [/^Новая оценка: (\d+)\/100 — (.+)$/, 'New grade: $1/100 — $2'],
   [/^Оплата за общежитие — до (.+)$/, 'Dormitory payment — due $1'],
   [/^Оплата по договору — до (.+)$/, 'Contract payment — due $1'],
-  [/^Открыта запись на консультации перед сессией$/, 'Sign-up for pre-session consultations is open'],
-  [/^Долг по коллоквиуму «(.+)» — до начала сессии$/, '"$1" colloquium debt — due before the session'],
-  [/^Кабинет обновлён: уведомления теперь по категориям$/, 'Cabinet updated: notifications are now grouped'],
+  [
+    /^Открыта запись на консультации перед сессией$/,
+    'Sign-up for pre-session consultations is open',
+  ],
+  [
+    /^Долг по коллоквиуму «(.+)» — до начала сессии$/,
+    '"$1" colloquium debt — due before the session',
+  ],
+  [
+    /^Кабинет обновлён: уведомления теперь по категориям$/,
+    'Cabinet updated: notifications are now grouped',
+  ],
   [/^Пара «(.+)» перенесена в ауд\. (.+)$/, 'Class "$1" rescheduled to room $2'],
   [/^Пара «(.+)» сегодня отменена$/, 'Class "$1" is cancelled today'],
   [/^Пара «(.+)» сегодня начнётся в (.+)$/, 'Class "$1" starts today at $2'],
@@ -186,14 +198,14 @@ export const REQUEST_SENTENCE_RULES_EN: ReadonlyArray<readonly [RegExp, string]>
 
 /** Подписи статусов канонической заявки для формулы «Подана → Принята». */
 export const REQUEST_STATUS_LABEL_EN: Record<string, string> = {
-  'Подана': 'Submitted',
-  'Принята': 'Accepted',
+  Подана: 'Submitted',
+  Принята: 'Accepted',
   'В работе': 'In progress',
-  'Готова': 'Ready',
-  'Выдана': 'Issued',
+  Готова: 'Ready',
+  Выдана: 'Issued',
   'Нужна доработка': 'Needs fixes',
-  'Отклонена': 'Rejected',
-  'Отменена': 'Cancelled',
+  Отклонена: 'Rejected',
+  Отменена: 'Cancelled',
 };
 
 /**
@@ -226,9 +238,7 @@ export function enRequestSentence(sentence: string): string {
  * обращения, перенос пар. Функция получает совпадения и возвращает EN или
  * null (не матчится — пробуем следующее правило).
  */
-export type BodyRule = (
-  body: string,
-) => string | null;
+export type BodyRule = (body: string) => string | null;
 
 const retakeBodyRule: BodyRule = (body) => {
   const m = body.match(
@@ -270,7 +280,9 @@ export const NOTIFICATION_BODY_RULES_EN: ReadonlyArray<BodyRule> = [
     return m ? `${m[1]} replied to the ${m[3]} ticket.` : null;
   },
   (body) => {
-    const m = body.match(/^Лаборатория «(.+)» сегодня в (.+) пройдёт в ауд\. (.+) вместо (.+) \(замена от деканата\)\.$/);
+    const m = body.match(
+      /^Лаборатория «(.+)» сегодня в (.+) пройдёт в ауд\. (.+) вместо (.+) \(замена от деканата\)\.$/,
+    );
     return m
       ? `The ${m[1]} lab today at ${m[2]} takes place in room ${m[3]} instead of ${m[4]} (change by the deanery).`
       : null;
@@ -363,14 +375,13 @@ export const SCHEDULE_NOTES_EN: Record<string, string> = {
   'Пересдача лабораторных': 'Lab retake',
   'Пересдача экзамена (закрыто)': 'Exam retake (closed)',
   'В ауд. 310 монтируют новое оборудование': 'New equipment is being installed in room 310',
-  'Аудитория 214 занята факультетским мероприятием':
-    'Room 214 is taken by a faculty event',
-  'Занятие будет восполнено 20 ноября, ауд. 212': 'The class will be made up on November 20, room 212',
+  'Аудитория 214 занята факультетским мероприятием': 'Room 214 is taken by a faculty event',
+  'Занятие будет восполнено 20 ноября, ауд. 212':
+    'The class will be made up on November 20, room 212',
   // prisma-сид (режим PostgreSQL)
   'Аудитория занята факультетским мероприятием — пара переносится в Б-204':
     'The room is taken by a faculty event — the class moves to B-204',
-  'Аудитория А-312 занята факультетским мероприятием':
-    'Room A-312 is taken by a faculty event',
+  'Аудитория А-312 занята факультетским мероприятием': 'Room A-312 is taken by a faculty event',
   'Лектор в командировке — занятие перенесено на 12:30':
     'The lecturer is away — the class moves to 12:30',
   'Лектор в командировке': 'The lecturer is away',
@@ -396,22 +407,22 @@ export const SCHEDULE_NOTES_EN: Record<string, string> = {
 export const ELEMENT_NAME_EN: Record<string, string> = {
   'Тест 1': 'Test 1',
   'Тест 2': 'Test 2',
-  'Коллоквиум': 'Colloquium',
-  'Экзамен': 'Exam',
+  Коллоквиум: 'Colloquium',
+  Экзамен: 'Exam',
   'Лабораторная 2': 'Lab 2',
   'Лабораторная 3': 'Lab 3',
-  'Проект': 'Project',
-  'Зачёт': 'Credit test',
-  'Семинар': 'Seminar',
+  Проект: 'Project',
+  Зачёт: 'Credit test',
+  Семинар: 'Seminar',
   // prisma-сид
   'Лабораторные работы': 'Labs',
   'Домашние задания': 'Homework',
   'Контрольная работа': 'Test paper',
   'Контрольные работы': 'Test papers',
-  'Эссе': 'Essay',
-  'Презентация': 'Presentation',
+  Эссе: 'Essay',
+  Презентация: 'Presentation',
   'Посещение и активность': 'Attendance and activity',
-  'Нормативы': 'Fitness tests',
+  Нормативы: 'Fitness tests',
   'Зачёт с оценкой': 'Graded credit',
 };
 
@@ -445,7 +456,7 @@ export const TASK_VERB_EN: Record<string, string> = {
 
 /** Титул сессии сида → EN. */
 const SEASON_TITLE_EN: Record<string, string> = {
-  'Сессия': 'Exam session',
+  Сессия: 'Exam session',
   'Зимняя сессия': 'Winter exam session',
   'Летняя сессия': 'Summer session',
 };
@@ -470,9 +481,9 @@ export function enCountdownLabel(label: string): string {
 
 /** Подпись статуса допуска сида («Допущен» / «Сдано · 9») → EN. */
 const EXAM_STATUS_LABEL_EN: Record<string, string> = {
-  'Допущен': 'Admitted',
+  Допущен: 'Admitted',
   'Не допущен': 'Not admitted',
-  'Пересдача': 'Retake',
+  Пересдача: 'Retake',
 };
 
 export function enExamStatusLabel(label: string): string {
@@ -483,9 +494,9 @@ export function enExamStatusLabel(label: string): string {
 
 /** Тип контрольной сида («Экзамен» / «Зачёт») → EN. */
 const EXAM_KIND_LABEL_EN: Record<string, string> = {
-  'Экзамен': 'Exam',
-  'Зачёт': 'Credit test',
-  'Пересдача': 'Retake',
+  Экзамен: 'Exam',
+  Зачёт: 'Credit test',
+  Пересдача: 'Retake',
 };
 
 export function enExamKindLabel(label: string): string {

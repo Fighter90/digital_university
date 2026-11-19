@@ -84,7 +84,8 @@ const TOUR_STEPS_EN: AiGuideTourStep[] = [
   {
     id: 'schedule',
     title: 'Schedule',
-    description: 'Classes for the week, reschedules and cancellations — visible at once, no paperwork.',
+    description:
+      'Classes for the week, reschedules and cancellations — visible at once, no paperwork.',
     href: '/schedule',
   },
   {
@@ -96,13 +97,15 @@ const TOUR_STEPS_EN: AiGuideTourStep[] = [
   {
     id: 'requests',
     title: 'Requests',
-    description: 'Applications and certificates are submitted online — the status lives in the cabinet.',
+    description:
+      'Applications and certificates are submitted online — the status lives in the cabinet.',
     href: '/requests',
   },
   {
     id: 'services',
     title: 'Certificates',
-    description: 'The catalog of certificates and extracts: lead time on every card, ordering in two clicks.',
+    description:
+      'The catalog of certificates and extracts: lead time on every card, ordering in two clicks.',
     href: '/services',
   },
 ];
@@ -147,12 +150,16 @@ export function normalizeGuideQuery(query: string): string {
  * вопросы без совпадений — null: гид не выдумывает ответ.
  * DIG-93 — на EN матчинг идёт по EN-сценариям и EN-ключам.
  */
-export function matchAiGuideScenario(query: string, locale: 'ru' | 'en' = 'ru'): AiGuideScenario | null {
+export function matchAiGuideScenario(
+  query: string,
+  locale: 'ru' | 'en' = 'ru',
+): AiGuideScenario | null {
   const q = normalizeGuideQuery(query);
   if (q === '') return null;
   return (
-    guideScenarios(locale).find((scenario) => scenario.keywords.some((keyword) => q.includes(keyword))) ??
-    null
+    guideScenarios(locale).find((scenario) =>
+      scenario.keywords.some((keyword) => q.includes(keyword)),
+    ) ?? null
   );
 }
 

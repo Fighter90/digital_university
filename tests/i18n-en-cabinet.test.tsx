@@ -92,7 +92,9 @@ vi.mock('@/server/data', async (importOriginal) => {
     getOwnProfile: vi.fn(async () => dataState.profile),
     getFeedbackPage: vi.fn(async () => dataState.feedbackPage),
     getPeopleDirectory: vi.fn(async () => dataState.peopleDirectory),
-    listFavoritePersons: vi.fn(async () => dataState.favorites ?? { favorites: [], hasPersonalScope: true }),
+    listFavoritePersons: vi.fn(
+      async () => dataState.favorites ?? { favorites: [], hasPersonalScope: true },
+    ),
     getDeaneryPage: vi.fn(async () => dataState.deaneryPage),
     getMspPage: vi.fn(async () => dataState.mspPage),
     getDpoCatalog: vi.fn(async () => dataState.dpoCatalog),
@@ -147,11 +149,7 @@ import { localizeProfileFullName } from '@/lib/en-demo-content';
 // Реальные билдеры (чистые функции поверх fake-строк сида):
 import { toDeadlineViews, toTodayView } from '@/server/data/dashboard';
 import type { DashboardSection } from '@/server/data/dashboard';
-import type {
-  DataCtx,
-  ScheduleEventRow,
-  TicketRow,
-} from '@/server/data/types';
+import type { DataCtx, ScheduleEventRow, TicketRow } from '@/server/data/types';
 import type { TaskView, TasksData } from '@/server/data/tasks';
 import type { FeedbackRow } from '@/server/data/types';
 import type { PersonListEntry } from '@/server/data/people';
@@ -424,11 +422,30 @@ function taskFixture(): TasksData {
   });
   return {
     overdue: [
-      view('manual-task-anna-sign', 'MANUAL', 'Подписать согласие на обработку персональных данных', 'Деканат', -1, true),
+      view(
+        'manual-task-anna-sign',
+        'MANUAL',
+        'Подписать согласие на обработку персональных данных',
+        'Деканат',
+        -1,
+        true,
+      ),
     ],
     today: [
-      view('request-creq-1', 'REQUEST', 'Доработать заявку', 'Справка об обучении · для военкомата · ЗД-2026-000003', null),
-      view('deanery-apl-anna-2', 'DEANERY', 'Ответить на обращение', 'Перенос лабораторной по программированию', null),
+      view(
+        'request-creq-1',
+        'REQUEST',
+        'Доработать заявку',
+        'Справка об обучении · для военкомата · ЗД-2026-000003',
+        null,
+      ),
+      view(
+        'deanery-apl-anna-2',
+        'DEANERY',
+        'Ответить на обращение',
+        'Перенос лабораторной по программированию',
+        null,
+      ),
     ],
     week: [
       view('course-dl-pi21-phys-test', 'COURSE', 'Сдать: Тест 1 «Кинематика»', 'Физика', 5),
@@ -436,7 +453,14 @@ function taskFixture(): TasksData {
       view('retake-exm-2', 'RETAKE', 'Записаться на пересдачу', 'Информатика', 7),
     ],
     later: [
-      view('manual-task-anna-pay', 'MANUAL', 'Оплатить обучение по договору', 'Договор об образовании У-2026-114', 9, true),
+      view(
+        'manual-task-anna-pay',
+        'MANUAL',
+        'Оплатить обучение по договору',
+        'Договор об образовании У-2026-114',
+        9,
+        true,
+      ),
     ],
     openCount: 6,
   };
@@ -746,8 +770,7 @@ describe('DIG-93: /grades при locale=en — без кириллицы', () =>
         delta: 2.3,
       },
       headline: 'The average rose by 2.3 points this month: from 86.4 to 88.7',
-      detail:
-        '“Lab 2” (Programming, 92 out of 100) raised the average the most: 2.3 points.',
+      detail: '“Lab 2” (Programming, 92 out of 100) raised the average the most: 2.3 points.',
     };
     const html = await renderPage(GradesPage);
     expectNoCyrillic(html, 'GradesPage');
@@ -837,9 +860,7 @@ describe('DIG-93: /grades/session при locale=en — без кириллицы
     expect(localized.seasonTitle).toBe('Winter exam session');
     expect(localized.exams[0]!.admissionReason).toBe('Missing: Test 2');
     expect(localized.retakes[0]!.note).toBe('Exam retake (closed)');
-    expect(localizeSessionData('ru', sessionCanonicalFixture())).toEqual(
-      sessionCanonicalFixture(),
-    );
+    expect(localizeSessionData('ru', sessionCanonicalFixture())).toEqual(sessionCanonicalFixture());
   });
 
   it('страница сессии с EN-агрегатом — без кириллицы', async () => {
@@ -1014,9 +1035,7 @@ describe('DIG-93: /deanery при locale=en — без кириллицы', () =
           },
         },
       ],
-      requests: [
-        { number: 'SR-2026-7M0ZH', title: 'Справка об обучении для налоговой' },
-      ],
+      requests: [{ number: 'SR-2026-7M0ZH', title: 'Справка об обучении для налоговой' }],
       disciplines: [
         { code: 'PI21-DB', name: 'Базы данных' },
         { code: 'PI21-INFO', name: 'Информатика' },

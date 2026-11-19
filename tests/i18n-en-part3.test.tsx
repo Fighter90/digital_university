@@ -339,7 +339,10 @@ describe('DIG-89: localizeNotification — известные шаблоны н�
   it('подача заявки: мгновенная и с SLA', () => {
     const instant = localizeNotification(
       'en',
-      row({ title: 'Заявка ЗД-2026-000123', body: '«Справка об обучении»: документ готов к скачиванию.' }),
+      row({
+        title: 'Заявка ЗД-2026-000123',
+        body: '«Справка об обучении»: документ готов к скачиванию.',
+      }),
     );
     expect(instant.title).toBe('Request ЗД-2026-000123');
     expect(instant.body).toBe('"Enrollment certificate": the document is ready for download.');
@@ -348,13 +351,17 @@ describe('DIG-89: localizeNotification — известные шаблоны н�
       'en',
       row({ body: '«Справка об обучении»: заявка подана. Готовность до 18 ноября.' }),
     );
-    expect(submitted.body).toBe('"Enrollment certificate": the request has been submitted. Ready by November 18.');
+    expect(submitted.body).toBe(
+      '"Enrollment certificate": the request has been submitted. Ready by November 18.',
+    );
   });
 
   it('переход статуса: причина, готов, выдан, отменена, повторно', () => {
     expect(
-      localizeNotification('en', row({ body: '«Справка»: деканат принял заявку. Причина: нет скана' }))
-        .body,
+      localizeNotification(
+        'en',
+        row({ body: '«Справка»: деканат принял заявку. Причина: нет скана' }),
+      ).body,
     ).toBe('"Справка": the deanery accepted the request. Reason: нет скана');
     expect(
       localizeNotification('en', row({ body: '«Справка»: документ готов к скачиванию' })).body,
@@ -370,8 +377,10 @@ describe('DIG-89: localizeNotification — известные шаблоны н�
         .body,
     ).toBe('"Справка": the request was fixed and resubmitted');
     expect(
-      localizeNotification('en', row({ body: '«Справка»: заявка принята деканатом. Готовность до 20 ноября' }))
-        .body,
+      localizeNotification(
+        'en',
+        row({ body: '«Справка»: заявка принята деканатом. Готовность до 20 ноября' }),
+      ).body,
     ).toBe('"Справка": the request has been accepted by the deanery. Ready by November 20');
   });
 
@@ -399,9 +408,9 @@ describe('DIG-89: localizeNotification — известные шаблоны н�
         }),
       ).title,
     ).toBe('Retake request created');
-    expect(
-      localizeNotification('en', row({ title: 'Документ отправлен на email' })).title,
-    ).toBe('Document sent to email');
+    expect(localizeNotification('en', row({ title: 'Документ отправлен на email' })).title).toBe(
+      'Document sent to email',
+    );
     expect(
       localizeNotification(
         'en',
@@ -409,8 +418,13 @@ describe('DIG-89: localizeNotification — известные шаблоны н�
       ).title,
     ).toBe('Request for "Справка для отсрочки от армии" created');
     expect(
-      localizeNotification('en', row({ title: 'Ответ по обращению', body: 'Мария Ковалёва ответил в обращении №TS-2026-000001.' }))
-        .body,
+      localizeNotification(
+        'en',
+        row({
+          title: 'Ответ по обращению',
+          body: 'Мария Ковалёва ответил в обращении №TS-2026-000001.',
+        }),
+      ).body,
     ).toBe('Мария Ковалёва replied to ticket №TS-2026-000001.');
     expect(
       localizeNotification(
@@ -419,12 +433,17 @@ describe('DIG-89: localizeNotification — известные шаблоны н�
       ).title,
     ).toBe('Class "Базы данных" rescheduled to room 214');
     expect(
-      localizeNotification('en', row({ type: 'SCHEDULE', title: 'Пара «Базы данных» сегодня отменена' })).title,
+      localizeNotification(
+        'en',
+        row({ type: 'SCHEDULE', title: 'Пара «Базы данных» сегодня отменена' }),
+      ).title,
     ).toBe('Class "Базы данных" is cancelled today');
   });
 
   it('actionLabel и RU-фолбэк', () => {
-    expect(localizeNotification('en', row({ actionLabel: 'Скачать' })).actionLabel).toBe('Download');
+    expect(localizeNotification('en', row({ actionLabel: 'Скачать' })).actionLabel).toBe(
+      'Download',
+    );
     expect(localizeNotification('en', row({ actionLabel: 'Открыть расписание' })).actionLabel).toBe(
       'Open schedule',
     );
@@ -459,16 +478,18 @@ describe('DIG-89: EN-лейблы хелперов без кириллицы', (
     for (const kind of ['SUGGESTION', 'COMPLAINT', 'GRATITUDE'] as const) {
       expectNoCyrillic(feedbackTypeLabel(kind, 'en'), `feedbackType ${kind}`);
     }
-    for (const target of ['DEANERY', 'ACADEMIC_OFFICE', 'PROGRAM_MANAGEMENT', 'UNIVERSITY_MANAGEMENT'] as const) {
+    for (const target of [
+      'DEANERY',
+      'ACADEMIC_OFFICE',
+      'PROGRAM_MANAGEMENT',
+      'UNIVERSITY_MANAGEMENT',
+    ] as const) {
       expectNoCyrillic(feedbackTargetLabel(target, 'en'), `feedbackTarget ${target}`);
     }
     for (const status of ['NEW', 'ANSWERED', 'RESOLVED'] as const) {
       expectNoCyrillic(feedbackStatusLabel(status, 'en'), `feedbackStatus ${status}`);
     }
-    expectNoCyrillic(
-      feedbackDueLabel(new Date(2026, 10, 20), 'en'),
-      'feedbackDueLabel',
-    );
+    expectNoCyrillic(feedbackDueLabel(new Date(2026, 10, 20), 'en'), 'feedbackDueLabel');
     expect(FEEDBACK_RESPONSE_PROMISE_EN).not.toMatch(CYRILLIC);
     expectNoCyrillic(feedbackAnonymousHint(true, 'en'), 'anon hint true');
     expectNoCyrillic(feedbackAnonymousHint(false, 'en'), 'anon hint false');
@@ -499,13 +520,23 @@ describe('DIG-89: EN-лейблы хелперов без кириллицы', (
     for (const scope of ['group', 'faculty', 'university'] as const) {
       expectNoCyrillic(newsScopeLabel(scope, 'en'), `scope ${scope}`);
     }
-    for (const type of ['SCHEDULE', 'GRADE', 'REQUEST', 'NEWS', 'TICKET', 'SYSTEM', 'DEADLINE'] as const) {
+    for (const type of [
+      'SCHEDULE',
+      'GRADE',
+      'REQUEST',
+      'NEWS',
+      'TICKET',
+      'SYSTEM',
+      'DEADLINE',
+    ] as const) {
       expectNoCyrillic(notificationTypeLabel(type, 'en'), `notifType ${type}`);
     }
     for (const channel of ['PUSH', 'EMAIL', 'TELEGRAM'] as const) {
       expectNoCyrillic(notificationChannelLabel(channel, 'en'), `channel ${channel}`);
     }
-    expect(Object.keys(en).filter((k) => k.startsWith('notif.filter.')).length).toBeGreaterThanOrEqual(6);
+    expect(
+      Object.keys(en).filter((k) => k.startsWith('notif.filter.')).length,
+    ).toBeGreaterThanOrEqual(6);
     for (const filter of NOTIFICATION_FILTERS_EN) {
       expectNoCyrillic(filter.label, `notif filter ${filter.value}`);
     }
@@ -518,7 +549,15 @@ describe('DIG-89: EN-лейблы хелперов без кириллицы', (
     for (const kind of ['TEST', 'HOMEWORK', 'LAB', 'PROJECT', 'EXAM'] as const) {
       expectNoCyrillic(elementKindLabel(kind, 'en'), `element ${kind}`);
     }
-    for (const id of ['today', 'deadlines', 'tasks', 'performance', 'requests', 'news', 'events'] as const) {
+    for (const id of [
+      'today',
+      'deadlines',
+      'tasks',
+      'performance',
+      'requests',
+      'news',
+      'events',
+    ] as const) {
       const meta = dashboardWidgetMeta(id, 'en');
       expectNoCyrillic(`${meta.label} ${meta.description}`, `widget ${id}`);
     }
@@ -593,7 +632,10 @@ describe('DIG-89: задачи (/tasks) — EN без кириллицы', () =>
     expect(html).toContain('Overdue');
     expect(html).toContain('This week');
     const empty = renderToStaticMarkup(
-      createElement(TasksView, { data: { ...data, openCount: 0, overdue: [], week: [] }, locale: 'en' } as never),
+      createElement(TasksView, {
+        data: { ...data, openCount: 0, overdue: [], week: [] },
+        locale: 'en',
+      } as never),
     );
     expect(empty).toContain('All done 🎉');
   });
@@ -672,9 +714,7 @@ describe('DIG-89: деканат (/deanery) — EN без кириллицы', (
       createElement(TicketList, { tickets: [ticket], locale: 'en' } as never),
     );
     expectNoCyrillic(html, 'TicketList');
-    const composer = renderToStaticMarkup(
-      createElement(TicketComposer, { locale: 'en' } as never),
-    );
+    const composer = renderToStaticMarkup(createElement(TicketComposer, { locale: 'en' } as never));
     expectNoCyrillic(composer, 'TicketComposer');
     expect(composer).toContain('New ticket');
   });
@@ -794,14 +834,11 @@ describe('DIG-89: мероприятия (/events) — EN без кирилли�
   } as never;
   it('EventCard, EventsFilterChips, EventRegisterButton', () => {
     const html = renderToStaticMarkup(
-      createElement(
-        EventCard,
-        {
-          view: { event, taken: 20, spotsLeft: 480, registeredByMe: false },
-          canRegister: true,
-          locale: 'en',
-        } as never,
-      ),
+      createElement(EventCard, {
+        view: { event, taken: 20, spotsLeft: 480, registeredByMe: false },
+        canRegister: true,
+        locale: 'en',
+      } as never),
     );
     expectNoCyrillic(html, 'EventCard');
     expect(html).toContain('Lecture');
@@ -842,15 +879,28 @@ describe('DIG-89: новости (/news) — EN без кириллицы', () =
     );
     expectNoCyrillic(html, 'NewsCard');
     const tabs = renderToStaticMarkup(
-      createElement(NewsScopeTabs, { scope: 'university', currentQuery: '', locale: 'en' } as never),
+      createElement(NewsScopeTabs, {
+        scope: 'university',
+        currentQuery: '',
+        locale: 'en',
+      } as never),
     );
     expectNoCyrillic(tabs, 'NewsScopeTabs');
     const pills = renderToStaticMarkup(
-      createElement(NewsTopicPills, { topic: 'all', scope: 'university', scopeIsDefault: true, locale: 'en' } as never),
+      createElement(NewsTopicPills, {
+        topic: 'all',
+        scope: 'university',
+        scopeIsDefault: true,
+        locale: 'en',
+      } as never),
     );
     expectNoCyrillic(pills, 'NewsTopicPills');
     const strip = renderToStaticMarkup(
-      createElement(AnnouncementsStrip, { announcements: [article], feedQuery: '', locale: 'en' } as never),
+      createElement(AnnouncementsStrip, {
+        announcements: [article],
+        feedQuery: '',
+        locale: 'en',
+      } as never),
     );
     expectNoCyrillic(strip, 'AnnouncementsStrip');
     const share = renderToStaticMarkup(createElement(ShareButton, { locale: 'en' } as never));
@@ -887,10 +937,18 @@ describe('DIG-89: МСП (/msp) — EN без кириллицы', () => {
       createElement(MspProjectCard, { view, locale: 'en' } as never),
     );
     expectNoCyrillic(html, 'MspProjectCard');
-    const tabs = renderToStaticMarkup(createElement(MspSortTabs, { active: 'new', locale: 'en' } as never));
+    const tabs = renderToStaticMarkup(
+      createElement(MspSortTabs, { active: 'new', locale: 'en' } as never),
+    );
     expectNoCyrillic(tabs, 'MspSortTabs');
     const vote = renderToStaticMarkup(
-      createElement(MspVoteButton, { projectId: 'msp-konspekt', votes: 12, votedByMe: false, isStudent: true, locale: 'en' } as never),
+      createElement(MspVoteButton, {
+        projectId: 'msp-konspekt',
+        votes: 12,
+        votedByMe: false,
+        isStudent: true,
+        locale: 'en',
+      } as never),
     );
     expectNoCyrillic(vote, 'MspVoteButton');
     const comments = renderToStaticMarkup(
@@ -905,7 +963,9 @@ describe('DIG-89: МСП (/msp) — EN без кириллицы', () => {
       createElement(MspLaunchComposer, { locale: 'en' } as never),
     );
     expectNoCyrillic(composer, 'MspLaunchComposer');
-    const day = renderToStaticMarkup(createElement(MspLaunchOfDay, { view, locale: 'en' } as never));
+    const day = renderToStaticMarkup(
+      createElement(MspLaunchOfDay, { view, locale: 'en' } as never),
+    );
     expectNoCyrillic(day, 'MspLaunchOfDay');
   });
 });
@@ -926,9 +986,13 @@ describe('DIG-89: ДПО (/dpo) — EN без кириллицы', () => {
   // Фикстуры выровнены по реальному API: карточки принимают view
   // (DpoCatalogView / DpoMyProgramView), список документов — documents[].
   it('вкладки, чипы формата, карточки, документы', () => {
-    const tabs = renderToStaticMarkup(createElement(DpoTabs, { active: 'catalog', locale: 'en' } as never));
+    const tabs = renderToStaticMarkup(
+      createElement(DpoTabs, { active: 'catalog', locale: 'en' } as never),
+    );
     expectNoCyrillic(tabs, 'DpoTabs');
-    const chips = renderToStaticMarkup(createElement(DpoFormatChips, { active: 'ALL', locale: 'en' } as never));
+    const chips = renderToStaticMarkup(
+      createElement(DpoFormatChips, { active: 'ALL', locale: 'en' } as never),
+    );
     expectNoCyrillic(chips, 'DpoFormatChips');
     const card = renderToStaticMarkup(
       createElement(DpoProgramCard, {
@@ -955,14 +1019,21 @@ describe('DIG-89: ДПО (/dpo) — EN без кириллицы', () => {
 describe('DIG-89: справочник (/people) и сервисы (/services) — EN', () => {
   it('PeopleBrowser, ServicesBrowser, ServiceCard', () => {
     const people = renderToStaticMarkup(
-      createElement(
-        PeopleBrowser,
-        { people: [], groupmates: [], favorites: [], locale: 'en' } as never,
-      ),
+      createElement(PeopleBrowser, {
+        people: [],
+        groupmates: [],
+        favorites: [],
+        locale: 'en',
+      } as never),
     );
     expectNoCyrillic(people, 'PeopleBrowser');
     const services = renderToStaticMarkup(
-      createElement(ServicesBrowser, { services: [], favorites: [], course: 2, locale: 'en' } as never),
+      createElement(ServicesBrowser, {
+        services: [],
+        favorites: [],
+        course: 2,
+        locale: 'en',
+      } as never),
     );
     expectNoCyrillic(services, 'ServicesBrowser');
     const card = renderToStaticMarkup(
@@ -986,7 +1057,9 @@ describe('DIG-89: справочник (/people) и сервисы (/services) �
 describe('DIG-89: профиль (/profile) — EN без кириллицы', () => {
   it('ContactsForm, DataErrorReport, MaskedBadge, NotificationSettings, ThemePicker', () => {
     expectNoCyrillic(
-      renderToStaticMarkup(createElement(ContactsForm, { email: 'a@b.c', phone: '+7 000', locale: 'en' } as never)),
+      renderToStaticMarkup(
+        createElement(ContactsForm, { email: 'a@b.c', phone: '+7 000', locale: 'en' } as never),
+      ),
       'ContactsForm',
     );
     expectNoCyrillic(
@@ -994,11 +1067,20 @@ describe('DIG-89: профиль (/profile) — EN без кириллицы', (
       'DataErrorReport',
     );
     expectNoCyrillic(
-      renderToStaticMarkup(createElement(MaskedBadge, { value: 'x', revealed: false, onToggle: () => {}, locale: 'en' } as never)),
+      renderToStaticMarkup(
+        createElement(MaskedBadge, {
+          value: 'x',
+          revealed: false,
+          onToggle: () => {},
+          locale: 'en',
+        } as never),
+      ),
       'MaskedBadge',
     );
     expectNoCyrillic(
-      renderToStaticMarkup(createElement(NotificationSettings, { channels: {}, locale: 'en' } as never)),
+      renderToStaticMarkup(
+        createElement(NotificationSettings, { channels: {}, locale: 'en' } as never),
+      ),
       'NotificationSettings',
     );
     expectNoCyrillic(
@@ -1024,7 +1106,10 @@ describe('DIG-89: настройки (/settings) — EN без кириллиц�
     );
     expectNoCyrillic(
       renderToStaticMarkup(
-        createElement(QuietHoursSettings, { initial: { enabled: false, from: '22:00', to: '08:00' }, locale: 'en' } as never),
+        createElement(QuietHoursSettings, {
+          initial: { enabled: false, from: '22:00', to: '08:00' },
+          locale: 'en',
+        } as never),
       ),
       'QuietHoursSettings',
     );
@@ -1038,7 +1123,11 @@ describe('DIG-89: настройки (/settings) — EN без кириллиц�
     );
     expectNoCyrillic(
       renderToStaticMarkup(
-        createElement(WidgetsSettings, { order: ['today', 'news'], hidden: [], locale: 'en' } as never),
+        createElement(WidgetsSettings, {
+          order: ['today', 'news'],
+          hidden: [],
+          locale: 'en',
+        } as never),
       ),
       'WidgetsSettings',
     );
@@ -1048,7 +1137,12 @@ describe('DIG-89: настройки (/settings) — EN без кириллиц�
     );
     expectNoCyrillic(
       renderToStaticMarkup(
-        createElement(McpDeaneryServer, { url: 'https://x.y/mcp', tokenMask: null, createdAt: null, locale: 'en' } as never),
+        createElement(McpDeaneryServer, {
+          url: 'https://x.y/mcp',
+          tokenMask: null,
+          createdAt: null,
+          locale: 'en',
+        } as never),
       ),
       'McpDeaneryServer',
     );
@@ -1104,10 +1198,10 @@ describe('DIG-89: сессия и зачётка (/grades/*) — EN без ки�
     );
     expectNoCyrillic(
       renderToStaticMarkup(
-        createElement(
-          CalendarSubscribeCard,
-          { url: 'https://cabinet.example.edu/api/calendar/ics?token=v1.tok.tok', locale: 'en' } as never,
-        ),
+        createElement(CalendarSubscribeCard, {
+          url: 'https://cabinet.example.edu/api/calendar/ics?token=v1.tok.tok',
+          locale: 'en',
+        } as never),
       ),
       'CalendarSubscribeCard',
     );
@@ -1120,9 +1214,7 @@ describe('DIG-89: сессия и зачётка (/grades/*) — EN без ки�
       'GradebookList',
     );
     expectNoCyrillic(
-      renderToStaticMarkup(
-        createElement(GradeFormula, { parts: [], locale: 'en' } as never),
-      ),
+      renderToStaticMarkup(createElement(GradeFormula, { parts: [], locale: 'en' } as never)),
       'GradeFormula',
     );
     expectNoCyrillic(
@@ -1159,7 +1251,11 @@ describe('DIG-89: кабинет сотрудника (/staff) — EN без к�
     );
     expectNoCyrillic(
       renderToStaticMarkup(
-        createElement(AnnouncementForm, { faculty: 'IT', groups: ['CS-21'], locale: 'en' } as never),
+        createElement(AnnouncementForm, {
+          faculty: 'IT',
+          groups: ['CS-21'],
+          locale: 'en',
+        } as never),
       ),
       'AnnouncementForm',
     );

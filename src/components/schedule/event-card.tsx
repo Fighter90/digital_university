@@ -126,7 +126,8 @@ export function EventCard({
         {event.isCancelled && note ? (
           <p className="text-xs font-medium text-error-ink">{note}</p>
         ) : null}
-        {event.isMoved && (locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote) ? (
+        {event.isMoved &&
+        (locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote) ? (
           <p className="text-xs font-medium text-warning-ink">
             {locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote}
           </p>

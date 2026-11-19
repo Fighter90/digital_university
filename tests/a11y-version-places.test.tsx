@@ -68,9 +68,7 @@ afterEach(cleanup);
 /** Полоска в DOM идёт раньше шапки (document order). */
 function expectStripBeforeHeader(strip: HTMLElement, header: HTMLElement): void {
   const preceding = strip.compareDocumentPosition(header);
-  expect(Boolean(preceding & Node.DOCUMENT_POSITION_FOLLOWING), 'полоска раньше шапки').toBe(
-    true,
-  );
+  expect(Boolean(preceding & Node.DOCUMENT_POSITION_FOLLOWING), 'полоска раньше шапки').toBe(true);
 }
 
 describe('DIG-100: Shell кабинета — полоска над шапкой и футер', () => {

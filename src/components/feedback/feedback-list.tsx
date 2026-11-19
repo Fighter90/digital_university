@@ -8,11 +8,7 @@ import { MailPlus, MessagesSquare } from 'lucide-react';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { FeedbackStatusBadge } from '@/components/feedback/feedback-status-badge';
-import {
-  feedbackDueLabel,
-  feedbackTargetLabel,
-  feedbackTypeLabel,
-} from '@/lib/feedback';
+import { feedbackDueLabel, feedbackTargetLabel, feedbackTypeLabel } from '@/lib/feedback';
 import { enFeedbackText } from '@/lib/en-demo-content';
 import { t, type Locale } from '@/lib/i18n';
 import type { FeedbackRow } from '@/server/data';

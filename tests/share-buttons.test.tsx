@@ -48,10 +48,7 @@ describe('ShareButtons — share-ссылки', () => {
     );
     expect(whatsapp).toHaveAttribute('aria-label', 'Поделиться в WhatsApp');
 
-    expect(screen.getByTestId('share-copy')).toHaveAttribute(
-      'aria-label',
-      'Скопировать ссылку',
-    );
+    expect(screen.getByTestId('share-copy')).toHaveAttribute('aria-label', 'Скопировать ссылку');
     expect(screen.getByTestId('share-buttons')).toHaveAttribute(
       'aria-label',
       'Поделиться в соцсетях',
@@ -61,14 +58,8 @@ describe('ShareButtons — share-ссылки', () => {
   it('EN-локаль: aria-label из английского словаря', () => {
     render(<ShareButtons url={PAGE_URL} title={TITLE} locale="en" />);
     expect(screen.getByTestId('share-vk')).toHaveAttribute('aria-label', 'Share on VK');
-    expect(screen.getByTestId('share-telegram')).toHaveAttribute(
-      'aria-label',
-      'Share on Telegram',
-    );
-    expect(screen.getByTestId('share-whatsapp')).toHaveAttribute(
-      'aria-label',
-      'Share on WhatsApp',
-    );
+    expect(screen.getByTestId('share-telegram')).toHaveAttribute('aria-label', 'Share on Telegram');
+    expect(screen.getByTestId('share-whatsapp')).toHaveAttribute('aria-label', 'Share on WhatsApp');
     expect(screen.getByTestId('share-copy')).toHaveAttribute('aria-label', 'Copy the link');
   });
 

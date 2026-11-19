@@ -65,7 +65,8 @@ export function MspProjectCard({
               </Link>
             </h3>
             <p className="text-xs text-muted-foreground">
-              {project.authorName} · {(locale === 'en' ? dateFormatterEn : dateFormatter).format(project.createdAt)}
+              {project.authorName} ·{' '}
+              {(locale === 'en' ? dateFormatterEn : dateFormatter).format(project.createdAt)}
             </p>
           </div>
         </div>

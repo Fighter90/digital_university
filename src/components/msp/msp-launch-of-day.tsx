@@ -64,7 +64,9 @@ export function MspLaunchOfDay({
                   {project.title}
                 </Link>
               </h2>
-              <p className="text-xs text-muted-foreground">{t(locale, 'msp.day.author', { name: project.authorName })}</p>
+              <p className="text-xs text-muted-foreground">
+                {t(locale, 'msp.day.author', { name: project.authorName })}
+              </p>
             </div>
           </div>
           <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{project.tagline}</p>

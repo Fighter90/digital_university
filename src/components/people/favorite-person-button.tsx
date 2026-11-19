@@ -59,15 +59,17 @@ export function FavoritePersonButton({
       >
         <Star
           aria-hidden="true"
-          className={cn('size-4', variant === 'compact' && 'size-5', isFavorite && 'fill-amber-400 text-amber-500')}
+          className={cn(
+            'size-4',
+            variant === 'compact' && 'size-5',
+            isFavorite && 'fill-amber-400 text-amber-500',
+          )}
         />
-        {variant === 'labeled' ? (
-          isFavorite ? (
-            t(locale, 'people.fav.added')
-          ) : (
-            t(locale, 'people.fav.add')
-          )
-        ) : null}
+        {variant === 'labeled'
+          ? isFavorite
+            ? t(locale, 'people.fav.added')
+            : t(locale, 'people.fav.add')
+          : null}
       </button>
       {state?.error ? (
         <p

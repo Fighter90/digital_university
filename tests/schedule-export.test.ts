@@ -24,11 +24,7 @@ const MONDAY = fromMoscowWallClock(2026, 11, 16, 10, 0); // понедельни
 const TUESDAY = fromMoscowWallClock(2026, 11, 17, 12, 0);
 const NEXT_WEEK = fromMoscowWallClock(2026, 11, 24, 10, 0); // вне диапазона недели
 
-const mk = (
-  id: string,
-  startsAt: Date,
-  over: Partial<ScheduleEventRow> = {},
-): ScheduleEventRow => {
+const mk = (id: string, startsAt: Date, over: Partial<ScheduleEventRow> = {}): ScheduleEventRow => {
   const duration = (over.endsAt?.getTime() ?? 0) || 90 * 60_000;
   return {
     id,
@@ -82,7 +78,9 @@ describe('resolveScheduleExportRange (DIG-101)', () => {
     expect(scheduleExportFilename('2026-11-16', 'week', 'xlsx')).toBe(
       'schedule-2026-11-16-week.xlsx',
     );
-    expect(scheduleExportFilename('2026-11-16', 'week', 'pdf')).toBe('schedule-2026-11-16-week.pdf');
+    expect(scheduleExportFilename('2026-11-16', 'week', 'pdf')).toBe(
+      'schedule-2026-11-16-week.pdf',
+    );
   });
 
   it('подпись диапазона: день — «Понедельник, 16 ноября», неделя — «16 – 22 ноября 2026»', () => {
@@ -131,7 +129,9 @@ describe('buildScheduleMarkdown', () => {
     expect(md).toContain('Концепт для конкурса');
     expect(md).toContain('| Время | Дисциплина | Тип | Аудитория | Преподаватель |');
     expect(md).toContain('| --- | --- | --- | --- | --- |');
-    expect(md).toContain('| 10:00–11:30 | Информатика | Лекция | ауд. 305 | Кузнецова Ксения Кирилловна |');
+    expect(md).toContain(
+      '| 10:00–11:30 | Информатика | Лекция | ауд. 305 | Кузнецова Ксения Кирилловна |',
+    );
   });
 
   it('неделя: секция на каждый день, обе пары на месте', () => {
@@ -150,7 +150,9 @@ describe('buildScheduleMarkdown', () => {
     });
     expect(md).toContain('# Schedule');
     expect(md).toContain('| Time | Subject | Type | Room | Teacher |');
-    expect(md).toContain('| 10:00–11:30 | Информатика | Lecture | Room 305 | Кузнецова Ксения Кирилловна |');
+    expect(md).toContain(
+      '| 10:00–11:30 | Информатика | Lecture | Room 305 | Кузнецова Ксения Кирилловна |',
+    );
   });
 
   it('пустой диапазон: заголовок и колонки на месте, «Пар нет»', () => {
@@ -165,7 +167,8 @@ describe('buildScheduleXlsx', () => {
   it('валидный OOXML-пакет: ZIP-сигнатура, обязательные части, CRC32 сходится', () => {
     const bytes = buildScheduleXlsx(buildScheduleExportDays(rows, 'ru'), {
       locale: 'ru',
-      sheetName: 'Расписание', rangeLabel: '16 – 22 ноября 2026',
+      sheetName: 'Расписание',
+      rangeLabel: '16 – 22 ноября 2026',
     });
     expect(bytes[0]).toBe(0x50); // P
     expect(bytes[1]).toBe(0x4b); // K
@@ -192,7 +195,8 @@ describe('buildScheduleXlsx', () => {
   it('worksheet: строка заголовков RU и строки пар; спецсимволы экранированы', () => {
     const bytes = buildScheduleXlsx(buildScheduleExportDays(rows, 'ru'), {
       locale: 'ru',
-      sheetName: 'Расписание', rangeLabel: '16 – 22 ноября 2026',
+      sheetName: 'Расписание',
+      rangeLabel: '16 – 22 ноября 2026',
     });
     const decoder = new TextDecoder();
     // Имена частей и содержимое ищем побайтово через хедеры (см. unzip выше).

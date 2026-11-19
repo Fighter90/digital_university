@@ -159,10 +159,7 @@ const latestGradedAt = (rows: GradeRow[]): Date | null =>
     null,
   );
 
-const planKinds = (
-  plan: DisciplineElementRow[],
-  gradedRows: GradeRow[],
-): GradeElementKind[] => {
+const planKinds = (plan: DisciplineElementRow[], gradedRows: GradeRow[]): GradeElementKind[] => {
   if (plan.length > 0) return plan.map((el) => el.kind);
   // Старые сиды без плана контроля — выводим из сданных элементов.
   return gradedRows.map((row) => row.kind);
@@ -281,9 +278,7 @@ export async function getGradebook(
       : null,
     semesters,
     overallAverage: weightedAverage(overallItems),
-    creditsEarned: computed
-      .filter(isCreditEarned)
-      .reduce((sum, item) => sum + item.credits, 0),
+    creditsEarned: computed.filter(isCreditEarned).reduce((sum, item) => sum + item.credits, 0),
     creditsRequired,
     hasGrades: ownGrades.length > 0,
   };
@@ -395,7 +390,8 @@ export async function getDisciplineCard(
   const exam: DisciplineExamView | null = examElement
     ? {
         elementCode: examElement.elementCode,
-        elementName: locale === 'en' ? enElementName(examElement.elementName) : examElement.elementName,
+        elementName:
+          locale === 'en' ? enElementName(examElement.elementName) : examElement.elementName,
         weightPercent: Math.round(examElement.weight * 100),
         maxScore: examElement.maxScore,
         graded: latestByElement.has(examElement.elementCode),

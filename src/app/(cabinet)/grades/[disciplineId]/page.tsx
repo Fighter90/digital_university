@@ -49,10 +49,7 @@ export default async function DisciplineCardPage({
   } catch {
     notFound();
   }
-  const [ctx, locale] = await Promise.all([
-    requireDataCtx(`/grades/${rawCode}`),
-    getLocale(),
-  ]);
+  const [ctx, locale] = await Promise.all([requireDataCtx(`/grades/${rawCode}`), getLocale()]);
 
   // DIG-93 — карточка дисциплины: подписи агрегата по локали (семестр),
   // имена дисциплины/преподавателя — на дисплее ниже (канон нужен для href).
@@ -73,8 +70,7 @@ export default async function DisciplineCardPage({
   const oneDecimal = (value: number): string =>
     locale === 'en' ? value.toFixed(1) : value.toFixed(1).replace('.', ',');
 
-  const accumulatedLabel =
-    card.accumulated === null ? '—' : oneDecimal(card.accumulated);
+  const accumulatedLabel = card.accumulated === null ? '—' : oneDecimal(card.accumulated);
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 md:py-8">
@@ -97,9 +93,7 @@ export default async function DisciplineCardPage({
               {teacherLabel ? (
                 teacherLabel
               ) : (
-                <span className="text-muted-foreground">
-                  {t(locale, 'discipline.noTeacher')}
-                </span>
+                <span className="text-muted-foreground">{t(locale, 'discipline.noTeacher')}</span>
               )}
             </p>
             {teacherHref ? (

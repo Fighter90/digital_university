@@ -51,10 +51,11 @@ import type {
   MspVoteRow,
   /** DIG-43 — мероприятия вуза и запись (/events). */
   EventRegistrationRow,
-  EventRow,  /** DIG-42 — «Дополнительное образование» (/dpo). */
+  EventRow /** DIG-42 — «Дополнительное образование» (/dpo). */,
   DpoDocumentRow,
   DpoEnrollmentRow,
-  DpoProgramRow,} from './types';
+  DpoProgramRow,
+} from './types';
 import { canonicalRequestNumberSeq } from './canonical-request-number';
 export interface MemorySeed {
   students?: StudentRow[];
@@ -107,12 +108,13 @@ export interface MemorySeed {
   /** DIG-43 — афиша мероприятий вуза (/events). */
   events?: EventRow[];
   /** DIG-43 — записи студентов на мероприятия (UNIQUE пары). */
-  eventRegistrations?: EventRegistrationRow[];  /** DIG-42 — программы каталога «Дополнительное образование» (/dpo). */
+  eventRegistrations?: EventRegistrationRow[]; /** DIG-42 — программы каталога «Дополнительное образование» (/dpo). */
   dpoPrograms?: DpoProgramRow[];
   /** DIG-42 — записи студентов на программы (UNIQUE пары программа+студент). */
   dpoEnrollments?: DpoEnrollmentRow[];
   /** DIG-42 — документы студентов по программам ДПО. */
-  dpoDocuments?: DpoDocumentRow[];}
+  dpoDocuments?: DpoDocumentRow[];
+}
 
 export interface MemoryDataDb extends DataDb {
   /** Test/demo helper: replaces the whole dataset (never called in pages). */
@@ -156,10 +158,11 @@ export function createMemoryDataDb(): MemoryDataDb {
   let mspVotes: MspVoteRow[] = [];
   let mspComments: MspCommentRow[] = [];
   let events: EventRow[] = [];
-  let eventRegistrations: EventRegistrationRow[] = [];  // DIG-42 — «Дополнительное образование» (/dpo).
+  let eventRegistrations: EventRegistrationRow[] = []; // DIG-42 — «Дополнительное образование» (/dpo).
   let dpoPrograms: DpoProgramRow[] = [];
   let dpoEnrollments: DpoEnrollmentRow[] = [];
-  let dpoDocuments: DpoDocumentRow[] = [];  let audit: AuditLogRow[] = [];
+  let dpoDocuments: DpoDocumentRow[] = [];
+  let audit: AuditLogRow[] = [];
   let auditSeq = 0;
   let notificationSeq = 0;
   let appealSeq = 0;
@@ -222,10 +225,11 @@ export function createMemoryDataDb(): MemoryDataDb {
       mspVotes = seed.mspVotes ? seed.mspVotes.map(clone) : [];
       mspComments = seed.mspComments ? seed.mspComments.map(clone) : [];
       events = seed.events ? seed.events.map(clone) : [];
-      eventRegistrations = seed.eventRegistrations ? seed.eventRegistrations.map(clone) : [];      // DIG-42 — «Дополнительное образование» (/dpo).
+      eventRegistrations = seed.eventRegistrations ? seed.eventRegistrations.map(clone) : []; // DIG-42 — «Дополнительное образование» (/dpo).
       dpoPrograms = seed.dpoPrograms ? seed.dpoPrograms.map(clone) : [];
       dpoEnrollments = seed.dpoEnrollments ? seed.dpoEnrollments.map(clone) : [];
-      dpoDocuments = seed.dpoDocuments ? seed.dpoDocuments.map(clone) : [];      audit = [];
+      dpoDocuments = seed.dpoDocuments ? seed.dpoDocuments.map(clone) : [];
+      audit = [];
     },
 
     auditEvents() {
@@ -1113,7 +1117,7 @@ export function createMemoryDataDb(): MemoryDataDb {
     // Агрегат: наружу уходит число записанных, не чужие строки.
     async listEventAttendeeCount(eventId) {
       return countAttendees(eventId);
-    },    // ── DIG-42: «Дополнительное образование» (/dpo) ────────────────────────
+    }, // ── DIG-42: «Дополнительное образование» (/dpo) ────────────────────────
     async listDpoPrograms() {
       return dpoPrograms.map(clone);
     },

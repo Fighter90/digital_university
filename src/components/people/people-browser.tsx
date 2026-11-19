@@ -82,7 +82,10 @@ export function PeopleBrowser({
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PeopleFilter>('ALL');
 
-  const favoriteIds = useMemo(() => new Set(favorites.map((favorite) => favorite.personId)), [favorites]);
+  const favoriteIds = useMemo(
+    () => new Set(favorites.map((favorite) => favorite.personId)),
+    [favorites],
+  );
   const favoriteEntries = useMemo(() => favorites.map(favoriteAsListEntry), [favorites]);
   // Поиск ведётся по всему видимому студенту набору: каталог + одногруппники.
   const searchPool = useMemo(() => [...people, ...groupmates], [people, groupmates]);
@@ -101,7 +104,10 @@ export function PeopleBrowser({
     );
   }, [favoriteEntries, filter, hasQuery, people, query, searchPool]);
 
-  const groupedFavorites = useMemo(() => groupFavoritePersonsByKind(favoriteEntries), [favoriteEntries]);
+  const groupedFavorites = useMemo(
+    () => groupFavoritePersonsByKind(favoriteEntries),
+    [favoriteEntries],
+  );
 
   return (
     <div data-testid="people-browser">
@@ -150,7 +156,13 @@ export function PeopleBrowser({
             />
           </div>
         ) : (
-          <PersonList people={visible} query={query} showPersonal={showPersonal} favoriteIds={favoriteIds} locale={locale} />
+          <PersonList
+            people={visible}
+            query={query}
+            showPersonal={showPersonal}
+            favoriteIds={favoriteIds}
+            locale={locale}
+          />
         )
       ) : filter === 'FAVORITES' ? (
         favorites.length === 0 ? (
@@ -209,7 +221,13 @@ export function PeopleBrowser({
           description={t(locale, 'people.browser.empty.desc')}
         />
       ) : (
-        <PersonList people={visible} query={query} showPersonal={showPersonal} favoriteIds={favoriteIds} locale={locale} />
+        <PersonList
+          people={visible}
+          query={query}
+          showPersonal={showPersonal}
+          favoriteIds={favoriteIds}
+          locale={locale}
+        />
       )}
     </div>
   );
@@ -325,11 +343,11 @@ function PersonListItem({
           )}
           {myDisciplines.length > 0 ? (
             <p className="mt-2 text-xs text-muted-foreground" data-testid="person-my-disciplines">
-              <span className="font-semibold text-foreground">{t(locale, 'people.yourDisciplines')}</span>{' '}
+              <span className="font-semibold text-foreground">
+                {t(locale, 'people.yourDisciplines')}
+              </span>{' '}
               {myDisciplines
-                .map((discipline) =>
-                  locale === 'en' ? enDisciplineName(discipline) : discipline,
-                )
+                .map((discipline) => (locale === 'en' ? enDisciplineName(discipline) : discipline))
                 .join(', ')}
             </p>
           ) : null}

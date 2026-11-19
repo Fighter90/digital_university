@@ -106,9 +106,11 @@ function workbookXml(sheets: readonly XlsxSheet[]): string {
 }
 
 function contentTypesXml(sheetCount: number): string {
-  const overrides = Array.from({ length: sheetCount }, (_, index) =>
-    `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ` +
-    'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>',
+  const overrides = Array.from(
+    { length: sheetCount },
+    (_, index) =>
+      `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ` +
+      'ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>',
   ).join('');
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -130,11 +132,13 @@ function rootRelsXml(): string {
 }
 
 function workbookRelsXml(sheetCount: number): string {
-  const items = Array.from({ length: sheetCount }, (_, index) =>
-    '<Relationship ' +
-    `Id="rId${index + 1}" ` +
-    'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" ' +
-    `Target="worksheets/sheet${index + 1}.xml"/>`,
+  const items = Array.from(
+    { length: sheetCount },
+    (_, index) =>
+      '<Relationship ' +
+      `Id="rId${index + 1}" ` +
+      'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" ' +
+      `Target="worksheets/sheet${index + 1}.xml"/>`,
   ).join('');
   return (
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -156,8 +160,7 @@ function buildZip(entries: readonly { name: string; data: Uint8Array }[]): Uint8
   let centralSize = 0;
   for (const entry of entries) centralSize += 46 + entry.name.length;
 
-  const total =
-    localSize + centralSize + 22; // EOCD
+  const total = localSize + centralSize + 22; // EOCD
   const buffer = new Uint8Array(total);
   const view = new DataView(buffer.buffer);
 
@@ -226,7 +229,10 @@ export function buildXlsx(sheets: readonly XlsxSheet[]): Uint8Array {
   parts.push({ name: '[Content_Types].xml', data: UTF8.encode(contentTypesXml(sheets.length)) });
   parts.push({ name: '_rels/.rels', data: UTF8.encode(rootRelsXml()) });
   parts.push({ name: 'xl/workbook.xml', data: UTF8.encode(workbookXml(sheets)) });
-  parts.push({ name: 'xl/_rels/workbook.xml.rels', data: UTF8.encode(workbookRelsXml(sheets.length)) });
+  parts.push({
+    name: 'xl/_rels/workbook.xml.rels',
+    data: UTF8.encode(workbookRelsXml(sheets.length)),
+  });
   sheets.forEach((sheet, index) => {
     parts.push({
       name: `xl/worksheets/sheet${index + 1}.xml`,

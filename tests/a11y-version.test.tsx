@@ -70,8 +70,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => ({
-    get: (name: string) =>
-      state.jar.has(name) ? { name, value: state.jar.get(name) } : undefined,
+    get: (name: string) => (state.jar.has(name) ? { name, value: state.jar.get(name) } : undefined),
     set: (name: string, value: string) => {
       state.jar.set(name, value);
       state.sets.push({ name, value });

@@ -144,12 +144,14 @@ export function personEnFields(person: PersonEntry): {
   program: string | null;
 } {
   const en = PEOPLE_EN[person.id];
-  return en ?? {
-    position: person.position,
-    department: person.department,
-    consultationHours: person.consultationHours,
-    program: person.program,
-  };
+  return (
+    en ?? {
+      position: person.position,
+      department: person.department,
+      consultationHours: person.consultationHours,
+      program: person.program,
+    }
+  );
 }
 
 /** EN-имена дисциплин преподавателя (по коду/RU-имени сида). */
@@ -477,7 +479,10 @@ export function matchPersonContacts(person: PersonContactSearchable, query: stri
   if (q === '') return true;
   if (matchPersonFullName(person.fullName, q)) return true;
   if (person.email.toLowerCase().includes(q)) return true;
-  if (person.phone !== null && normalizePersonPhone(person.phone).includes(normalizePersonPhone(q))) {
+  if (
+    person.phone !== null &&
+    normalizePersonPhone(person.phone).includes(normalizePersonPhone(q))
+  ) {
     return true;
   }
   return false;

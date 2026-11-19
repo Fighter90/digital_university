@@ -481,10 +481,7 @@ export interface GroupRatingView {
   hasAnyGrades: boolean;
 }
 
-export async function getGroupRating(
-  db: DataDb,
-  ctx: DataCtx,
-): Promise<GroupRatingView | null> {
+export async function getGroupRating(db: DataDb, ctx: DataCtx): Promise<GroupRatingView | null> {
   if (ctx.studentId === null || ctx.groupName === null) {
     await denyAccess(db, {
       ctx,
@@ -514,11 +511,7 @@ export async function getGroupRating(
 
   const entries = students
     .map((student) => {
-      const average = gpaOfStudent(
-        gradesByStudent.get(student.id) ?? [],
-        disciplines,
-        elements,
-      );
+      const average = gpaOfStudent(gradesByStudent.get(student.id) ?? [], disciplines, elements);
       return average === null
         ? null
         : { studentId: student.id, fullName: student.fullName, average };

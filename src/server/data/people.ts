@@ -417,10 +417,7 @@ export async function toggleFavoritePerson(
  * группе: покинувший группу (или удалённый) человек молча выпадает из
  * списка — избранное остаётся честным.
  */
-export async function listFavoritePersons(
-  db: DataDb,
-  ctx: DataCtx,
-): Promise<FavoritePersonsData> {
+export async function listFavoritePersons(db: DataDb, ctx: DataCtx): Promise<FavoritePersonsData> {
   if (ctx.studentId === null) {
     // Сотрудник деканата: студенческого избранного нет (без аудита — /people
     // общая страница, отказ здесь не событие доступа, а отсутствие секции).

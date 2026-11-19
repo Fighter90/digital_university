@@ -51,9 +51,7 @@ function localizeProgram<T extends { program: { id: string } }>(view: T, locale:
           ...en,
           // DIG-93 — тег факультета («ИТ» → «IT»); иначе RU-тег утекает
           // в строку «Starts … · ИТ».
-          facultyTag: enFacultyLabel(
-            (view.program as { facultyTag?: string }).facultyTag ?? null,
-          ),
+          facultyTag: enFacultyLabel((view.program as { facultyTag?: string }).facultyTag ?? null),
         },
       }
     : view;

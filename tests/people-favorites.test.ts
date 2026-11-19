@@ -212,9 +212,9 @@ describe('owner-scope — избранное приватно по владел�
     expect(view.hasPersonalScope).toBe(false);
     // Отказ задокументирован в аудите.
     const audit = db.auditEvents();
-    expect(audit.some((row) => row.resourceType === 'person' && row.reason === 'ROLE_MISMATCH')).toBe(
-      true,
-    );
+    expect(
+      audit.some((row) => row.resourceType === 'person' && row.reason === 'ROLE_MISMATCH'),
+    ).toBe(true);
   });
 });
 

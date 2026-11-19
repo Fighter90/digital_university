@@ -96,7 +96,9 @@ async function ArticleContent({ id, backHref }: { id: string; backHref: string }
             {formatNewsDate(article.publishedAt, locale)} · {source}
           </p>
           <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">{title}</h1>
-          <p className="text-sm text-muted-foreground">{t(locale, 'news.author', { name: article.authorName })}</p>
+          <p className="text-sm text-muted-foreground">
+            {t(locale, 'news.author', { name: article.authorName })}
+          </p>
 
           <div className="flex flex-col gap-3 text-sm leading-relaxed text-neutral-700">
             {paragraphs.map((paragraph, i) => (

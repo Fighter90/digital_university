@@ -73,7 +73,9 @@ export function scheduleExportFilename(
 
 /** Подпись диапазона: «Понедельник, 16 ноября» / «16 – 22 ноября 2026». */
 export function scheduleExportRangeLabel(range: ScheduleExportRange, locale: Locale): string {
-  return range.view === 'week' ? weekLabel(range.monday, locale) : formatDayTitle(range.from, locale);
+  return range.view === 'week'
+    ? weekLabel(range.monday, locale)
+    : formatDayTitle(range.from, locale);
 }
 
 // ── Модель дней экспорта ─────────────────────────────────────────────────────
@@ -204,9 +206,7 @@ export function buildScheduleXlsx(
       table.push([row.time, row.discipline, row.kind, row.room, row.teacher]);
     }
   }
-  return buildXlsx([
-    { name: options.sheetName ?? docTitle(locale), rows: table },
-  ]);
+  return buildXlsx([{ name: options.sheetName ?? docTitle(locale), rows: table }]);
 }
 
 // ── PDF (механизм справок/выписки: векторный шрифт, моноширинная сетка) ─────

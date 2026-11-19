@@ -11,7 +11,8 @@ import { createElement, type ComponentType } from 'react';
 import { prerenderToNodeStream } from 'react-dom/static';
 
 import type { PerformanceData, DisciplinePerformance } from '@/server/data/performance';
-import type { GradeInsight } from '@/lib/grade-insight';import type { DataCtx, ExamSessionRow } from '@/server/data/types';
+import type { GradeInsight } from '@/lib/grade-insight';
+import type { DataCtx, ExamSessionRow } from '@/server/data/types';
 const studentCtx: DataCtx = {
   userId: 'auth-anna',
   login: 'anna.smirnova',
@@ -426,7 +427,8 @@ async function renderWith(overrides: {
       overrides.insight !== undefined ? overrides.insight : demoInsight,
     );
   }
-  return renderPage(GradesPage, searchProps);  return renderPage(
+  return renderPage(GradesPage, searchProps);
+  return renderPage(
     GradesPage,
     overrides.searchParams ? { searchParams: Promise.resolve(overrides.searchParams) } : undefined,
   );

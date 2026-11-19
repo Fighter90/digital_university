@@ -123,9 +123,7 @@ describe('GET /api/export/schedule.md', () => {
   it('другой студент: только своя группа (IDOR исключён скоупом сессии)', async () => {
     sessionAs({ id: 'auth-ilya', login: 'ilya', role: 'STUDENT' });
     const { GET } = await import('@/app/api/export/schedule.md/route');
-    const body = await (
-      await GET(new Request(MD_URL))
-    ).text();
+    const body = await (await GET(new Request(MD_URL))).text();
     expect(body).toContain('Экономика группы Ильи');
     expect(body).not.toContain('Информатика группы Анны');
     expect(body).not.toContain('Физика группы Анны');

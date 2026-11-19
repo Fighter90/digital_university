@@ -23,6 +23,7 @@ import {
   type AssistantReply,
 } from '@/lib/assistant-engine';
 import { t, type Locale } from '@/lib/i18n';
+import { enPersonName } from '@/lib/en-demo-content';
 import { AssistantCardList, ReportWrongAnswer } from './assistant-cards';
 
 interface ChatMessage {
@@ -68,8 +69,13 @@ const nextId = (): number => {
 
 function greetingMessage(context: AssistantContext | null, locale: Locale = 'ru'): ChatMessage {
   const name = context?.firstName;
-  const text = name
-    ? t(locale, 'assistant.greetingName', { name, suffix: t(locale, 'assistant.greetingSuffix') })
+  // DIG-93 — демо-персон по локали: «Анна» → «Anna» на EN (en-demo-словарь).
+  const displayName = name && locale === 'en' ? enPersonName(name) : name;
+  const text = displayName
+    ? t(locale, 'assistant.greetingName', {
+        name: displayName,
+        suffix: t(locale, 'assistant.greetingSuffix'),
+      })
     : t(locale, 'assistant.greeting', { suffix: t(locale, 'assistant.greetingSuffix') });
   return {
     id: nextId(),
@@ -135,7 +141,9 @@ export function AssistantChat({
   locale = 'ru',
 }: AssistantChatProps) {
   const [dialogs, setDialogs] = useState<Dialog[]>(() =>
-    seedQuestion ? [seededDialog(seedQuestion, context, locale)] : [makeInitialDialog(context, locale)],
+    seedQuestion
+      ? [seededDialog(seedQuestion, context, locale)]
+      : [makeInitialDialog(context, locale)],
   );
   const [activeId, setActiveId] = useState<number>(() => dialogs[0]!.id);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -164,10 +172,7 @@ export function AssistantChat({
           ...dialog,
           messages: dialog.messages.map((message) => {
             if (!message.streaming) return message;
-            const nextLength = Math.min(
-              message.text.length,
-              message.displayedText.length + chunk,
-            );
+            const nextLength = Math.min(message.text.length, message.displayedText.length + chunk);
             return {
               ...message,
               displayedText: message.text.slice(0, nextLength),
@@ -348,7 +353,11 @@ export function AssistantChat({
 
                 {message.role === 'assistant' && message.reply ? (
                   <>
-                    <AssistantCardList cards={message.reply.cards} onNavigate={onNavigate} locale={locale} />
+                    <AssistantCardList
+                      cards={message.reply.cards}
+                      onNavigate={onNavigate}
+                      locale={locale}
+                    />
                     {message.reply.sources.length > 0 ? (
                       <p
                         data-testid="assistant-sources"

@@ -195,9 +195,7 @@ function SessionView({
             <Sparkles aria-hidden="true" className="size-4 text-accent-ink" />
             {t(locale, 'session.ai.title')}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t(locale, 'session.ai.desc')}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t(locale, 'session.ai.desc')}</p>
           <Link
             data-testid="ai-hint"
             href={`/ai-assistant?intent=exam-prep&discipline=${encodeURIComponent(hint.disciplineCode)}`}

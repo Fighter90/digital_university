@@ -5,11 +5,7 @@
 // DIG-102 — поиск «Найти человека» (ФИО/email/телефон, одногруппники) и
 // «★ Избранное»: favorites собирает listFavoritePersons по владельцу сессии.
 // Поиск и фильтры — на клиенте (PeopleBrowser), данные приходят одним агрегатом.
-import {
-  requireDataCtx,
-  getPeopleDirectory,
-  listFavoritePersons,
-} from '@/server/data';
+import { requireDataCtx, getPeopleDirectory, listFavoritePersons } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { PeopleBrowser } from '@/components/people/people-browser';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -34,9 +30,7 @@ export default async function PeoplePage() {
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
       <SectionTitle href="/people" className="text-xl font-bold sm:text-2xl" />
-      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        {t(locale, 'people.subtitle')}
-      </p>
+      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t(locale, 'people.subtitle')}</p>
 
       {data.people.length === 0 ? (
         <EmptyState

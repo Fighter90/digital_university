@@ -20,11 +20,7 @@ import { formatMoscowTime } from '@/lib/schedule-time';
 import { lessonKindLabel } from '@/lib/dashboard-format';
 import { LESSON_KIND_META, formatDayTitle } from '@/lib/schedule-cards';
 import { t, type Locale } from '@/lib/i18n';
-import {
-  enDisciplineName,
-  enPersonName,
-  enScheduleNote,
-} from '@/lib/en-demo-content';
+import { enDisciplineName, enPersonName, enScheduleNote } from '@/lib/en-demo-content';
 import { type IcsEventInput } from '@/lib/ics';
 import type { ScheduleEventRow } from '@/server/data/types';
 
@@ -144,7 +140,9 @@ export function toEventDetailsView(row: ScheduleEventRow, locale: Locale = 'ru')
     deaneryNote:
       isMoved || isCancelled
         ? null
-        : (locale === 'en' ? enScheduleNote(row.note) : (row.note ?? null)),
+        : locale === 'en'
+          ? enScheduleNote(row.note)
+          : (row.note ?? null),
     move: isMoved
       ? {
           wasLabel: wasParts.length > 0 ? wasParts.join(', ') : null,

@@ -87,8 +87,7 @@ export default async function GradebookPage({
               // EN-словарь сида); канонические значения в данных не меняются.
               <p className="mt-1 text-sm text-muted-foreground">
                 {localizePersonName(locale, data.student.fullName)} ·{' '}
-                {localizedGroup(locale, data.student.groupName)} · №{' '}
-                {data.student.gradebookNumber}
+                {localizedGroup(locale, data.student.groupName)} · № {data.student.gradebookNumber}
               </p>
             ) : null}
           </div>

@@ -175,7 +175,11 @@ function statusOf(info: DisciplineSessionInfo): {
   if (info.ungradedOthers.length === 0) {
     return { status: 'ADMITTED', score: null, reason: null };
   }
-  return { status: 'NOT_ADMITTED', score: null, reason: admissionReasonPhrase(info.ungradedOthers) };
+  return {
+    status: 'NOT_ADMITTED',
+    score: null,
+    reason: admissionReasonPhrase(info.ungradedOthers),
+  };
 }
 
 /**
