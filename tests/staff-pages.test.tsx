@@ -281,12 +281,20 @@ describe('страница /staff/requests — очередь', () => {
   });
 
   it('фильтр overdue скрывает не-просроченные заявки', async () => {
-    state.queue = queueFixture();
-    const html = await renderPage(StaffQueuePage, {
-      searchParams: Promise.resolve({ due: 'overdue' }),
-    });
-    expect(html).toContain('SR-2026-K9L8M');
-    expect(html).not.toContain('SR-2026-N4P5Q');
+    // Дата-независимость (урок DIG-67/BUG-флейки): фиксируем «сейчас» между
+    // сроками фикстур — K9L8M (срок 13.11) просрочена, N4P5Q (срок 19.11) нет.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-11-16T12:00:00'));
+    try {
+      state.queue = queueFixture();
+      const html = await renderPage(StaffQueuePage, {
+        searchParams: Promise.resolve({ due: 'overdue' }),
+      });
+      expect(html).toContain('SR-2026-K9L8M');
+      expect(html).not.toContain('SR-2026-N4P5Q');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('пустая очередь после фильтра — нейтральное состояние', async () => {

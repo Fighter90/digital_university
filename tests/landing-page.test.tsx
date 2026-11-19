@@ -59,13 +59,17 @@ describe('LandingPage — hero (DIG-57)', () => {
 });
 
 describe('LandingPage — все CTA ведут на /login (DIG-57)', () => {
-  it('keeps every link either a /login entry point or an in-page anchor', () => {
+  it('keeps every link either an entry point, an in-page anchor, help or the portal', () => {
     const { container } = renderLanding();
     const links = Array.from(container.querySelectorAll('a[href]'));
     expect(links.length).toBeGreaterThanOrEqual(2);
     for (const link of links) {
       const href = link.getAttribute('href') ?? '';
-      expect(href === '/login' || href.startsWith('#')).toBe(true);
+      // DIG-90: разрешины вход (/login), якоря секций, справка (/help)
+      // и личный кабинет (/dashboard — middleware сам отправит на вход).
+      expect(
+        ['/login', '/help', '/dashboard'].some((h) => href === h) || href.startsWith('#'),
+      ).toBe(true);
     }
   });
 
@@ -73,6 +77,29 @@ describe('LandingPage — все CTA ведут на /login (DIG-57)', () => {
     renderLanding();
     const finalCta = screen.getByRole('link', { name: /Попробовать демо/ });
     expect(finalCta).toHaveAttribute('href', '/login');
+  });
+});
+
+describe('LandingPage — меню шапки (DIG-90)', () => {
+  it('has the «Личный кабинет» menu link pointing to /dashboard', () => {
+    renderLanding();
+    const cabinet = screen.getAllByRole('link', { name: /Личный кабинет/ });
+    expect(cabinet.length).toBeGreaterThanOrEqual(1);
+    for (const link of cabinet) expect(link).toHaveAttribute('href', '/dashboard');
+  });
+
+  it('has the «Справка» menu link pointing to /help', () => {
+    renderLanding();
+    const help = screen.getAllByRole('link', { name: 'Справка' });
+    expect(help.length).toBeGreaterThanOrEqual(1);
+    for (const link of help) expect(link).toHaveAttribute('href', '/help');
+  });
+
+  it('shows the full language switcher «Русский / English»', () => {
+    renderLanding();
+    expect(screen.getByRole('button', { name: 'Русский' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'English' })).toBeInTheDocument();
+    expect(screen.getByTestId('locale-switch')).toBeInTheDocument();
   });
 });
 
