@@ -23,12 +23,14 @@ import {
 import {
   CONTROL_TYPE_LABELS,
   controlTypeOf,
+  elementKindLabel,
   gradeParts,
-  PART_LABELS,
   type ControlType,
   type GradePart,
   type GradeElementKind,
 } from '@/lib/gradebook';
+import { t, type Locale } from '@/lib/i18n';
+import { enDisciplineName, enElementName } from '@/lib/en-demo-content';
 import { denyAccess } from './access';
 import { computeDisciplines, type DisciplineComputation } from './performance';
 import type { DataDb } from './port';
@@ -178,6 +180,7 @@ export async function getGradebook(
   db: DataDb,
   ctx: DataCtx,
   now: Date = new Date(),
+  locale: Locale = 'ru',
 ): Promise<GradebookData> {
   if (ctx.studentId === null || ctx.groupName === null) {
     await denyAccess(db, {
@@ -208,7 +211,8 @@ export async function getGradebook(
     if (!bucket) {
       bucket = {
         key,
-        label: semesterKeyLabel(key),
+        // DIG-93 — подпись семестра по локали («Fall semester 2026/27»).
+        label: semesterKeyLabel(key, locale),
         disciplines: [],
         average: null,
         creditsEarned: 0,
@@ -223,7 +227,9 @@ export async function getGradebook(
     const controlType = controlTypeOf(kinds);
     bucket.disciplines.push({
       disciplineCode: item.code,
-      disciplineName: item.name,
+      // DIG-93 — EN-имя дисциплины в зачётке.
+      disciplineName:
+        locale === 'en' ? enDisciplineName({ code: item.code, name: item.name }) : item.name,
       credits: item.credits,
       controlType,
       controlTypeLabel: controlType ? CONTROL_TYPE_LABELS[controlType] : '—',
@@ -296,6 +302,7 @@ export async function getDisciplineCard(
   ctx: DataCtx,
   disciplineCode: string,
   now: Date = new Date(),
+  locale: Locale = 'ru',
 ): Promise<DisciplineCardData | null> {
   if (ctx.studentId === null || ctx.groupName === null) {
     await denyAccess(db, {
@@ -374,8 +381,9 @@ export async function getDisciplineCard(
     .map((row) => ({
       id: row.id,
       elementCode: row.elementCode,
-      elementName: row.elementName,
-      kindLabel: PART_LABELS[row.kind],
+      // DIG-93 — EN-имя элемента контроля и подпись части по локали.
+      elementName: locale === 'en' ? enElementName(row.elementName) : row.elementName,
+      kindLabel: elementKindLabel(row.kind, locale),
       score: row.score,
       maxScore: row.maxScore,
       gradedAt: row.gradedAt,
@@ -387,7 +395,7 @@ export async function getDisciplineCard(
   const exam: DisciplineExamView | null = examElement
     ? {
         elementCode: examElement.elementCode,
-        elementName: examElement.elementName,
+        elementName: locale === 'en' ? enElementName(examElement.elementName) : examElement.elementName,
         weightPercent: Math.round(examElement.weight * 100),
         maxScore: examElement.maxScore,
         graded: latestByElement.has(examElement.elementCode),
@@ -399,7 +407,7 @@ export async function getDisciplineCard(
     disciplineName: computed.name,
     teacherName: reference?.teacherName ?? null,
     credits: computed.credits,
-    semesterLabel: computed.semester ? semesterKeyLabel(computed.semester) : null,
+    semesterLabel: computed.semester ? semesterKeyLabel(computed.semester, locale) : null,
     accumulated: computed.acc.accumulated,
     maxPossible: computed.acc.maxPossible,
     finalGrade:
@@ -408,7 +416,11 @@ export async function getDisciplineCard(
         : null,
     isComplete: computed.isComplete,
     creditEarned: isCreditEarned(computed),
-    parts: gradeParts(partsSource, gradedRows),
+    parts: gradeParts(partsSource, gradedRows).map((part) => ({
+      ...part,
+      // DIG-93 — подпись части формулы по локали («Контрольные» → «Test papers»).
+      label: elementKindLabel(part.kind, locale),
+    })),
     grades,
     exam,
   };

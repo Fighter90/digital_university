@@ -91,6 +91,7 @@ function ticketFixture(overrides: Partial<TicketListItem> = {}): TicketListItem 
     createdAt: new Date(2026, 10, 12, 10, 0),
     updatedAt: new Date(2026, 10, 14, 15, 30),
     lastMessage: {
+      id: 'tktmsg-fixture-1',
       authorRole: 'STAFF',
       body: 'Добрый день! Проверим ведомость и вернёмся с ответом.',
       createdAt: new Date(2026, 10, 14, 15, 30),
@@ -113,6 +114,7 @@ function pageFixture(): DeaneryPageData {
         disciplineCode: null,
         updatedAt: new Date(2026, 10, 15, 9, 0),
         lastMessage: {
+          id: 'tktmsg-fixture-2',
           authorRole: 'STUDENT',
           body: 'Как оформить академический отпуск?',
           createdAt: new Date(2026, 10, 15, 9, 0),

@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { t, type Locale } from '@/lib/i18n';
-import { localizedEvent } from '@/lib/en-demo-content';
+import { enNewsItem, localizedEvent } from '@/lib/en-demo-content';
 import { spotsLeftLabel } from '@/lib/events';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -523,12 +523,19 @@ export function NewsSection({
   /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
   locale?: Locale;
 }) {
+  // DIG-93 — EN-контент новости по id сида (NEWS_EN), неизвестный id — как есть.
+  const localizedNews = news.map((item) => {
+    if (locale !== 'en') return item;
+    const en = enNewsItem(item.id);
+    return en ? { ...item, title: en.title, excerpt: en.excerpt } : item;
+  });
+
   return (
     <section aria-labelledby="dashboard-news-title">
       <h2 id="dashboard-news-title" className="text-lg font-extrabold tracking-heading">
         {t(locale, 'dashboard.widget.news')}
       </h2>
-      {news.length === 0 ? (
+      {localizedNews.length === 0 ? (
         <EmptyState
           className="mt-3"
           icon={Newspaper}
@@ -537,7 +544,7 @@ export function NewsSection({
         />
       ) : (
         <ul className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1">
-          {news.map((item) => (
+          {localizedNews.map((item) => (
             <li key={item.id} className="min-w-0 shrink-0 snap-start">
               {/* DIG-36: карточки ведут на свои страницы новостей /news/<id>. */}
               <Link

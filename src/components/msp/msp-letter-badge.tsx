@@ -33,7 +33,9 @@ export function MspLetterBadge({
         size === 'lg' ? 'size-16 text-3xl' : 'size-12 text-xl'
       } ${mspLetterStyle(project.title)}`}
     >
-      {project.letter}
+      {/* DIG-93 — буква из (локализованного) названия: RU — байт-в-байт та же,
+          EN — латиница из EN-титула; кириллическая буква сида не утекает. */}
+      {project.title.charAt(0).toUpperCase()}
     </span>
   );
 }

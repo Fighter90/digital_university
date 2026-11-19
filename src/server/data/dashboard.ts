@@ -25,6 +25,11 @@ import {
   formatDateBadge,
 } from '@/lib/dashboard-format';
 import { t, type Locale } from '@/lib/i18n';
+import {
+  enDisciplineName,
+  enPersonName,
+  enScheduleNote,
+} from '@/lib/en-demo-content';
 import { getPerformance } from './performance';
 import { getRequestsScreen } from './requests-screen';
 import { requestFilterCounts } from '@/lib/requests-view';
@@ -250,14 +255,18 @@ export function toTodayView(
       endsAt: e.endsAt,
       kind: e.kind,
       kindLabel: lessonKindLabel(e.kind, locale),
-      disciplineName: e.disciplineName,
+      // DIG-93 — демо-контент по локали: дисциплина, преподаватель, заметка.
+      disciplineName:
+        locale === 'en'
+          ? enDisciplineName({ code: e.disciplineCode, name: e.disciplineName })
+          : e.disciplineName,
       room: e.room,
-      teacherName: e.teacherName,
+      teacherName: locale === 'en' ? enPersonName(e.teacherName) : e.teacherName,
       isRescheduled,
       isCancelled,
       isOnline,
       transferNote,
-      note: e.note,
+      note: locale === 'en' ? enScheduleNote(e.note) : e.note,
     };
   });
 
@@ -297,7 +306,10 @@ export function toDeadlineViews(
       const badge = formatDateBadge(e.date, locale);
       return {
         id: e.id,
-        disciplineName: e.disciplineName,
+        disciplineName:
+          locale === 'en'
+            ? enDisciplineName({ code: e.disciplineCode, name: e.disciplineName })
+            : e.disciplineName,
         kindLabel:
           e.kind === 'RETAKE'
             ? deadlineKindLabel('RETAKE', locale)
@@ -317,12 +329,14 @@ export function toProgressView(
   exams: ExamSessionRow[],
   student: StudentRow | null,
   now: Date,
+  locale: Locale = 'ru',
 ): ProgressView {
   const startOfToday = startOfDay(now).getTime();
 
-  const byDiscipline = new Map<string, { name: string; rows: GradeRow[] }>();
+  const byDiscipline = new Map<string, { code: string; name: string; rows: GradeRow[] }>();
   for (const row of grades) {
     const bucket = byDiscipline.get(row.disciplineCode) ?? {
+      code: row.disciplineCode,
       name: row.disciplineName,
       rows: [],
     };
@@ -332,7 +346,14 @@ export function toProgressView(
   const disciplines: DisciplineBarView[] = [...byDiscipline.entries()]
     .map(([code, { name, rows }]) => {
       const average = weightedAveragePercent(rows) ?? 0;
-      return { code, disciplineName: name, average, level: disciplineLevel(average) };
+      // DIG-93 — EN-имя дисциплины по коду/каноническому имени.
+      return {
+        code,
+        disciplineName:
+          locale === 'en' ? enDisciplineName({ code, name }) : name,
+        average,
+        level: disciplineLevel(average),
+      };
     })
     .sort((a, b) => b.average - a.average);
 
@@ -341,7 +362,12 @@ export function toProgressView(
     averageDelta: averageDeltaPercent(grades),
     credits: student ? creditsForCourse(student.course) : 0,
     creditsTotal: 240,
-    debts: debtsFromExams(exams, startOfToday),
+    // DIG-93 — дата ближайшей пересдачи по локали («November 26»).
+    debts: debtsFromExams(exams, startOfToday, locale).map((debt) => ({
+      ...debt,
+      disciplineName:
+        locale === 'en' ? enDisciplineName({ name: debt.disciplineName }) : debt.disciplineName,
+    })),
     disciplines,
   };
 }
@@ -394,7 +420,14 @@ export async function getDashboard(
     ),
   ]);
 
-  const firstName = student.ok && student.value ? student.value.fullName.split(' ')[0] : null;
+  const firstName =
+    student.ok && student.value
+      ? // DIG-93 — приветствие по локали: EN-имя из словаря демо-персон.
+        (locale === 'en'
+          ? enPersonName(student.value.fullName)
+          : student.value.fullName
+        ).split(' ')[0] ?? null
+      : null;
 
   const today = derive(schedule, (events) => toTodayView(events, now, locale));
   const deadlines = derive(exams, (rows) => toDeadlineViews(rows, now, 3, locale));
@@ -404,6 +437,7 @@ export async function getDashboard(
       e,
       student.ok ? student.value : null,
       now,
+      locale,
     );
     // BUG-03/BUG-10: hero-агрегаты = значения из performance (единый источник,
     // как на «Успеваемости»): GPA overall, кредиты earned/required.

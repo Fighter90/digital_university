@@ -7,6 +7,7 @@
 //
 // Модуль чистый (без next/headers и серверных импортов): импортируется и
 // сервером, и клиентскими компонентами.
+import { requestNumberLabel } from '@/lib/requests-view';
 
 // ── факультеты / группы / учебные формы / основа обучения (сид) ─────────────
 
@@ -127,6 +128,11 @@ const REQUEST_NAME_EN: Record<string, string> = {
   'Заявление на академический отпуск': 'Academic leave application',
   'Заявление на материальную помощь': 'Material aid application',
   'Справка о размере стипендии': 'Scholarship amount certificate',
+  // DIG-93 — названия заявлок demo-seed (лента «Мои заявки», композер, задачи).
+  'Справка для военкомата': 'Military deferment certificate',
+  'Справка об обучении для налоговой': 'Enrollment certificate for the tax office',
+  'Заявление на перезачёт дисциплины': 'Discipline credit transfer application',
+  'Заявление на место в общежитии': 'Dormitory residence application',
 };
 
 export function enRequestName(name: string): string {
@@ -289,4 +295,230 @@ export function enRequestBody(body: string): string | null {
   const sentences = rest.split(/\. (?=\S)/);
   const translated = sentences.map(enRequestSentence).join('. ');
   return `"${enRequestName(m[1])}": ${translated}${trailingDot ? '.' : ''}`;
+}
+
+// ── DIG-93 — таблицы демо-контента кабинета (RU-ключи → EN) ──────────────────
+// Сопроводительный слой src/lib/en-demo-content.ts: сам модуль сканируется
+// тестом «no Cyrillic literals», поэтому все русские ключи/регэкспы живут
+// здесь (тот же контракт, что у таблиц выше).
+
+/** EN-имена демо-персон (студенты, преподаватели, сотрудники, авторы МСП). */
+export const PEOPLE_NAME_EN: Record<string, string> = {
+  // студенты
+  'Анна Смирнова': 'Anna Smirnova',
+  'Илья Петров': 'Ilya Petrov',
+  'Дарья Орлова': 'Daria Orlova',
+  'Артём Бекетов': 'Artem Beketov',
+  'Полина Царёва': 'Polina Tsareva',
+  // сокурсники (рейтинг группы, авторы МСП-комментариев)
+  'Дмитрий Волков': 'Dmitry Volkov',
+  'Полина Егорова': 'Polina Egorova',
+  'Артём Фёдоров': 'Artem Fedorov',
+  'София Гусева': 'Sofia Guseva',
+  // преподаватели (demo-seed, сшиты со справочником /people)
+  'Петров Пётр Петрович': 'Pyotr Petrov',
+  'Иванова Ирина Игоревна': 'Irina Ivanova',
+  'Соколов Сергей Сергеевич': 'Sergey Sokolov',
+  'Орлов Олег Олегович': 'Oleg Orlov',
+  'Кузнецова Ксения Кирилловна': 'Ksenia Kuznetsova',
+  // сотрудники (справочник /people, деканат)
+  'Мария Ковалёва': 'Maria Kovaleva',
+  'Андрей Семёнов': 'Andrey Semyonov',
+  'Наталья Белова': 'Natalia Belova',
+  'Сергей Гаврилов': 'Sergey Gavrilov',
+  'Елена Романова': 'Elena Romanova',
+  'Ольга Титова': 'Olga Titova',
+  'Виктор Никитин': 'Viktor Nikitin',
+  // автор изменений расписания (demo-seed/prisma)
+  'Мария Петрова (деканат)': 'Maria Petrova (deanery)',
+  'Мария Петрова': 'Maria Petrova',
+  // преподаватели prisma-сида (режим PostgreSQL)
+  'Волков Артём Игоревич': 'Artyom Volkov',
+  'Крылова Дарья Максимовна': 'Daria Krylova',
+  'Никитин Егор Дмитриевич': 'Egor Nikitin',
+  'Соловьёва Марина Андреевна': 'Marina Solovyova',
+  'Захаров Игорь Львович': 'Igor Zakharov',
+  'Гусева Ольга Сергеевна': 'Olga Guseva',
+  'Белов Пётр Романович': 'Pyotr Belov',
+  'Морозова Алина Викторовна': 'Alina Morozova',
+  'Титов Арсений Павлович': 'Arseny Titov',
+  'Романова Екатерина Ильинична': 'Ekaterina Romanova',
+};
+
+/** Кириллическая буква — guard «не рисуем RU на EN». */
+export const CYRILLIC_LETTER = /[А-Яа-яЁё]/;
+
+/** Заметки пар/пересдач/консультаций (closed set сида) → EN. */
+export const SCHEDULE_NOTES_EN: Record<string, string> = {
+  'Перенесено из ауд. 310': 'Moved from room 310',
+  'Пара перенесена в ауд. 305': 'Class moved to room 305',
+  'Лаборатория закрыта': 'The lab room is closed',
+  'Начало в 9:00 вместо 10:40': 'Starts at 9:00 instead of 10:40',
+  'Перед зачётом «Защита проекта»': 'Before the “Project defense” credit test',
+  'Перед зачётом': 'Before the credit test',
+  'Перед экзаменом': 'Before the exam',
+  'Допуск: все лабораторные сданы': 'Admission: all labs submitted',
+  'Защита проекта — дедлайн сдачи работы': 'Project defense — submission deadline',
+  'Пересдача коллоквиума': 'Colloquium retake',
+  'Пересдача лабораторных': 'Lab retake',
+  'Пересдача экзамена (закрыто)': 'Exam retake (closed)',
+  'В ауд. 310 монтируют новое оборудование': 'New equipment is being installed in room 310',
+  'Аудитория 214 занята факультетским мероприятием':
+    'Room 214 is taken by a faculty event',
+  'Занятие будет восполнено 20 ноября, ауд. 212': 'The class will be made up on November 20, room 212',
+  // prisma-сид (режим PostgreSQL)
+  'Аудитория занята факультетским мероприятием — пара переносится в Б-204':
+    'The room is taken by a faculty event — the class moves to B-204',
+  'Аудитория А-312 занята факультетским мероприятием':
+    'Room A-312 is taken by a faculty event',
+  'Лектор в командировке — занятие перенесено на 12:30':
+    'The lecturer is away — the class moves to 12:30',
+  'Лектор в командировке': 'The lecturer is away',
+  'Консультация отменена: преподаватель на конференции, вопросы — через обращения в деканат':
+    'Consultation cancelled: the teacher is at a conference — ask questions via deanery tickets',
+  'Консультация будет восполнена в следующую пятницу, ауд. А-305':
+    'The consultation will be made up next Friday, room A-305',
+  'Решить задачи 3.1–3.4 из задачника': 'Solve problems 3.1–3.4 from the workbook',
+  'Решить задачи из листка к следующей паре':
+    'Solve the problems from the worksheet before the next class',
+  'Конспект лекции, листок задач (библиотека курса)':
+    'Lecture notes, problem sheet (course library)',
+  'Письменный экзамен, 90 минут': 'Written exam, 90 minutes',
+  'Устный экзамен по билетам': 'Oral exam by ticket',
+  'Письменный экзамен с калькуляторами': 'Written exam with calculators',
+  'Пересдача: письменная работа повышенной сложности':
+    'Retake: a written paper of increased difficulty',
+  'Зачёт с оценкой по накопленным результатам': 'Graded credit by accumulated results',
+  'Защита проектов': 'Project defense',
+};
+
+/** Элементы контроля сида («Тест 1», «Лабораторная 2») → EN. */
+export const ELEMENT_NAME_EN: Record<string, string> = {
+  'Тест 1': 'Test 1',
+  'Тест 2': 'Test 2',
+  'Коллоквиум': 'Colloquium',
+  'Экзамен': 'Exam',
+  'Лабораторная 2': 'Lab 2',
+  'Лабораторная 3': 'Lab 3',
+  'Проект': 'Project',
+  'Зачёт': 'Credit test',
+  'Семинар': 'Seminar',
+  // prisma-сид
+  'Лабораторные работы': 'Labs',
+  'Домашние задания': 'Homework',
+  'Контрольная работа': 'Test paper',
+  'Контрольные работы': 'Test papers',
+  'Эссе': 'Essay',
+  'Презентация': 'Presentation',
+  'Посещение и активность': 'Attendance and activity',
+  'Нормативы': 'Fitness tests',
+  'Зачёт с оценкой': 'Graded credit',
+};
+
+/** Адресат/ключевой параметр в названии заявки («для военкомата») → EN. */
+export const REQUEST_DESTINATION_EN: Record<string, string> = {
+  'для военкомата': 'for the military office',
+  'для банка': 'for the bank',
+  'для налоговой': 'for the tax office',
+  'для работодателя': 'for an employer',
+  'для соцзащиты': 'for social services',
+  'для визового центра': 'for a visa center',
+  'по месту требования': 'as required at the place of submission',
+  'утрата оригинала': 'original lost',
+};
+
+/** Причины доработки/отказа (канонические комментарии сида) → EN. */
+export const REQUEST_REASON_EN: Record<string, string> = {
+  'Укажите ФИО латиницей': 'Provide the full name in Latin script',
+  'Нужны два подписанных экземпляра': 'Two signed copies are required',
+  'Приложите скан подписанного заявления': 'Attach a scan of the signed application',
+  'Документ сформирован автоматически': 'The document was generated automatically',
+  'Отличная работа с граничными случаями': 'Great work on the edge cases',
+};
+
+/** RU-глаголы задач (порядок getTasks без локали) → EN-шаблоны словаря. */
+export const TASK_VERB_EN: Record<string, string> = {
+  'Доработать заявку': 'Revise the request',
+  'Ответить на обращение': 'Reply to the appeal',
+  'Записаться на пересдачу': 'Sign up for the retake',
+};
+
+/** Титул сессии сида → EN. */
+const SEASON_TITLE_EN: Record<string, string> = {
+  'Сессия': 'Exam session',
+  'Зимняя сессия': 'Winter exam session',
+  'Летняя сессия': 'Summer session',
+};
+
+export function enSeasonTitle(title: string): string {
+  return SEASON_TITLE_EN[title] ?? title;
+}
+
+/** Отсчёт до первого экзамена сида («До первого экзамена 3 дня») → EN. */
+export function enCountdownLabel(label: string): string {
+  const days = label.match(/^До первого экзамена (\d+) (?:день|дня|дней)$/u);
+  if (days) {
+    const n = Number(days[1]);
+    return `The first exam is in ${n} ${n === 1 ? 'day' : 'days'}`;
+  }
+  const table: Record<string, string> = {
+    'Первый экзамен сегодня': 'The first exam is today',
+    'Сессия уже идёт': 'The exam session is under way',
+  };
+  return table[label] ?? label;
+}
+
+/** Подпись статуса допуска сида («Допущен» / «Сдано · 9») → EN. */
+const EXAM_STATUS_LABEL_EN: Record<string, string> = {
+  'Допущен': 'Admitted',
+  'Не допущен': 'Not admitted',
+  'Пересдача': 'Retake',
+};
+
+export function enExamStatusLabel(label: string): string {
+  if (EXAM_STATUS_LABEL_EN[label]) return EXAM_STATUS_LABEL_EN[label]!;
+  const passed = label.match(/^Сдано · (\d+)$/u);
+  return passed ? `Passed · ${passed[1]}` : label;
+}
+
+/** Тип контрольной сида («Экзамен» / «Зачёт») → EN. */
+const EXAM_KIND_LABEL_EN: Record<string, string> = {
+  'Экзамен': 'Exam',
+  'Зачёт': 'Credit test',
+  'Пересдача': 'Retake',
+};
+
+export function enExamKindLabel(label: string): string {
+  return EXAM_KIND_LABEL_EN[label] ?? label;
+}
+
+/** Причина недопуска сида («Не сдано: Тест 2») → EN («Missing: Test 2»). */
+export function enAdmissionReasonText(reason: string): string {
+  const m = reason.match(/^Не сдано: (.+)$/u);
+  if (!m) return reason;
+  const elements = m[1].split(', ');
+  const enElements = elements.map((name) => ELEMENT_NAME_EN[name] ?? name);
+  return `Missing: ${enElements.join(', ')}`;
+}
+
+/** «Договор об образовании У-2026-114» → «Training contract U-2026-114». */
+export function enManualContractOrigin(origin: string): string | null {
+  const contract = origin.match(/^Договор об образовании (У-\d{4}-\d+)$/u);
+  return contract ? `Training contract ${requestNumberLabel(contract[1], 'en')}` : null;
+}
+
+/** RU-слово источника ручной задачи без note («Деканат») → EN. */
+export const MANUAL_TASK_ORIGIN_RU = 'Деканат';
+
+/** «Сдать: X» / уже собранный словарём «Submit: X» → хвост X; иначе null. */
+export function submitTaskVerbTail(verb: string): string | null {
+  const m = verb.match(/^(?:Сдать|Submit): (.+)$/u);
+  return m ? m[1]! : null;
+}
+
+/** Хвост origin-задачи «Название · параметр · ЗД-2026-000003» → номер канона. */
+export function requestNumberFromTaskOrigin(origin: string): string | null {
+  const parts = origin.split(' · ');
+  const last = parts.at(-1) ?? '';
+  return parts.length > 1 && /^[A-ZА-ЯЁ]{2,4}-\S*-\S/u.test(last) ? last : null;
 }

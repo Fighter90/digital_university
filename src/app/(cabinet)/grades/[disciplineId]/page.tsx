@@ -27,6 +27,7 @@ import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 import { dataDb } from '@/server/data/db';
 import { getDisciplineCard, requireDataCtx } from '@/server/data';
+import { enDisciplineName, localizePersonName } from '@/lib/en-demo-content';
 
 /** DIG-89 — <title> страницы по локали. */
 export async function generateMetadata(): Promise<Metadata> {
@@ -53,11 +54,20 @@ export default async function DisciplineCardPage({
     getLocale(),
   ]);
 
-  const card = await getDisciplineCard(dataDb, ctx, disciplineCode);
+  // DIG-93 — карточка дисциплины: подписи агрегата по локали (семестр),
+  // имена дисциплины/преподавателя — на дисплее ниже (канон нужен для href).
+  const card = await getDisciplineCard(dataDb, ctx, disciplineCode, new Date(), locale);
   if (!card) notFound();
 
-  // DIG-37: href карточки преподавателя считаем один раз — и проверка, и переход.
+  // DIG-37: href карточки преподавателя — по каноническому имени (сшивка со
+  // справочником); на EN отображаем транслит, ссылку строим по канону.
   const teacherHref = card.teacherName ? personHrefByFullName(card.teacherName) : null;
+  const disciplineLabel =
+    locale === 'en'
+      ? enDisciplineName({ code: card.disciplineCode, name: card.disciplineName })
+      : card.disciplineName;
+  const teacherLabel =
+    card.teacherName === null ? null : localizePersonName(locale, card.teacherName);
 
   // «86,5» (RU, канон) / «86.5» (EN) — одна десятичная с разделителем локали.
   const oneDecimal = (value: number): string =>
@@ -81,11 +91,11 @@ export default async function DisciplineCardPage({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-xl font-extrabold tracking-heading text-foreground sm:text-2xl">
-              {card.disciplineName}
+              {disciplineLabel}
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              {card.teacherName ? (
-                card.teacherName
+              {teacherLabel ? (
+                teacherLabel
               ) : (
                 <span className="text-muted-foreground">
                   {t(locale, 'discipline.noTeacher')}

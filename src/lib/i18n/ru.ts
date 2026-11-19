@@ -30,6 +30,10 @@ export const ru = {
   'menu.profile': 'Профиль',
   'menu.settings': 'Настройки',
   'menu.more': 'Ещё',
+  // DIG-93 — разделы вне таблицы i18n (раньше падали в RU-фолбэк nav-items).
+  'menu.finance': 'Финансы',
+  'menu.msp': 'МСП',
+  'menu.events': 'Мероприятия',
   'menu.staff': 'Сводка',
   'menu.staffRequests': 'Заявки',
   'menu.staffAppeals': 'Обращения',
@@ -41,6 +45,8 @@ export const ru = {
   'title.tasks': 'Задачи',
   'title.schedule': 'Расписание',
   'title.grades': 'Успеваемость',
+  // DIG-103 — подстраница рейтинга группы.
+  'title.gradesRating': 'Рейтинг группы',
   'title.gradebook': 'Зачётная книжка',
   'title.session': 'Сессия',
   'title.requests': 'Мои заявки',
@@ -226,6 +232,10 @@ export const ru = {
   'settings.a11ySaved': 'Сохранено — режим доступности применён ко всему кабинету.',
   'settings.a11yIdle': 'Изменения сохраняются сразу и применяются ко всему кабинету.',
 
+  // ── DIG-100 — «Версия для слабовидящих»: полоска над шапкой и футер ──────
+  'a11y.version.plain': 'Версия для слабовидящих',
+  'a11y.version.standard': 'Обычная версия',
+
   // ── тосты ────────────────────────────────────────────────────────────────
   'toast.saved': 'Сохранено',
   'toast.savedDesc': 'Изменения применены',
@@ -354,6 +364,17 @@ export const ru = {
   'grades.debt.assignedIn': 'Пересдача назначена на {date} (осталось {days} {word})',
   'grades.debt.closedPhrase': 'Долг закрыт — пересдача {date} зачтена',
   'grades.retakeSignup': 'Записаться на пересдачу',
+
+  // ── DIG-103 — рейтинг группы (/grades/rating) ─────────────────────────────
+  'grades.rating.link': 'Весь рейтинг группы',
+  'grades.rating.caption': 'Студенты группы по среднему баллу',
+  'grades.rating.place': 'Место',
+  'grades.rating.student': 'Студент',
+  'grades.rating.average': 'Средний балл',
+  'grades.rating.you': 'вы',
+  'grades.rating.emptyTitle': 'В группе пока нет оценок',
+  'grades.rating.emptyDesc': 'Рейтинг появится, когда преподаватели выставят первые оценки.',
+  'grades.rating.backToSummary': '← К успеваемости',
 
   // ── DIG-84 — зачётная книжка и выписка ────────────────────────────────────
   'gradebook.studentsOnlyDesc':
@@ -875,6 +896,8 @@ export const ru = {
   'meta.tasks': 'Задачи — Цифровой деканат',
   'meta.finance': 'Финансы — Цифровой деканат',
   'meta.grades': 'Успеваемость — Цифровой деканат',
+  // DIG-103
+  'meta.gradesRating': 'Рейтинг группы — Цифровой деканат',
   'meta.gradebook': 'Зачётная книжка — Цифровой деканат',
   'meta.session': 'Сессия — Цифровой деканат',
   'meta.discipline': 'Дисциплина — Цифровой деканат',
@@ -897,6 +920,8 @@ export const ru = {
   'loading.people': 'Загрузка справочника',
   'loading.services': 'Загрузка сервисов',
   'loading.grades': 'Успеваемость загружается',
+  // DIG-103
+  'loading.gradesRating': 'Рейтинг группы загружается',
   'loading.session': 'Сессия загружается',
   'loading.notifications': 'Загрузка уведомлений',
 
@@ -1286,6 +1311,22 @@ export const ru = {
   'people.browser.empty.desc': 'Попробуйте другое имя, дисциплину или сбросьте фильтр.',
   'people.yourDisciplines': 'Ваши дисциплины:',
   'people.loading.aria': 'Загрузка справочника',
+  // DIG-102 — поиск «ФИО, email или телефон» и вкладка «★ Избранное»
+  'people.search.query.placeholder': 'ФИО, email или телефон…',
+  'people.search.empty.title': 'Ничего не найдено',
+  'people.search.empty.desc': 'Проверьте ФИО, email или телефон и попробуйте ещё раз.',
+  'people.filter.FAVORITES': '★ Избранное',
+  'people.fav.title': '★ Избранное',
+  'people.fav.cat.TEACHER': 'Преподаватели',
+  'people.fav.cat.STAFF': 'Сотрудники деканата',
+  'people.fav.cat.GROUPMATE': 'Одногруппники',
+  'people.fav.add': 'Добавить в Избранное',
+  'people.fav.added': 'В Избранном',
+  'people.fav.addAria': 'Добавить {name} в Избранное',
+  'people.fav.removeAria': 'Убрать {name} из Избранного',
+  'people.fav.empty.title': 'В избранном пока никого',
+  'people.fav.empty.desc': 'Нажмите ★ на карточке человека — он появится здесь по категориям.',
+  'people.groupmate.subtitle': 'Одногруппник',
 
   // /services
   'services.subtitle':
@@ -1913,6 +1954,33 @@ export const ru = {
   'assistant.report.confirm': 'Да, сообщить',
   'assistant.report.sending': 'Отправляем…',
   'assistant.report.trigger': 'Сообщить о неверном ответе',
+
+  // ── DIG-93 — AI-гид кабинета (пилюля и панель) ────────────────────────────
+  'aiguide.pill': 'AI-гид',
+  'aiguide.pillAria': 'Открыть AI-гида',
+  'aiguide.panelAria': 'AI-гид по кабинету',
+  'aiguide.closeAria': 'Закрыть AI-гида',
+  'aiguide.welcome': 'Привет, {name}! Я — демо-гид кабинета. Могу провести экскурсию: ',
+  'aiguide.welcome.route': 'расписание → оценки → заявки → справки',
+  'aiguide.startTour': 'Начать экскурсию',
+  'aiguide.skip': 'Пропустить',
+  'aiguide.askMe': 'Спросите меня',
+  'aiguide.questionAria': 'Ваш вопрос гиду',
+  'aiguide.questionPlaceholder': 'Например: где мои справки?',
+  'aiguide.ask': 'Спросить',
+  'aiguide.stepOf': 'Экскурсия · шаг {step} из {total}',
+  'aiguide.openStep': 'Открыть «{title}»',
+  'aiguide.next': 'Дальше',
+  'aiguide.finish': 'Завершить экскурсию',
+  'aiguide.questionPrefix': 'Вопрос: «{question}»',
+  'aiguide.backToHints': 'Назад к подсказкам',
+  'aiguide.miss':
+    'Вопроса «{question}» пока нет в демо-сценариях гида — в прототипе я отвечаю только на базовые подсказки. Попробуйте одну из них:',
+  'aiguide.voice.start': 'Голосовой ввод',
+  'aiguide.voice.stop': 'Остановить запись',
+  // сроки учебного года в профиле
+  'profile.term.fall': 'осенний семестр',
+  'profile.term.spring': 'весенний семестр',
 } as const;
 
 export type RuDictionary = typeof ru;

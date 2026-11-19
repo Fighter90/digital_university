@@ -6,14 +6,16 @@ import { Compass, CornerDownRight, Sparkles, X } from 'lucide-react';
 
 import type { ShellUserRole } from '@/lib/user';
 import {
-  GUIDE_SCENARIOS,
-  TOUR_STEPS,
+  guideScenarios,
+  guideTourSteps,
   isGuideSeen,
   markGuideSeen,
   matchAiGuideScenario,
   type AiGuideScenario,
 } from '@/lib/ai-guide';
 import { VoiceInputButton } from '@/components/shell/voice-input';
+import { t, type Locale } from '@/lib/i18n';
+import { enPersonName } from '@/lib/en-demo-content';
 
 type AiGuideProps = {
   /** Имя из шапки кабинета — для личного приветствия («Привет, Анна!»). */
@@ -24,6 +26,8 @@ type AiGuideProps = {
    * голосового ввода. Дефолт true (включено) — как в настройках студента.
    */
   voiceEnabled?: boolean;
+  /** DIG-93 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 };
 
 type GuideView =
@@ -47,10 +51,13 @@ type GuideView =
 //  - фокус: открытие панели переводит фокус в диалог (скринридер анонсирует
 //    его имя), закрытие возвращает фокус на пилюлю; смена вида (ответ,
 //    шаг экскурсии) анонсируется через aria-live-область.
-export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
+export function AiGuide({ userName, role, voiceEnabled = true, locale = 'ru' }: AiGuideProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<GuideView>({ kind: 'welcome' });
   const [question, setQuestion] = useState('');
+  // DIG-93 — контент по локали: шаги и сценарии EN-словаря по тем же id.
+  const tourSteps = guideTourSteps(locale);
+  const scenarios = guideScenarios(locale);
   // Гидрация: авто-показ решается в эффекте (localStorage читается только
   // на клиенте), поэтому SSR рисует пилюлю — расхождений гидратации нет.
   const checkedRef = useRef(false);
@@ -100,10 +107,13 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
 
   if (role !== 'STUDENT') return null;
 
-  const firstName = userName.split(' ')[0] ?? userName;
+  // DIG-93: приветствие по локали — на EN имя из EN-маппинга демо-персон.
+  const localizedFirstName = (locale === 'en'
+    ? (enPersonName(userName).split(' ')[0] ?? userName)
+    : (userName.split(' ')[0] ?? userName));
 
   const ask = (query: string) => {
-    const scenario = matchAiGuideScenario(query);
+    const scenario = matchAiGuideScenario(query, locale);
     setQuestion('');
     if (scenario) {
       setView({ kind: 'answer', scenario });
@@ -124,7 +134,7 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
           ref={panelRef}
           data-testid="ai-guide-panel"
           role="dialog"
-          aria-label="AI-гид по кабинету"
+          aria-label={t(locale, 'aiguide.panelAria')}
           // Раунд 2: не-модальный диалог — фокус не запираем (tabIndex=-1,
           // без aria-modal), клик вне панели работает как раньше.
           tabIndex={-1}
@@ -139,12 +149,12 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
               >
                 <Sparkles className="size-4" />
               </span>
-              AI-гид по кабинету
+              {t(locale, 'aiguide.panelAria')}
             </p>
             <button
               type="button"
               onClick={finish}
-              aria-label="Закрыть AI-гида"
+              aria-label={t(locale, 'aiguide.closeAria')}
               data-testid="ai-guide-close"
               className="grid size-8 shrink-0 place-items-center rounded-full text-neutral-500 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-coral-600"
             >
@@ -158,8 +168,8 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
             {view.kind === 'welcome' ? (
               <div data-testid="ai-guide-welcome">
                 <p className="mt-2 text-sm text-neutral-700">
-                  Привет, {firstName}! Я — демо-гид кабинета. Могу провести экскурсию:{' '}
-                  <span className="font-semibold">расписание → оценки → заявки → справки</span>.
+                  {t(locale, 'aiguide.welcome', { name: localizedFirstName })}
+                  <span className="font-semibold">{t(locale, 'aiguide.welcome.route')}</span>.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
@@ -168,24 +178,24 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
                     className="inline-flex items-center gap-1.5 rounded-button bg-coral-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-coral-600 focus-visible:outline-2 focus-visible:outline-coral-600"
                   >
                     <Compass className="size-4" aria-hidden="true" />
-                    Начать экскурсию
+                    {t(locale, 'aiguide.startTour')}
                   </button>
                   <button
                     type="button"
                     onClick={finish}
                     className="inline-flex items-center rounded-button border border-border px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"
                   >
-                    Пропустить
+                    {t(locale, 'aiguide.skip')}
                   </button>
                 </div>
 
                 {/* Сценарии-подсказки: чипы + свободный вопрос. */}
                 <div className="mt-3 border-t border-neutral-100 pt-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                    Спросите меня
+                    {t(locale, 'aiguide.askMe')}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {GUIDE_SCENARIOS.map((scenario) => (
+                    {scenarios.map((scenario) => (
                       <button
                         key={scenario.id}
                         type="button"
@@ -204,8 +214,8 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
                     <input
                       data-testid="ai-guide-input"
                       type="text"
-                      aria-label="Ваш вопрос гиду"
-                      placeholder="Например: где мои справки?"
+                      aria-label={t(locale, 'aiguide.questionAria')}
+                      placeholder={t(locale, 'aiguide.questionPlaceholder')}
                       value={question}
                       onChange={(event) => setQuestion(event.target.value)}
                       className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-white px-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 focus-visible:outline-2 focus-visible:outline-coral-600"
@@ -215,6 +225,7 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
                         выключенной настройке или без поддержки браузера. */}
                     {voiceEnabled ? (
                       <VoiceInputButton
+                        locale={locale}
                         onResult={(text) =>
                           setQuestion((current) => (current ? `${current} ${text}` : text))
                         }
@@ -224,7 +235,7 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
                       type="submit"
                       className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"
                     >
-                      Спросить
+                      {t(locale, 'aiguide.ask')}
                     </button>
                   </form>
                 </div>
@@ -232,28 +243,31 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
             ) : view.kind === 'tour' ? (
               <div data-testid="ai-guide-step">
                 <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Экскурсия · шаг {view.step + 1} из {TOUR_STEPS.length}
+                  {t(locale, 'aiguide.stepOf', {
+                    step: view.step + 1,
+                    total: tourSteps.length,
+                  })}
                 </p>
-                <p className="mt-1 text-sm font-bold">{TOUR_STEPS[view.step].title}</p>
-                <p className="mt-1 text-sm text-neutral-700">{TOUR_STEPS[view.step].description}</p>
+                <p className="mt-1 text-sm font-bold">{tourSteps[view.step].title}</p>
+                <p className="mt-1 text-sm text-neutral-700">{tourSteps[view.step].description}</p>
                 {/* Кнопка шага — ссылка: гид закрывается и переходит на экран. */}
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <Link
-                    href={TOUR_STEPS[view.step].href}
+                    href={tourSteps[view.step].href}
                     onClick={finish}
                     data-testid="ai-guide-step-cta"
                     className="inline-flex items-center gap-1.5 rounded-button bg-coral-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-coral-600 focus-visible:outline-2 focus-visible:outline-coral-600"
                   >
-                    Открыть «{TOUR_STEPS[view.step].title}»
+                    {t(locale, 'aiguide.openStep', { title: tourSteps[view.step].title })}
                     <CornerDownRight className="size-4" aria-hidden="true" />
                   </Link>
-                  {view.step < TOUR_STEPS.length - 1 ? (
+                  {view.step < tourSteps.length - 1 ? (
                     <button
                       type="button"
                       onClick={() => setView({ kind: 'tour', step: view.step + 1 })}
                       className="inline-flex items-center rounded-button border border-border px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"
                     >
-                      Дальше
+                      {t(locale, 'aiguide.next')}
                     </button>
                   ) : (
                     <button
@@ -261,7 +275,7 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
                       onClick={finish}
                       className="inline-flex items-center rounded-button border border-border px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"
                     >
-                      Завершить экскурсию
+                      {t(locale, 'aiguide.finish')}
                     </button>
                   )}
                 </div>
@@ -269,7 +283,7 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
             ) : view.kind === 'answer' ? (
               <div data-testid="ai-guide-answer">
                 <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Вопрос: «{view.scenario.question}»
+                  {t(locale, 'aiguide.questionPrefix', { question: view.scenario.question })}
                 </p>
                 <p className="mt-1 text-sm text-neutral-700">{view.scenario.answer}</p>
                 {/* Ответ — ссылкой-кнопкой на нужный экран (приёмка DIG-62). */}
@@ -288,18 +302,17 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
                     onClick={() => setView({ kind: 'welcome' })}
                     className="inline-flex items-center rounded-button border border-border px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"
                   >
-                    Назад к подсказкам
+                    {t(locale, 'aiguide.backToHints')}
                   </button>
                 </div>
               </div>
             ) : (
               <div data-testid="ai-guide-miss">
                 <p className="mt-2 text-sm text-neutral-700">
-                  Вопроса «{view.question}» пока нет в демо-сценариях гида — в прототипе я отвечаю
-                  только на базовые подсказки. Попробуйте одну из них:
+                  {t(locale, 'aiguide.miss', { question: view.question })}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {GUIDE_SCENARIOS.map((scenario) => (
+                  {scenarios.map((scenario) => (
                     <button
                       key={scenario.id}
                       type="button"
@@ -315,7 +328,7 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
                   onClick={() => setView({ kind: 'welcome' })}
                   className="mt-3 inline-flex items-center rounded-button border border-border px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"
                 >
-                  Назад к подсказкам
+                  {t(locale, 'aiguide.backToHints')}
                 </button>
               </div>
             )}
@@ -326,12 +339,12 @@ export function AiGuide({ userName, role, voiceEnabled = true }: AiGuideProps) {
           type="button"
           ref={pillRef}
           onClick={() => setOpen(true)}
-          aria-label="Открыть AI-гида"
+          aria-label={t(locale, 'aiguide.pillAria')}
           data-testid="ai-guide-pill"
           className="fixed bottom-[calc(8.25rem+env(safe-area-inset-bottom))] right-3 z-40 inline-flex items-center gap-1.5 rounded-pill border border-neutral-200 bg-card px-3 py-2 text-xs font-semibold text-neutral-800 shadow-soft transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600 md:bottom-6 md:right-20"
         >
           <Sparkles className="size-3.5 text-coral-500" aria-hidden="true" />
-          AI-гид
+          {t(locale, 'aiguide.pill')}
         </button>
       )}
     </>

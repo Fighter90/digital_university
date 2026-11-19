@@ -8,13 +8,14 @@ export { listRequests, getRequestByNumber, listRequestEvents } from './requests'
 export { listGrades } from './grades';
 export { getGradeInsight } from './grade-insight';
 export type { GradeInsight } from '@/lib/grade-insight';
-export { getPerformance, needForTarget } from './performance';
+export { getGroupRating, getPerformance, needForTarget } from './performance';
 export type {
   CreditsView,
   DebtItem,
   DebtStatus,
   DisciplinePerformance,
   GpaView,
+  GroupRatingView,
   PerformanceData,
   RatingView,
 } from './performance';
@@ -178,8 +179,17 @@ export type {
   StaffChangeStatus,
 } from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
-export { getPeopleDirectory, getPersonCard, MAX_UPCOMING_EVENTS } from './people';
+export {
+  getPeopleDirectory,
+  getPersonCard,
+  listFavoritePersons,
+  toggleFavoritePerson,
+  MAX_UPCOMING_EVENTS,
+} from './people';
 export type {
+  FavoritePersonEntry,
+  FavoritePersonsData,
+  FavoriteToggleResult,
   PeopleDirectoryData,
   PersonCardData,
   PersonListEntry,
@@ -369,6 +379,7 @@ export {
   type DisciplineRow,
   type DisciplineElementRow,
   type ServiceFavoriteRow,
+  type FavoritePersonRow,
   type CertificateRow,
   type CalendarSubscriptionRow,
   type TicketRow,

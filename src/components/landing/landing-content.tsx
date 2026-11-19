@@ -27,6 +27,7 @@ import { Reveal } from '@/components/landing/reveal';
 import { ParallaxOrbs } from '@/components/landing/parallax';
 import { AnimatedCounter } from '@/components/landing/stats';
 import { LocaleSwitch } from '@/components/shell/locale-switch';
+import { A11yVersionLink } from '@/components/a11y/version-link';
 import type { Locale } from '@/lib/i18n';
 
 type LandingCopy = Record<string, string | number>;
@@ -257,10 +258,13 @@ const FAQ: Array<{ qKey: string; aKey: string }> = [
   { qKey: 'faq3q', aKey: 'faq3a' },
 ];
 
-export function LandingContent({ locale }: { locale: Locale }) {
+export function LandingContent({ locale, plain = false }: { locale: Locale; plain?: boolean }) {
   const c = COPY[locale];
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
+      {/* DIG-100 — полоска «Версия для слабовидящих» НАД шапкой лендинга
+          (в plain-режиме — обратная ссылка «Обычная версия» там же). */}
+      <A11yVersionLink locale={locale} variant="strip" plain={plain} next="/" />
       {/* Шапка лендинга (DIG-90: sticky, blur): меню + переключатель языка + вход */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
@@ -685,6 +689,10 @@ export function LandingContent({ locale }: { locale: Locale }) {
 
       <footer className="border-t border-border py-8 text-center text-xs text-muted-foreground">
         <p>{c.footer}</p>
+        {/* DIG-100 — ссылка версии в футере лендинга (со значком Eye). */}
+        <div className="mt-3 text-sm">
+          <A11yVersionLink locale={locale} variant="footer" plain={plain} next="/" />
+        </div>
       </footer>
     </div>
   );

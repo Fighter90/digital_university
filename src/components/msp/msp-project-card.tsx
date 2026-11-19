@@ -9,6 +9,7 @@ import { MspLetterBadge } from '@/components/msp/msp-letter-badge';
 import { MspVoteButton } from '@/components/msp/msp-vote-button';
 import type { MspProjectView } from '@/server/data';
 import { t, type Locale } from '@/lib/i18n';
+import { localizedMspProject, localizePersonName } from '@/lib/en-demo-content';
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' });
 const dateFormatterEn = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short' });
@@ -23,7 +24,19 @@ export function MspProjectCard({
   /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
   locale?: Locale;
 }) {
-  const { project, votes, votedByMe, comments } = view;
+  const { votes, votedByMe, comments } = view;
+  // DIG-89/93 — EN-рендер демо-проекта: титул/слоган из словаря по id,
+  // автор — транслит. RU — как в сиде, байт-в-байт.
+  const { project } =
+    locale === 'en'
+      ? {
+          project: {
+            ...view.project,
+            ...localizedMspProject('en', view.project),
+            authorName: localizePersonName('en', view.project.authorName),
+          },
+        }
+      : view;
   return (
     <article
       data-testid={`msp-card-${project.slug}`}
