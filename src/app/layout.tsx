@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ConceptBanner } from '@/components/concept-banner';
 import { getLocale } from '@/lib/i18n/server';
+import { getA11yPrefs } from '@/lib/a11y/server';
+import { a11yClasses } from '@/lib/a11y';
 import {
   appearanceClasses,
   getAppliedAppearance,
@@ -66,9 +68,17 @@ export default async function RootLayout({
   // к <html> (до первой отрисовки) из настроек владельца сессии; аноним и
   // сотрудник получают значения по умолчанию. Системная тема — инлайн-скрипт.
   // DIG-69: локаль интерфейса из cookie (дефолт ru) — lang у <html> и плашка.
+  // DIG-86: режим доступности «Крупный текст и без эффектов» — cookie du-a11y
+  // (server action setA11y), классы a11y-large-text / a11y-no-effects на <html>.
   const appearance = await getAppliedAppearance();
   const locale = await getLocale();
-  const htmlClasses = [inter.variable, 'antialiased', ...appearanceClasses(appearance)];
+  const a11yPrefs = await getA11yPrefs();
+  const htmlClasses = [
+    inter.variable,
+    'antialiased',
+    ...appearanceClasses(appearance),
+    ...a11yClasses(a11yPrefs),
+  ];
 
   return (
     <html lang={locale} className={htmlClasses.join(' ')}>

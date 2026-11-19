@@ -20,6 +20,7 @@ import { QuietHoursSettings } from '@/components/settings/quiet-hours-settings';
 import { PasswordForm } from '@/components/settings/password-form';
 import { SessionsList } from '@/components/settings/sessions-list';
 import { AppearanceSettings } from '@/components/settings/appearance-settings';
+import { AccessibilitySettings } from '@/components/settings/accessibility-settings';
 import { VoiceSettings } from '@/components/settings/voice-settings';
 import { McpSettings } from '@/components/settings/mcp-settings';
 import { McpDeaneryServer } from '@/components/settings/mcp-deanery-server';
@@ -29,6 +30,8 @@ import { getOwnSettings, requireDataCtx } from '@/server/data';
 import { getOwnMcpTokenView } from '@/server/data/mcp';
 import { dataDb } from '@/server/data/db';
 import { resolveSettingsTab } from '@/lib/settings-tabs';
+import { getA11yPrefs } from '@/lib/a11y/server';
+import { t } from '@/lib/i18n';
 import { buildMcpServerUrl } from '@/lib/mcp-protocol';
 import {
   MCP_FAQ,
@@ -46,7 +49,13 @@ export default async function SettingsPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const [ctx, locale] = await Promise.all([requireDataCtx('/settings'), getLocale()]);
+  // DIG-86 — режим доступности (cookie du-a11y): состояние тумблеров вкладки
+  // «Доступность»; те же классы a11y-* root layout ставит на <html>.
+  const [ctx, locale, a11yPrefs] = await Promise.all([
+    requireDataCtx('/settings'),
+    getLocale(),
+    getA11yPrefs(),
+  ]);
 
   if (ctx.role !== 'STUDENT') {
     return (
@@ -83,8 +92,8 @@ export default async function SettingsPage({
         <div>
           <SectionTitle href="/settings" className="text-xl font-bold sm:text-2xl" />
           <p className="mt-1 text-sm text-neutral-600">
-            Виджеты главной, уведомления, безопасность, вид кабинета и MCP-интеграции ассистента.
-            Изменения сохраняются и применяются сразу.
+            Виджеты главной, уведомления, безопасность, вид кабинета, доступность и MCP-интеграции
+            ассистента. Изменения сохраняются и применяются сразу.
           </p>
         </div>
         <SettingsTabs active={tab} locale={locale} />
@@ -236,6 +245,28 @@ export default async function SettingsPage({
                   reduceMotion={settings.reduceMotion}
                 />
               )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {tab === 'accessibility' && (
+        <>
+          {/* DIG-86 — режим «Крупный текст и без эффектов» для слабовидящих:
+              классы a11y-large-text / a11y-no-effects на <html> из cookie
+              du-a11y (server action setA11y). Независимо от системного
+              prefers-reduced-motion и «Уменьшить анимацию» (DIG-44). */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t(locale, 'settings.a11yTitle')}</CardTitle>
+              <CardDescription>{t(locale, 'settings.a11yHint')}</CardDescription>
+            </CardHeader>
+            <CardContent className="mt-3">
+              <AccessibilitySettings
+                largeText={a11yPrefs.largeText}
+                noEffects={a11yPrefs.noEffects}
+                locale={locale}
+              />
             </CardContent>
           </Card>
         </>
