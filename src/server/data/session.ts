@@ -389,7 +389,7 @@ export async function createRetakeRequest(
     title: 'Заявка на пересдачу создана',
     body:
       `Заявка ${number} — запись на пересдачу по «${probed.disciplineName}» ` +
-      `(${formatSessionRange(probed.date, probed.date)}, каб. ${probed.room}). ` +
+      `(${formatSessionRange(probed.date, probed.date)}, ауд. ${probed.room}). ` +
       'Деканат подтвердит запись в статусе заявки.',
     createdAt: now,
     link: `/requests/${number}`,

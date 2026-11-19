@@ -200,7 +200,7 @@ function lessonToIcsEvent(row: ScheduleEventRow): IcsEventInput {
     title,
     startsAt: row.startsAt,
     endsAt: row.endsAt,
-    location: online ? 'Онлайн' : `каб. ${row.room}`,
+    location: online ? 'Онлайн' : `ауд. ${row.room}`,
     description: descriptionParts.length > 0 ? descriptionParts.join('. ') : null,
   };
 }
@@ -212,7 +212,7 @@ function examToIcsEvent(row: ExamSessionRow): IcsEventInput {
     title: `${EXAM_KIND_LABELS[row.kind]}: ${row.disciplineName}`,
     startsAt: row.startsAt,
     endsAt: new Date(row.startsAt.getTime() + EXAM_DURATION_MS),
-    location: `каб. ${row.room}`,
+    location: `ауд. ${row.room}`,
     description: row.note,
   };
 }

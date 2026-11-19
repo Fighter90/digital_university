@@ -220,16 +220,16 @@ describe('/schedule (DIG-22) — неделя в стиле Google Calendar', ()
     expect(html).toContain('aria-label="Лабораторная, Физика, 14:00–15:30, ауд. 305, отменена"');
   });
 
-  it('перенос: штриховка, пунктирная рамка, бейдж «Перенос», «было: ауд. 214 / 12:00» (один префикс)', async () => {
+  it('перенос: штриховка, пунктирная рамка, бейдж «Перенос», «было: ауд. 214» без дубля времени (BUG-14)', async () => {
     const html = await renderPage();
     expect(html).toMatch(/repeating-linear-gradient/); // серая штриховка
     expect(html).toMatch(/data-status="moved"/);
     expect(html).toMatch(/border-dashed/);
     expect(html).toContain('Перенос');
     expect(html).toContain('было: ауд. 214');
-    // один префикс на обе части: «было: ауд. 214 / 12:00»
-    // (не «было: ауд. 214 / было: 12:00») — ревью раунд 2
-    expect(html).toContain('было: ауд. 214 / 12:00');
+    // DIG-85 (BUG-14): время пары не менялось (12:00 → 12:00) — часть
+    // «было: 12:00» дублировать запрещено; остаётся только смена аудитории.
+    expect(html).not.toContain('было: ауд. 214 / 12:00');
     expect(html).not.toContain('было: ауд. 214 / было:');
     expect(html).toContain('Оснащение аудитории');
   });

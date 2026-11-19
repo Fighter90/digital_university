@@ -1,10 +1,14 @@
-// DIG-27 — минимальный писатель PDF (только векторные прямоугольники).
+// DIG-27 — минимальный писатель PDF (векторные прямоугольники + невидимый
+// текстовый слой).
 //
 // Зачем: в PDF нет стандартного шрифта с кириллицей, а вкладывать шрифт
 // в репозиторий нельзя. Выписка из зачётки (и позже справка DIG-47)
 // рисуется глифами-прямоугольниками (см. vector-font.ts), поэтому от
 // PDF-писателя нужны только страницы, `re f`-операции и корректная
-// xref-таблица. Вывод полностью детерминирован (проверяется тестом).
+// xref-таблица. DIG-85 (BUG-16): каждая видимая строка дублируется
+// невидимым текстом (Helvetica, `3 Tr`, кириллица транслитерацией) —
+// скринридеры читают документ, код проверки и ссылка копируются.
+// Вывод полностью детерминирован (проверяется тестом).
 //
 // Координаты: ТОЧКИ (1/72 дюйма), страница A4 595×842. API принимает
 // верхний левый угол прямоугольника в «экранных» координатах (y вниз),
@@ -28,20 +32,71 @@ interface RectOp {
   color: PdfColor;
 }
 
+/**
+ * Невидимая текстовая строка (DIG-85 / BUG-16): дублирует видимую строку
+ * из глифов-прямоугольников текстом стандартного Helvetica (WinAnsi,
+ * без вложенных файлов шрифтов) в режиме отрисовки `3 Tr` — скринридеры
+ * читают документ, а код проверки/ссылка копируются посимвольно.
+ */
+interface TextOp {
+  /** Текст ПОСЛЕ транслитерации и PDF-экранирования (готовая строка Tj). */
+  literal: string;
+  x: number;
+  /** Базовая линия в системе PDF (y вверх). */
+  y: number;
+  size: number;
+}
+
+/**
+ * Транслитерация кириллицы латиницей для текстового слоя: в PDF нет
+ * стандартного шрифта с кириллицей, а вкладывать TTF в прототип нельзя
+ * (см. шапку vector-font.ts). ASCII проходит байт-в-байт (код проверки,
+ * URL, даты), кириллица — читаемая транслитерация, прочие символы
+ * опускаются (они рисуются видимой рамкой-заглушкой).
+ */
+const CYRILLIC_LATIN: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z',
+  и: 'i', й: 'j', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r',
+  с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'c', ч: 'ch', ш: 'sh', щ: 'sch',
+  ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+};
+
+function latinForTextLayer(text: string): string {
+  let out = '';
+  for (const ch of text) {
+    const lower = ch.toLowerCase();
+    const mapped = CYRILLIC_LATIN[lower];
+    if (mapped !== undefined) {
+      out += mapped === '' ? '' : ch === lower ? mapped : mapped.toUpperCase();
+    } else if (ch >= ' ' && ch <= '~') {
+      out += ch; // ASCII — без изменений (код проверки, URL, цифры, пунктуация)
+    }
+  }
+  return out;
+}
+
+/** Экранирование строки в литерале PDF `( … ) Tj`. */
+function pdfStringEscape(text: string): string {
+  return text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+}
+
 export class PdfWriter {
   readonly width: number;
   readonly height: number;
   private pages: RectOp[][] = [];
+  private texts: TextOp[][] = [];
 
   constructor(options: { width?: number; height?: number } = {}) {
     this.width = options.width ?? A4_WIDTH;
     this.height = options.height ?? A4_HEIGHT;
     this.pages.push([]);
+    this.texts.push([]);
   }
 
   /** Начать новую страницу (контент последующих `add*` уйдёт на неё). */
   addPage(): void {
     this.pages.push([]);
+    this.texts.push([]);
   }
 
   get pageCount(): number {
@@ -104,6 +159,16 @@ export class PdfWriter {
     color: PdfColor,
     fallbackColor: PdfColor = color,
   ): void {
+    // Текстовый слой (BUG-16): та же геометрия, невидимый режим `3 Tr`.
+    const latin = latinForTextLayer(text);
+    if (latin.length > 0) {
+      this.texts[this.texts.length - 1]!.push({
+        literal: pdfStringEscape(latin),
+        x,
+        y: this.height - (y + GLYPH_HEIGHT * scale),
+        size: GLYPH_HEIGHT * scale,
+      });
+    }
     let cursor = x;
     for (const ch of text) {
       const rows = glyphRows(ch);
@@ -155,18 +220,29 @@ export class PdfWriter {
     // 1 = Catalog, 2 = Pages, дальше пары (Page, Contents) по страницам.
     const kids = this.pages.map((_, i) => `${3 + i * 2} 0 R`).join(' ');
 
-    objects.push(`<< /Type /Catalog /Pages 2 0 R >>`);
+    // /Lang (ru-RU) — подсказка скринридеру выбирать русский голос (BUG-16).
+    objects.push(`<< /Type /Catalog /Pages 2 0 R /Lang (ru-RU) >>`);
     objects.push(`<< /Type /Pages /Kids [${kids}] /Count ${pageCount} >>`);
     this.pages.forEach((ops, i) => {
       const pageObj = 3 + i * 2;
       const contentObj = pageObj + 1;
       objects.push(
         `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${this.width} ${this.height}] ` +
-          `/Contents ${contentObj} 0 R /Resources << >> >>`,
+          `/Contents ${contentObj} 0 R /Resources << /Font << /F1 ` +
+          `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >> ` +
+          `>> >> >>`,
       );
-      const stream = ops
+      const rects = ops
         .map((op) => `q\n${colorOps(op.color)}\n${fmt(op.x)} ${fmt(this.height - op.y - op.h)} ${fmt(op.w)} ${fmt(op.h)} re\nf\nQ`)
         .join('\n');
+      // Невидимый текстовый слой: 3 Tr — не заливать, не обводить, не клипать.
+      const texts = this.texts[i]!
+        .map(
+          (op) =>
+            `BT\n/F1 ${fmt(op.size)} Tf\n3 Tr\n${fmt(op.x)} ${fmt(op.y)} Td\n(${op.literal}) Tj\nET`,
+        )
+        .join('\n');
+      const stream = texts.length > 0 ? `${rects}\n${texts}` : rects;
       objects.push(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
     });
 

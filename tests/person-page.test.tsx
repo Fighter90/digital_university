@@ -71,7 +71,7 @@ function teacherFixture(): PersonCardData {
       email: 'irina.ivanova@example.edu',
       phone: '+7 495 010-20-30',
       room: '405',
-      consultationHours: 'Вт 14:00–16:00, каб. 405',
+      consultationHours: 'Вт 14:00–16:00, ауд. 405',
       faculty: 'ИТ',
       program: null,
       isProgramManager: false,
@@ -117,7 +117,7 @@ function managerFixture(): PersonCardData {
       email: 'natalia.belova@example.edu',
       phone: '+7 495 010-40-50',
       room: '214',
-      consultationHours: 'Пн–Пт 10:00–12:00, каб. 214',
+      consultationHours: 'Пн–Пт 10:00–12:00, ауд. 214',
       faculty: 'ИТ',
       program: 'Прикладная информатика',
       isProgramManager: true,
@@ -161,7 +161,7 @@ describe('/people/[id] — карточка преподавателя (студ
 
     const html = await renderPage();
     expect(html).toContain('Часы консультаций');
-    expect(html).toContain('Вт 14:00–16:00, каб. 405');
+    expect(html).toContain('Вт 14:00–16:00, ауд. 405');
     expect(html).toContain('data-testid="person-disciplines"');
     expect(html).toContain('Алгоритмы и структуры данных');
     expect(html).toContain('ваша');

@@ -132,6 +132,41 @@ describe('certificate-pdf: сборка PDF', () => {
   });
 });
 
+describe('certificate-pdf: невидимый текстовый слой (DIG-85 / BUG-16)', () => {
+  const text = Buffer.from(buildCertificatePdf(data)).toString('latin1');
+
+  it('каталог помечен языком документа, подключён стандартный Helvetica', () => {
+    expect(text).toContain('/Lang (ru-RU)');
+    expect(text).toContain('/BaseFont /Helvetica');
+    expect(text).toContain('/WinAnsiEncoding');
+  });
+
+  it('текст печатается в невидимом режиме отрисовки (3 Tr)', () => {
+    // Классический «невидимый OCR-слой»: глифы-прямоугольники видит глаз,
+    // текстовый слой — скринридер и копирование.
+    expect(text).toContain('3 Tr');
+    expect(text).toMatch(/BT[\s\S]*3 Tr[\s\S]*Tj[\s\S]*ET/);
+  });
+
+  it('код проверки и ссылка проверки копируются посимвольно (ASCII)', () => {
+    expect(text).toContain('ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-6777');
+    expect(text).toContain('https://du.example/verify/ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-6777');
+  });
+
+  it('кириллица присутствует в слое транслитерацией латиницей (скринридер читает)', () => {
+    // «СПРАВКА ОБ ОБУЧЕНИИ» и «Код проверки: …» без вложенного шрифта.
+    expect(text).toContain('SPRAVKA OB OBUCHENII');
+    expect(text).toContain('Kod proverki: ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-6777');
+  });
+
+  it('слой не меняет детерминизм и видимые прямоугольники', () => {
+    const again = Buffer.from(buildCertificatePdf(data)).toString('latin1');
+    expect(again).toBe(text);
+    const rects = [...text.matchAll(/([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re/g)];
+    expect(rects.length).toBeGreaterThan(300);
+  });
+});
+
 describe('certificate-pdf: имя файла', () => {
   it('ASCII без кириллицы, с датой выдачи', () => {
     expect(certificateFilename(NOW)).toBe('certificate-2026-11-12.pdf');

@@ -22,9 +22,10 @@ import { FILTER_KIND_ORDER } from '@/lib/schedule-view';
 import type { ScheduleEventRow } from '@/server/data/types';
 
 const routerPush = vi.hoisted(() => vi.fn());
+const routerRefresh = vi.hoisted(() => vi.fn());
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: routerPush, refresh: vi.fn() }),
+  useRouter: () => ({ push: routerPush, refresh: routerRefresh }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
@@ -260,5 +261,17 @@ describe('WeekView — сетка-скроллконтейнер (DIG-56)', () =
     fireEvent.pointerMove(window, { clientX: 200, clientY: 200 });
     fireEvent.pointerUp(window, {});
     expect(grid.scrollLeft).toBe(100);
+  });
+});
+
+describe('WeekView — отклик кнопки «Синхронизировать» (DIG-85 / BUG-17)', () => {
+  it('после клика появляется видимый статус обновления (role="status")', async () => {
+    renderWeek();
+    // Живая aria-live-область существует ДО нажатия — скринридер услышит смену.
+    expect(screen.getByTestId('sync-status')).toHaveAttribute('aria-live', 'polite');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Синхронизировать' }));
+    expect(routerRefresh).toHaveBeenCalled();
+    await screen.findByText('Расписание обновлено', { selector: '[data-testid="sync-status"]' });
   });
 });

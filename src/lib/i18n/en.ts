@@ -620,6 +620,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'schedule.nextWeekAria': 'Next week',
   'schedule.gotoTodayWeek': 'Go to the current week',
   'schedule.sync': 'Sync',
+  'schedule.sync.status': 'Syncing…',
+  'schedule.sync.done': 'Schedule updated',
   'schedule.day.listAria': 'Classes, {title}',
   'schedule.day.empty.title': 'No classes on this day',
   'schedule.day.empty.next': 'Next classes: {label}',
@@ -662,6 +664,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'schedule.listen.play': 'Listen to the day',
   'schedule.listen.stop': 'Stop',
   'schedule.listen.stopAria': 'Stop the narration',
+  'schedule.listen.unavailable': 'No speech engine in this browser — day narration is unavailable.',
   'schedule.building.main': 'Main building',
   'schedule.author.deanery': 'the deanery',
 
@@ -765,6 +768,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'wizard.review.profile': 'Student details',
   'wizard.consent.strong': 'The details are correct',
   'wizard.consent.rest': '— I have reviewed the summary and confirm the submission.',
+  'wizard.consent.hint': 'The Submit button unlocks after you tick the confirmation above.',
   'wizard.success.instantTitle': 'The certificate is ready',
   'wizard.success.sentTitle': 'The request has been submitted',
   'wizard.success.duplicate':

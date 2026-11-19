@@ -127,6 +127,10 @@ export function WeekView({
   );
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<ScheduleEventView | null>(null);
+  // DIG-85 (BUG-17): видимый отклик «Синхронизировать». Состояние статуса
+  // ВЫВОДИТСЯ из момента клика (syncRequestedAt) и pending — без effect-ов;
+  // «Расписание обновлено» гаснет CSS-анимацией (onAnimationEnd → сброс).
+  const [syncRequestedAt, setSyncRequestedAt] = useState<number | null>(null);
   const [visibleKinds, setVisibleKinds] = useState<Record<ScheduleKind, boolean>>({
     LECTURE: true,
     SEMINAR: true,
@@ -199,6 +203,10 @@ export function WeekView({
   );
   const totalEvents = filteredDays.reduce((sum, day) => sum + day.laid.length, 0);
   const showNowLine = nowMinutes !== null && days.some((day) => day.isToday);
+  // Статус «Синхронизировать» выводится из момента клика и pending:
+  // клик → 'syncing' (пока transition), после → 'synced' (гаснет анимацией).
+  const syncFeedback: 'idle' | 'syncing' | 'synced' =
+    syncRequestedAt === null ? 'idle' : pending ? 'syncing' : 'synced';
 
   // ── DIG-56: прокрутка сетки как в Google Calendar ─────────────────────────
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -356,10 +364,34 @@ export function WeekView({
               todayKey={todayKey}
               locale={locale}
             />
+            {/* DIG-85 (BUG-17): живой статус отклика — aria-live-область
+                рендерится всегда, чтобы скринридер услышал смену текста. */}
+            <span
+              role="status"
+              aria-live="polite"
+              data-testid="sync-status"
+              onAnimationEnd={
+                syncFeedback === 'synced' ? () => setSyncRequestedAt(null) : undefined
+              }
+              className={cn(
+                'text-xs text-muted-foreground',
+                syncFeedback === 'synced' && 'animate-fade-out-slow',
+              )}
+            >
+              {syncFeedback === 'syncing'
+                ? t(locale, 'schedule.sync.status')
+                : syncFeedback === 'synced'
+                  ? t(locale, 'schedule.sync.done')
+                  : ''}
+            </span>
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => startTransition(() => router.refresh())}
+              onClick={() => {
+                if (pending) return;
+                setSyncRequestedAt(Date.now());
+                startTransition(() => router.refresh());
+              }}
               disabled={pending}
             >
               <Icon icon={RefreshCw} size={16} className={pending ? 'animate-spin' : ''} />
