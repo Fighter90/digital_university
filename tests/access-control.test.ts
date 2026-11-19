@@ -246,6 +246,17 @@ describe('sliding cookie renewal decision (review round 3)', () => {
   it('defaults to GET when the method is not provided (backwards compatible)', () => {
     expect(shouldSlideAuthCookies({ kind: 'allow' }, true)).toBe(true);
   });
+
+  // DIG-77: prefetch-ответ роутера может примениться ПОСЛЕ сброса кук
+  // sign-out action'ом и «воскресить» куку — спекулятивный запрос куку
+  // не продлевает. Настоящая навигация (не prefetch) продлевает как раньше.
+  it('does not slide on a router prefetch (response may land after sign-out — DIG-77)', () => {
+    expect(shouldSlideAuthCookies({ kind: 'allow' }, true, 'GET', true)).toBe(false);
+  });
+
+  it('still slides on a real RSC navigation that is not a prefetch (DIG-77)', () => {
+    expect(shouldSlideAuthCookies({ kind: 'allow' }, true, 'GET', false)).toBe(true);
+  });
 });
 
 // DIG-55: «Назад» после выхода не должен показывать кабинет из кэша

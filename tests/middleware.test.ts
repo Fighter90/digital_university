@@ -158,3 +158,74 @@ describe('middleware: no-store on protected screens, no renewal on POST (DIG-55)
     expect(setCookieFor(response, ROLE_COOKIE_NAME)).toBeUndefined();
   });
 });
+
+// DIG-77 — регресс e2e auth.spec: «Выйти» очистил куки, но кука __Host-session
+// оставалась в браузере с живым значением и свежим 7-дневным Max-Age. Механизм:
+// prefetch-запросы роутера (<Link> в сайдбаре, заголовок Next-Router-Prefetch:
+// 1) уходят ДО клика «Выйти», а их ответ может прийти ПОСЛЕ ответа server
+// action — и скользящее продление в middleware перезаписывает сброшенную куку
+// обратно на живую. Prefetch — спекулятивный запрос, момент применения его
+// ответа не контролируется, поэтому продлевать куки на нём нельзя. Настоящая
+// RSC-навигация (RSC: 1 без prefetch-заголовка) продление сохраняет.
+describe('middleware: router prefetches must not slide auth cookies (DIG-77)', () => {
+  const OLD_SECRET = process.env.AUTH_SECRET;
+  beforeAll(() => {
+    process.env.AUTH_SECRET = SECRET;
+  });
+  afterAll(() => {
+    if (OLD_SECRET === undefined) delete process.env.AUTH_SECRET;
+    else process.env.AUTH_SECRET = OLD_SECRET;
+  });
+
+  const prefetchRequest = (path: string, cookieHeader: string) =>
+    new NextRequest(`${ORIGIN}${path}`, {
+      method: 'GET',
+      headers: new Headers({
+        cookie: cookieHeader,
+        rsc: '1',
+        'next-router-prefetch': '1',
+      }),
+    });
+
+  it('prefetch GET to a protected path re-issues no auth cookies', async () => {
+    const hint = await signRoleHint('STUDENT', 'u_anna', SECRET);
+    const response = await middleware(
+      prefetchRequest(
+        '/settings',
+        `${SESSION_COOKIE_NAME}=tok_abc123; ${ROLE_COOKIE_NAME}=${hint}`,
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    // Prefetch может «доехать» после ответа sign-out action: продление здесь
+    // воскресило бы куку, которую action только что сбросил (maxAge 0).
+    expect(setCookieFor(response, SESSION_COOKIE_NAME)).toBeUndefined();
+    expect(setCookieFor(response, ROLE_COOKIE_NAME)).toBeUndefined();
+  });
+
+  it('prefetch GET to a public path re-issues no auth cookies', async () => {
+    const response = await middleware(
+      prefetchRequest('/login', `${SESSION_COOKIE_NAME}=tok_abc123`),
+    );
+    expect(response.status).toBe(200);
+    expect(setCookieFor(response, SESSION_COOKIE_NAME)).toBeUndefined();
+    expect(setCookieFor(response, ROLE_COOKIE_NAME)).toBeUndefined();
+  });
+
+  it('real RSC navigation (no prefetch header) still slides — renewal contract intact', async () => {
+    const response = await middleware(
+      new NextRequest(`${ORIGIN}/settings`, {
+        method: 'GET',
+        headers: new Headers({
+          cookie: `${SESSION_COOKIE_NAME}=tok_abc123`,
+          rsc: '1',
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const header = setCookieForOrFail(response, SESSION_COOKIE_NAME);
+    expect(header).toContain(`${SESSION_COOKIE_NAME}=tok_abc123`);
+    expect(maxAgeOf(header)).toBe(SESSION_MAX_AGE_SECONDS);
+  });
+});

@@ -56,7 +56,16 @@ export async function middleware(request: NextRequest) {
     // DIG-55: the request method is forwarded so mutating requests (server
     // actions — including sign-out) never re-issue the cookies: the action's
     // cleared cookies must be the only word on that response.
-    if (sessionToken && shouldSlideAuthCookies(decision, true, request.method)) {
+    //
+    // DIG-77: router prefetches (`Next-Router-Prefetch: 1`) are excluded from
+    // the renewal as well. A prefetch fired a moment BEFORE «Выйти» can have
+    // its response applied AFTER the action's cleared Set-Cookie — the slide
+    // would then resurrect a live-looking `__Host-session` in the jar (e2e
+    // auth.spec flake: cookie survived sign-out with a fresh 7-day Max-Age).
+    // A speculative response landing at an arbitrary time must not write the
+    // auth cookies; real document/RSC navigations keep renewing as before.
+    const isRouterPrefetch = Boolean(request.headers.get('next-router-prefetch'));
+    if (sessionToken && shouldSlideAuthCookies(decision, true, request.method, isRouterPrefetch)) {
       response.cookies.set(buildSessionCookie(sessionToken));
       const hintValue = request.cookies.get(ROLE_COOKIE_NAME)?.value;
       if (roleHint && hintValue) response.cookies.set(buildRoleHintCookie(hintValue));

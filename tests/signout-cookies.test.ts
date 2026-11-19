@@ -94,11 +94,11 @@ describe('signOutCurrentSession («Выйти» на текущем устрой
       session,
       '__Host-session обязана быть выставлена в сбрасывающее состояние',
     ).toBeDefined();
-    expect(session).toMatchObject({ value: '', maxAge: 0 });
+    expect(session).toMatchObject({ value: '', maxAge: 0, path: '/' });
 
     const role = specs.find((spec) => spec.name === ROLE_COOKIE_NAME);
     expect(role, '__Host-role обязана быть выставлена в сбрасывающее состояние').toBeDefined();
-    expect(role).toMatchObject({ value: '', maxAge: 0 });
+    expect(role).toMatchObject({ value: '', maxAge: 0, path: '/' });
   });
 
   it('без куки сессии БД-удаления нет, но куки всё равно сбрасываются', async () => {

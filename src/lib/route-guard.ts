@@ -93,9 +93,15 @@ export function shouldSlideAuthCookies(
   decision: AccessDecision,
   hasSessionCookie: boolean,
   method: string = 'GET',
+  isRouterPrefetch = false,
 ): boolean {
   const isReadNavigation = method === 'GET' || method === 'HEAD';
-  return decision.kind === 'allow' && hasSessionCookie && isReadNavigation;
+  // DIG-77: prefetch-ответы роутера приходят в неуправляемый момент — запрос,
+  // отправленный ДО «Выйти», может применить своё Set-Cookie ПОСЛЕ сброса кук
+  // sign-out action'ом и «воскресить» живую куку в браузере. Спекулятивный
+  // prefetch куку не продлевает; настоящая навигация (документ или RSC-переход)
+  // — продлевает, как и раньше.
+  return decision.kind === 'allow' && hasSessionCookie && isReadNavigation && !isRouterPrefetch;
 }
 
 /**
