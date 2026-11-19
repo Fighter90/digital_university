@@ -19,6 +19,7 @@ import { LESSON_KIND_META } from '@/lib/schedule-cards';
 import type { ScheduleEventCard } from '@/lib/schedule-cards';
 import { t, type Locale } from '@/lib/i18n';
 import { riseDelayStyle } from '@/lib/motion';
+import { enDisciplineName, enPersonName, enScheduleNote } from '@/lib/en-demo-content';
 import { Badge } from '@/components/ui/badge';
 import { EventTypePill } from './event-type-pill';
 
@@ -45,8 +46,14 @@ export function EventCard({
   locale = 'ru',
 }: EventCardProps) {
   const meta = LESSON_KIND_META[event.kind];
-  /** DIG-37: имя преподавателя — ссылка на карточку в справочнике. */
+  /** DIG-37: имя преподавателя — ссылка на карточку в справочнике
+   *  (href — по каноническому RU-ФИО сида; подпись — по локали, DIG-93). */
   const teacherHref = personHrefByFullName(event.teacher);
+  // DIG-93 — демо-контент по локали (дисциплина, преподаватель, заметки);
+  // фильтр недели сравнивает канонические имена — модели не трогаем.
+  const discipline = locale === 'en' ? enDisciplineName(event.discipline) : event.discipline;
+  const teacher = locale === 'en' ? enPersonName(event.teacher) : event.teacher;
+  const note = locale === 'en' ? enScheduleNote(event.note) : event.note;
   const riseStyle = riseIndex === undefined ? undefined : riseDelayStyle(riseIndex);
   const card = (
     <>
@@ -74,7 +81,7 @@ export function EventCard({
               event.isCancelled && 'line-through decoration-2',
             )}
           >
-            {event.discipline}
+            {discipline}
           </span>
           <EventTypePill kind={event.kind} locale={locale} />
         </div>
@@ -89,10 +96,10 @@ export function EventCard({
                 data-testid={`event-teacher-${event.id}`}
                 className="font-medium underline decoration-neutral-300 underline-offset-2 hover:text-coral-600 hover:decoration-coral-400"
               >
-                {event.teacher}
+                {teacher}
               </Link>
             ) : (
-              event.teacher
+              teacher
             )}
           </p>
         )}
@@ -116,14 +123,16 @@ export function EventCard({
             ) : null}
           </div>
         ) : null}
-        {event.isCancelled && event.note ? (
-          <p className="text-xs font-medium text-error-ink">{event.note}</p>
+        {event.isCancelled && note ? (
+          <p className="text-xs font-medium text-error-ink">{note}</p>
         ) : null}
-        {event.isMoved && event.changeNote ? (
-          <p className="text-xs font-medium text-warning-ink">{event.changeNote}</p>
+        {event.isMoved && (locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote) ? (
+          <p className="text-xs font-medium text-warning-ink">
+            {locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote}
+          </p>
         ) : null}
-        {!event.isMoved && !event.isCancelled && event.note ? (
-          <p className="text-xs text-neutral-500">{event.note}</p>
+        {!event.isMoved && !event.isCancelled && note ? (
+          <p className="text-xs text-neutral-500">{note}</p>
         ) : null}
       </div>
     </>

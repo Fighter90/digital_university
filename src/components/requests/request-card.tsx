@@ -39,6 +39,10 @@ import {
   formatRequestDate,
 } from '@/lib/request-labels';
 import { requestStatusLabel, t, type Locale } from '@/lib/i18n';
+import {
+  localizeRequestCardTitle,
+  localizeRequestReason,
+} from '@/lib/en-demo-content';
 import { Icon } from '@/components/ui/icon';
 import { RequestStepper } from './request-stepper';
 import { RequestTransitionButton } from './request-transition-button';
@@ -70,13 +74,15 @@ export function RequestCard({
   const status = unifyRequestStatus(request.status);
   // DIG-69: на EN строка следующего действия и даты пересобираются по
   // словарю (агрегатор слоя данных не трогаем — он собирает RU-вид).
+  // DIG-93: причина доработки — EN-словарь канонических комментариев сида.
+  const localizedReason = localizeRequestReason(locale, request.reason);
   const nextAction =
     locale === 'en'
       ? nextActionLineLocalized(
           {
             status: request.status,
             readyBy: request.readyByISO ? new Date(request.readyByISO) : null,
-            reason: request.reason,
+            reason: localizedReason,
             updatedAt: new Date(request.updatedAtISO),
           },
           locale,
@@ -90,6 +96,9 @@ export function RequestCard({
   // DIG-87: на EN канонический номер «ЗД-…» показывается латиницей («ZD-…»);
   // ссылки остаются на каноническом номере — роут и поиск не меняются.
   const numberLabel = requestNumberLabel(request.number, locale);
+  // DIG-93: название с ключевым параметром («Справка об обучении · для
+  // военкомата») — EN-словарь имён и адресатов; RU — байт-в-байт.
+  const title = localizeRequestCardTitle(locale, request.title);
 
   return (
     <article
@@ -107,7 +116,7 @@ export function RequestCard({
         className="absolute inset-0 z-10 rounded-card focus-visible:outline-2 focus-visible:outline-coral-600"
       >
         <span className="sr-only">
-          {t(locale, 'card.openAria', { number: numberLabel, title: request.title })}
+          {t(locale, 'card.openAria', { number: numberLabel, title })}
         </span>
       </Link>
 
@@ -122,7 +131,7 @@ export function RequestCard({
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-            <h3 className="text-sm font-bold text-foreground sm:text-base">{request.title}</h3>
+            <h3 className="text-sm font-bold text-foreground sm:text-base">{title}</h3>
             <span
               data-testid="request-status-pill"
               className={`inline-block shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${

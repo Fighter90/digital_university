@@ -387,6 +387,8 @@ describe('DIG-84: buildGradeInsight — EN-тексты по словарю', ()
 
   it('EN: единственная работа — «The average is set by …»', () => {
     const insight = buildGradeInsight(input([g('PI21-DB-P1', 85, -4)]), 'en')!;
-    expect(insight.detail).toBe('The average is set by “Проект” (Базы данных, 85 out of 100).');
+    // DIG-93: имена работ и дисциплин в EN-тексте — EN (ноль кириллицы
+    // в EN-рендере «Успеваемости», включая карточку инсайта).
+    expect(insight.detail).toBe('The average is set by “Project” (Databases, 85 out of 100).');
   });
 });

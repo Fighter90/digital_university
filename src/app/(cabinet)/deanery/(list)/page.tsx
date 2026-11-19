@@ -14,6 +14,7 @@ import { dataDb } from '@/server/data/db';
 import { TicketList } from '@/components/deanery/ticket-list';
 import { TicketComposer } from '@/components/deanery/ticket-composer';
 import { responsePromise } from '@/lib/tickets';
+import { enDisciplineName, localizeRequestCardTitle } from '@/lib/en-demo-content';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/shell/section-title';
 import { MessagesSquare } from 'lucide-react';
@@ -60,8 +61,16 @@ export default async function DeaneryPage({
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <TicketList tickets={page.tickets} locale={locale} />
         <TicketComposer
-          requests={page.requests}
-          disciplines={page.disciplines}
+          // DIG-93 — подписи привязки в композере по локали (номер/код —
+          // канонические значения, меняется только видимый текст).
+          requests={page.requests.map((request) => ({
+            number: request.number,
+            title: localizeRequestCardTitle(locale, request.title),
+          }))}
+          disciplines={page.disciplines.map((discipline) => ({
+            code: discipline.code,
+            name: enDisciplineName(discipline),
+          }))}
           initialBody={draftBody}
           locale={locale}
         />

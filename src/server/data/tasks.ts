@@ -24,6 +24,7 @@ import { listCanonicalRequestsByStudent } from './canonical-requests';
 import { denyAccess } from './access';
 import { disciplineAdmission, RETAKE_TITLE_PREFIX } from './session';
 import { t, type Locale } from '@/lib/i18n';
+import { localizeTasksData } from '@/lib/en-demo-content';
 import type { DataDb } from './port';
 import type { DataCtx, StudentTaskRow } from './types';
 
@@ -288,10 +289,17 @@ export async function getTasks(
     now,
   );
 
+  // DIG-93 — EN-локализация глаголов и источников демо-контента (по id
+  // строки задачи и источнику). RU — байт-в-байт.
+  const localized = localizeTasksData(grouped, locale);
+
   return {
-    ...grouped,
+    ...localized,
     openCount:
-      grouped.overdue.length + grouped.today.length + grouped.week.length + grouped.later.length,
+      localized.overdue.length +
+      localized.today.length +
+      localized.week.length +
+      localized.later.length,
   };
 }
 

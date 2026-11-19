@@ -76,6 +76,66 @@ export const GUIDE_SCENARIOS: AiGuideScenario[] = [
   },
 ];
 
+// ── DIG-93 — EN-слой гида: шаги экскурсии и сценарии по локали ───────────────
+// RU-данные выше — канон; EN-варианты по тем же id, чтобы гид на английской
+// версии не показывал кириллицу (пилюля, панель, чипы-подсказки).
+
+const TOUR_STEPS_EN: AiGuideTourStep[] = [
+  {
+    id: 'schedule',
+    title: 'Schedule',
+    description: 'Classes for the week, reschedules and cancellations — visible at once, no paperwork.',
+    href: '/schedule',
+  },
+  {
+    id: 'grades',
+    title: 'Grades',
+    description: 'The current score per discipline, the group ranking and GPA in one place.',
+    href: '/grades',
+  },
+  {
+    id: 'requests',
+    title: 'Requests',
+    description: 'Applications and certificates are submitted online — the status lives in the cabinet.',
+    href: '/requests',
+  },
+  {
+    id: 'services',
+    title: 'Certificates',
+    description: 'The catalog of certificates and extracts: lead time on every card, ordering in two clicks.',
+    href: '/services',
+  },
+];
+
+const GUIDE_SCENARIOS_EN: AiGuideScenario[] = [
+  {
+    id: 'certificates',
+    question: 'Where are my certificates?',
+    keywords: ['certificat', 'extract', 'document'],
+    answer:
+      'Certificates and extracts live in the services catalog: the lead time is on every card, ordering takes two clicks.',
+    cta: { label: 'Open: Certificates', href: '/services' },
+  },
+  {
+    id: 'retake-signup',
+    question: 'How do I sign up for a retake?',
+    keywords: ['retake', 'resit'],
+    answer:
+      'Sign-up is on the “Exam session” screen: pick a date in the “Retakes” section and press “Sign up” — the request is created automatically.',
+    cta: { label: 'Open: Retakes', href: '/grades/session' },
+  },
+];
+
+/** Шаги экскурсии по локали (RU — канон, EN — словарь по тем же id). */
+export function guideTourSteps(locale: 'ru' | 'en'): AiGuideTourStep[] {
+  return locale === 'en' ? TOUR_STEPS_EN : TOUR_STEPS;
+}
+
+/** Сценарии-подсказки по локали (RU — канон, EN — словарь по тем же id). */
+export function guideScenarios(locale: 'ru' | 'en'): AiGuideScenario[] {
+  return locale === 'en' ? GUIDE_SCENARIOS_EN : GUIDE_SCENARIOS;
+}
+
 /** Нормализация вопроса: нижний регистр, схлопнутые пробелы. */
 export function normalizeGuideQuery(query: string): string {
   return query.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -85,12 +145,13 @@ export function normalizeGuideQuery(query: string): string {
  * Свободный вопрос → первый совпавший сценарий по ключевым словам
  * (корень слова — подстрока нормализованного вопроса). Пустой вопрос и
  * вопросы без совпадений — null: гид не выдумывает ответ.
+ * DIG-93 — на EN матчинг идёт по EN-сценариям и EN-ключам.
  */
-export function matchAiGuideScenario(query: string): AiGuideScenario | null {
+export function matchAiGuideScenario(query: string, locale: 'ru' | 'en' = 'ru'): AiGuideScenario | null {
   const q = normalizeGuideQuery(query);
   if (q === '') return null;
   return (
-    GUIDE_SCENARIOS.find((scenario) => scenario.keywords.some((keyword) => q.includes(keyword))) ??
+    guideScenarios(locale).find((scenario) => scenario.keywords.some((keyword) => q.includes(keyword))) ??
     null
   );
 }

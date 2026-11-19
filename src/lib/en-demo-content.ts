@@ -23,8 +23,10 @@ import {
   STUDY_FORM_EN,
   enDatePhrase,
   enRequestBody,
+  enRequestName,
   NEWS_SOURCES_EN,
 } from '@/lib/ru-translit';
+import { requestNumberLabel } from '@/lib/requests-view';
 
 // ── факультеты / группы / учебные формы (короткие подписи сида) ─────────────
 
@@ -707,8 +709,354 @@ export function enFeedbackText(id: string): string | null {
   return FEEDBACK_TEXTS_EN[id] ?? null;
 }
 
-// ── локализация runtime-уведомлений чтением (шаблоны прототипа) ─────────────
+// ── люди сида: имена и инициалы (DIG-93) ─────────────────────────────────────
+// Таблицы с русскими ключами — в src/lib/ru-translit.ts (этот модуль не несёт
+// кириллических литералов: тест i18n-en-part3 сканирует исходники).
+
+import {
+  CYRILLIC_LETTER,
+  ELEMENT_NAME_EN,
+  MANUAL_TASK_ORIGIN_RU,
+  PEOPLE_NAME_EN,
+  REQUEST_DESTINATION_EN,
+  REQUEST_REASON_EN,
+  SCHEDULE_NOTES_EN,
+  TASK_VERB_EN,
+  enAdmissionReasonText,
+  enCountdownLabel,
+  enExamKindLabel,
+  enExamStatusLabel,
+  enManualContractOrigin,
+  enSeasonTitle,
+  requestNumberFromTaskOrigin,
+  submitTaskVerbTail,
+} from '@/lib/ru-translit';
+
+/** EN-имя демо-персоны; неизвестное — как есть (RU-фолбэк). */
+export function enPersonName(name: string | null | undefined): string {
+  if (!name) return '';
+  return PEOPLE_NAME_EN[name] ?? name;
+}
+
+/** Имя персоны по локали: RU — как в сиде, EN — словарь. */
+export function localizePersonName(locale: Locale, name: string | null | undefined): string {
+  if (locale !== 'en') return name ?? '';
+  return enPersonName(name);
+}
+
+/** Имя из профиля (полное ФИО): RU — как есть, EN — словарь. */
+export function localizeProfileFullName(
+  locale: Locale,
+  fullName: string | null | undefined,
+): string | null {
+  if (!fullName) return null;
+  return localizePersonName(locale, fullName);
+}
+
+/**
+ * Инициалы аватара по локали.
+ *  RU — прежнее поведение: первые буквы двух слов ФИО («АС»).
+ *  EN — инициалы EN-имени из словаря («Anna Smirnova» → «AS»); неизвестное
+ *  имя — инициалы из префикса email/логина («petr.novy@…» → «PN»), чтобы
+ *  на EN никогда не появлялись кириллические буквы.
+ */
+export function localizeInitials(
+  locale: Locale,
+  name: string | null | undefined,
+  fallbackEmail?: string | null,
+): string {
+  if (locale !== 'en') {
+    return (name ?? '')
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => word[0]?.toUpperCase() ?? '')
+      .join('');
+  }
+  const enName = enPersonName(name ?? '');
+  if (enName && !CYRILLIC_LETTER.test(enName)) {
+    return enName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => word[0]?.toUpperCase() ?? '')
+      .join('');
+  }
+  // Фолбэк: префикс email/логина «petr.novy» → «PN».
+  const prefix = (fallbackEmail ?? '').split('@')[0] ?? '';
+  const fromEmail = prefix
+    .split(/[.\s_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+  if (fromEmail !== '') return fromEmail;
+  // Совсем неизвестная персона: латинские буквы имени (кириллицу не рисуем).
+  return (name ?? '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => {
+      const letter = word[0]?.toUpperCase() ?? '';
+      return CYRILLIC_LETTER.test(letter) ? '' : letter;
+    })
+    .join('');
+}
+
+/** EN-заметка пары/пересдачи; null и неизвестное — как есть (RU-фолбэк). */
+export function enScheduleNote(note: string | null | undefined): string | null {
+  if (!note) return note ?? null;
+  return SCHEDULE_NOTES_EN[note] ?? note;
+}
+
+/** EN-имя элемента контроля; неизвестное — как есть. */
+export function enElementName(name: string): string {
+  return ELEMENT_NAME_EN[name] ?? name;
+}
+
+/**
+ * Название заявки с ключевым параметром по локали: «Справка об обучении ·
+ * для военкомата» → «Enrollment certificate · for the military office».
+ * RU — байт-в-байт.
+ */
+export function localizeRequestCardTitle(locale: Locale, title: string): string {
+  if (locale !== 'en') return title;
+  const parts = title.split(' · ');
+  const name = enRequestName(parts[0] ?? title);
+  if (parts.length === 1) return name;
+  const rest = parts.slice(1).map((part) => REQUEST_DESTINATION_EN[part] ?? part);
+  return [name, ...rest].join(' · ');
+}
+
+/** Причина доработки/отказа по локали (EN — словарь канонических строк). */
+export function localizeRequestReason(locale: Locale, reason: string | null): string | null {
+  if (locale !== 'en' || reason === null) return reason;
+  return REQUEST_REASON_EN[reason] ?? reason;
+}
+
+/** Титул сессии («Зимняя сессия») → EN; неизвестное — как есть. */
+export { enSeasonTitle, enCountdownLabel } from '@/lib/ru-translit';
+
+/** Диапазон сессии («23 декабря – 1 января») → EN-фраза дат. */
+export function enSessionRangeLabel(label: string): string {
+  return label
+    .split('–')
+    .map((part) => enDatePhrase(part.trim()))
+    .join(' – ');
+}
+
+// ── задачи (/tasks): локализация глаголов и источников по локали ─────────────
+
+/**
+ * Одна строка задачи по локали. RU — байт-в-байт. EN-правила по источнику:
+ *  - REQUEST: origin «Название · параметр · номер» → EN-название + транслит
+ *    номера («ЗД-…» → «ZD-…», как в карточке заявки);
+ *  - COURSE: «Сдать: {дедлайн}» → EN-глагол словаря + EN-титул по id сида;
+ *  - SESSION: «Сдать: {элемент}» → EN-глагол + EN-имя элемента контроля;
+ *  - RETAKE: origin-дисциплина → EN-имя дисциплины;
+ *  - DEANERY: origin-тема обращения → EN по id сида;
+ *  - MANUAL: title/note → EN по id ручной задачи.
+ */
+export function localizeTaskView(
+  locale: Locale,
+  task: {
+    id: string;
+    source: 'REQUEST' | 'COURSE' | 'SESSION' | 'RETAKE' | 'DEANERY' | 'MANUAL';
+    verb: string;
+    origin: string;
+  },
+): { verb: string; origin: string } {
+  if (locale !== 'en') return { verb: task.verb, origin: task.origin };
+  let verb = task.verb;
+  let origin = task.origin;
+
+  switch (task.source) {
+    case 'REQUEST': {
+      verb = TASK_VERB_EN[verb] ?? verb;
+      // «Название · номер»: хвост «ЗД-2026-…» / «SR-2026-…» — канонический
+      // номер заявки (на EN показывается транслитом «ZD-…», как в карточке).
+      const parts = origin.split(' · ');
+      const number = requestNumberFromTaskOrigin(origin);
+      const titleParts = number === null ? parts : parts.slice(0, -1);
+      origin =
+        localizeRequestCardTitle('en', titleParts.join(' · ')) +
+        (number ? ` · ${requestNumberLabel(number, 'en')}` : '');
+      break;
+    }
+    case 'COURSE': {
+      // Глагол может прийти уже собранным словарём с RU-титулом внутри
+      // («Submit: Тест 1 «Кинематика»») или каноничным RU («Сдать: …») —
+      // титул пересобираем по id сида, иначе по хвосту-элементу.
+      const seedId = task.id.replace(/^course-/, '');
+      const tail = submitTaskVerbTail(verb);
+      const title = enStudyDeadline(seedId) ?? (tail !== null ? enElementName(tail) : null);
+      if (title !== null) verb = `Submit: ${title}`;
+      origin = enDisciplineName(origin);
+      break;
+    }
+    case 'SESSION': {
+      const tail = submitTaskVerbTail(verb);
+      if (tail !== null) verb = `Submit: ${enElementName(tail)}`;
+      origin = enDisciplineName(origin);
+      break;
+    }
+    case 'RETAKE': {
+      verb = TASK_VERB_EN[verb] ?? verb;
+      origin = enDisciplineName(origin);
+      break;
+    }
+    case 'DEANERY': {
+      verb = TASK_VERB_EN[verb] ?? verb;
+      const seedId = task.id.replace(/^deanery-/, '');
+      origin = enAppealSubject(seedId) ?? origin;
+      break;
+    }
+    case 'MANUAL': {
+      const seedId = task.id.replace(/^manual-/, '');
+      const en = enStudentTask(seedId);
+      verb = en?.title ?? verb;
+      // «Договор об образовании У-2026-114» → «Training contract U-2026-114»;
+      // иные известные note — из словаря сида, неизвестные — как есть.
+      const ruled = enManualContractOrigin(origin);
+      origin = ruled ?? en?.note ?? (origin === MANUAL_TASK_ORIGIN_RU ? 'Deanery' : origin);
+      break;
+    }
+  }
+  return { verb, origin };
+}
+
+/** Локализация групп задач (вью агрегата /tasks и блока главной). */
+export function localizeTasksData<G>(data: G, locale: Locale): G {
+  if (locale !== 'en') return data;
+  const dataRecord = data as Record<string, unknown>;
+  const out = { ...dataRecord };
+  for (const key of ['overdue', 'today', 'week', 'later']) {
+    const list = dataRecord[key];
+    if (Array.isArray(list)) {
+      out[key] = list.map((task) => {
+        const localized = localizeTaskView(locale, task as never);
+        return { ...(task as object), ...localized };
+      });
+    }
+  }
+  return out as G;
+}
+
+// ── успеваемость (/grades): имена в агрегате ─────────────────────────────────
+
+/** Структурный срез агрегата «Успеваемости» (только поля с демо-именами). */
+export interface LocalizablePerformance {
+  disciplines: Array<{
+    disciplineCode: string;
+    disciplineName: string;
+    teacherName: string | null;
+  }>;
+  debts: Array<{ disciplineCode: string; disciplineName: string }>;
+}
+
+/**
+ * Имена дисциплин/преподавателей/долгов агрегата по локали. RU — как есть
+ * (тот же объект); EN — новые объекты, канон не мутируется.
+ */
+export function localizePerformanceData<D extends LocalizablePerformance>(
+  locale: Locale,
+  data: D,
+): D {
+  if (locale !== 'en') return data;
+  return {
+    ...data,
+    disciplines: data.disciplines.map((discipline) => ({
+      ...discipline,
+      disciplineName: enDisciplineName({
+        code: discipline.disciplineCode,
+        name: discipline.disciplineName,
+      }),
+      teacherName: discipline.teacherName === null ? null : enPersonName(discipline.teacherName),
+    })),
+    debts: data.debts.map((debt) => ({
+      ...debt,
+      disciplineName: enDisciplineName({ code: debt.disciplineCode, name: debt.disciplineName }),
+    })),
+  };
+}
+
+// ── сессия (/grades/session): локализация вью агрегата ───────────────────────
+
+interface SessionExamLike {
+  disciplineCode: string;
+  disciplineName: string;
+  kindLabel: string;
+  teacherName: string | null;
+  statusLabel: string;
+  admissionReason: string | null;
+}
+
+interface SessionRetakeLike {
+  disciplineCode: string;
+  disciplineName: string;
+  note: string | null;
+}
+
+interface SessionConsultationLike {
+  disciplineCode: string;
+  disciplineName: string;
+  teacherName: string;
+}
+
+interface SessionDataLike {
+  seasonTitle: string;
+  rangeLabel: string | null;
+  countdown: { days: number; label: string } | null;
+  exams: SessionExamLike[];
+  retakes: SessionRetakeLike[];
+  consultations: SessionConsultationLike[];
+}
+
+/** Причина недопуска («Не сдано: Тест 2») → EN («Missing: Test 2»). */
+export function enAdmissionReason(reason: string | null): string | null {
+  if (reason === null) return null;
+  return enAdmissionReasonText(reason);
+}
+
+/**
+ * Локализация вью «Сессии» (SessionData): шапка, статусы, причины,
+ * дисциплины, преподаватели, заметки пересдач. RU — байт-в-байт (toEqual).
+ */
+export function localizeSessionData<D extends SessionDataLike>(locale: Locale, data: D): D {
+  if (locale !== 'en') return data;
+  return {
+    ...data,
+    seasonTitle: enSeasonTitle(data.seasonTitle),
+    rangeLabel: data.rangeLabel === null ? null : enSessionRangeLabel(data.rangeLabel),
+    countdown:
+      data.countdown === null
+        ? null
+        : { ...data.countdown, label: enCountdownLabel(data.countdown.label) },
+    exams: data.exams.map((exam) => ({
+      ...exam,
+      disciplineName: enDisciplineName({ code: exam.disciplineCode, name: exam.disciplineName }),
+      kindLabel: enExamKindLabel(exam.kindLabel),
+      teacherName: exam.teacherName === null ? null : enPersonName(exam.teacherName),
+      statusLabel: enExamStatusLabel(exam.statusLabel),
+      admissionReason: enAdmissionReason(exam.admissionReason),
+    })),
+    retakes: data.retakes.map((retake) => ({
+      ...retake,
+      disciplineName: enDisciplineName({ code: retake.disciplineCode, name: retake.disciplineName }),
+      note: enScheduleNote(retake.note),
+    })),
+    consultations: data.consultations.map((item) => ({
+      ...item,
+      disciplineName: enDisciplineName({ code: item.disciplineCode, name: item.disciplineName }),
+      teacherName: enPersonName(item.teacherName),
+    })),
+  };
+}
+
+
 // Таблицы с русскими ключами/регэкспами — в src/lib/ru-translit.ts.
+
+/** RU-титул/текст заявки в «кавычках-ёлочках» → EN-кавычки. */
 
 /** RU-титул/текст заявки в «кавычках-ёлочках» → EN-кавычки. */
 function enQuotes(text: string): string {

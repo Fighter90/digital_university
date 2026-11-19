@@ -44,7 +44,6 @@ import {
   miniCalendarCells,
   resolveWeekPage,
   toScheduleEventViews,
-  WEEKDAY_SHORT as WEEKDAY_SHORT_VIEW,
 } from '@/lib/schedule-view';
 import {
   moscowDateKey,
@@ -284,7 +283,8 @@ async function DayWeekContent({
       const dateKey = moscowDateKey(day);
       return {
         dateKey,
-        weekdayShort: WEEKDAY_SHORT_VIEW[moscowWeekdayIndex(day)],
+        // DIG-93 — заголовок колонки недели по локали.
+        weekdayShort: weekdayShortLabels(locale)[moscowWeekdayIndex(day)] ?? '',
         dayNumber: moscowParts(day).day,
         isToday: dateKey === todayKey,
         events: views.filter((item) => item.dateKey === dateKey),

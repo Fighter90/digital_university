@@ -13,6 +13,7 @@ import {
   feedbackTargetLabel,
   feedbackTypeLabel,
 } from '@/lib/feedback';
+import { enFeedbackText } from '@/lib/en-demo-content';
 import { t, type Locale } from '@/lib/i18n';
 import type { FeedbackRow } from '@/server/data';
 
@@ -58,7 +59,11 @@ export function FeedbackList({
               <p className="text-sm font-semibold text-foreground">
                 {feedbackTypeLabel(item.kind, locale)} · {feedbackTargetLabel(item.target, locale)}
               </p>
-              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.text}</p>
+              {/* DIG-93 — текст сида по id (FEEDBACK_TEXTS_EN); runtime-тексты
+                  пользовательский ввод — как есть. */}
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                {locale === 'en' ? (enFeedbackText(item.id) ?? item.text) : item.text}
+              </p>
               <p className="mt-2 text-xs text-muted-foreground">
                 {t(locale, 'feedback.list.due', { date: feedbackDueLabel(item.dueAt, locale) })}
               </p>

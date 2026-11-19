@@ -26,6 +26,8 @@ import {
 } from '@/lib/session-format';
 import { denyAccess } from './access';
 import { newRequestNumber } from './request-number';
+import { t, type Locale } from '@/lib/i18n';
+import { localizeSessionData } from '@/lib/en-demo-content';
 import type { DataDb } from './port';
 import type {
   DataCtx,
@@ -235,6 +237,7 @@ export async function getSession(
   db: DataDb,
   ctx: DataCtx,
   now: Date = new Date(),
+  locale: Locale = 'ru',
 ): Promise<SessionData> {
   if (ctx.studentId === null || ctx.groupName === null) {
     await denyAccess(db, {
@@ -292,7 +295,7 @@ export async function getSession(
   const first = assessments[0] ?? null;
   const last = assessments.at(-1) ?? null;
 
-  return {
+  const data: SessionData = {
     studentId: ctx.studentId,
     seasonTitle: first ? seasonTitleOf(first.date) : 'Сессия',
     rangeLabel: first && last ? formatSessionRange(first.date, last.date) : null,
@@ -310,6 +313,10 @@ export async function getSession(
       teacherName: event.teacherName,
     })),
   };
+
+  // DIG-93 — EN-локализация вью (шапка, статусы, дисциплины, преподаватели,
+  // заметки пересдач). Матчинг заявок выше — по каноническим RU-именам.
+  return localizeSessionData(locale, data);
 }
 
 /**

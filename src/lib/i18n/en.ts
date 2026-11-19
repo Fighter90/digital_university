@@ -28,6 +28,10 @@ export const en: Record<keyof RuDictionary, string> = {
   'menu.profile': 'Profile',
   'menu.settings': 'Settings',
   'menu.more': 'More',
+  // DIG-93 — разделы вне таблицы i18n (раньше падали в RU-фолбэк nav-items).
+  'menu.finance': 'Finance',
+  'menu.msp': 'Startups',
+  'menu.events': 'Events',
   'menu.staff': 'Overview',
   'menu.staffRequests': 'Requests',
   'menu.staffAppeals': 'Appeals',
@@ -1892,4 +1896,31 @@ export const en: Record<keyof RuDictionary, string> = {
   'assistant.report.confirm': 'Yes, report it',
   'assistant.report.sending': 'Sending…',
   'assistant.report.trigger': 'Report a wrong answer',
+
+  // ── DIG-93 — AI-гид кабинета (пилюля и панель) ────────────────────────────
+  'aiguide.pill': 'AI guide',
+  'aiguide.pillAria': 'Open the AI guide',
+  'aiguide.panelAria': 'Cabinet AI guide',
+  'aiguide.closeAria': 'Close the AI guide',
+  'aiguide.welcome': 'Hi, {name}! I am the demo guide of the cabinet. I can give you a tour: ',
+  'aiguide.welcome.route': 'schedule → grades → requests → certificates',
+  'aiguide.startTour': 'Start the tour',
+  'aiguide.skip': 'Skip',
+  'aiguide.askMe': 'Ask me',
+  'aiguide.questionAria': 'Your question to the guide',
+  'aiguide.questionPlaceholder': 'For example: where are my certificates?',
+  'aiguide.ask': 'Ask',
+  'aiguide.stepOf': 'Tour · step {step} of {total}',
+  'aiguide.openStep': 'Open “{title}”',
+  'aiguide.next': 'Next',
+  'aiguide.finish': 'Finish the tour',
+  'aiguide.questionPrefix': 'Question: “{question}”',
+  'aiguide.backToHints': 'Back to the hints',
+  'aiguide.miss':
+    'The question “{question}” is not among the demo scenarios yet — in the prototype I answer only the basic hints. Try one of them:',
+  'aiguide.voice.start': 'Voice input',
+  'aiguide.voice.stop': 'Stop recording',
+  // сроки учебного года в профиле
+  'profile.term.fall': 'Fall semester',
+  'profile.term.spring': 'Spring semester',
 };

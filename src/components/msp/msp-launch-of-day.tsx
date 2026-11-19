@@ -8,7 +8,7 @@ import { MspLetterBadge } from '@/components/msp/msp-letter-badge';
 import { MspVoteButton } from '@/components/msp/msp-vote-button';
 import { t, type Locale } from '@/lib/i18n';
 import type { MspProjectView } from '@/server/data';
-import { localizedMspProject } from '@/lib/en-demo-content';
+import { localizedMspProject, localizePersonName } from '@/lib/en-demo-content';
 
 export function MspLaunchOfDay({
   view,
@@ -22,8 +22,16 @@ export function MspLaunchOfDay({
 }) {
   if (!view) return null;
   const { votes, votedByMe } = view;
-  // DIG-89 — EN-рендер демо-проекта: титул/слоган из словаря по id.
-  const project = { ...view.project, ...localizedMspProject(locale, view.project) };
+  // DIG-89/93 — EN-рендер демо-проекта: титул/слоган из словаря по id,
+  // автор — транслит. RU — как в сиде, байт-в-байт.
+  const project =
+    locale === 'en'
+      ? {
+          ...view.project,
+          ...localizedMspProject('en', view.project),
+          authorName: localizePersonName('en', view.project.authorName),
+        }
+      : view.project;
   return (
     <section
       data-testid="msp-launch-of-day"

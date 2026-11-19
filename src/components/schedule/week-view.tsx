@@ -51,6 +51,11 @@ import {
 } from '@/lib/schedule-view';
 import { lessonKindLabel } from '@/lib/dashboard-format';
 import { t, type Locale } from '@/lib/i18n';
+import {
+  enDisciplineName,
+  enPersonName,
+  enScheduleNote,
+} from '@/lib/en-demo-content';
 import type { ScheduleKind } from '@/server/data/types';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -416,8 +421,10 @@ export function WeekView({
               >
                 <option value="ALL">{t(locale, 'schedule.filters.allTeachers')}</option>
                 {teachers.map((name) => (
+                  // DIG-93: value — каноническое имя (фильтр сравнивает с
+                  // моделями), подпись — по локали.
                   <option key={name} value={name}>
-                    {name}
+                    {locale === 'en' ? enPersonName(name) : name}
                   </option>
                 ))}
               </select>
@@ -616,6 +623,12 @@ function LessonBlock({
 }) {
   const meta = lessonKindMeta(event.kind);
   const status = event.isMoved ? 'moved' : event.isCancelled ? 'cancelled' : 'scheduled';
+  // DIG-93 — демо-контент по локали (фильтр сравнивает канонические имена,
+  // поэтому модели не трогаем — локализуем только видимый рендер).
+  const displayDiscipline = locale === 'en' ? enDisciplineName(event.discipline) : event.discipline;
+  const displayNote = locale === 'en' ? enScheduleNote(event.note) : event.note;
+  const displayChangeNote =
+    locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote;
   const top = ((event.start - 480) / 60) * 64;
   const height = Math.max(0, ((Math.min(event.end, 1200) - Math.max(event.start, 480)) / 60) * 64);
   if (height <= 0) return null; // пара целиком вне сетки 08:00–20:00
@@ -653,7 +666,7 @@ function LessonBlock({
       <span
         className={cn('text-[11px] font-bold leading-tight', event.isCancelled && 'line-through')}
       >
-        {event.discipline}
+        {displayDiscipline}
       </span>
       <span className="text-[10px] tabular-nums leading-tight">
         {event.timeLabel} · {event.roomLabel}
@@ -664,11 +677,11 @@ function LessonBlock({
         </Badge>
       ) : null}
       {previous ? <span className="text-[10px] leading-tight opacity-80">{previous}</span> : null}
-      {event.isMoved && event.changeNote ? (
-        <span className="text-[10px] leading-tight opacity-70">{event.changeNote}</span>
+      {event.isMoved && displayChangeNote ? (
+        <span className="text-[10px] leading-tight opacity-70">{displayChangeNote}</span>
       ) : null}
-      {event.isCancelled && event.note ? (
-        <span className="text-[10px] leading-tight opacity-70">{event.note}</span>
+      {event.isCancelled && displayNote ? (
+        <span className="text-[10px] leading-tight opacity-70">{displayNote}</span>
       ) : null}
     </button>
   );
@@ -678,11 +691,16 @@ function LessonBlock({
 
 function LessonDetails({ event, locale = 'ru' }: { event: ScheduleEventView; locale?: Locale }) {
   const previous = event.previousLabel;
+  // DIG-93 — демо-контент по локали.
+  const displayTeacher = locale === 'en' ? enPersonName(event.teacher) : event.teacher;
+  const displayNote = locale === 'en' ? enScheduleNote(event.note) : event.note;
+  const displayChangeNote =
+    locale === 'en' ? enScheduleNote(event.changeNote) : event.changeNote;
   const rows: Array<[string, React.ReactNode]> = [
     [t(locale, 'schedule.details.type'), lessonKindLabel(event.kind, locale)],
     [t(locale, 'schedule.details.time'), event.timeLabel],
     [t(locale, 'schedule.details.room'), event.roomLabel],
-    [t(locale, 'schedule.details.teacher'), event.teacher],
+    [t(locale, 'schedule.details.teacher'), displayTeacher],
     [
       t(locale, 'schedule.details.status'),
       <LessonStatusLabel key="status" event={event} locale={locale} />,
@@ -703,14 +721,14 @@ function LessonDetails({ event, locale = 'ru' }: { event: ScheduleEventView; loc
           {previous}
         </p>
       ) : null}
-      {event.changeNote ? (
+      {displayChangeNote ? (
         <p className="rounded-button bg-warning-soft px-3 py-2 text-sm text-warning-ink">
-          {t(locale, 'schedule.details.reason', { note: event.changeNote })}
+          {t(locale, 'schedule.details.reason', { note: displayChangeNote })}
         </p>
       ) : null}
-      {event.note ? (
+      {displayNote ? (
         <p className="rounded-button bg-muted px-3 py-2 text-sm text-muted-foreground">
-          {event.note}
+          {displayNote}
         </p>
       ) : null}
     </div>
