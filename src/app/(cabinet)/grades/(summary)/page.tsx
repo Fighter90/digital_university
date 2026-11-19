@@ -40,6 +40,7 @@ import type { Metadata } from 'next';
 import { bestPercentLabel } from '@/lib/performance-math';
 import { t, type Locale } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
+import { localizePerformanceData } from '@/lib/en-demo-content';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -181,18 +182,21 @@ function GradesView({
   semesterRaw?: string;
   locale: Locale;
 }) {
+  // DIG-93 — EN-имена дисциплин/преподавателей/долгов агрегата (карточки,
+  // светофор и список долгов рендерят уже локализованные значения).
+  const localizedData = localizePerformanceData(locale, data);
   const now = new Date();
-  const current = data.gpa?.currentSemesterKey ?? {
+  const current = localizedData.gpa?.currentSemesterKey ?? {
     startYear: now.getFullYear(),
     term: 'FALL' as const,
   };
   const parsed = parseSemesterParam(semesterRaw);
-  const selected = parsed ?? defaultSemesterKey(data);
+  const selected = parsed ?? defaultSemesterKey(localizedData);
   const isCurrentSemester =
     selected.startYear === current.startYear && selected.term === current.term;
 
-  const pills = buildSemesterPills(data.disciplines, current, locale);
-  const semesterDisciplines = disciplinesForSemester(data.disciplines, selected, current);
+  const pills = buildSemesterPills(localizedData.disciplines, current, locale);
+  const semesterDisciplines = disciplinesForSemester(localizedData.disciplines, selected, current);
   const hasGrades = semesterDisciplines.some(
     (d) => d.accumulated !== null || d.finalGrade !== null,
   );
@@ -202,15 +206,17 @@ function GradesView({
   // у завершённого «предыдущий» — ещё не закрытый семестр, сравнение
   // обманчиво (рендер-контракт: у весны 25/26 дельты нет).
   const delta =
-    hasGrades && isCurrentSemester ? semesterDelta(data.disciplines, selected, locale) : null;
+    hasGrades && isCurrentSemester
+      ? semesterDelta(localizedData.disciplines, selected, locale)
+      : null;
   const selectedPill = pills.find(
     (p) => p.semester.startYear === selected.startYear && p.semester.term === selected.term,
   );
 
-  const light = trafficLight(semesterDisciplines, activeDebts(data.debts), locale);
+  const light = trafficLight(semesterDisciplines, activeDebts(localizedData.debts), locale);
   const cards = toDisciplineCards(semesterDisciplines, locale);
   const note = emptySemesterNote(nextAssessment(exams, now, locale), isCurrentSemester, locale);
-  const credits = data.credits;
+  const credits = localizedData.credits;
   const creditsPercent =
     credits.required > 0 ? Math.min(100, (credits.earned / credits.required) * 100) : 0;
 
@@ -331,6 +337,14 @@ function GradesView({
                 {t(locale, 'grades.howCalculated')}
               </Tooltip>
             </p>
+            {/* DIG-103 — полный рейтинг группы: отдельная страница (/grades/rating). */}
+            <Link
+              href="/grades/rating"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent-ink hover:underline"
+            >
+              {t(locale, 'grades.rating.link')}
+              <ExternalLink className="size-3.5" aria-hidden="true" />
+            </Link>
           </div>
         ) : null}
       </div>
@@ -378,13 +392,13 @@ function GradesView({
       )}
 
       {/* ── Долги ─────────────────────────────────────────────────────────── */}
-      {activeDebts(data.debts).length > 0 ? (
+      {activeDebts(localizedData.debts).length > 0 ? (
         <div id="debts" className="rounded-card border border-border bg-card p-5 shadow-soft">
           <h2 className="text-base font-extrabold tracking-heading">
             {t(locale, 'grades.debtsTitle')}
           </h2>
           <ul className="mt-3 flex flex-col divide-y divide-border">
-            {activeDebts(data.debts).map((debt) => {
+            {activeDebts(localizedData.debts).map((debt) => {
               const badge = debtBadge(debt.status, locale);
               return (
                 <li

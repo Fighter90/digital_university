@@ -123,12 +123,17 @@ export function Shell({
       <TabBar role={user.role} locale={locale} />
       {/* DIG-72: плавающая кнопка попап-чата ассистента — только студенту
           (у сотрудника свой кабинет); на /ai-assistant скрыта. */}
-      {showFab && <AiFab onOpen={() => setFabOpen(true)} />}
+      {showFab && <AiFab onOpen={() => setFabOpen(true)} locale={locale} />}
       {/* DIG-62: AI-гид — вне <main>, чтобы краулер DIG-60 и геометрия
           контента не видели его ссылки; только роль студента. DIG-65:
           флаг voiceAssistant прячет/показывает микрофон голосового ввода. */}
       {user.role === 'STUDENT' && (
-        <AiGuide userName={user.name} role={user.role} voiceEnabled={user.voiceAssistant} />
+        <AiGuide
+          userName={user.name}
+          role={user.role}
+          voiceEnabled={user.voiceAssistant}
+          locale={locale}
+        />
       )}
       <SearchPalette
         open={searchOpen}

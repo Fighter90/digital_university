@@ -13,6 +13,7 @@ import {
   shortPreview,
   ticketSubjectLabel,
 } from '@/lib/tickets';
+import { enTicketMessage } from '@/lib/en-demo-content';
 import { t, type Locale } from '@/lib/i18n';
 import type { TicketListItem } from '@/server/data';
 
@@ -107,7 +108,14 @@ export function TicketList({
                   {ticket.lastMessage.authorRole === 'STAFF'
                     ? `${t(locale, 'deanery.managerRole')}: `
                     : t(locale, 'deanery.list.youPrefix')}
-                  {shortPreview(ticket.lastMessage.body, 48)}
+                  {/* DIG-93 — текст сообщения сида по id (TICKET_MESSAGES_EN);
+                      runtime-сообщения студента — как есть. */}
+                  {shortPreview(
+                    locale === 'en'
+                      ? (enTicketMessage(ticket.lastMessage.id) ?? ticket.lastMessage.body)
+                      : ticket.lastMessage.body,
+                    48,
+                  )}
                 </p>
               ) : null}
               <p className="mt-1 text-xs text-muted-foreground">

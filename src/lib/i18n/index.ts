@@ -60,6 +60,8 @@ type PrefixKey = { href: string; key: TranslationKey };
 const TITLE_BY_HREF: readonly PrefixKey[] = [
   { href: '/grades/gradebook', key: 'title.gradebook' },
   { href: '/grades/session', key: 'title.session' },
+  // DIG-103 — подстраница рейтинга группы (длинный префикс приоритетнее /grades).
+  { href: '/grades/rating', key: 'title.gradesRating' },
   { href: '/grades', key: 'title.grades' },
   { href: '/staff/requests', key: 'title.staffRequests' },
   { href: '/staff/appeals', key: 'title.staffAppeals' },
@@ -107,6 +109,11 @@ const MENU_KEY_BY_HREF: readonly PrefixKey[] = [
   { href: '/more', key: 'menu.more' },
   // DIG-42 — «Дополнительное образование».
   { href: '/dpo', key: 'menu.dpo' },
+  // DIG-93 — разделы, раньше падавшие в RU-фолбэк nav-items («Финансы»,
+  // «МСП», «Мероприятия») и в мобильном меню, и в боковом рельсе.
+  { href: '/finance', key: 'menu.finance' },
+  { href: '/msp', key: 'menu.msp' },
+  { href: '/events', key: 'menu.events' },
   { href: '/staff/requests', key: 'menu.staffRequests' },
   { href: '/staff/appeals', key: 'menu.staffAppeals' },
   { href: '/staff/announcements', key: 'menu.staffAnnouncements' },

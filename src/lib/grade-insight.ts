@@ -23,6 +23,7 @@ import {
 } from '@/lib/performance-math';
 import { formatScore } from '@/lib/performance-format';
 import { t, type Locale } from '@/lib/i18n';
+import { enDisciplineName, enElementName } from '@/lib/en-demo-content';
 
 // ── Вход (структурно совместим со строками слоя данных) ─────────────────────
 
@@ -115,9 +116,13 @@ const round2 = (x: number): number => Math.round(x * 100) / 100;
 const sameSemester = (a: SemesterKey, b: SemesterKey): boolean =>
   a.startYear === b.startYear && a.term === b.term;
 
-const toWork = (row: GradeInsightGradeRow): InsightWork => ({
-  disciplineName: row.disciplineName,
-  elementName: row.elementName,
+const toWork = (row: GradeInsightGradeRow, locale: Locale = 'ru'): InsightWork => ({
+  // DIG-93 — EN-имена работ и дисциплин в подписях инсайта (по канону сида).
+  disciplineName:
+    locale === 'en'
+      ? enDisciplineName({ code: row.disciplineCode, name: row.disciplineName })
+      : row.disciplineName,
+  elementName: locale === 'en' ? enElementName(row.elementName) : row.elementName,
   score: row.score,
   maxScore: row.maxScore,
   dateISO: row.gradedAt.toISOString(),
@@ -219,7 +224,7 @@ export function buildGradeInsight(
       delta: prev === null ? null : round2(average - prev),
       works: scoped
         .slice(0, i + 1)
-        .map(toWork)
+        .map((row) => toWork(row, locale))
         .reverse(),
     });
     prev = average;
@@ -232,7 +237,9 @@ export function buildGradeInsight(
   const monthStartIdx = scoped.findIndex((row) => row.gradedAt.getTime() >= cutoff);
   const baselineIdx = monthStartIdx - 1; // последняя работа до окна
   const baseline = baselineIdx >= 0 ? points[baselineIdx].average : null;
-  const monthWorks = (monthStartIdx >= 0 ? scoped.slice(monthStartIdx) : []).map(toWork).reverse();
+  const monthWorks = (monthStartIdx >= 0 ? scoped.slice(monthStartIdx) : [])
+    .map((row) => toWork(row, locale))
+    .reverse();
   const delta = baseline === null ? null : round2(current - baseline);
 
   let direction: InsightDirection;
@@ -257,7 +264,7 @@ export function buildGradeInsight(
       if (contribution === null || contribution === 0) continue;
       if (Math.abs(contribution) > Math.abs(topContribution)) {
         topContribution = contribution;
-        topWork = toWork(scoped[i]);
+        topWork = toWork(scoped[i], locale);
       }
     }
   }

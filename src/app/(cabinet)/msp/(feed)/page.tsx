@@ -21,10 +21,11 @@ import { localizedMspProject } from '@/lib/en-demo-content';
 export default async function MspPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string }>;
+  searchParams?: Promise<{ sort?: string }>;
 }) {
-  const { sort: rawSort } = await searchParams;
-  const sort = parseMspSort(rawSort);
+  // Next 15 передаёт промис; прямой рендер (юнит-прендер) — тоже валиден.
+  const params = (await searchParams) ?? {};
+  const sort = parseMspSort(params.sort);
   const [ctx, locale] = await Promise.all([requireDataCtx('/msp'), getLocale()]);
   const page = await getMspPage(dataDb, ctx, sort);
   const canVote = ctx.role === 'STUDENT';
@@ -41,11 +42,7 @@ export default async function MspPage({
       <div className="mt-6 flex flex-col gap-6">
         {/* «Запуск дня» — max голосов, при равенстве самый свежий (не random). */}
         <MspLaunchOfDay
-          view={
-            page.launchOfDay && locale === 'en'
-              ? { ...page.launchOfDay, project: { ...page.launchOfDay.project, ...localizedMspProject('en', page.launchOfDay.project) } }
-              : page.launchOfDay
-          }
+          view={page.launchOfDay}
           canVote={canVote}
           locale={locale}
         />
@@ -68,15 +65,7 @@ export default async function MspPage({
               <ul className="flex flex-col gap-3" data-testid="msp-feed">
                 {page.items.map((view) => (
                   <li key={view.project.id}>
-                    <MspProjectCard
-                      view={
-                        locale === 'en'
-                          ? { ...view, project: { ...view.project, ...localizedMspProject('en', view.project) } }
-                          : view
-                      }
-                      canVote={canVote}
-                      locale={locale}
-                    />
+                    <MspProjectCard view={view} canVote={canVote} locale={locale} />
                   </li>
                 ))}
               </ul>

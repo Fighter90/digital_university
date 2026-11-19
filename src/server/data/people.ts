@@ -25,12 +25,15 @@ import {
   findPersonById,
   PEOPLE,
   personHrefByFullName,
+  groupmatePersonId,
+  parseGroupmatePersonId,
   type PersonDiscipline,
   type PersonEntry,
 } from '@/lib/people-catalog';
 import { formatDayShort } from '@/lib/schedule-cards';
 import { formatMoscowTime, moscowDateKey, semesterBounds } from '@/lib/schedule-time';
 
+import { denyAccess } from './access';
 import type { DataDb } from './port';
 import type { DataCtx, ScheduleEventRow } from './types';
 
@@ -39,11 +42,14 @@ export const MAX_UPCOMING_EVENTS = 5;
 
 export interface PersonListEntry {
   id: string;
-  kind: PersonEntry['kind'];
+  /** Запись каталога (TEACHER/STAFF) или одногруппник группы (DIG-102). */
+  kind: PersonEntry['kind'] | 'GROUPMATE';
   fullName: string;
   position: string;
   department: string;
   email: string;
+  /** Телефон для поиска «ФИО, email или телефон»; у одногруппников null. */
+  phone: string | null;
   /** Все дисциплины преподавателя в вузе (для поиска и подписи). */
   disciplines: string[];
   /** Преподаватель встречается в расписании/дисциплинах группы студента. */
@@ -58,6 +64,12 @@ export interface PersonListEntry {
 
 export interface PeopleDirectoryData {
   people: PersonListEntry[];
+  /**
+   * DIG-102 — студенты СВОЕЙ группы, кроме владельца сессии (для поиска и
+   * категории «Одногруппники»); сотруднику деканата — пусто. В общем списке
+   * `people` их нет: состояние до ввода — прежний каталог (контракт DIG-37).
+   */
+  groupmates: PersonListEntry[];
   /** Студент: персональные секции возможны; сотрудник — нет. */
   hasPersonalScope: boolean;
   totalCount: number;
@@ -180,6 +192,7 @@ export async function getPeopleDirectory(db: DataDb, ctx: DataCtx): Promise<Peop
       position: person.position,
       department: person.department,
       email: person.email,
+      phone: person.phone,
       disciplines: person.disciplines.map((discipline) => discipline.name),
       isMyTeacher: isMyTeacherMark(person, links),
       isMyDeanery: marks.isMyDeanery,
@@ -196,7 +209,32 @@ export async function getPeopleDirectory(db: DataDb, ctx: DataCtx): Promise<Peop
     return a.fullName.localeCompare(b.fullName, 'ru');
   });
 
-  return { people, hasPersonalScope: isStudent, totalCount: people.length };
+  // DIG-102 — одногруппники: студенты СВОЕЙ группы, кроме владельца сессии.
+  // Скоуп строгий: groupName берётся из ctx сессии, чужая группа недостижима.
+  const groupmates: PersonListEntry[] = [];
+  if (isStudent && ctx.studentId !== null && ctx.groupName !== null) {
+    const groupStudents = await db.listStudentsByGroup(ctx.groupName);
+    for (const row of groupStudents) {
+      if (row.id === ctx.studentId) continue;
+      groupmates.push({
+        id: groupmatePersonId(row.id),
+        kind: 'GROUPMATE',
+        fullName: row.fullName,
+        position: '',
+        department: '',
+        email: row.email,
+        phone: null,
+        disciplines: [],
+        isMyTeacher: false,
+        isMyDeanery: false,
+        isMyManager: false,
+        myDisciplines: [],
+      });
+    }
+    groupmates.sort((a, b) => a.fullName.localeCompare(b.fullName, 'ru'));
+  }
+
+  return { people, groupmates, hasPersonalScope: isStudent, totalCount: people.length };
 }
 
 export async function getPersonCard(
@@ -270,4 +308,129 @@ export async function getPersonCard(
     myDisciplines,
     upcoming,
   };
+}
+
+// ── DIG-102 — избранное людей (/people, «★ Избранное», owner-scoped) ───────
+
+export interface FavoritePersonEntry {
+  /** Стабильный ключ toggle: id каталога или «groupmate:<Student.id>». */
+  personId: string;
+  kind: PersonEntry['kind'] | 'GROUPMATE';
+  /** href карточки /people/<id>; у одногруппника null (карточки-страницы нет). */
+  href: string | null;
+  fullName: string;
+  /** Подпись-должность; у одногруппника пусто (рендерит словарную подпись). */
+  position: string;
+  department: string;
+  email: string;
+}
+
+export interface FavoritePersonsData {
+  /** В порядке добавления (createdAt) — категории собирает UI. */
+  favorites: FavoritePersonEntry[];
+  hasPersonalScope: boolean;
+}
+
+export interface FavoriteToggleResult {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Белый список id человека для избранного: запись каталога людей — всем,
+ * одногруппник — только студент СВОЕЙ группы (groupName из ctx сессии) и не
+ * сам владелец. Чужой/несуществующий id → null: строка не записывается.
+ */
+async function resolveFavoritePerson(
+  db: DataDb,
+  ctx: DataCtx,
+  personId: string,
+): Promise<FavoritePersonEntry | null> {
+  const catalog = findPersonById(personId);
+  if (catalog) {
+    return {
+      personId,
+      kind: catalog.kind,
+      href: personHrefByFullName(catalog.fullName),
+      fullName: catalog.fullName,
+      position: catalog.position,
+      department: catalog.department,
+      email: catalog.email,
+    };
+  }
+  const groupmateStudentId = parseGroupmatePersonId(personId);
+  if (groupmateStudentId === null) return null;
+  if (ctx.groupName === null || groupmateStudentId === ctx.studentId) return null;
+  const student = await db.findStudentById(groupmateStudentId);
+  if (!student || student.groupName !== ctx.groupName) return null;
+  return {
+    personId,
+    kind: 'GROUPMATE',
+    href: null,
+    fullName: student.fullName,
+    position: '',
+    department: '',
+    email: student.email,
+  };
+}
+
+/**
+ * Переключение «★ Добавить в Избранное» / «★ В Избранном» владельца сессии.
+ * studentId — ТОЛЬКО из ctx (IDOR невозможен по построению); id валидируется
+ * белым списком ДО записи; у сотрудника — отказ + AuditLog ROLE_MISMATCH
+ * (как у каталога сервисов DIG-29).
+ */
+export async function toggleFavoritePerson(
+  db: DataDb,
+  ctx: DataCtx,
+  personId: string,
+  on: boolean,
+): Promise<FavoriteToggleResult> {
+  if (ctx.studentId === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: 'person',
+      resourceRef: personId,
+      reason: 'ROLE_MISMATCH',
+    });
+    return { ok: false, error: 'Избранное доступно студентам' };
+  }
+
+  const person = await resolveFavoritePerson(db, ctx, personId);
+  if (!person) {
+    // Некорректный или недостижимый id (чужая группа) — без записи и без аудита:
+    // каталог публичен, оракула существования здесь не строится.
+    return { ok: false, error: 'Этот человек недоступен в справочнике' };
+  }
+
+  if (on) {
+    await db.addFavoritePersonByStudent(ctx.studentId, personId);
+  } else {
+    await db.removeFavoritePersonByStudent(ctx.studentId, personId);
+  }
+  return { ok: true };
+}
+
+/**
+ * Избранное владельца сессии в порядке добавления, с разрешением записей
+ * (catalog / одногруппник). Одногруппники повторно проверяются по СВОЕЙ
+ * группе: покинувший группу (или удалённый) человек молча выпадает из
+ * списка — избранное остаётся честным.
+ */
+export async function listFavoritePersons(
+  db: DataDb,
+  ctx: DataCtx,
+): Promise<FavoritePersonsData> {
+  if (ctx.studentId === null) {
+    // Сотрудник деканата: студенческого избранного нет (без аудита — /people
+    // общая страница, отказ здесь не событие доступа, а отсутствие секции).
+    return { favorites: [], hasPersonalScope: false };
+  }
+  const ids = await db.listFavoritePersonIdsByStudent(ctx.studentId);
+  const favorites: FavoritePersonEntry[] = [];
+  for (const personId of ids) {
+    const person = await resolveFavoritePerson(db, ctx, personId);
+    if (person) favorites.push(person);
+  }
+  return { favorites, hasPersonalScope: true };
 }

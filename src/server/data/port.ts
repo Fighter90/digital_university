@@ -424,6 +424,18 @@ export interface DataDb {
   /** Снимает закрепление; идемпотентно (несуществующее — no-op). */
   removeFavoriteServiceByStudent(studentId: string, serviceId: string): Promise<void>;
 
+  // ── DIG-102: справочник людей — избранное (owner-scoped) ─────────────────
+  /**
+   * Id избранных людей студента (/people) в порядке добавления (createdAt).
+   * personId — id каталога людей или «groupmate:<Student.id>» (см.
+   * people-catalog); валидность id проверяет слой данных (people.ts) ДО записи.
+   */
+  listFavoritePersonIdsByStudent(studentId: string): Promise<string[]>;
+  /** Добавляет человека в избранное владельца; идемпотентно (повтор — no-op). */
+  addFavoritePersonByStudent(studentId: string, personId: string): Promise<void>;
+  /** Убирает человека из избранного; идемпотентно (несуществующее — no-op). */
+  removeFavoritePersonByStudent(studentId: string, personId: string): Promise<void>;
+
   // ── DIG-34: задачи студента (group-scoped дедлайны + owner-scoped ручные) ─
   /** Дедлайны заданий группы из системы курсов (в концепте — сиды). */
   listStudyDeadlinesByGroup(groupName: string): Promise<StudyDeadlineRow[]>;

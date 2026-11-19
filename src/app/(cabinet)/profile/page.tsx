@@ -14,7 +14,7 @@ import { requireDataCtx, getOwnProfile, getOwnSettings } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { currentAcademicPeriod } from '@/lib/profile-format';
 import { t } from '@/lib/i18n';
-import { localizedFaculty, localizedGroup, enDisciplineName, enProgramName, enStudyFormLabel, enFundingLabel } from '@/lib/en-demo-content';
+import { localizePersonName, localizedFaculty, localizedGroup, enDisciplineName, enProgramName, enStudyFormLabel, enFundingLabel } from '@/lib/en-demo-content';
 
 export default async function ProfilePage() {
   const [ctx, locale] = await Promise.all([requireDataCtx('/profile'), getLocale()]);
@@ -47,10 +47,12 @@ export default async function ProfilePage() {
     );
   }
 
-  const period = currentAcademicPeriod(new Date());
+  const period = currentAcademicPeriod(new Date(), locale);
   // DIG-89 — EN-рендер демо-данных профиля: факультет/группа/программа/формы.
   const facultyLabel = localizedFaculty(locale, profile.faculty);
   const groupLabel = localizedGroup(locale, profile.groupName);
+  // DIG-93 — имя владельца по локали (карточка + инициалы аватара латиницей).
+  const fullNameLabel = localizePersonName(locale, profile.fullName) || profile.fullName;
   const programLabel =
     locale === 'en' ? enProgramName(profile.program) : profile.program;
   const direction = profile.programCode
@@ -69,9 +71,9 @@ export default async function ProfilePage() {
       {/* Карточка профиля */}
       <Card>
         <CardHeader className="flex-row items-center gap-4 space-y-0 pb-0">
-          <Avatar name={profile.fullName} size="lg" />
+          <Avatar name={fullNameLabel} size="lg" />
           <div className="min-w-0">
-            <CardTitle className="text-lg sm:text-xl">{profile.fullName}</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">{fullNameLabel}</CardTitle>
             <CardDescription className="truncate">
               {facultyLabel} · {groupLabel}
             </CardDescription>

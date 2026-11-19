@@ -21,15 +21,16 @@ import {
   Phone,
 } from 'lucide-react';
 
-import { requireDataCtx, getPersonCard } from '@/server/data';
+import { requireDataCtx, getPersonCard, listFavoritePersons } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { FavoritePersonButton } from '@/components/people/favorite-person-button';
 
 import { getLocale } from '@/lib/i18n/server';
 import { t } from '@/lib/i18n';
-import { enDisciplineName } from '@/lib/en-demo-content';
+import { enDisciplineName, localizePersonName } from '@/lib/en-demo-content';
 import { personEnFields } from '@/lib/people-catalog';
 
 /** DIG-89 — <title> страницы по локали. */
@@ -50,7 +51,10 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   }
   const [ctx, locale] = await Promise.all([requireDataCtx(`/people/${rawId}`), getLocale()]);
 
-  const card = await getPersonCard(dataDb, ctx, id, locale);
+  const [card, favoritesView] = await Promise.all([
+    getPersonCard(dataDb, ctx, id, locale),
+    listFavoritePersons(dataDb, ctx),
+  ]);
   if (!card) notFound();
   const { person: basePerson, upcoming } = card;
   // DIG-89 — EN-рендер: должность/подразделение/часы/программа по id записи.
@@ -58,6 +62,8 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   const person = enFields
     ? {
         ...basePerson,
+        // DIG-93 — имя демо-персоны по локали (инициалы аватара — латиницей).
+        fullName: localizePersonName('en', basePerson.fullName),
         position: enFields.position,
         department: enFields.department,
         consultationHours: enFields.consultationHours ?? basePerson.consultationHours,
@@ -120,6 +126,16 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             <Mail aria-hidden="true" className="size-4" />
             {t(locale, 'people.writeLetter')}
           </a>
+          {/* DIG-102 — «★ Избранное» на карточке: студенту, владелец сессии. */}
+          {card.hasPersonalScope ? (
+            <FavoritePersonButton
+              personId={id}
+              personName={person.fullName}
+              isFavorite={favoritesView.favorites.some((favorite) => favorite.personId === id)}
+              variant="labeled"
+              locale={locale}
+            />
+          ) : null}
           {isTeacher ? (
             <span className="inline-flex flex-col">
               <Button

@@ -28,6 +28,10 @@ export const en: Record<keyof RuDictionary, string> = {
   'menu.profile': 'Profile',
   'menu.settings': 'Settings',
   'menu.more': 'More',
+  // DIG-93 — разделы вне таблицы i18n (раньше падали в RU-фолбэк nav-items).
+  'menu.finance': 'Finance',
+  'menu.msp': 'Startups',
+  'menu.events': 'Events',
   'menu.staff': 'Overview',
   'menu.staffRequests': 'Requests',
   'menu.staffAppeals': 'Appeals',
@@ -39,6 +43,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'title.tasks': 'Tasks',
   'title.schedule': 'Schedule',
   'title.grades': 'Academic performance',
+  // DIG-103 — group ranking subpage.
+  'title.gradesRating': 'Group ranking',
   'title.gradebook': 'Gradebook',
   'title.session': 'Exam session',
   'title.requests': 'My requests',
@@ -357,6 +363,17 @@ export const en: Record<keyof RuDictionary, string> = {
   'grades.debt.assignedIn': 'The retake is scheduled for {date} ({days} {word} left)',
   'grades.debt.closedPhrase': 'The debt is cleared — the retake on {date} has been credited',
   'grades.retakeSignup': 'Sign up for the retake',
+
+  // ── DIG-103 — group ranking (/grades/rating) ──────────────────────────────
+  'grades.rating.link': 'View full group ranking',
+  'grades.rating.caption': 'Group students by average score',
+  'grades.rating.place': 'Place',
+  'grades.rating.student': 'Student',
+  'grades.rating.average': 'Average score',
+  'grades.rating.you': 'you',
+  'grades.rating.emptyTitle': 'No grades in the group yet',
+  'grades.rating.emptyDesc': 'The ranking will appear once teachers publish the first grades.',
+  'grades.rating.backToSummary': '← Back to performance',
 
   // ── DIG-84 — gradebook and transcript ─────────────────────────────────────
   'gradebook.studentsOnlyDesc':
@@ -854,6 +871,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'meta.tasks': 'Tasks — Digital Deanery',
   'meta.finance': 'Finance — Digital Deanery',
   'meta.grades': 'Performance — Digital Deanery',
+  // DIG-103
+  'meta.gradesRating': 'Group ranking — Digital Deanery',
   'meta.gradebook': 'Gradebook — Digital Deanery',
   'meta.session': 'Exam session — Digital Deanery',
   'meta.discipline': 'Discipline — Digital Deanery',
@@ -876,6 +895,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'loading.people': 'Loading the directory',
   'loading.services': 'Loading services',
   'loading.grades': 'Performance is loading',
+  // DIG-103
+  'loading.gradesRating': 'The group ranking is loading',
   'loading.session': 'The exam session is loading',
   'loading.notifications': 'Loading notifications',
 
@@ -1266,6 +1287,22 @@ export const en: Record<keyof RuDictionary, string> = {
   'people.browser.empty.desc': 'Try another name, discipline or reset the filter.',
   'people.yourDisciplines': 'Your disciplines:',
   'people.loading.aria': 'Loading the directory',
+  // DIG-102 — «Find a person» search and the «★ Favorites» tab
+  'people.search.query.placeholder': 'Name, email or phone…',
+  'people.search.empty.title': 'Nothing found',
+  'people.search.empty.desc': 'Check the name, email or phone and try again.',
+  'people.filter.FAVORITES': '★ Favorites',
+  'people.fav.title': '★ Favorites',
+  'people.fav.cat.TEACHER': 'Teachers',
+  'people.fav.cat.STAFF': 'Deanery staff',
+  'people.fav.cat.GROUPMATE': 'Groupmates',
+  'people.fav.add': 'Add to favorites',
+  'people.fav.added': 'In favorites',
+  'people.fav.addAria': 'Add {name} to favorites',
+  'people.fav.removeAria': 'Remove {name} from favorites',
+  'people.fav.empty.title': 'No favorites yet',
+  'people.fav.empty.desc': 'Tap ★ on a person card and they will appear here, grouped by category.',
+  'people.groupmate.subtitle': 'Groupmate',
 
   // /services
   'services.subtitle':
@@ -1900,4 +1937,31 @@ export const en: Record<keyof RuDictionary, string> = {
   'assistant.report.confirm': 'Yes, report it',
   'assistant.report.sending': 'Sending…',
   'assistant.report.trigger': 'Report a wrong answer',
+
+  // ── DIG-93 — AI-гид кабинета (пилюля и панель) ────────────────────────────
+  'aiguide.pill': 'AI guide',
+  'aiguide.pillAria': 'Open the AI guide',
+  'aiguide.panelAria': 'Cabinet AI guide',
+  'aiguide.closeAria': 'Close the AI guide',
+  'aiguide.welcome': 'Hi, {name}! I am the demo guide of the cabinet. I can give you a tour: ',
+  'aiguide.welcome.route': 'schedule → grades → requests → certificates',
+  'aiguide.startTour': 'Start the tour',
+  'aiguide.skip': 'Skip',
+  'aiguide.askMe': 'Ask me',
+  'aiguide.questionAria': 'Your question to the guide',
+  'aiguide.questionPlaceholder': 'For example: where are my certificates?',
+  'aiguide.ask': 'Ask',
+  'aiguide.stepOf': 'Tour · step {step} of {total}',
+  'aiguide.openStep': 'Open “{title}”',
+  'aiguide.next': 'Next',
+  'aiguide.finish': 'Finish the tour',
+  'aiguide.questionPrefix': 'Question: “{question}”',
+  'aiguide.backToHints': 'Back to the hints',
+  'aiguide.miss':
+    'The question “{question}” is not among the demo scenarios yet — in the prototype I answer only the basic hints. Try one of them:',
+  'aiguide.voice.start': 'Voice input',
+  'aiguide.voice.stop': 'Stop recording',
+  // сроки учебного года в профиле
+  'profile.term.fall': 'Fall semester',
+  'profile.term.spring': 'Spring semester',
 };

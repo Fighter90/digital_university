@@ -272,6 +272,26 @@ describe('nav config (cabinet shell)', () => {
     expect(resolveActiveTab('/msp/konspekt-bot-a1b2')).toBe('/more');
   });
 
+  // DIG-99: вход на /mcp заметен и в левом меню (DIG-73 добавил пункт
+  // только в мобильное «Ещё») — рядом с AI-ассистентом, без count-badge.
+  it('DIG-99: пункт «Подключить ассистента (MCP)» есть в левом меню и активен на /mcp', () => {
+    const section = CABINET_SECTIONS.find((s) => s.href === '/mcp');
+    expect(section, 'section /mcp missing from the left sidebar menu').toBeTruthy();
+    // Подпись — существующий ключ словаря menu.mcp (RU не меняем).
+    expect(section?.label).toBe('Подключить ассистента (MCP)');
+    // Рядом с AI-ассистентом — та же пара «ассистент + его подключение»,
+    // что закреплена в «Ещё» (DIG-73).
+    const mcpIndex = CABINET_SECTIONS.findIndex((s) => s.href === '/mcp');
+    const aiIndex = CABINET_SECTIONS.findIndex((s) => s.href === '/ai-assistant');
+    expect(Math.abs(mcpIndex - aiIndex)).toBe(1);
+    // Активное состояние пункта на /mcp, без ложных срабатываний по префиксу.
+    expect(resolveActiveSection('/mcp', CABINET_SECTIONS)).toBe('/mcp');
+    expect(resolveActiveSection('/mcp-extra', CABINET_SECTIONS)).not.toBe('/mcp');
+    // Мобильное меню: пункт доступен через «Ещё» и подсвечивает вкладку.
+    expect(MORE_SECTIONS.some((s) => s.href === '/mcp')).toBe(true);
+    expect(resolveActiveTab('/mcp')).toBe('/more');
+  });
+
   it('DIG-40: пункт меню «Обратная связь» объясняет назначение канала', () => {
     const section = CABINET_SECTIONS.find((s) => s.href === '/feedback');
     expect(section).toBeTruthy();

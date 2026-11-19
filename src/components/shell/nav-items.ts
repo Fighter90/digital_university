@@ -31,6 +31,10 @@ export const CABINET_SECTIONS: CabinetSection[] = [
   { href: '/dpo', label: 'Доп. образование' },
   { href: '/people', label: 'Справочник' },
   { href: '/ai-assistant', label: 'AI-ассистент' },
+  // DIG-99 — «MCP-сервер»: заметный вход на страницу документации /mcp
+  // и в полном меню (DIG-73 добавил пункт только в мобильное «Ещё»).
+  // Подпись — существующий ключ словаря menu.mcp; иконка Plug (nav-icons).
+  { href: '/mcp', label: 'Подключить ассистента (MCP)' },
   { href: '/profile', label: 'Профиль' },
 ];
 

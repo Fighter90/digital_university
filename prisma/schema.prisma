@@ -54,7 +54,7 @@ model User {
   notifications    Notification[]
   notificationPref NotificationPref?
   ticketMessages   TicketMessage[]
-  ticketAssignee   Ticket[]        @relation("TicketAssignee")
+  ticketAssignee   Ticket[]          @relation("TicketAssignee")
   requestEvents    RequestEvent[]
   newsPosts        News[]
   aiChats          AiChat[]
@@ -98,7 +98,7 @@ model Program {
   name      String
   code      String
 
-  faculty     Faculty     @relation(fields: [facultyId], references: [id])
+  faculty     Faculty      @relation(fields: [facultyId], references: [id])
   groups      Group[]
   disciplines Discipline[]
 
@@ -147,6 +147,7 @@ model Student {
   certificates    CertificateIssue[]
   serviceRequests ServiceRequest[]
   appeals         Appeal[]
+  favorites       FavoritePerson[]
 
   @@index([groupId])
 }
@@ -192,12 +193,12 @@ model Discipline {
   credits     Int
   room        String
 
-  program      Program?             @relation(fields: [programId], references: [id])
-  teachers     DisciplineTeachers[]
-  enrollments  Enrollment[]
+  program        Program?             @relation(fields: [programId], references: [id])
+  teachers       DisciplineTeachers[]
+  enrollments    Enrollment[]
   scheduleEvents ScheduleEvent[]
-  exams        Exam[]
-  elements     AssessmentElement[]
+  exams          Exam[]
+  elements       AssessmentElement[]
 
   @@index([programId])
 }
@@ -217,7 +218,7 @@ model DisciplineTeachers {
 
 /// Запись студента на дисциплину в семестре.
 model Enrollment {
-  id           String  @id @default(cuid())
+  id           String @id @default(cuid())
   studentId    String
   disciplineId String
   academicYear String // «2026/2027»
@@ -236,11 +237,11 @@ model Enrollment {
 
 /// Элемент контроля (реферат, тест, коллоквиум) в рамках записи на дисциплину.
 model Assessment {
-  id           String  @id @default(cuid())
+  id           String @id @default(cuid())
   enrollmentId String
   name         String
   weight       Float // доля в итоговой оценке, 0..1
-  sortOrder    Int     @default(0)
+  sortOrder    Int    @default(0)
 
   enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   grades     Grade[]
@@ -298,16 +299,16 @@ model Grade {
 
 /// Экзамен/зачёт сессии: допуск, итог, пересдача (канон, по студенту).
 model Exam {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   studentId    String
   disciplineId String
-  kind         ExamKind @default(EXAM)
+  kind         ExamKind  @default(EXAM)
   examDate     DateTime
   room         String?
   building     String?
-  admitted     Boolean  @default(false)
+  admitted     Boolean   @default(false)
   result       Int?
-  retake       Boolean  @default(false)
+  retake       Boolean   @default(false)
   retakeDate   DateTime?
   retakeResult Int?
 
@@ -371,9 +372,9 @@ model ScheduleEvent {
   homework         String?
   materials        String?
 
-  group      Group?       @relation(fields: [groupId], references: [id])
-  discipline Discipline?  @relation(fields: [disciplineId], references: [id])
-  teacher    Teacher?     @relation(fields: [teacherId], references: [id])
+  group      Group?        @relation(fields: [groupId], references: [id])
+  discipline Discipline?   @relation(fields: [disciplineId], references: [id])
+  teacher    Teacher?      @relation(fields: [teacherId], references: [id])
   notes      StudentNote[]
 
   @@index([groupId, startsAt])
@@ -426,16 +427,37 @@ model StudentNote {
   @@index([eventId])
 }
 
+// ── Избранное справочника людей (DIG-102) ────────────────────────────────────
+
+/// Человек из избранного студента (/people, вкладка «★ Избранное»). Таблицы
+/// Person в БД нет — справочник людей вымышленный статический каталог
+/// (src/lib/people-catalog.ts), поэтому personId — строка без FK: id записи
+/// каталога («teacher-petrov») либо «groupmate:<Student.id>» для
+/// одногруппников (GROUPMATE_ID_PREFIX). Связь со Student — FK с каскадом,
+/// UNIQUE пары (студент, человек). Владелец строки — только студент сессии:
+/// все чтения/записи фильтруются по studentId (IDOR-контракт слоя данных).
+model FavoritePerson {
+  id        String   @id @default(cuid())
+  studentId String
+  personId  String
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, personId])
+  @@index([studentId, createdAt])
+}
+
 // ── Заявки ──────────────────────────────────────────────────────────────────
 
 /// Тип заявки: справка, выписка, дубликат и т.п. (словарь канона).
 model RequestType {
-  id        String        @id @default(cuid())
-  code      String        @unique // «CERT_ENROLLMENT», «DIPLOMA_COPY»…
-  name      String
-  etaDays   Int? // срок готовности в рабочих днях
-  format    RequestFormat @default(ELECTRONIC)
-  isInstant Boolean       @default(false)
+  id         String        @id @default(cuid())
+  code       String        @unique // «CERT_ENROLLMENT», «DIPLOMA_COPY»…
+  name       String
+  etaDays    Int? // срок готовности в рабочих днях
+  format     RequestFormat @default(ELECTRONIC)
+  isInstant  Boolean       @default(false)
   /// JSON-схема полей формы.
   formSchema Json?
 
@@ -544,15 +566,15 @@ enum ActorRole {
 
 /// Уведомление пользователя кабинета (канон: владелец — User).
 model Notification {
-  id         String             @id @default(cuid())
+  id         String           @id @default(cuid())
   userId     String
-  kind       NotificationKind   @default(SYSTEM)
+  kind       NotificationKind @default(SYSTEM)
   title      String
   body       String
   link       String?
-  importance Importance         @default(NORMAL)
+  importance Importance       @default(NORMAL)
   readAt     DateTime?
-  createdAt  DateTime           @default(now())
+  createdAt  DateTime         @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
