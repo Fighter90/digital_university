@@ -21,11 +21,14 @@ import {
   askFloatingAssistant,
   type FloatingAssistantReply,
 } from '@/server/actions/floating-assistant';
+import { t, type Locale } from '@/lib/i18n';
 import { Icon } from '@/components/ui/icon';
 
 export interface FloatingAssistantPopupProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** DIG-88 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 interface ChatEntry {
@@ -47,16 +50,16 @@ const nextEntryId = (): number => {
   return entrySeq;
 };
 
-const GREETING =
-  'Здравствуйте! Я ассистент справки цифрового деканата. Спросите, как ' +
-  'пользоваться кабинетом: заявки, расписание, стипендии, настройки — ' +
-  'отвечу по «Справке» и «Вопросам и ответам».';
-
-export function FloatingAssistantPopup({ open, onOpenChange }: FloatingAssistantPopupProps) {
+export function FloatingAssistantPopup({
+  open,
+  onOpenChange,
+  locale = 'ru',
+}: FloatingAssistantPopupProps) {
   // История сессии живёт в памяти компонента (не в БД): попап монтируется
-  // вместе со Shell, поэтому история переживает закрытие попапа.
-  const [entries, setEntries] = useState<ChatEntry[]>([
-    { id: nextEntryId(), role: 'assistant', text: GREETING },
+  // вместе со Shell, поэтому история переживает закрытие попапа. Приветствие
+  // и подписи — по локали (DIG-88); RU — канон прежней строки.
+  const [entries, setEntries] = useState<ChatEntry[]>(() => [
+    { id: nextEntryId(), role: 'assistant', text: t(locale, 'assistant.popup.greeting') },
   ]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -86,7 +89,7 @@ export function FloatingAssistantPopup({ open, onOpenChange }: FloatingAssistant
     try {
       reply = await askFloatingAssistant({ question });
     } catch {
-      reply = { ok: false, error: 'Не удалось получить ответ. Попробуйте ещё раз.' };
+      reply = { ok: false, error: t(locale, 'assistant.error.generic') };
     }
     setSending(false);
     setEntries((prev) => {
@@ -118,7 +121,7 @@ export function FloatingAssistantPopup({ open, onOpenChange }: FloatingAssistant
             клик вне карточки закрывает попап. */}
         <BaseDialog.Backdrop className="fixed inset-0 z-40 bg-foreground/25" />
         <BaseDialog.Popup
-          aria-label="AI-ассистент"
+          aria-label={t(locale, 'assistant.panel.title')}
           data-testid="ai-fab-popup"
           className={[
             'fixed inset-0 z-50 flex flex-col bg-neutral-50 outline-none',
@@ -149,11 +152,11 @@ export function FloatingAssistantPopup({ open, onOpenChange }: FloatingAssistant
               data-testid="ai-fab-popup-title"
               className="flex-1 text-lg font-extrabold tracking-heading"
             >
-              AI-ассистент
+              {t(locale, 'assistant.panel.title')}
             </BaseDialog.Title>
             <BaseDialog.Close
               data-testid="ai-fab-popup-close"
-              aria-label="Закрыть чат ассистента"
+              aria-label={t(locale, 'assistant.popup.closeAria')}
               className="-m-1.5 rounded-button p-2 text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
             >
               <Icon icon={X} size={18} />
@@ -179,7 +182,7 @@ export function FloatingAssistantPopup({ open, onOpenChange }: FloatingAssistant
                       className="animate-pulse rounded-card rounded-bl-md bg-card px-3.5 py-2.5 text-sm text-muted-foreground"
                       data-testid="ai-fab-popup-pending"
                     >
-                      Ассистент печатает…
+                      {t(locale, 'assistant.popup.pending')}
                     </p>
                   ) : (
                     <>
@@ -239,14 +242,14 @@ export function FloatingAssistantPopup({ open, onOpenChange }: FloatingAssistant
               type="text"
               enterKeyHint="send"
               maxLength={1000}
-              placeholder="Спросите, как пользоваться кабинетом…"
-              aria-label="Вопрос ассистенту"
+              placeholder={t(locale, 'assistant.popup.placeholder')}
+              aria-label={t(locale, 'assistant.inputAria')}
               className="min-w-0 flex-1 rounded-button border border-neutral-200 bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-coral-600"
             />
             <button
               type="submit"
               data-testid="ai-fab-popup-send"
-              aria-label="Отправить вопрос"
+              aria-label={t(locale, 'assistant.sendAria')}
               disabled={draft.trim().length === 0 || sending}
               className="grid size-11 shrink-0 place-items-center rounded-pill bg-coral-500 text-white transition-colors hover:bg-coral-600 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
             >

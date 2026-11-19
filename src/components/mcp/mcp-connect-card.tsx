@@ -5,17 +5,19 @@ import Link from 'next/link';
 import { Check, Copy, Eye, KeyRound } from 'lucide-react';
 import { cn } from 'cn';
 import {
-  MCP_CONFIG_TOKEN_PLACEHOLDER,
   MCP_SETTINGS_HREF,
   buildMcpConfigSnippet,
+  mcpConfigTokenPlaceholder,
 } from '@/lib/mcp-docs';
+import { t, type Locale } from '@/lib/i18n';
 
 // DIG-73 — карточка «Как подключить» на странице /mcp (GET-only):
 // маскированное превью персонального токена (раскрывается кнопкой
-// «Показать токен»), готовый JSON-конфиг с плейсхолдером <ВАШ_ТОКЕН> и
-// кнопка «Скопировать конфиг». Реальный токен никогда не приходит на
-// страницу: plaintext показывается один раз при выпуске во вкладке
-// «Настройка MCP»; здесь — только маска. Мутаций нет (GET-only страница).
+// «Показать токен»), готовый JSON-конфиг с плейсхолдером и кнопка
+// «Скопировать конфиг». Реальный токен никогда не приходит на страницу:
+// plaintext показывается один раз при выпуске во вкладке «Настройка MCP»;
+// здесь — только маска. Мутаций нет (GET-only страница).
+// DIG-88 — подписи и плейсхолдер сниппета по локали (RU — канон).
 
 export interface McpConnectCardProps {
   /** Абсолютный URL демо-MCP-сервера (из заголовков запроса). */
@@ -24,21 +26,24 @@ export interface McpConnectCardProps {
   token: { tokenPreview: string; createdAt: Date } | null;
   /** Сотруднику персональный токен не выдаётся (сервер отдаёт данные студента-владельца). */
   isStudent: boolean;
+  /** DIG-88 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 /** Дата фиксирована по Москве — SSR и клиент совпадают без hydration-мигания. */
-function formatTokenDate(date: Date): string {
-  return new Intl.DateTimeFormat('ru-RU', {
+function formatTokenDate(date: Date, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === 'en' ? 'en-US' : 'ru-RU', {
     day: 'numeric',
     month: 'long',
     timeZone: 'Europe/Moscow',
   }).format(date);
 }
 
-export function McpConnectCard({ url, token, isStudent }: McpConnectCardProps) {
+export function McpConnectCard({ url, token, isStudent, locale = 'ru' }: McpConnectCardProps) {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
-  const snippet = buildMcpConfigSnippet(url);
+  const snippet = buildMcpConfigSnippet(url, locale);
+  const placeholder = mcpConfigTokenPlaceholder(locale);
 
   const copyConfig = async () => {
     try {
@@ -55,7 +60,7 @@ export function McpConnectCard({ url, token, isStudent }: McpConnectCardProps) {
       <div className="flex flex-col gap-2">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-neutral-900">
           <KeyRound className="size-4 text-neutral-500" aria-hidden="true" />
-          Персональный токен
+          {t(locale, 'mcp.card.token')}
         </p>
 
         {isStudent && token ? (
@@ -69,7 +74,7 @@ export function McpConnectCard({ url, token, isStudent }: McpConnectCardProps) {
               className="inline-flex w-fit items-center gap-1.5 rounded-button border border-border bg-card px-3 py-1.5 text-sm font-semibold text-neutral-700 hover:bg-muted"
             >
               <Eye className="size-4" aria-hidden="true" />
-              {revealed ? 'Скрыть токен' : 'Показать токен'}
+              {revealed ? t(locale, 'mcp.card.hideToken') : t(locale, 'mcp.card.showToken')}
             </button>
             {revealed && (
               <div id="mcp-token-details" className="flex flex-col gap-1">
@@ -80,9 +85,7 @@ export function McpConnectCard({ url, token, isStudent }: McpConnectCardProps) {
                   {token.tokenPreview}
                 </code>
                 <p className="text-[11px] leading-relaxed text-neutral-600">
-                  Токен выпущен {formatTokenDate(token.createdAt)}. Это маска: полный токен
-                  показывается только один раз при выпуске — если он потерян, перевыпустите его в
-                  настройках.
+                  {t(locale, 'mcp.card.issued', { date: formatTokenDate(token.createdAt, locale) })}
                 </p>
               </div>
             )}
@@ -91,27 +94,23 @@ export function McpConnectCard({ url, token, isStudent }: McpConnectCardProps) {
               data-testid="mcp-settings-link"
               className="w-fit text-xs font-semibold text-coral-600 underline-offset-2 hover:underline"
             >
-              Выпустить или перевыпустить токен — «Настройка MCP»
+              {t(locale, 'mcp.card.manage')}
             </Link>
           </div>
         ) : isStudent ? (
           <div className="flex flex-col gap-1">
-            <p className="text-xs text-neutral-600">
-              Токен ещё не создан: выпустите его во вкладке «Настройка MCP» — полный токен
-              показывается один раз при выпуске.
-            </p>
+            <p className="text-xs text-neutral-600">{t(locale, 'mcp.card.none')}</p>
             <Link
               href={MCP_SETTINGS_HREF}
               data-testid="mcp-settings-link"
               className="w-fit text-xs font-semibold text-coral-600 underline-offset-2 hover:underline"
             >
-              Создать токен — «Настройка MCP»
+              {t(locale, 'mcp.card.create')}
             </Link>
           </div>
         ) : (
           <p className="text-xs leading-relaxed text-neutral-600">
-            В этом прототипе персональный токен выпускается в кабинете студента: сервер отдаёт
-            данные владельца токена. Сотрудник видит эту инструкцию без блока токена.
+            {t(locale, 'mcp.card.staffNote')}
           </p>
         )}
       </div>
@@ -119,7 +118,7 @@ export function McpConnectCard({ url, token, isStudent }: McpConnectCardProps) {
       {/* Шаг 2 — JSON-конфиг */}
       <div className="flex flex-col gap-2">
         <p className="text-sm font-semibold text-neutral-900">
-          JSON-конфиг для Claude Desktop / Cursor / любого MCP-клиента
+          {t(locale, 'mcp.card.configTitle')}
         </p>
         <pre
           data-testid="mcp-config-snippet"
@@ -138,16 +137,16 @@ export function McpConnectCard({ url, token, isStudent }: McpConnectCardProps) {
           >
             {copied ? (
               <>
-                <Check className="size-4" aria-hidden="true" /> Скопировано
+                <Check className="size-4" aria-hidden="true" /> {t(locale, 'mcp.card.copied')}
               </>
             ) : (
               <>
-                <Copy className="size-4" aria-hidden="true" /> Скопировать конфиг
+                <Copy className="size-4" aria-hidden="true" /> {t(locale, 'mcp.card.copy')}
               </>
             )}
           </button>
           <span className="text-[11px] text-neutral-500">
-            Токен в конфиге — плейсхолдер {MCP_CONFIG_TOKEN_PLACEHOLDER}: подставьте свой из шага 1.
+            {t(locale, 'mcp.card.placeholderHint', { placeholder })}
           </span>
         </div>
       </div>

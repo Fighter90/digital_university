@@ -6,7 +6,8 @@
 // в конфиг-сниппете подставляется плейсхолдер <ВАШ_ТОКЕН>, а сам токен
 // владелец выпускает во вкладке «Настройка MCP» (/settings?tab=mcp).
 
-import { MCP_ENDPOINT_PATH, MCP_SERVER_NAME } from '@/lib/mcp-protocol';
+import { DEANERY_MCP_TOOLS, MCP_ENDPOINT_PATH, MCP_SERVER_NAME } from '@/lib/mcp-protocol';
+import type { Locale } from '@/lib/i18n';
 
 /**
  * Плейсхолдер токена в конфиг-сниппете. Реальный токен НИКОГДА не
@@ -24,9 +25,11 @@ export const MCP_SETTINGS_HREF = '/settings?tab=mcp';
 /**
  * Готовый JSON-конфиг MCP-клиента (Claude Desktop, Cursor и любой другой
  * клиент с транспортом mcp-remote). Детерминированный: URL подставляется
- * из заголовков запроса, токен — всегда плейсхолдер.
+ * из заголовков запроса, токен — всегда плейсхолдер. Локаль выбирает
+ * плейсхолдер (RU «<ВАШ_ТОКЕН>» — канон, EN «<YOUR_TOKEN>»).
  */
-export function buildMcpConfigSnippet(url: string): string {
+export function buildMcpConfigSnippet(url: string, locale: Locale = 'ru'): string {
+  const placeholder = mcpConfigTokenPlaceholder(locale);
   return JSON.stringify(
     {
       mcpServers: {
@@ -37,7 +40,7 @@ export function buildMcpConfigSnippet(url: string): string {
             'mcp-remote',
             url,
             '--header',
-            `Authorization: Bearer ${MCP_CONFIG_TOKEN_PLACEHOLDER}`,
+            `Authorization: Bearer ${placeholder}`,
           ],
         },
       },
@@ -86,3 +89,102 @@ export const MCP_EXAMPLE_QUESTIONS: readonly string[] = [
   'Какие у меня последние оценки?',
   'Есть ли непрочитанные уведомления?',
 ];
+
+// ── DIG-88 — EN-версии текстов страницы /mcp ────────────────────────────────
+// RU-константы — канон (страница и тесты); EN — параллельные тексты, выбор
+// по локали cookie du-locale. Плейсхолдер токена тоже локализуется: в
+// конфиг-сниппете на EN — <YOUR_TOKEN> (никаких реальных ключей в обоих).
+
+/** EN-плейсхолдер токена в конфиг-сниппете. */
+export const MCP_CONFIG_TOKEN_PLACEHOLDER_EN = '<YOUR_TOKEN>';
+
+const MCP_DOCS_WHAT_IS_EN: readonly string[] = [
+  'MCP (Model Context Protocol) is an open protocol that lets any AI assistant (Claude, ChatGPT, Cursor) securely read your deanery data: you issue a personal token once — and then ask the assistant in plain phrases.',
+  `The deanery server lives at ${MCP_ENDPOINT_PATH} inside the cabinet and returns only your own data: the assistant calls the server with your token, and the server verifies the owner by the token hash on every call.`,
+  'This is a contest concept: all data is fictional and there are no real university systems behind the server.',
+];
+
+const MCP_DOCS_SECURITY_EN: readonly string[] = [
+  'The token is personal: it is the access key to your data. Treat it like a password and never forward it in chats or screenshots.',
+  'You can revoke the token at any time: “Re-issue” in the “MCP setup” tab — the old token stops working immediately, and only the SHA-256 hash stays in storage.',
+  'Access is read-only: the assistant reads your schedule, grades and notifications but cannot change anything in the cabinet.',
+  'You see only your own data: every tool call is scoped to the token’s owner — other students and staff are unreachable through MCP (IDOR excluded).',
+];
+
+const MCP_DOCS_STEPS_EN: readonly { title: string; text: string }[] = [
+  {
+    title: 'Issue a personal token',
+    text: 'The “MCP setup” tab → “Create token”. The full token is shown once — copy it right away; only the hash and a mask like demo-mcp…XXXX stay in the system.',
+  },
+  {
+    title: 'Copy the JSON config',
+    text: 'Below is a ready snippet for Claude Desktop, Cursor and any MCP client: click “Copy config” and replace <YOUR_TOKEN> with your token.',
+  },
+  {
+    title: 'Ask the assistant',
+    text: 'Restart the client and ask one of the example questions below — the assistant calls a server tool and answers with your data.',
+  },
+];
+
+const MCP_EXAMPLE_QUESTIONS_EN: readonly string[] = [
+  'What is on my schedule today?',
+  'What are my latest grades?',
+  'Do I have any unread notifications?',
+];
+
+/** EN-тексты каталога инструментов (id совпадают с DEANERY_MCP_TOOLS). */
+const MCP_TOOL_TEXTS_EN: Record<string, { title: string; description: string }> = {
+  my_schedule_today: {
+    title: 'My schedule for today',
+    description:
+      'The student’s classes for today (Moscow time): time, discipline, class type, room, teacher. Reschedules and cancellations are marked; an empty day means “no classes”.',
+  },
+  my_grades: {
+    title: 'My grades',
+    description:
+      'The student’s latest grades for assessment elements: discipline, element, score out of the maximum, weight and date. Returns up to 20 recent grades and a total counter.',
+  },
+  my_unread: {
+    title: 'My unread notifications',
+    description:
+      'Unread cabinet notifications: category, title, short text and time. Returns up to 10 recent ones and a total unread counter.',
+  },
+};
+
+/** Плейсхолдер токена по локали (RU — канон «<ВАШ_ТОКЕН»). */
+export function mcpConfigTokenPlaceholder(locale: Locale = 'ru'): string {
+  return locale === 'en' ? MCP_CONFIG_TOKEN_PLACEHOLDER_EN : MCP_CONFIG_TOKEN_PLACEHOLDER;
+}
+
+/** «Что такое MCP» по локали (RU — канон). */
+export function mcpDocsWhatIs(locale: Locale = 'ru'): readonly string[] {
+  return locale === 'en' ? MCP_DOCS_WHAT_IS_EN : MCP_DOCS_WHAT_IS;
+}
+
+/** «Безопасность» по локали. */
+export function mcpDocsSecurity(locale: Locale = 'ru'): readonly string[] {
+  return locale === 'en' ? MCP_DOCS_SECURITY_EN : MCP_DOCS_SECURITY;
+}
+
+/** Шаги подключения по локали. */
+export function mcpDocsSteps(locale: Locale = 'ru'): readonly { title: string; text: string }[] {
+  return locale === 'en' ? MCP_DOCS_STEPS_EN : MCP_DOCS_STEPS;
+}
+
+/** Примеры вопросов по локали. */
+export function mcpExampleQuestions(locale: Locale = 'ru'): readonly string[] {
+  return locale === 'en' ? MCP_EXAMPLE_QUESTIONS_EN : MCP_EXAMPLE_QUESTIONS;
+}
+
+/** Локализованный каталог инструментов сервера (RU — канон без изменений). */
+export function mcpToolCatalog(
+  locale: Locale = 'ru',
+): readonly { name: string; title: string; description: string }[] {
+  return DEANERY_MCP_TOOLS.map((tool) => {
+    if (locale !== 'en') return { name: tool.name, title: tool.title, description: tool.description };
+    const en = MCP_TOOL_TEXTS_EN[tool.name];
+    return en
+      ? { name: tool.name, title: en.title, description: en.description }
+      : { name: tool.name, title: tool.title, description: tool.description };
+  });
+}

@@ -10,29 +10,38 @@
 // (requireUser) + requireDataCtx для скоупа. Раздел «что доступно»
 // строится из каталога инструментов сервера (DEANERY_MCP_TOOLS) —
 // документация не может обещать больше, чем отдаёт сервер.
+// DIG-88 — тексты документации и подписи страницы по локали cookie
+// du-locale; RU — байт-в-байт прежние строки.
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { CircleAlert, ListChecks, Lock, Plug } from 'lucide-react';
+import type { Metadata } from 'next';
 
 import { SectionTitle } from '@/components/shell/section-title';
 import { McpConnectCard } from '@/components/mcp/mcp-connect-card';
-import { DEANERY_MCP_TOOLS, MCP_ENDPOINT_PATH, buildMcpServerUrl } from '@/lib/mcp-protocol';
+import { MCP_ENDPOINT_PATH, buildMcpServerUrl } from '@/lib/mcp-protocol';
 import {
-  MCP_DOCS_SECURITY,
-  MCP_DOCS_STEPS,
-  MCP_DOCS_WHAT_IS,
-  MCP_EXAMPLE_QUESTIONS,
   MCP_GUIDE_ANCHOR,
   MCP_SETTINGS_HREF,
+  mcpDocsSecurity,
+  mcpDocsSteps,
+  mcpDocsWhatIs,
+  mcpExampleQuestions,
+  mcpToolCatalog,
 } from '@/lib/mcp-docs';
+import { t } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 import { requireDataCtx } from '@/server/data';
 import { getOwnMcpTokenView } from '@/server/data/mcp';
 import { dataDb } from '@/server/data/db';
 
-export const metadata = { title: 'Подключение ассистента (MCP) — Цифровой деканат' };
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.mcp') };
+}
 
 export default async function McpDocsPage() {
-  const ctx = await requireDataCtx('/mcp');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/mcp'), getLocale()] as const);
 
   // Абсолютный URL демо-MCP-сервера из заголовков запроса (как в /settings).
   const headerList = await headers();
@@ -48,22 +57,19 @@ export default async function McpDocsPage() {
       <div className="flex flex-col gap-1">
         <SectionTitle
           href="/mcp"
-          fallback="Подключение ассистента (MCP)"
+          fallback={t(locale, 'title.mcp')}
           className="text-xl font-bold sm:text-2xl"
         />
-        <p className="mt-1 max-w-2xl text-sm text-neutral-600">
-          Подключите кабинет как источник данных к вашему AI-ассистенту — как у Linear, только для
-          деканата: расписание, оценки и уведомления по персональному токену.
-        </p>
+        <p className="mt-1 max-w-2xl text-sm text-neutral-600">{t(locale, 'mcp.intro')}</p>
       </div>
 
       {/* Что такое MCP */}
       <div data-testid="mcp-what-is" className="flex flex-col gap-2">
         <h2 className="flex items-center gap-2 text-base font-semibold text-neutral-900">
           <Plug className="size-5 text-neutral-500" aria-hidden="true" />
-          Что такое MCP
+          {t(locale, 'mcp.whatIs')}
         </h2>
-        {MCP_DOCS_WHAT_IS.map((paragraph) => (
+        {mcpDocsWhatIs(locale).map((paragraph) => (
           <p key={paragraph} className="text-sm leading-relaxed text-neutral-700">
             {paragraph}
           </p>
@@ -74,10 +80,10 @@ export default async function McpDocsPage() {
       <div data-testid="mcp-tools" className="flex flex-col gap-2">
         <h2 className="flex items-center gap-2 text-base font-semibold text-neutral-900">
           <ListChecks className="size-5 text-neutral-500" aria-hidden="true" />
-          Что доступно через MCP
+          {t(locale, 'mcp.tools')}
         </h2>
         <ul className="grid gap-2 sm:grid-cols-3">
-          {DEANERY_MCP_TOOLS.map((tool) => (
+          {mcpToolCatalog(locale).map((tool) => (
             <li
               key={tool.name}
               data-testid={`mcp-tool-${tool.name}`}
@@ -89,17 +95,15 @@ export default async function McpDocsPage() {
           ))}
         </ul>
         <p className="text-xs text-neutral-500">
-          Набор инструментов отдаёт сам сервер ({MCP_ENDPOINT_PATH}, метод tools/list) — страница
-          всегда совпадает с реальными возможностями. Доступ read-only: изменить данные через MCP
-          нельзя.
+          {t(locale, 'mcp.toolsNote', { path: MCP_ENDPOINT_PATH })}
         </p>
       </div>
 
       {/* Как подключить */}
       <div data-testid="mcp-how-to" className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold text-neutral-900">Как подключить ассистента</h2>
+        <h2 className="text-base font-semibold text-neutral-900">{t(locale, 'mcp.howTo')}</h2>
         <ol className="flex flex-col gap-3">
-          {MCP_DOCS_STEPS.map((step, index) => (
+          {mcpDocsSteps(locale).map((step, index) => (
             <li key={step.title} className="flex gap-3">
               <span className="flex size-6 shrink-0 items-center justify-center rounded-pill bg-muted text-xs font-semibold text-neutral-700">
                 {index + 1}
@@ -114,18 +118,18 @@ export default async function McpDocsPage() {
           ))}
         </ol>
 
-        <McpConnectCard url={mcpServerUrl} token={token} isStudent={isStudent} />
+        <McpConnectCard url={mcpServerUrl} token={token} isStudent={isStudent} locale={locale} />
 
         {/* Примеры вопросов */}
         <div data-testid="mcp-examples" className="flex flex-col gap-1.5">
-          <p className="text-sm font-semibold text-neutral-900">Примеры вопросов ассистенту</p>
+          <p className="text-sm font-semibold text-neutral-900">{t(locale, 'mcp.examples')}</p>
           <ul className="flex flex-col gap-1">
-            {MCP_EXAMPLE_QUESTIONS.map((question) => (
+            {mcpExampleQuestions(locale).map((question) => (
               <li
                 key={question}
                 className="rounded-card-sm border border-border bg-muted px-3 py-2 text-sm text-neutral-700"
               >
-                «{question}»
+                {t(locale, 'mcp.exampleQuote', { question })}
               </li>
             ))}
           </ul>
@@ -136,9 +140,9 @@ export default async function McpDocsPage() {
       <div data-testid="mcp-security" className="flex flex-col gap-2">
         <h2 className="flex items-center gap-2 text-base font-semibold text-neutral-900">
           <Lock className="size-5 text-neutral-500" aria-hidden="true" />
-          Безопасность
+          {t(locale, 'mcp.security')}
         </h2>
-        {MCP_DOCS_SECURITY.map((paragraph) => (
+        {mcpDocsSecurity(locale).map((paragraph) => (
           <p key={paragraph} className="text-sm leading-relaxed text-neutral-700">
             {paragraph}
           </p>
@@ -149,21 +153,21 @@ export default async function McpDocsPage() {
       <div className="flex flex-col gap-2 rounded-card border border-border bg-muted p-3">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-neutral-900">
           <CircleAlert className="size-4 text-neutral-500" aria-hidden="true" />
-          Где ещё почитать
+          {t(locale, 'mcp.more')}
         </p>
         <div className="flex flex-col gap-1 text-sm">
           <Link
             href={MCP_GUIDE_ANCHOR}
             className="font-semibold text-coral-600 underline-offset-2 hover:underline"
           >
-            Раздел «Подключить внешнего AI-ассистента (MCP)» в справке
+            {t(locale, 'mcp.link.guide')}
           </Link>
           {isStudent && (
             <Link
               href={MCP_SETTINGS_HREF}
               className="font-semibold text-coral-600 underline-offset-2 hover:underline"
             >
-              Вкладка «Настройка MCP» — выпуск и перевыпуск токена
+              {t(locale, 'mcp.link.settings')}
             </Link>
           )}
         </div>

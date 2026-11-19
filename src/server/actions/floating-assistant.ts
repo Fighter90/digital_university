@@ -13,16 +13,19 @@ import {
   type FloatingAssistantReply,
 } from '@/server/ai/floating-assistant';
 import { requireDataCtx } from '@/server/data';
+import { getLocale } from '@/lib/i18n/server';
 
 export type { FloatingAssistantReply };
 
 /**
  * Вопрос студента попап-чату на FAB. Ответ — текст по справке кабинета
  * (режим ai) или подсказка из справки с пометкой демо-режима (fallback).
+ * Локаль (cookie du-locale) уходит в оркестратор: на EN строки ответа и
+ * RAG-чанки — английские (DIG-88).
  */
 export async function askFloatingAssistant(input: {
   question: string;
 }): Promise<FloatingAssistantReply> {
-  const ctx = await requireDataCtx('/ai-assistant');
-  return answerFloatingQuestion(input, { scopeKey: ctx.userId });
+  const [ctx, locale] = await Promise.all([requireDataCtx('/ai-assistant'), getLocale()] as const);
+  return answerFloatingQuestion(input, { scopeKey: ctx.userId, locale });
 }
