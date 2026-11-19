@@ -272,7 +272,11 @@ describe('DIG-86: CSS-контракт a11y-режима (globals.css)', () => {
   });
 
   it('режим НЕ спрятан за prefers-reduced-motion — независим от системной настройки', () => {
-    const a11yBlock = css.slice(css.indexOf('DIG-86'));
+    // DIG-100: после блока DIG-86 в конец файла добавлен слой plain-версии
+    // (свой media-блок 360px) — контракт DIG-86 проверяем по его блоку
+    // (от маркера DIG-86 до маркера DIG-100), требование не ослаблено.
+    const dig100 = css.indexOf('DIG-100');
+    const a11yBlock = css.slice(css.indexOf('DIG-86'), dig100 === -1 ? undefined : dig100);
     expect(a11yBlock.length).toBeGreaterThan(100);
     expect(a11yBlock).not.toContain('@media');
     // системные механизмы не тронуты и продолжают работать сами

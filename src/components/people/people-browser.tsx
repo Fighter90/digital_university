@@ -339,7 +339,7 @@ function PersonListItem({
           <div className="absolute right-3 top-3">
             <FavoritePersonButton
               personId={person.id}
-              personName={person.fullName}
+              personName={displayName}
               isFavorite={favoriteIds.has(person.id)}
               variant={favoriteVariant}
               locale={locale}

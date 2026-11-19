@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { ShellUser } from '@/lib/user';
 import type { NotificationFeedItem } from '@/lib/notification-view';
 import { t, type Locale } from '@/lib/i18n';
+import { A11yVersionLink } from '@/components/a11y/version-link';
 import { TopBar } from './top-bar';
 import { SideNav } from './side-nav';
 import { TabBar } from './tab-bar';
@@ -23,6 +24,12 @@ type ShellProps = {
   tasksCount?: number;
   /** DIG-69 — локаль интерфейса кабинета (cookie du-locale, дефолт ru). */
   locale?: Locale;
+  /**
+   * DIG-100 — включена ли plain-версия для слабовидящих (cookie
+   * du-a11y-version, читает cabinet layout): текст полоски и футера —
+   * «Обычная версия» вместо «Версия для слабовидящих».
+   */
+  a11yPlain?: boolean;
   children: React.ReactNode;
 };
 
@@ -41,6 +48,7 @@ export function Shell({
   recentNotifications,
   tasksCount = 0,
   locale = 'ru',
+  a11yPlain = false,
   children,
 }: ShellProps) {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -75,6 +83,10 @@ export function Shell({
         {t(locale, 'shell.skipToContent')}
       </a>
 
+      {/* DIG-100: полоска «Версия для слабовидящих» НАД шапкой кабинета
+          (в plain-режиме — обратная ссылка «Обычная версия» там же). */}
+      <A11yVersionLink locale={locale} variant="strip" plain={a11yPlain} next={pathname} />
+
       <TopBar
         user={user}
         unreadCount={unreadCount}
@@ -100,6 +112,12 @@ export function Shell({
           {children}
         </main>
       </div>
+
+      {/* DIG-100: ссылка версии в футере кабинета (под основным контентом,
+          выше фиксированного таб-бара на мобайле — pb-28). */}
+      <footer className="border-t border-neutral-200 px-3 pt-4 pb-28 text-center md:px-6 md:pb-12">
+        <A11yVersionLink locale={locale} variant="footer" plain={a11yPlain} next={pathname} />
+      </footer>
 
       {/* DIG-48: таб-бар по роли сессии (у сотрудника — разделы деканата). */}
       <TabBar role={user.role} locale={locale} />

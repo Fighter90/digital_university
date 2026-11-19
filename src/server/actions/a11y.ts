@@ -23,6 +23,11 @@ import {
   isA11yPref,
   withA11yPref,
 } from '@/lib/a11y';
+import {
+  A11Y_VERSION_COOKIE,
+  A11Y_VERSION_COOKIE_MAX_AGE,
+  isA11yVersion,
+} from '@/lib/a11y/version';
 import { getA11yPrefs } from '@/lib/a11y/server';
 
 /**
@@ -54,4 +59,41 @@ export async function setA11y(pref: string, enabled: boolean): Promise<boolean> 
   // Перерисовать весь каркас (layout + страницы) с новыми классами.
   revalidatePath('/', 'layout');
   return true;
+}
+
+/**
+ * DIG-100 — включает/выключает plain-версию для слабовидящих владельца
+ * сессии (cookie du-a11y-version = 'plain' | 'off'). Значение приходит
+ * из формы A11yVersionLink (кнопка с hidden version — работает и без JS).
+ *
+ * Владелец-скоуп: requireDataCtx по живой сессии (анонимный посетитель
+ * выпадает на /login, IDOR невозможен) — паттерн setA11y/setLocale.
+ * Поле next — необязательный внутренний путь возврата после входа:
+ * строгое «/…» без схемы и протокола, иначе отбрасывается (open redirect
+ * невозможен). revalidatePath перерисовывает каркас: root layout ставит
+ * класс a11y-plain на <html> сразу.
+ */
+export async function toggleA11yVersion(formData: FormData): Promise<void> {
+  const rawNext = formData.get('next');
+  // Внутренний путь: начинается с одного «/», без «//», пробелов и схемы.
+  const nextPath =
+    typeof rawNext === 'string' && /^\/(?!\/)\S*$/.test(rawNext) ? rawNext : undefined;
+
+  // Владелец-скоуп: анонимный посетитель не переключает версию интерфейса.
+  await requireDataCtx(nextPath);
+
+  const raw = formData.get('version');
+  const version = isA11yVersion(raw) ? raw : null;
+  if (!version) return; // битое значение — молча ничего не меняем
+
+  const store = await cookies();
+  store.set(A11Y_VERSION_COOKIE, version, {
+    path: '/',
+    maxAge: A11Y_VERSION_COOKIE_MAX_AGE,
+    sameSite: 'lax',
+    httpOnly: true,
+  });
+
+  // Перерисовать весь каркас (layout + страницы) с классом a11y-plain.
+  revalidatePath('/', 'layout');
 }

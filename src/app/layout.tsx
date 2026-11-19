@@ -2,8 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { ConceptBanner } from '@/components/concept-banner';
 import { getLocale } from '@/lib/i18n/server';
-import { getA11yPrefs } from '@/lib/a11y/server';
+import { getA11yPrefs, isA11yPlain } from '@/lib/a11y/server';
 import { a11yClasses } from '@/lib/a11y';
+import { A11Y_PLAIN_CLASS } from '@/lib/a11y/version';
 import {
   appearanceClasses,
   getAppliedAppearance,
@@ -70,14 +71,19 @@ export default async function RootLayout({
   // DIG-69: локаль интерфейса из cookie (дефолт ru) — lang у <html> и плашка.
   // DIG-86: режим доступности «Крупный текст и без эффектов» — cookie du-a11y
   // (server action setA11y), классы a11y-large-text / a11y-no-effects на <html>.
+  // DIG-100: «Версия для слабовидящих» — cookie du-a11y-version (server action
+  // toggleA11yVersion), класс a11y-plain на <html>; CSS-слой в конце globals.css
+  // перекрывает тему, размер шрифта и режимы DIG-86 (включает их поведение).
   const appearance = await getAppliedAppearance();
   const locale = await getLocale();
   const a11yPrefs = await getA11yPrefs();
+  const a11yPlain = await isA11yPlain();
   const htmlClasses = [
     inter.variable,
     'antialiased',
     ...appearanceClasses(appearance),
     ...a11yClasses(a11yPrefs),
+    ...(a11yPlain ? [A11Y_PLAIN_CLASS] : []),
   ];
 
   return (

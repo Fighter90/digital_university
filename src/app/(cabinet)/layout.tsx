@@ -5,6 +5,7 @@ import { getTasks, resolveShellUser, toDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { getNotificationFeed } from '@/server/notifications';
 import { getLocale } from '@/lib/i18n/server';
+import { isA11yPlain } from '@/lib/a11y/server';
 import { Shell } from '@/components/shell/shell';
 
 // DIG-34: счётчик открытых задач для меню — fail-soft: сбой слоя данных не
@@ -34,11 +35,14 @@ async function openTasksCount(user: AuthUser): Promise<number> {
 // уведомлений для панели колокольчика (getNotificationFeed — fail-soft).
 export default async function CabinetLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const user = await requireUser();
-  const [shellUser, feed, tasksCount, locale] = await Promise.all([
+  const [shellUser, feed, tasksCount, locale, a11yPlain] = await Promise.all([
     resolveShellUser(dataDb, user),
     getNotificationFeed(),
     openTasksCount(user),
     getLocale(),
+    // DIG-100 — plain-версия для слабовидящих: текст полоски над шапкой
+    // и ссылки в футере («Обычная версия» вместо «Версия для слабовидящих»).
+    isA11yPlain(),
   ]);
 
   return (
@@ -48,6 +52,7 @@ export default async function CabinetLayout({ children }: Readonly<{ children: R
       recentNotifications={feed.items}
       tasksCount={tasksCount}
       locale={locale}
+      a11yPlain={a11yPlain}
     >
       {children}
     </Shell>
