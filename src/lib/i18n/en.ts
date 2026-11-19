@@ -208,6 +208,20 @@ export const en: Record<keyof RuDictionary, string> = {
   'settings.languageTitle': 'Interface language',
   'settings.languageHint': 'Switch the cabinet interface between Russian and English.',
 
+  // ── DIG-86 — Accessibility tab: large text and no effects ────────────────
+  'settings.tab.accessibility': 'Accessibility',
+  'settings.a11yTitle': 'Large text and no effects',
+  'settings.a11yHint':
+    'Low-vision mode: larger text and a static interface without animations or shadows. The setting is independent of system preferences and applies to the whole cabinet.',
+  'settings.a11yLargeText': 'Large text',
+  'settings.a11yLargeTextHint':
+    '125% base size, stronger weights and wider spacing — across the whole cabinet.',
+  'settings.a11yNoEffects': 'No effects',
+  'settings.a11yNoEffectsHint':
+    'Animations, smooth reveals and shadows are disabled — the interface is static.',
+  'settings.a11ySaved': 'Saved — accessibility mode applied across the whole cabinet.',
+  'settings.a11yIdle': 'Changes are saved instantly and applied across the whole cabinet.',
+
   // ── toasts ───────────────────────────────────────────────────────────────
   'toast.saved': 'Saved',
   'toast.savedDesc': 'Your changes have been applied',

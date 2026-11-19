@@ -2,7 +2,8 @@
 // и вкладки-ссылки объединяет один реестр, неизвестные значения ?tab=
 // безопасно откатываются на «Главную».
 
-export type SettingsTabId = 'home' | 'notifications' | 'security' | 'appearance' | 'mcp';
+export type SettingsTabId =
+  'home' | 'notifications' | 'security' | 'appearance' | 'accessibility' | 'mcp';
 
 export interface SettingsTabMeta {
   id: SettingsTabId;
@@ -14,6 +15,8 @@ export const SETTINGS_TABS: SettingsTabMeta[] = [
   { id: 'notifications', label: 'Уведомления' },
   { id: 'security', label: 'Безопасность' },
   { id: 'appearance', label: 'Вид' },
+  // DIG-86 — «Доступность»: крупный текст и без эффектов (для слабовидящих).
+  { id: 'accessibility', label: 'Доступность' },
   { id: 'mcp', label: 'Настройка MCP' },
 ];
 

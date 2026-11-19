@@ -473,3 +473,68 @@
     }
   }
 }
+
+/* ============================================================
+   DIG-86 — режим доступности «Крупный текст и без эффектов»
+   (для слабовидящих). Классы на <html> ставит root layout из
+   cookie du-a11y (server action setA11y, скоуплен сессией).
+   Правила НЕ спрятаны за media-запрос prefers-reduced-motion:
+   режим независим от системной настройки; «Уменьшить анимацию»
+   (html.reduce-motion, dark.css, DIG-44) продолжает работать
+   само по себе. Токены дизайн-системы не переопределяются.
+   ============================================================ */
+
+/* «Крупный текст»: кабинет построен на rem — масштаб задаёт
+   font-size корня. 125% — верх диапазона «112,5%+» (крупный текст
+   WCAG). Селекторы с двумя классами приоритетнее html.font-lg /
+   html.font-xl (dark.css): a11y-режим перекрывает «Вид → размер
+   шрифта» при любых комбинациях настроек. */
+html.a11y-large-text,
+html.a11y-large-text.font-lg,
+html.a11y-large-text.font-xl {
+  font-size: 125%;
+}
+/* усиленные веса: обычный текст читается как medium (явные веса
+   заголовков и подписей не тронуты — правило только на body) */
+html.a11y-large-text body {
+  font-weight: 500;
+}
+/* крупнее межстрочное и отступы списков — воздух вокруг текста */
+html.a11y-large-text p,
+html.a11y-large-text li {
+  line-height: 1.7;
+}
+html.a11y-large-text ul,
+html.a11y-large-text ol {
+  padding-left: 1.75rem;
+}
+
+/* «Без эффектов»: плоский статичный интерфейс — animate-rise /
+   du-float / du-shimmer / du-bell-swing и любые другие keyframes,
+   плавные появления, переходы и тени отключены. animation: none
+   снимает и fill-состояния, поэтому контент никогда не скрыт. */
+html.a11y-no-effects *,
+html.a11y-no-effects *::before,
+html.a11y-no-effects *::after {
+  animation: none !important;
+  transition-duration: 0ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+/* тени выключены целиком; контур фокуса :focus-visible остаётся —
+   это outline, видимость клавиатурной навигации не падает */
+html.a11y-no-effects *,
+html.a11y-no-effects *::before,
+html.a11y-no-effects *::after {
+  box-shadow: none !important;
+}
+/* reveal-секции лендинга (DIG-57) видимы сразу, без IntersectionObserver */
+html.a11y-no-effects .reveal {
+  opacity: 1 !important;
+  transform: none !important;
+}
+/* hover-подъёмы и press-сжатия — тоже эффекты */
+html.a11y-no-effects .lift-hover:hover:not(:disabled),
+html.a11y-no-effects .press-scale:active:not(:disabled) {
+  transform: none !important;
+}
