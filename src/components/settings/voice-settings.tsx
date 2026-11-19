@@ -10,6 +10,14 @@ import { saveVoiceAssistantAction } from '@/server/actions/settings';
 // «Прослушать день» на расписании и микрофон в AI-гиде. Сохраняется server
 // action'ом (скоуплен сессией) и применяется ко всему кабинету сразу
 // (revalidate layout: Shell/AiGuide и страница расписания).
+//
+// DIG-78 — без оптимистичного переключения: aria-checked отражает значение,
+// ПОДТВЕРЖДЁННОЕ записью в StudentSettings. Раньше локальное состояние
+// менялось сразу по клику, а action уходил в transition параллельно — e2e
+// перезагружает страницу сразу после включения, навигация обрывала in-flight
+// POST, значение не записывалось и после перезагрузки читалось старое.
+type VoiceStatus = 'idle' | 'pending' | 'saved' | 'error';
+
 export function VoiceSettings({
   voiceAssistant,
   enabled: enabledProp,
@@ -22,15 +30,22 @@ export function VoiceSettings({
   /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
   locale?: Locale;
 }) {
-  const [enabled, setEnabled] = useState(voiceAssistant ?? enabledProp ?? false);
-  const [saved, setSaved] = useState(false);
-  const [, startTransition] = useTransition();
+  // «Сохранённое» состояние: меняется только после успешного action'а.
+  const [saved, setSaved] = useState(voiceAssistant ?? enabledProp ?? false);
+  const [status, setStatus] = useState<VoiceStatus>('idle');
+  const [pending, startTransition] = useTransition();
 
   const persist = (next: boolean) => {
-    setSaved(false);
-    setEnabled(next);
+    if (pending) return; // одна запись за раз — параллельные клики игнорируем
+    setStatus('pending');
     startTransition(async () => {
-      if (await saveVoiceAssistantAction(next)) setSaved(true);
+      const ok = await saveVoiceAssistantAction(next);
+      if (ok) {
+        setSaved(next);
+        setStatus('saved');
+      } else {
+        setStatus('error'); // откат: saved не меняется — показываем ошибку
+      }
     });
   };
 
@@ -44,18 +59,22 @@ export function VoiceSettings({
           </p>
         </div>
         <Toggle
-          checked={enabled}
+          checked={saved}
           aria-label={t(locale, 'settings.voice.aria')}
           data-testid="voice-assistant-toggle"
           onCheckedChange={persist}
         />
       </div>
       <p aria-live="polite" role="status" className="text-xs text-neutral-500">
-        {saved
-          ? t(locale, 'settings.voice.saved')
-          : enabled
-            ? t(locale, 'settings.voice.on')
-            : t(locale, 'settings.voice.off')}
+        {status === 'pending'
+          ? t(locale, 'settings.voice.saving')
+          : status === 'error'
+            ? t(locale, 'settings.voice.error')
+            : status === 'saved'
+              ? t(locale, 'settings.voice.saved')
+              : saved
+                ? t(locale, 'settings.voice.on')
+                : t(locale, 'settings.voice.off')}
       </p>
     </div>
   );
