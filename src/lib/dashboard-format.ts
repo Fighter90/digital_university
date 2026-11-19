@@ -115,6 +115,20 @@ export function daysLeftLabel(daysLeft: number): string {
   return `осталось ${daysLeft} ${pluralRu(daysLeft, DAY_FORMS)}`;
 }
 
+/**
+ * Календарных дней до дедлайна — разница КАЛЕНДАРНЫХ дней в Europe/Moscow
+ * (BUG-06/DIG-83): та же логика, что у карточки «Дедлайны» дашборда
+ * (src/server/data/dashboard.ts), но в ЯВНОЙ зоне, чтобы SSR и гидрация
+ * давали одну строку при любом TZ процесса (корень BUG-02). Москва = UTC+3
+ * фиксированно (без перехода на летнее время).
+ */
+export function calendarDaysLeft(due: Date, now: Date): number {
+  const MOSCOW_OFFSET_MS = 3 * 3_600_000;
+  const moscowDay = (date: Date): number =>
+    Math.floor((date.getTime() + MOSCOW_OFFSET_MS) / 86_400_000);
+  return moscowDay(due) - moscowDay(now);
+}
+
 /** Средний балл: десятичная запятая, один знак; нет данных → «—». */
 export function formatAverage(average: number | null): string {
   return average === null ? '—' : average.toFixed(1).replace('.', ',');
