@@ -15,6 +15,7 @@ import { AssistantChat } from '@/components/assistant/assistant-chat';
 const context: AssistantContext = {
   role: 'STUDENT',
   firstName: 'Анна',
+  fullName: 'Анна Смирнова',
   groupLabel: 'ПИ-21',
   tomorrow: {
     dateKey: '2026-11-16',

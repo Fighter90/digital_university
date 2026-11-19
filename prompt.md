@@ -1,16 +1,14 @@
-DIG-103: Рейтинг студентов группы по среднему баллу. ЦЕЛЬ: на /grades блок «Рейтинг группы» — таблица студентов своей группы по среднему баллу.
+DIG-124: EN — кабинет сотрудника без кириллицы + приветствие ассистента. ЦЕЛЬ: EN-аудит (cookie du-locale=en, поиск [А-Яа-яЁё] в body.innerText) на проде даёт: /staff — «ИТ» (2), /staff/requests — 189 (названия заявок сида, имена «Анна», слово «дисциплины»), /staff/appeals — 94 (темы обращений «Вопрос по зачёту по физкультуре»), /staff/announcements — 89 (объявления «Собрание группы ПИ-21…», «Завтра», «ауд.»), /ai-assistant — 4 («Hello, Анна!»). Добей эти пять до нуля.
 
-Контекст: Next.js 15 + TS, data-слой src/server/data (фасады, owner-scope), агрегат среднего балла уже единый (DIG-80 — dashboard/performance aggregates; groupRating упоминался в сводке /grades — изучи существующий агрегат и переиспользуй фасад, НЕ дублируй SQL), сид: студенты группы ЭК-11 (и другие), канон ФИО из DIG-81.
+Контекст: Next.js 15 + TS, локаль du-locale (getLocale), EN-паттерн — src/lib/en-demo-content.ts (FACULTY_EN/GROUP_EN словари, enFacultyLabel/enGroupLabel/enPersonName; request-карточки уже локализуются localizeRequestCardTitle). Staff-страницы: src/app/(cabinet)/staff/* + компоненты (staff queue/appeals/announcements). Assistant-приветствие: src/server/data/assistant.ts (getAssistantContext, firstNameOf) + src/components/assistant/assistant-chat.tsx (greetingMessage, уже импортирует enPersonName).
 
 Что делаем:
-1. Блок «Рейтинг группы» на /grades (сводка) — или компактная страница /grades/rating со ссылкой из сводки (выбери по макету сводки).
-2. Таблица: место №, ФИО, средний балл (2 знака), тонкий прогресс-бар к 10.0 (или шкале проекта). Сортировка по среднему desc, при равенстве — по алфавиту.
-3. Моя строка — подсветка + метка «вы» (словарь), закреплена при прокрутке не обязательна.
-4. Только средний балл: чужие оценки по дисциплинам НЕ раскрываются (приватность; это ок для рейтинга).
-5. Owner-scope: рейтинг только своей группы (groupId из сессии); чужую группу получить нельзя (тест).
-6. Пустые состояния: нет оценок в группе — честное empty-state; один студент — таблица из одной строки.
-7. RU/EN ключи парой (grades.rating.*); паритет.
-8. Юнит-тесты: сортировка и равные баллы; моя позиция помечена; owner-scope (запрос чужой группы — пусто/ошибка); средний совпадает с агрегатом DIG-80 (единый источник).
+1. FACULTY_EN: добавить сид-факультет «ИТ» → 'IT' (и другие сид-значения, проверь prisma/seed-data.ts).
+2. Staff queue: EN-маппинги названий заявок сида (request type titles — проверь, как карточка рендерит title: если title из requests-сида RU — добавь requestTitleEn словарь в en-demo-content и локализуй в staff view/сериализаторе). Имена людей → enPersonName/localizePersonName. Слово «дисциплины» в подписи → словарный ключ.
+3. Appeals: EN-маппинг тем обращений сида + имена.
+4. Announcements: EN-маппинг заголовков/текста объявлений сида; «Завтра»/«ауд.» — словарные подписи времени/места (или уже есть — проверь).
+5. Assistant greeting: в AssistantContext добавь fullName (полное ФИО студента/сотрудника), в greetingMessage на EN: enPersonName(fullName) → первое слово = displayName («Anna»); RU — как было. Обнови типы и моки тестов.
+6. Юнит-тест «no Cyrillic on EN»: рендер staff сводки/очереди/appeals/announcements + greetingMessage EN с сид-данными — ноль кириллицы (red-first).
 
-Запреты: RU-строки не менять; scripts/swarm/ не трогать; IDOR не ослаблять.
-Готово: тесты зелёные; node scripts/swarm/gates.mjs → GATES_SUMMARY: green (env готов, deps установлены); коммиты на ветке pochtasergeia/dig-103-feature с DIG-103, push. НЕ создавать PR. Работай только в /tmp/dig-103.
+Запреты: RU-рендер байт-в-байт; scripts/swarm/ не трогать; owner-scope не ослаблять.
+Готово: тесты зелёные; node scripts/swarm/gates.mjs → GATES_SUMMARY: green (env готов, deps установлены); коммиты на ветке pochtasergeia/dig-124-en-staff-clean с DIG-124, push на origin. НЕ создавать PR — сводит оператор. Работай только в /tmp/dig-124.

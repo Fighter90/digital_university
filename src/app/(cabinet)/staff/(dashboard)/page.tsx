@@ -9,6 +9,7 @@ import { AlertTriangle, Clock, Inbox, FileInput } from 'lucide-react';
 import { getStaffSummaryData, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { computeStaffSummary, type StaffSummary } from '@/lib/staff-summary';
+import { localizedFaculty } from '@/lib/en-demo-content';
 import { SectionTitle } from '@/components/shell/section-title';
 import { t, type Locale } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
@@ -79,7 +80,9 @@ export default async function StaffSummaryPage() {
     <div>
       <SectionTitle href="/staff" className="text-xl font-bold text-neutral-900 sm:text-2xl" />
       <p className="mb-6 mt-1 text-sm text-neutral-600">
-        {t(locale, 'staff.home.subtitle', { faculty: ctx.faculty ?? '—' })}
+        {t(locale, 'staff.home.subtitle', {
+          faculty: localizedFaculty(locale, ctx.faculty),
+        })}
       </p>
 
       <div className="grid gap-3 sm:grid-cols-3">

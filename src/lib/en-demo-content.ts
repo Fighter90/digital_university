@@ -624,6 +624,18 @@ export function enAppealSubject(id: string): string | null {
   return APPEAL_SUBJECTS_EN[id] ?? null;
 }
 
+/**
+ * Тема обращения по локали: EN — словарь сида по id (неизвестное — RU-фолбэк,
+ * пользовательские данные не выдумываем), RU — как в сиде байт-в-байт.
+ */
+export function localizeAppealSubject(
+  locale: Locale,
+  appeal: { id: string; subject: string },
+): string {
+  if (locale !== 'en') return appeal.subject;
+  return enAppealSubject(appeal.id) ?? appeal.subject;
+}
+
 const APPEAL_MESSAGES_EN: Record<string, string> = {
   'msg-ilya-1a': 'Hello! Is an extra retake possible?',
   'msg-ilya-1b': 'The retake is scheduled for Friday, room 12.',
@@ -663,6 +675,16 @@ const ANNOUNCEMENTS_EN: Record<string, { title: string; body: string }> = {
 
 export function enAnnouncement(id: string): { title: string; body: string } | null {
   return ANNOUNCEMENTS_EN[id] ?? null;
+}
+
+/** Титул/текст объявления по локали: EN — словарь сида по id, RU — байт-в-байт. */
+export function localizeAnnouncement(
+  locale: Locale,
+  row: { id: string; title: string; body: string },
+): { title: string; body: string } {
+  if (locale !== 'en') return { title: row.title, body: row.body };
+  const en = enAnnouncement(row.id);
+  return en ?? { title: row.title, body: row.body };
 }
 
 // ── обратная связь: сид-тексты ───────────────────────────────────────────────

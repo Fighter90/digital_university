@@ -73,7 +73,11 @@ export interface AssistantScheduleDay {
 
 export interface AssistantContext {
   role: 'STUDENT' | 'STAFF';
+  /** Первое слово ФИО владельца сессии: «Анна Смирнова» → «Анна». */
   firstName: string;
+  /** Полное ФИО владельца сессии: EN-приветствие берёт словарь персон по нему
+   * (DIG-124: PEOPLE_NAME_EN хранит полные имена, короткое «Анна» — нет). */
+  fullName: string;
   groupLabel: string | null;
   /** Завтрашний московский день; null — вне семестра. */
   tomorrow: AssistantScheduleDay | null;

@@ -140,6 +140,7 @@ function contextFixture(): AssistantContext {
   return {
     role: 'STUDENT',
     firstName: 'Anna',
+    fullName: 'Anna Smirnova',
     groupLabel: 'CS-21',
     tomorrow: {
       dateKey: '2026-11-12',
@@ -471,6 +472,7 @@ function contextRuFixture(): AssistantContext {
   return {
     ...ctx,
     firstName: 'Анна',
+    fullName: 'Анна Смирнова',
     tomorrow: {
       dateKey: '2026-11-13',
       dateLabel: 'пятница, 13 ноября',

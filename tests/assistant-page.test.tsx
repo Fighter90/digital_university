@@ -39,6 +39,7 @@ function contextFixture(role: 'STUDENT' | 'STAFF' = 'STUDENT'): AssistantContext
   return {
     role,
     firstName: role === 'STUDENT' ? 'Анна' : 'Мария',
+    fullName: role === 'STUDENT' ? 'Анна Смирнова' : 'Мария Ковалёва',
     groupLabel: role === 'STUDENT' ? 'ПИ-21' : null,
     tomorrow:
       role === 'STUDENT'

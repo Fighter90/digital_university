@@ -79,7 +79,7 @@ export function AnnouncementForm({
             {groups.length === 0 && <option value="">{t(locale, 'staff.announcementForm.noGroups')}</option>}
             {groups.map((name) => (
               <option key={name} value={name}>
-                {name}
+                {localizedGroup(locale, name)}
               </option>
             ))}
           </select>
