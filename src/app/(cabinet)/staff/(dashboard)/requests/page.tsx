@@ -9,6 +9,12 @@ import { dataDb } from '@/server/data/db';
 import { RequestStatusBadge } from '@/components/request-status-badge';
 import { REQUEST_TYPE_LABELS, formatRequestDate, requestTypeLabel } from '@/lib/request-labels';
 import {
+  localizedFaculty,
+  localizedGroup,
+  localizePersonName,
+  localizeRequestCardTitle,
+} from '@/lib/en-demo-content';
+import {
   REQUEST_SLA_DAYS,
   filterQueue,
   isSlaOverdue,
@@ -115,7 +121,10 @@ export default async function StaffQueuePage({
         className="text-xl font-bold text-neutral-900 sm:text-2xl"
       />
       <p className="mb-5 mt-1 text-sm text-neutral-600">
-        {t(locale, 'staff.queue.subtitle', { faculty: ctx.faculty ?? '—', count: items.length })}
+        {t(locale, 'staff.queue.subtitle', {
+          faculty: localizedFaculty(locale, ctx.faculty),
+          count: items.length,
+        })}
       </p>
 
       {/* Фильтры: GET-форма — работает без JavaScript (прогрессивное улучшение). */}
@@ -212,10 +221,11 @@ export default async function StaffQueuePage({
                               href={`/staff/requests/${request.number}`}
                               className="mt-1 block text-sm font-semibold text-neutral-900 hover:text-coral-700 focus-visible:outline-2 focus-visible:outline-coral-600"
                             >
-                              {request.title}
+                              {localizeRequestCardTitle(locale, request.title)}
                             </Link>
                             <p className="mt-0.5 text-xs text-neutral-600">
-                              {student.fullName} · {student.groupName} ·{' '}
+                              {localizePersonName(locale, student.fullName)} ·{' '}
+                              {localizedGroup(locale, student.groupName)} ·{' '}
                               {requestTypeLabel(request.type, locale)} ·{' '}
                               {t(locale, 'staff.queue.submitted')}{' '}
                               {formatRequestDate(request.createdAt, locale)}
@@ -225,7 +235,9 @@ export default async function StaffQueuePage({
                                 date: formatRequestDate(deadline, locale),
                               })}
                               {request.assignee
-                                ? t(locale, 'staff.queue.assignee', { name: request.assignee })
+                                ? t(locale, 'staff.queue.assignee', {
+                                    name: localizePersonName(locale, request.assignee),
+                                  })
                                 : ''}
                             </p>
                           </div>

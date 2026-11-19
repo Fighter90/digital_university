@@ -122,6 +122,7 @@ const annaDisciplines: AssistantDiscipline[] = [
 const anna: AssistantContext = {
   role: 'STUDENT',
   firstName: 'Анна',
+  fullName: 'Анна Смирнова',
   groupLabel: 'ПИ-21',
   tomorrow: {
     dateKey: '2026-11-12',
@@ -151,6 +152,7 @@ const staff: AssistantContext = {
   ...anna,
   role: 'STAFF',
   firstName: 'Мария',
+  fullName: 'Мария Ковалёва',
   groupLabel: null,
   tomorrow: null,
   nextStudyDayLabel: null,

@@ -69,8 +69,17 @@ const nextId = (): number => {
 
 function greetingMessage(context: AssistantContext | null, locale: Locale = 'ru'): ChatMessage {
   const name = context?.firstName;
-  // DIG-93 — демо-персон по локали: «Анна» → «Anna» на EN (en-demo-словарь).
-  const displayName = name && locale === 'en' ? enPersonName(name) : name;
+  const fullName = context?.fullName ?? '';
+  // DIG-124 — EN-приветствие по ПОЛНОМУ ФИО: словарь персон хранит полные
+  // имена («Анна Смирнова» → «Anna Smirnova»), короткое «Анна» в нём
+  // отсутствует. displayName — первое слово EN-имени («Anna»); если полное
+  // имя неизвестно, фолбэк — словарь по короткому имени. RU — как было.
+  const displayName =
+    locale === 'en'
+      ? enPersonName(fullName || (name ?? ''))
+          .trim()
+          .split(/\s+/)[0] || undefined
+      : name;
   const text = displayName
     ? t(locale, 'assistant.greetingName', {
         name: displayName,
@@ -97,6 +106,7 @@ function seededDialog(
     context ?? {
       role: 'STUDENT',
       firstName: '',
+      fullName: '',
       groupLabel: null,
       tomorrow: null,
       nextStudyDayLabel: null,

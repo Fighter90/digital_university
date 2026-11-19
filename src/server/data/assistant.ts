@@ -181,6 +181,7 @@ export async function getAssistantContext(
     return {
       role: 'STAFF',
       firstName: staff ? firstNameOf(staff.fullName) : ctx.login,
+      fullName: staff?.fullName ?? ctx.login,
       groupLabel: null,
       tomorrow: null,
       nextStudyDayLabel: null,
@@ -258,6 +259,7 @@ export async function getAssistantContext(
   return {
     role: 'STUDENT',
     firstName: student ? firstNameOf(student.fullName) : ctx.login,
+    fullName: student?.fullName ?? ctx.login,
     groupLabel: ctx.groupName,
     tomorrow,
     nextStudyDayLabel,

@@ -133,6 +133,9 @@ const REQUEST_NAME_EN: Record<string, string> = {
   'Справка об обучении для налоговой': 'Enrollment certificate for the tax office',
   'Заявление на перезачёт дисциплины': 'Discipline credit transfer application',
   'Заявление на место в общежитии': 'Dormitory residence application',
+  // DIG-124 — оставшиеся названия очереди сотрудника (demo-seed requests).
+  'Заявка на летнюю практику': 'Summer internship request',
+  'Вопрос о переносе пересдачи': 'Retake reschedule question',
 };
 
 export function enRequestName(name: string): string {

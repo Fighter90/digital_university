@@ -6,6 +6,12 @@ import { getStaffAppeals, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { formatRequestDate } from '@/lib/request-labels';
 import { appealStatusBadge } from '@/lib/appeal-status';
+import {
+  localizedFaculty,
+  localizedGroup,
+  localizeAppealSubject,
+  localizePersonName,
+} from '@/lib/en-demo-content';
 import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 import { SectionTitle } from '@/components/shell/section-title';
@@ -26,7 +32,7 @@ export default async function StaffAppealsPage() {
         className="text-xl font-bold text-neutral-900 sm:text-2xl"
       />
       <p className="mb-6 mt-1 text-sm text-neutral-600">
-        {t(locale, 'staff.appeals.subtitle', { faculty: ctx.faculty ?? '—' })}
+        {t(locale, 'staff.appeals.subtitle', { faculty: localizedFaculty(locale, ctx.faculty) })}
       </p>
 
       {items.length === 0 ? (
@@ -58,9 +64,12 @@ export default async function StaffAppealsPage() {
                       })}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm font-semibold text-neutral-900">{appeal.subject}</p>
+                  <p className="mt-1 text-sm font-semibold text-neutral-900">
+                    {localizeAppealSubject(locale, appeal)}
+                  </p>
                   <p className="mt-0.5 text-xs text-neutral-600">
-                    {student.fullName} · {student.groupName} ·{' '}
+                    {localizePersonName(locale, student.fullName)} ·{' '}
+                    {localizedGroup(locale, student.groupName)} ·{' '}
                     {t(locale, 'staff.appeals.received')}{' '}
                     {formatRequestDate(appeal.createdAt, locale)}
                   </p>

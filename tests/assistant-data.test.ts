@@ -243,6 +243,8 @@ describe('getAssistantContext — студент', () => {
     const ctx = await getAssistantContext(db, annaCtx, NOW);
     expect(ctx.role).toBe('STUDENT');
     expect(ctx.firstName).toBe('Анна');
+    // DIG-124 — полное ФИО владельца (EN-приветствие строится по нему).
+    expect(ctx.fullName).toBe('Анна Ковалёва');
     expect(ctx.groupLabel).toBe('ПИ-21');
     expect(ctx.tomorrow).not.toBeNull();
     expect(ctx.tomorrow?.events.map((e) => e.discipline)).toEqual([
@@ -270,6 +272,7 @@ describe('getAssistantContext — студент', () => {
   it('Илья видит только данные ЭК-11 (изоляция групп)', async () => {
     const ctx = await getAssistantContext(db, ilyaCtx, NOW);
     expect(ctx.firstName).toBe('Илья');
+    expect(ctx.fullName).toBe('Илья Смирнов');
     expect(ctx.groupLabel).toBe('ЭК-11');
     expect(ctx.disciplines.some((d) => d.code === 'PI21-DB')).toBe(false);
     expect(ctx.disciplines.every((d) => d.code.startsWith('EK11'))).toBe(true);
@@ -283,6 +286,7 @@ describe('getAssistantContext — сотрудник', () => {
     const ctx = await getAssistantContext(db, staffCtx, NOW);
     expect(ctx.role).toBe('STAFF');
     expect(ctx.firstName).toBe('Мария');
+    expect(ctx.fullName).toBe('Мария Петрова');
     expect(ctx.groupLabel).toBeNull();
     expect(ctx.tomorrow).toBeNull();
     expect(ctx.disciplines).toEqual([]);
