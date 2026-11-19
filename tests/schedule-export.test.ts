@@ -162,25 +162,6 @@ describe('buildScheduleMarkdown', () => {
 });
 
 describe('buildScheduleXlsx', () => {
-  const unzipStored = (bytes: Uint8Array): Map<string, string> => {
-    // Минимальный разбор STORED-zip (без сжатия) для теста: локальные
-    // заголовки подряд до центрального каталога (PK\x01\x02).
-    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    const entries = new Map<string, string>();
-    let offset = 0;
-    const decoder = new TextDecoder();
-    while (view.getUint32(offset, true) === 0x04034b50) {
-      const compressedSize = view.getUint32(offset + 18, true);
-      const nameLength = view.getUint16(offset + 26, true);
-      const extraLength = view.getUint16(offset + 28, true);
-      const name = decoder.decode(bytes.subarray(offset + 30, offset + 30 + nameLength));
-      const dataStart = offset + 30 + nameLength + extraLength;
-      entries.set(name, decoder.decode(bytes.subarray(dataStart, dataStart + compressedSize)));
-      offset = dataStart + compressedSize;
-    }
-    return entries;
-  };
-
   it('валидный OOXML-пакет: ZIP-сигнатура, обязательные части, CRC32 сходится', () => {
     const bytes = buildScheduleXlsx(buildScheduleExportDays(rows, 'ru'), {
       locale: 'ru',

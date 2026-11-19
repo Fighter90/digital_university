@@ -16,7 +16,6 @@ import {
   resolveScheduleExportRange,
   scheduleExportFilename,
   scheduleExportRangeLabel,
-  type ScheduleExportView,
 } from '@/lib/schedule-export';
 
 export type ScheduleExportFormat = 'md' | 'xlsx' | 'pdf';
