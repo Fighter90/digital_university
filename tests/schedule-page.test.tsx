@@ -372,3 +372,35 @@ describe('/schedule?view=day — «Прослушать день» (DIG-65)', ()
     expect(html).not.toContain('Прослушать день');
   });
 });
+
+// DIG-101 — блок «Экспорт» (MD / XLSX / PDF): три ссылки на
+// /api/export/schedule.<ext> с текущими view/date; в виде «Месяц» блока нет.
+describe('/schedule — блок «Экспорт» (DIG-101)', () => {
+  /** React экранирует & в href как &amp; — возвращаем «сырой» URL. */
+  const rawHtml = (html: string): string => html.replaceAll('&amp;', '&');
+
+  it('вид «Неделя»: ссылки MD/XLSX/PDF с view=week и выбранной датой', async () => {
+    const html = rawHtml(await renderPage({ view: 'week', date: '2026-11-19' }));
+    const block = html.match(/data-testid="schedule-export"[\s\S]*?<\/section>/)?.[0] ?? '';
+    expect(block, 'блок экспорта не найден').toBeTruthy();
+    for (const ext of ['md', 'xlsx', 'pdf']) {
+      expect(block).toContain(`data-testid="schedule-export-${ext}"`);
+      expect(block).toContain(`href="/api/export/schedule.${ext}?view=week&date=2026-11-19"`);
+      expect(block).toMatch(/download/);
+    }
+    expect(block).toContain('Экспорт');
+    expect(block).toMatch(/aria-label="Скачать в Markdown"/);
+  });
+
+  it('вид «День»: view=day в ссылках (дата из URL)', async () => {
+    const html = rawHtml(await renderPage({ view: 'day', date: '2026-11-17' }));
+    expect(html).toContain('href="/api/export/schedule.md?view=day&date=2026-11-17"');
+    expect(html).toContain('href="/api/export/schedule.xlsx?view=day&date=2026-11-17"');
+    expect(html).toContain('href="/api/export/schedule.pdf?view=day&date=2026-11-17"');
+  });
+
+  it('вид «Месяц»: блока экспорта нет (экспорт определён для day|week)', async () => {
+    const html = await renderPage({ view: 'month' });
+    expect(html).not.toContain('data-testid="schedule-export"');
+  });
+});

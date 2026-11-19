@@ -15,7 +15,7 @@ import { ArrowLeft, Download, Paperclip } from 'lucide-react';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 
-import { ShareButton } from '@/components/news/share-button';
+import { ShareButtons } from '@/components/share/share-buttons';
 import { NEWS_COVERS, formatNewsDate, newsCoverAlt } from '@/lib/news-catalog';
 import { dataDb } from '@/server/data/db';
 import { getNewsArticle, markNewsRead, requireDataCtx } from '@/server/data';
@@ -135,7 +135,15 @@ async function ArticleContent({ id, backHref }: { id: string; backHref: string }
           ) : null}
 
           <div className="mt-2 border-t border-border pt-4">
-            <ShareButton locale={locale} />
+            {/* DIG-101 — полный блок «Поделиться» (VK/TG/WA/копирование);
+                testid news-share/news-share-status сохраняют контракт e2e DIG-36. */}
+            <ShareButtons
+              url={`/news/${article.id}`}
+              title={title}
+              locale={locale}
+              copyTestId="news-share"
+              statusTestId="news-share-status"
+            />
           </div>
         </div>
       </article>

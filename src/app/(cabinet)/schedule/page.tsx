@@ -61,6 +61,7 @@ import {
   getEventDetails,
 } from '@/server/data';
 import { EventDetailsPanel } from '@/components/schedule/event-details-panel';
+import { ScheduleExportBlock } from '@/components/schedule/schedule-export-block';
 import { SectionTitle } from '@/components/shell/section-title';
 import { toEventDetailsView } from '@/lib/event-details';
 import { t } from '@/lib/i18n';
@@ -386,6 +387,11 @@ async function DayWeekContent({
           />
         )}
       </div>
+
+      {/* DIG-101 — «Экспорт» (MD/XLSX/PDF) только для видов день/неделя: файл
+          повторяет то, что видно на экране (вид и дата из URL). */}
+      <ScheduleExportBlock view={desktopMode} dateKey={selectedKey} locale={locale} />
+
       {event && details ? (
         <EventDetailsPanel
           view={toEventDetailsView(details.event, locale)}

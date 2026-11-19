@@ -34,7 +34,9 @@ import { cn } from 'cn';
 import { buttonVariants } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
-import { t, type Locale } from '@/lib/i18n';
+import { ShareButtons } from '@/components/share/share-buttons';
+import { formatDate, t, type Locale } from '@/lib/i18n';
+import { moscowDateKey } from '@/lib/schedule-time';
 import type { EventDetailsView } from '@/lib/event-details';
 import { deleteEventNoteAction, saveEventNoteAction } from '@/server/actions/schedule';
 
@@ -334,6 +336,19 @@ function PanelContent({
           <Icon icon={Sparkles} size={14} />
           {t(locale, 'schedule.panel.askAi')}
         </Link>
+      </div>
+
+      {/* DIG-101 — «Поделиться»: безопасная публичная ссылка на день расписания
+          (получатель откроет СВОЁ расписание на эту дату; личных данных в
+          ссылке нет — только ключ дня и id пары для подсветки). */}
+      <div className="border-t border-border pt-4">
+        <ShareButtons
+          url={`/schedule?date=${moscowDateKey(view.startsAt)}&share=lesson-${encodeURIComponent(view.id)}`}
+          title={t(locale, 'schedule.share.dayTitle', { date: formatDate(locale, view.startsAt) })}
+          locale={locale}
+          copyTestId="schedule-share-copy"
+          statusTestId="schedule-share-status"
+        />
       </div>
 
       <div className="flex justify-end">
