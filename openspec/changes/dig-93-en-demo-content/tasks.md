@@ -57,4 +57,5 @@
 
 - [x] npx vitest run — все зелёные (включая расширенный no-Cyrillic).
 - [x] Живой аудит прод-сборки (du-locale=en): скоуп задачи — 0 кириллицы.
-- [ ] node scripts/swarm/gates.mjs → GATES_SUMMARY: green.
+- [x] node scripts/swarm/gates.mjs → GATES_SUMMARY: green (lint=pass
+      typecheck=pass build=pass test=pass).
