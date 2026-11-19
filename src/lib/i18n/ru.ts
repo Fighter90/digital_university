@@ -1278,6 +1278,22 @@ export const ru = {
   'people.browser.empty.desc': 'Попробуйте другое имя, дисциплину или сбросьте фильтр.',
   'people.yourDisciplines': 'Ваши дисциплины:',
   'people.loading.aria': 'Загрузка справочника',
+  // DIG-102 — поиск «ФИО, email или телефон» и вкладка «★ Избранное»
+  'people.search.query.placeholder': 'ФИО, email или телефон…',
+  'people.search.empty.title': 'Ничего не найдено',
+  'people.search.empty.desc': 'Проверьте ФИО, email или телефон и попробуйте ещё раз.',
+  'people.filter.FAVORITES': '★ Избранное',
+  'people.fav.title': '★ Избранное',
+  'people.fav.cat.TEACHER': 'Преподаватели',
+  'people.fav.cat.STAFF': 'Сотрудники деканата',
+  'people.fav.cat.GROUPMATE': 'Одногруппники',
+  'people.fav.add': 'Добавить в Избранное',
+  'people.fav.added': 'В Избранном',
+  'people.fav.addAria': 'Добавить {name} в Избранное',
+  'people.fav.removeAria': 'Убрать {name} из Избранного',
+  'people.fav.empty.title': 'В избранном пока никого',
+  'people.fav.empty.desc': 'Нажмите ★ на карточке человека — он появится здесь по категориям.',
+  'people.groupmate.subtitle': 'Одногруппник',
 
   // /services
   'services.subtitle':

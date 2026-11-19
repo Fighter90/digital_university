@@ -1279,6 +1279,22 @@ export const en: Record<keyof RuDictionary, string> = {
   'people.browser.empty.desc': 'Try another name, discipline or reset the filter.',
   'people.yourDisciplines': 'Your disciplines:',
   'people.loading.aria': 'Loading the directory',
+  // DIG-102 — «Find a person» search and the «★ Favorites» tab
+  'people.search.query.placeholder': 'Name, email or phone…',
+  'people.search.empty.title': 'Nothing found',
+  'people.search.empty.desc': 'Check the name, email or phone and try again.',
+  'people.filter.FAVORITES': '★ Favorites',
+  'people.fav.title': '★ Favorites',
+  'people.fav.cat.TEACHER': 'Teachers',
+  'people.fav.cat.STAFF': 'Deanery staff',
+  'people.fav.cat.GROUPMATE': 'Groupmates',
+  'people.fav.add': 'Add to favorites',
+  'people.fav.added': 'In favorites',
+  'people.fav.addAria': 'Add {name} to favorites',
+  'people.fav.removeAria': 'Remove {name} from favorites',
+  'people.fav.empty.title': 'No favorites yet',
+  'people.fav.empty.desc': 'Tap ★ on a person card and they will appear here, grouped by category.',
+  'people.groupmate.subtitle': 'Groupmate',
 
   // /services
   'services.subtitle':
