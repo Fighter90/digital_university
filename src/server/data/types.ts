@@ -503,6 +503,19 @@ export interface ServiceFavoriteRow {
 }
 
 /**
+ * DIG-102 — человек из избранного студента (/people, «★ Избранное»): одна
+ * строка на пару (студент, человек); порядок добавления — по createdAt.
+ * personId — id записи вымышленного каталога людей (people-catalog:
+ * «teacher-petrov») или «groupmate:<Student.id>» для одногруппников;
+ * таблицы Person в БД нет (см. модель FavoritePerson в prisma/schema.prisma).
+ */
+export interface FavoritePersonRow {
+  studentId: string;
+  personId: string;
+  createdAt: Date;
+}
+
+/**
  * DIG-34 — дедлайн задания по дисциплине (система курсов; в концепте — сиды).
  * Групповая сущность: сдаёт вся группа, скоуп — `groupName`.
  */

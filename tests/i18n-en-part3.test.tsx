@@ -955,7 +955,10 @@ describe('DIG-89: ДПО (/dpo) — EN без кириллицы', () => {
 describe('DIG-89: справочник (/people) и сервисы (/services) — EN', () => {
   it('PeopleBrowser, ServicesBrowser, ServiceCard', () => {
     const people = renderToStaticMarkup(
-      createElement(PeopleBrowser, { people: [], locale: 'en' } as never),
+      createElement(
+        PeopleBrowser,
+        { people: [], groupmates: [], favorites: [], locale: 'en' } as never,
+      ),
     );
     expectNoCyrillic(people, 'PeopleBrowser');
     const services = renderToStaticMarkup(
