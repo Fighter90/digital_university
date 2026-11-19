@@ -6,12 +6,13 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { createMemoryDataDb, type MemoryDataDb } from '@/server/data/memory-db';
 import {
   getOrCreateCertificateForRequest,
+  getOrCreateDocumentVerification,
   revokeCertificateByCode,
   verifyCertificateByCode,
 } from '@/server/data/certificates';
 import { denyAccess } from '@/server/data/access';
 import { toDataCtx } from '@/server/data/context';
-import type { CertificateRow, DataCtx } from '@/server/data/types';
+import type { CanonicalRequestRow, CertificateRow, DataCtx } from '@/server/data/types';
 
 const T0 = new Date('2026-11-01T10:00:00.000Z');
 
@@ -123,7 +124,13 @@ const DEFAULT_CERTS: CertificateRow[] = [
 
 /** Полный ре-сид: memory-адаптер сбрасывает таблицы, отсутствующие в seed. */
 function seedAll(certificates: CertificateRow[] = DEFAULT_CERTS): void {
-  db.seed({ students: STUDENTS, staff: STAFF, requests: REQUESTS, certificates });
+  db.seed({
+    students: STUDENTS,
+    staff: STAFF,
+    requests: REQUESTS,
+    certificates,
+    canonicalRequests: CANONICAL_INSTANT_REQUESTS,
+  });
 }
 
 beforeAll(async () => {
@@ -137,6 +144,34 @@ beforeAll(async () => {
 
 const ANNA_REQUEST = REQUESTS[0]!;
 const STATEMENT_REQUEST = REQUESTS[1]!;
+
+/** DIG-82 — мгновенные канонические заявки (документы с QR на /verify). */
+const CANONICAL_INSTANT_REQUESTS: CanonicalRequestRow[] = [
+  {
+    id: 'creq-anna-cert',
+    number: 'ЗД-2026-000123',
+    studentId: 'st-anna',
+    typeCode: 'CERT_ENROLLMENT',
+    typeName: 'Справка об обучении',
+    title: 'Справка об обучении · для банка',
+    params: { purpose: 'для банка' },
+    status: 'READY',
+    createdAt: T0,
+    updatedAt: T0,
+  },
+  {
+    id: 'creq-ilya-extract',
+    number: 'ЗД-2026-000004',
+    studentId: 'st-ilya',
+    typeCode: 'GRADES_EXTRACT',
+    typeName: 'Выписка оценок',
+    title: 'Выписка оценок',
+    params: {},
+    status: 'READY',
+    createdAt: T0,
+    updatedAt: T0,
+  },
+];
 
 describe('verifyCertificateByCode: публичное представление', () => {
   it('действительная справка: статус, тип, дата, маскированное ФИО', async () => {
@@ -363,5 +398,110 @@ describe('revokeCertificateByCode: отзыв сотрудником', () => {
       reason: 'OWNERSHIP_DENIED',
     });
     expect(db.auditEvents().length).toBe(before + 1);
+  });
+});
+
+describe('getOrCreateDocumentVerification: мгновенные документы с QR (DIG-82, BUG-01)', () => {
+  const NOW2 = new Date('2026-11-12T12:00:00.000Z');
+  const ANNA_INSTANT = CANONICAL_INSTANT_REQUESTS[0]!;
+
+  it('код мгновенной справки регистрируется и открывается на /verify', async () => {
+    seedAll();
+    const cert = await getOrCreateDocumentVerification(
+      db,
+      anna,
+      {
+        studentId: ANNA_INSTANT.studentId,
+        requestId: ANNA_INSTANT.id,
+        documentType: ANNA_INSTANT.typeName,
+        purpose: ANNA_INSTANT.params['purpose'] ?? null,
+      },
+      NOW2,
+    );
+    expect(cert).not.toBeNull();
+    expect(cert!.verificationCode).toMatch(/^[A-Z2-7]{4}(-[A-Z2-7]{4}){7}$/);
+    // Срок действия мгновенного документа = 30 дней (как печатает PDF).
+    const validityDays =
+      (cert!.expiresAt.getTime() - cert!.issuedAt.getTime()) / (24 * 60 * 60 * 1000);
+    expect(validityDays).toBe(30);
+    // Цепочка DoD: QR ведёт на /verify/<код> — карточка открывается.
+    const view = await verifyCertificateByCode(
+      db,
+      cert!.verificationCode,
+      new Date('2026-11-20T12:00:00.000Z'),
+    );
+    expect(view.status).toBe('VALID');
+    expect(view.documentType).toBe('Справка об обучении');
+    expect(view.holderName).toBe('Анна К.');
+  });
+
+  it('idемпотентно: повторное скачивание отдаёт ТОТ ЖЕ код (QR действителен)', async () => {
+    seedAll();
+    const input = {
+      studentId: ANNA_INSTANT.studentId,
+      requestId: ANNA_INSTANT.id,
+      documentType: ANNA_INSTANT.typeName,
+      purpose: null,
+    };
+    const first = await getOrCreateDocumentVerification(db, anna, input, NOW2);
+    const second = await getOrCreateDocumentVerification(db, anna, input, NOW2);
+    expect(second!.verificationCode).toBe(first!.verificationCode);
+    expect(second!.number).toBe(first!.number);
+  });
+
+  it('выписка без заявки: стабильный ключ на студента и вид документа', async () => {
+    seedAll();
+    const input = {
+      studentId: 'st-ilya',
+      requestId: null, // скачивание мимо заявки: /api/grades/transcript
+      documentType: 'Выписка оценок',
+      purpose: null,
+    };
+    const first = await getOrCreateDocumentVerification(db, ilya, input, NOW2);
+    const second = await getOrCreateDocumentVerification(db, ilya, input, NOW2);
+    expect(second!.verificationCode).toBe(first!.verificationCode);
+    const view = await verifyCertificateByCode(
+      db,
+      first!.verificationCode,
+      new Date('2026-11-20T12:00:00.000Z'),
+    );
+    expect(view.status).toBe('VALID');
+    expect(view.documentType).toBe('Выписка оценок');
+    expect(view.holderName).toBe('Илья С.');
+  });
+
+  it('чужая заявка — null + аудит OWNERSHIP_DENIED; сотрудник — ROLE_MISMATCH', async () => {
+    seedAll();
+    expect(
+      await getOrCreateDocumentVerification(
+        db,
+        ilya,
+        {
+          studentId: 'st-anna', // заявка Анны, контекст Ильи
+          requestId: ANNA_INSTANT.id,
+          documentType: 'Справка об обучении',
+          purpose: null,
+        },
+        NOW2,
+      ),
+    ).toBeNull();
+    const audit = db.auditEvents();
+    expect(audit[audit.length - 1]!.reason).toBe('OWNERSHIP_DENIED');
+
+    expect(
+      await getOrCreateDocumentVerification(
+        db,
+        maria,
+        {
+          studentId: 'st-anna',
+          requestId: ANNA_INSTANT.id,
+          documentType: 'Справка об обучении',
+          purpose: null,
+        },
+        NOW2,
+      ),
+    ).toBeNull();
+    const audit2 = db.auditEvents();
+    expect(audit2[audit2.length - 1]!.reason).toBe('ROLE_MISMATCH');
   });
 });

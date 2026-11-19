@@ -23,6 +23,9 @@ import {
   maskFullName,
   normalizeVerificationCode,
 } from '@/lib/verify';
+// DIG-82 — срок действия мгновенного документа: PDF печатает
+// «Срок действия: до …» из этого же значения (30 дней).
+import { CERTIFICATE_VALIDITY_DAYS as INSTANT_DOCUMENT_VALIDITY_DAYS } from '@/lib/enrollment-certificate-pdf';
 import { denyAccess } from './access';
 import type { DataDb } from './port';
 import type { CertificateRow, DataCtx, ServiceRequestRow } from './types';
@@ -223,6 +226,70 @@ export async function getStaffCertificatePdfInput(
     purpose: certificate.purpose,
     verificationCode: certificate.verificationCode,
   };
+}
+
+/**
+ * DIG-82 — реестровая запись для мгновенных документов с QR (справка об
+ * обучении CERT_ENROLLMENT, выписка оценок GRADES_EXTRACT). Публичная
+ * страница /verify/<код> обязана открывать карточку, поэтому код
+ * печатается ТОЛЬКО из записи реестра. Idемпотентно: один код на заявку
+ * (requestId); скачивание мимо заявки — стабильный синтетический ключ
+ * «standalone-<тип документа>». Срок действия — 30 дней (как печатает
+ * PDF мгновенной справки). null — нарушение скоупа (с аудитом).
+ */
+export async function getOrCreateDocumentVerification(
+  db: DataDb,
+  ctx: DataCtx,
+  input: {
+    studentId: string;
+    /** id канонической заявки; null — документ мимо заявки (выписка). */
+    requestId: string | null;
+    documentType: string;
+    purpose: string | null;
+  },
+  now: Date,
+): Promise<CertificateRow | null> {
+  if (ctx.studentId === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: input.requestId ?? input.documentType,
+      reason: 'ROLE_MISMATCH',
+    });
+    return null;
+  }
+  // Защита в глубину: IDOR исключается по построению (та же дисциплина,
+  // что у getOrCreateCertificateForRequest).
+  if (input.studentId !== ctx.studentId) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: input.requestId ?? input.documentType,
+      reason: 'OWNERSHIP_DENIED',
+    });
+    return null;
+  }
+
+  const requestId = input.requestId ?? `standalone-${input.documentType}`;
+  const existing = await db.findCertificateByStudentAndRequestId(ctx.studentId, requestId);
+  if (existing) return existing;
+
+  const expiresAt = new Date(now);
+  expiresAt.setDate(expiresAt.getDate() + INSTANT_DOCUMENT_VALIDITY_DAYS);
+  const row: CertificateRow = {
+    id: '',
+    studentId: ctx.studentId,
+    requestId,
+    documentType: input.documentType,
+    purpose: input.purpose,
+    number: newCertificateNumber(now),
+    verificationCode: generateVerificationCode(),
+    issuedAt: now,
+    expiresAt,
+    revokedAt: null,
+    revokedReason: null,
+  };
+  return db.appendCertificateForStudent(ctx.studentId, row);
 }
 
 /**

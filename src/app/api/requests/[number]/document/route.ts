@@ -11,6 +11,7 @@ import {
   requireDataCtx,
   getCanonicalRequestByNumber,
   getGradebook,
+  getOrCreateDocumentVerification,
   getOwnProfile,
   normalizeRequestNumber,
   decodeRequestNumberParam,
@@ -22,12 +23,7 @@ import {
   buildEnrollmentCertificatePdf,
   certificateFilename,
 } from '@/lib/enrollment-certificate-pdf';
-import {
-  buildTranscriptPdf,
-  newVerificationCode,
-  transcriptFilename,
-  type TranscriptData,
-} from '@/lib/transcript-pdf';
+import { buildTranscriptPdf, transcriptFilename, type TranscriptData } from '@/lib/transcript-pdf';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,7 +58,24 @@ export async function GET(
   }
 
   const now = new Date();
-  const code = newVerificationCode();
+
+  // DIG-82 — код проверки живёт в реестре справок (один код на заявку):
+  // QR на документе ведёт на /verify/<код>, и страница обязана открыть
+  // карточку. Код из криптографического ГСЧ (160 бит) — публичный ключ.
+  const verification = await getOrCreateDocumentVerification(
+    dataDb,
+    ctx,
+    {
+      studentId: request.studentId,
+      requestId: request.id,
+      documentType: request.typeName,
+      purpose: request.params['purpose'] ?? null,
+    },
+    now,
+  );
+  if (!verification) return uniformNotFoundResponse();
+  const origin = new URL(httpRequest.url).origin;
+  const verifyUrl = `${origin}/verify/${verification.verificationCode}`;
 
   if (request.typeCode === 'CERT_ENROLLMENT') {
     const student = await getOwnProfile(dataDb, ctx);
@@ -81,7 +94,7 @@ export async function GET(
         },
         purpose: request.params['purpose'] ?? 'по месту требования',
       },
-      { now, code, requestNumber: request.number },
+      { now, code: verification.verificationCode, requestNumber: request.number, verifyUrl },
     );
     return pdfResponse(pdf, certificateFilename(now), inline);
   }
@@ -107,7 +120,11 @@ export async function GET(
     creditsEarned: gradebook.creditsEarned,
     creditsRequired: gradebook.creditsRequired,
   };
-  const pdf = buildTranscriptPdf(data, { now, code });
+  const pdf = buildTranscriptPdf(data, {
+    now,
+    code: verification.verificationCode,
+    verifyUrl,
+  });
   return pdfResponse(pdf, transcriptFilename(now), inline);
 }
 
