@@ -165,6 +165,53 @@ describe('локализованные хелперы статусов (DIG-69)'
   });
 });
 
+describe('DIG-84 — ключевые страницы: EN-ключи словаря', () => {
+  it('успеваемость: сводка переводится (BUG-09: «Средний балл», «За всё время», «Рейтинг в группе»)', () => {
+    expect(t('ru', 'grades.gpaTitle')).toBe('Средний балл');
+    expect(t('ru', 'grades.overallPrefix')).toBe('За всё время:');
+    expect(t('ru', 'grades.groupRating')).toBe('Рейтинг в группе');
+    expect(t('ru', 'grades.rankOf', { rank: 3, total: 12 })).toBe('3 из 12');
+    expect(t('en', 'grades.gpaTitle')).toBe('GPA');
+    expect(t('en', 'grades.overallPrefix')).toBe('Overall:');
+    expect(t('en', 'grades.groupRating')).toBe('Group ranking');
+    expect(t('en', 'grades.rankOf', { rank: 3, total: 12 })).toBe('3 of 12');
+    expect(t('en', 'grades.deltaTo', { semester: 'Spring 25/26' })).toBe('vs Spring 25/26');
+    expect(t('en', 'grades.credits', { required: 240 })).toBeTruthy();
+    expect(t('en', 'grades.howCalculated')).toBe('How it works');
+  });
+
+  it('зачётка и выписка переводятся', () => {
+    expect(t('ru', 'gradebook.downloadTranscript')).toBe('Скачать выписку PDF');
+    expect(t('ru', 'gradebook.overallAverage')).toBe('Средний балл за всё время');
+    expect(t('ru', 'transcript.title')).toBe('Выписка из зачётной книжки');
+    expect(t('en', 'gradebook.downloadTranscript')).toBe('Download transcript PDF');
+    expect(t('en', 'gradebook.overallAverage')).toBe('Overall GPA');
+    expect(t('en', 'transcript.title')).toBe('Academic transcript');
+    expect(t('en', 'transcript.overallAverage', { average: '81.22' })).toBe('Overall GPA: 81.22');
+  });
+
+  it('карточка заявки: интерфейсные подписи переводятся (BUG-09: статусы)', () => {
+    expect(t('ru', 'requests.ledBy', { name: 'Мария Петрова' })).toBe('Ведёт: Мария Петрова');
+    expect(t('ru', 'requests.historyTitle')).toBe('История заявки');
+    expect(t('ru', 'requests.paramsTitle')).toBe('Параметры заявки');
+    expect(t('en', 'requests.ledBy', { name: 'Maria Petrova' })).toBe('Handled by: Maria Petrova');
+    expect(t('en', 'requests.historyTitle')).toBe('Request history');
+    expect(t('en', 'requests.paramsTitle')).toBe('Request parameters');
+    expect(t('en', 'requests.readyBy', { date: 'November 20' })).toBe('Ready by November 20');
+    // Статус-пилюля карточки берёт ЕДИНЫЙ словарь статусов (status.*).
+    expect(requestStatusLabel('en', 'SUBMITTED')).toBe('Submitted');
+    expect(requestStatusLabel('ru', 'SUBMITTED')).toBe('Подана');
+  });
+
+  it('AI-инсайт «Что изменилось» переводится', () => {
+    expect(t('ru', 'insight.title')).toBe('Что изменилось');
+    expect(t('en', 'insight.title')).toBe('What changed');
+    expect(t('en', 'insight.h.flat', { current: '48.9' })).toBe(
+      'The average is unchanged this month: 48.9 out of 100',
+    );
+  });
+});
+
 describe('LocaleSwitch', () => {
   it('рендерит обе кнопки RU и EN', () => {
     const html = renderToStaticMarkup(<LocaleSwitch locale="ru" />);

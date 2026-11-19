@@ -39,7 +39,7 @@ export function RequestFixForm({
     >
       <input type="hidden" name="requestId" value={requestId} />
       <label htmlFor="request-fix-comment" className="block text-xs font-semibold text-foreground">
-        Что исправлено
+        {t(locale, 'requests.fix.label')}
       </label>
       <textarea
         id="request-fix-comment"
@@ -47,7 +47,7 @@ export function RequestFixForm({
         rows={3}
         maxLength={500}
         data-testid="request-fix-comment"
-        placeholder="Например: исправил ФИО латиницей, приложил скан"
+        placeholder={t(locale, 'requests.fix.placeholder')}
         className="mt-1.5 w-full resize-y rounded-button border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-coral-600"
       />
       <div className="mt-2 flex items-center gap-2">
@@ -67,7 +67,7 @@ export function RequestFixForm({
         ) : null}
         {ok ? (
           <p data-testid="request-fix-success" role="status" className="text-xs text-success-ink">
-            Заявка отправлена повторно
+            {t(locale, 'requests.fix.success')}
           </p>
         ) : null}
       </div>

@@ -16,19 +16,19 @@ import {
   activeDebts,
   admissionBadgeStatus,
   buildSemesterPills,
-  CREDITS_HINT,
-  CREDITS_SHORT_HINT,
+  creditsHint,
+  creditsShortHint,
   debtBadge,
   debtDatePhrase,
   disciplinesForSemester,
   emptySemesterNote,
   formatScore,
-  GPA_HINT,
+  gpaHint,
   levelBarClass,
   levelTextClass,
   nextAssessment,
   parseSemesterParam,
-  PERCENTILE_HINT,
+  percentileHint,
   semesterDelta,
   semesterGpaOf,
   toDisciplineCards,
@@ -36,6 +36,9 @@ import {
   trafficLight,
   type DisciplineCard,
 } from '@/lib/performance-format';
+import { bestPercentLabel } from '@/lib/performance-math';
+import { t, type Locale } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -52,10 +55,10 @@ import type { SemesterKey } from '@/lib/performance-math';
 
 export const metadata = { title: 'Успеваемость — Цифровой деканат' };
 
-/** Дельта со знаком для человека: −54,1 / +3,2. */
-function formatDelta(value: number): string {
+/** Дельта со знаком для человека: −54,1 / +3,2 (EN — с точкой). */
+function formatDelta(value: number, locale: Locale): string {
   const sign = value < 0 ? '−' : '+';
-  return `${sign}${formatScore(Math.abs(value))}`;
+  return `${sign}${formatScore(Math.abs(value), locale)}`;
 }
 
 interface GradesPageProps {
@@ -64,7 +67,7 @@ interface GradesPageProps {
 }
 
 async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: string }) {
-  const ctx = await requireDataCtx('/grades');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/grades'), getLocale()]);
 
   // Сотрудник деканата без studentId: студенческая успеваемость ему не
   // показывается (чтение групповых данных попало бы в аудит) — явная заглушка.
@@ -73,8 +76,8 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
         <SectionTitle href="/grades" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <EmptyState
-          title="Экран доступен студентам"
-          description="Оценки и успеваемость показываются по учебной группе студента. Кабинет сотрудника с ведомостями — отдельная задача."
+          title={t(locale, 'empty.tasksStaffTitle')}
+          description={t(locale, 'empty.tasksStaffDesc')}
         />
       </section>
     );
@@ -94,7 +97,7 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
     const [perfResult, examResult, insightResult] = await Promise.allSettled([
       getPerformance(dataDb, ctx),
       listExams(dataDb, ctx),
-      getGradeInsight(dataDb, ctx),
+      getGradeInsight(dataDb, ctx, new Date(), locale),
     ]);
     if (perfResult.status === 'rejected' || examResult.status === 'rejected') {
       const error =
@@ -109,12 +112,12 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
         <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-8">
           <SectionTitle href="/grades" className="text-xl font-bold tracking-heading sm:text-2xl" />
           <ErrorState
-            title="Успеваемость не загрузилась"
-            description="Обновите страницу — если ошибка повторится, сообщите в деканат."
+            title={t(locale, 'grades.errorTitle')}
+            description={t(locale, 'grades.errorDesc')}
           />
           <div className="flex justify-center">
             <Link href="/grades" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
-              Повторить
+              {t(locale, 'btn.retry')}
             </Link>
           </div>
         </section>
@@ -130,7 +133,15 @@ async function GradesContent({ semesterParam: semesterRaw }: { semesterParam?: s
     data = perfResult.value;
     exams = examResult.value;
   }
-  return <GradesView data={data} exams={exams} insight={insight} semesterRaw={semesterRaw} />;
+  return (
+    <GradesView
+      data={data}
+      exams={exams}
+      insight={insight}
+      semesterRaw={semesterRaw}
+      locale={locale}
+    />
+  );
 }
 
 /** Какой семестр открыт по умолчанию (без валидного ?semester=). */
@@ -157,11 +168,13 @@ function GradesView({
   exams,
   insight,
   semesterRaw,
+  locale,
 }: {
   data: PerformanceData;
   exams: Awaited<ReturnType<typeof listExams>>;
   insight: GradeInsight | null;
   semesterRaw?: string;
+  locale: Locale;
 }) {
   const now = new Date();
   const current = data.gpa?.currentSemesterKey ?? {
@@ -173,7 +186,7 @@ function GradesView({
   const isCurrentSemester =
     selected.startYear === current.startYear && selected.term === current.term;
 
-  const pills = buildSemesterPills(data.disciplines, current);
+  const pills = buildSemesterPills(data.disciplines, current, locale);
   const semesterDisciplines = disciplinesForSemester(data.disciplines, selected, current);
   const hasGrades = semesterDisciplines.some(
     (d) => d.accumulated !== null || d.finalGrade !== null,
@@ -183,14 +196,15 @@ function GradesView({
   // Дельта — к прошлому семестру имеет смысл только у ИДУЩЕГО семестра:
   // у завершённого «предыдущий» — ещё не закрытый семестр, сравнение
   // обманчиво (рендер-контракт: у весны 25/26 дельты нет).
-  const delta = hasGrades && isCurrentSemester ? semesterDelta(data.disciplines, selected) : null;
+  const delta =
+    hasGrades && isCurrentSemester ? semesterDelta(data.disciplines, selected, locale) : null;
   const selectedPill = pills.find(
     (p) => p.semester.startYear === selected.startYear && p.semester.term === selected.term,
   );
 
-  const light = trafficLight(semesterDisciplines, activeDebts(data.debts));
-  const cards = toDisciplineCards(semesterDisciplines);
-  const note = emptySemesterNote(nextAssessment(exams, now), isCurrentSemester);
+  const light = trafficLight(semesterDisciplines, activeDebts(data.debts), locale);
+  const cards = toDisciplineCards(semesterDisciplines, locale);
+  const note = emptySemesterNote(nextAssessment(exams, now, locale), isCurrentSemester, locale);
   const credits = data.credits;
   const creditsPercent =
     credits.required > 0 ? Math.min(100, (credits.earned / credits.required) * 100) : 0;
@@ -199,7 +213,7 @@ function GradesView({
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
       <header className="flex animate-rise flex-col gap-3">
         <SectionTitle href="/grades" className="text-xl font-bold tracking-heading sm:text-2xl" />
-        <nav aria-label="Семестры" className="flex flex-wrap gap-2">
+        <nav aria-label={t(locale, 'grades.semestersAria')} className="flex flex-wrap gap-2">
           {pills.map((pill) => {
             const active =
               pill.semester.startYear === selected.startYear &&
@@ -229,31 +243,36 @@ function GradesView({
         style={{ '--du-rise-delay': '60ms' } as React.CSSProperties}
       >
         <div className="flex items-center gap-5">
-          <ProgressRing value={semesterGpa ?? 0} label="Средний балл семестра" size={80} stroke={7}>
+          <ProgressRing
+            value={semesterGpa ?? 0}
+            label={t(locale, 'grades.gpaRingLabel')}
+            size={80}
+            stroke={7}
+          >
             <span data-testid="gpa-ring-value" className="text-base font-extrabold">
-              {semesterGpa === null ? '—' : formatScore(semesterGpa)}
+              {semesterGpa === null ? '—' : formatScore(semesterGpa, locale)}
             </span>
           </ProgressRing>
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-1 text-sm font-semibold">
-              Средний балл
-              <Tooltip content={GPA_HINT}>GPA</Tooltip>
+              {t(locale, 'grades.gpaTitle')}
+              <Tooltip content={gpaHint(locale)}>GPA</Tooltip>
             </p>
             {delta ? (
               <p className="mt-0.5 text-xs text-muted-foreground">
                 <span data-testid="gpa-delta" className="font-semibold text-foreground">
-                  {formatDelta(delta.value)}
+                  {formatDelta(delta.value, locale)}
                 </span>{' '}
-                к {delta.prevLabel}
+                {t(locale, 'grades.deltaTo', { semester: delta.prevLabel })}
               </p>
             ) : (
               <p className="mt-0.5 text-xs text-muted-foreground">{selectedPill?.label}</p>
             )}
             {data.gpa?.overall != null ? (
               <p className="mt-0.5 text-xs text-muted-foreground">
-                За всё время:{' '}
+                {t(locale, 'grades.overallPrefix')}{' '}
                 <span className="font-semibold text-foreground">
-                  {formatScore(data.gpa.overall)}
+                  {formatScore(data.gpa.overall, locale)}
                 </span>
               </p>
             ) : null}
@@ -264,17 +283,17 @@ function GradesView({
         <div className="mt-5 border-t border-border pt-4">
           <div className="flex items-baseline justify-between gap-2 text-sm">
             <span className="font-medium text-muted-foreground">
-              Кредиты
-              <Tooltip content={CREDITS_HINT}>?</Tooltip>
+              {t(locale, 'grades.credits')}
+              <Tooltip content={creditsHint(locale)}>?</Tooltip>
             </span>
             <span className="text-muted-foreground">
               <span className="font-bold text-foreground">{credits.earned}</span>{' '}
-              {`из ${credits.required}`}
+              {t(locale, 'grades.creditsSuffix', { required: credits.required })}
             </span>
           </div>
           <div
             role="progressbar"
-            aria-label="Кредиты"
+            aria-label={t(locale, 'grades.credits')}
             aria-valuemin={0}
             aria-valuemax={credits.required}
             aria-valuenow={credits.earned}
@@ -291,21 +310,28 @@ function GradesView({
         {data.rating ? (
           <div className="mt-5 border-t border-border pt-4">
             <div className="flex items-baseline justify-between gap-2 text-sm">
-              <span className="font-medium text-muted-foreground">Рейтинг в группе</span>
+              <span className="font-medium text-muted-foreground">
+                {t(locale, 'grades.groupRating')}
+              </span>
               <span className="font-bold text-foreground">
-                {`${data.rating.rank} из ${data.rating.groupSize}`}
+                {t(locale, 'grades.rankOf', {
+                  rank: data.rating.rank,
+                  total: data.rating.groupSize,
+                })}
               </span>
             </div>
             <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              {data.rating.label}
-              <Tooltip content={PERCENTILE_HINT}>Как считается</Tooltip>
+              {bestPercentLabel(data.rating.rank, data.rating.groupSize, locale)}
+              <Tooltip content={percentileHint(locale)}>
+                {t(locale, 'grades.howCalculated')}
+              </Tooltip>
             </p>
           </div>
         ) : null}
       </div>
 
       {/* ── AI-инсайт «Что изменилось» (DIG-66): динамика среднего + график ── */}
-      {insight ? <GradeInsightCard insight={insight} /> : null}
+      {insight ? <GradeInsightCard insight={insight} locale={locale} /> : null}
 
       {/* ── Светофор состояния ────────────────────────────────────────────── */}
       <div
@@ -334,20 +360,27 @@ function GradesView({
       {hasGrades ? (
         <ul className="flex flex-col gap-3">
           {cards.map((card, cardIndex) => (
-            <DisciplineCardItem key={card.disciplineCode} card={card} index={cardIndex} />
+            <DisciplineCardItem
+              key={card.disciplineCode}
+              card={card}
+              index={cardIndex}
+              locale={locale}
+            />
           ))}
         </ul>
       ) : (
-        <EmptyState title="Оценок пока нет" description={note} icon={BookOpen} />
+        <EmptyState title={t(locale, 'grades.emptyTitle')} description={note} icon={BookOpen} />
       )}
 
       {/* ── Долги ─────────────────────────────────────────────────────────── */}
       {activeDebts(data.debts).length > 0 ? (
         <div id="debts" className="rounded-card border border-border bg-card p-5 shadow-soft">
-          <h2 className="text-base font-extrabold tracking-heading">Долги</h2>
+          <h2 className="text-base font-extrabold tracking-heading">
+            {t(locale, 'grades.debtsTitle')}
+          </h2>
           <ul className="mt-3 flex flex-col divide-y divide-border">
             {activeDebts(data.debts).map((debt) => {
-              const badge = debtBadge(debt.status);
+              const badge = debtBadge(debt.status, locale);
               return (
                 <li
                   key={`${debt.disciplineCode}-${debt.retakeDate.getTime()}`}
@@ -357,13 +390,13 @@ function GradesView({
                     <span className="font-semibold">{debt.disciplineName}</span>
                     <Badge status={badge.badge}>{badge.label}</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">{debtDatePhrase(debt)}</p>
+                  <p className="text-sm text-muted-foreground">{debtDatePhrase(debt, locale)}</p>
                   <Link
                     href="/deanery"
                     className="inline-flex items-center gap-1 text-sm font-semibold text-accent-ink hover:underline"
                   >
                     <CalendarClock className="size-4" aria-hidden="true" />
-                    Записаться на пересдачу
+                    {t(locale, 'grades.retakeSignup')}
                   </Link>
                 </li>
               );
@@ -375,13 +408,13 @@ function GradesView({
       {/* ── Нижние ссылки ─────────────────────────────────────────────────── */}
       <footer className="flex flex-col gap-2 border-t border-border pt-4 text-sm">
         <Link href="/grades/session" className="font-semibold text-accent-ink hover:underline">
-          Сессия — расписание консультаций и экзаменов
+          {t(locale, 'grades.sessionLink')}
         </Link>
         <Link
           href="/deanery"
           className="inline-flex items-center gap-1 text-muted-foreground hover:underline"
         >
-          Нашли ошибку в оценке? Написать в деканат
+          {t(locale, 'grades.appealLink')}
           <ExternalLink className="size-3.5" aria-hidden="true" />
         </Link>
       </footer>
@@ -390,7 +423,15 @@ function GradesView({
 }
 
 /** Карточка дисциплины: крупная оценка, уровень, допуск, ссылка в зачётку. */
-function DisciplineCardItem({ card, index }: { card: DisciplineCard; index: number }) {
+function DisciplineCardItem({
+  card,
+  index,
+  locale,
+}: {
+  card: DisciplineCard;
+  index: number;
+  locale: Locale;
+}) {
   return (
     <li>
       <Link
@@ -407,10 +448,10 @@ function DisciplineCardItem({ card, index }: { card: DisciplineCard; index: numb
               {card.teacher ? (
                 <span className="truncate">{card.teacher}</span>
               ) : (
-                'Преподаватель не указан'
+                t(locale, 'grades.noTeacher')
               )}
               <span aria-hidden="true"> · </span>
-              <span title={CREDITS_SHORT_HINT}>{card.creditsLabel}</span>
+              <span title={creditsShortHint(locale)}>{card.creditsLabel}</span>
             </p>
           </div>
           <div className="shrink-0 text-right">

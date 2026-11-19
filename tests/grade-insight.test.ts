@@ -338,4 +338,55 @@ describe('DIG-66: getGradeInsight — скоупинг слоя данных', (
     expect(insight).toBeNull();
     expect(db.auditEvents()).toHaveLength(0);
   });
+
+  it('DIG-84: локаль пробрасывается в тексты (EN-заголовок из слоя данных)', async () => {
+    const db = seedDb(monthWorks);
+    const insight = await getGradeInsight(db, annaCtx, NOW, 'en');
+    expect(insight!.headline).toContain('3 new grades');
+  });
+});
+
+describe('DIG-84: buildGradeInsight — EN-тексты по словарю', () => {
+  it('EN: направление «new», заголовок и разбор по-английски, RU прежний', () => {
+    const en = buildGradeInsight(input(monthWorks), 'en')!;
+    expect(en.semesterLabel).toBe('Fall semester 2026/27');
+    expect(en.headline).toContain('3 new grades');
+    expect(en.headline).toContain('out of 100');
+    expect(en.detail).toContain('raised');
+    expect(en.detail).toContain('92 out of 100');
+    expect(en.detail).toContain('6.2');
+
+    const ru = buildGradeInsight(input(monthWorks))!;
+    expect(ru.headline).toContain('30,3');
+    expect(ru.detail).toContain('подняла');
+  });
+
+  it('EN: направление «up» с базой и пунктом (point/points)', () => {
+    const insight = buildGradeInsight(
+      input([g('PI21-INFO-T1', 88, -40), g('PI21-PROG-L2', 92, -14)]),
+      'en',
+    )!;
+    expect(insight.month.direction).toBe('up');
+    expect(insight.headline).toBe('The average rose by 6.2 points this month: from 26.4 to 32.6');
+  });
+
+  it('EN: «flat» и «none» по словарю', () => {
+    const none = buildGradeInsight(input([g('PI21-INFO-T1', 88, -40)]), 'en')!;
+    expect(none.month.direction).toBe('none');
+    expect(none.headline).toBe('No new grades in the last month');
+    expect(none.detail).toContain('holds at 26.4 out of 100');
+
+    const flat = buildGradeInsight(
+      input([g('PI21-INFO-T1', 88, -40), g('PI21-PROG-L2', 66, -14)]),
+      'en',
+    )!;
+    expect(flat.month.direction).toBe('flat');
+    expect(flat.headline).toBe('The average is unchanged this month: 26.4 out of 100');
+    expect(flat.detail).toContain('did not move the average');
+  });
+
+  it('EN: единственная работа — «The average is set by …»', () => {
+    const insight = buildGradeInsight(input([g('PI21-DB-P1', 85, -4)]), 'en')!;
+    expect(insight.detail).toBe('The average is set by “Проект” (Базы данных, 85 out of 100).');
+  });
 });

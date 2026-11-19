@@ -17,11 +17,16 @@ import {
 } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { buildTranscriptPdf, transcriptFilename, type TranscriptData } from '@/lib/transcript-pdf';
+import { controlTypeLabel } from '@/lib/gradebook';
+import { semesterKeyLabel } from '@/lib/performance-math';
+import { getLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(httpRequest: Request) {
   const ctx = await requireDataCtx('/api/grades/transcript');
+  // DIG-84 — язык документа по cookie локали (дефолт 'ru' — прежний PDF).
+  const locale = await getLocale();
 
   const gradebook = await getGradebook(dataDb, ctx);
   // Сотрудник: пустой агрегат (ROLE_MISMATCH, аудит уже записан слоем) —
@@ -50,13 +55,17 @@ export async function GET(httpRequest: Request) {
   const data: TranscriptData = {
     student: gradebook.student,
     semesters: gradebook.semesters.map((semester) => ({
-      label: semester.label,
+      // DIG-84 — подпись семестра и тип контроля по локали документа
+      // (агрегатор слоя данных собирает RU-вид, как в DIG-69).
+      label: semesterKeyLabel(semester.key, locale),
       average: semester.average,
       creditsEarned: semester.creditsEarned,
       creditsTotal: semester.creditsTotal,
       disciplines: semester.disciplines.map((discipline) => ({
         name: discipline.disciplineName,
-        controlType: discipline.controlTypeLabel,
+        controlType: discipline.controlType
+          ? controlTypeLabel(discipline.controlType, locale)
+          : '—',
         credits: discipline.credits,
         grade: discipline.finalGrade,
         completedAt: discipline.completedAt,
@@ -71,6 +80,7 @@ export async function GET(httpRequest: Request) {
     now,
     code: verification.verificationCode,
     verifyUrl,
+    locale,
   });
 
   return new Response(new Blob([new Uint8Array(pdf)], { type: 'application/pdf' }), {

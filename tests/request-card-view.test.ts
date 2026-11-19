@@ -12,6 +12,7 @@ import {
   lastStaffActorName,
   requestParamsRows,
   requestWizardView,
+  timelineEventText,
   type RequestTimelineEvent,
 } from '@/lib/request-card-view';
 
@@ -182,5 +183,53 @@ describe('formatAttachmentSize: размеры файлов по-человеч�
     expect(formatAttachmentSize(2048)).toBe('2 КБ');
     expect(formatAttachmentSize(1258291)).toBe('1,2 МБ');
     expect(formatAttachmentSize(15 * 1024 * 1024)).toBe('15,0 МБ');
+  });
+});
+
+describe('DIG-84: EN-локаль хелперов карточки заявки', () => {
+  it('expectedReadyLabelFromEvents: EN «Ready by …», RU прежний', () => {
+    const events = [ev({ createdAt: new Date('2026-11-13T08:40:00.000Z') })];
+    expect(expectedReadyLabelFromEvents(events, 5, 'en')).toBe('Ready by November 20');
+    expect(expectedReadyLabelFromEvents(events, 5)).toBe('Готовность до 20 ноября');
+  });
+
+  it('requestWizardView: EN-подписи строк мастера, значения языка — имена языков', () => {
+    const wizard = JSON.stringify({
+      destination: 'В банк «Северный»',
+      language: 'RU',
+      copies: 2,
+      delivery: 'PICKUP',
+      comment: 'Нужно срочно',
+      attachments: [],
+    });
+    const view = requestWizardView({ wizard }, 'en');
+    expect(view).not.toBeNull();
+    expect(view!.rows).toContainEqual({ label: 'Language', value: 'Русский' });
+    expect(view!.rows).toContainEqual({ label: 'Submitted to', value: 'В банк «Северный»' });
+    expect(view!.rows).toContainEqual({ label: 'Copies', value: '2' });
+    expect(view!.rows).toContainEqual({
+      label: 'Delivery method',
+      value: 'Pick up at the deanery',
+    });
+    expect(view!.rows).toContainEqual({ label: 'Comment', value: 'Нужно срочно' });
+    // RU — прежние строки байт-в-байт.
+    const ru = requestWizardView({ wizard });
+    expect(ru!.rows).toContainEqual({ label: 'Язык', value: 'Русский' });
+    expect(ru!.rows).toContainEqual({ label: 'Способ получения', value: 'Забрать в деканате' });
+  });
+
+  it('timelineEventText: EN подписи статусов и переходов, RU прежние', () => {
+    const accepted: RequestTimelineEvent = ev({
+      actorRole: 'STAFF',
+      actorName: 'Мария Петрова',
+      fromStatus: 'SUBMITTED',
+      toStatus: 'ACCEPTED',
+      comment: 'Данные подтверждены',
+    });
+    expect(timelineEventText(accepted, 'en')).toBe('Submitted → Accepted');
+    expect(timelineEventText(accepted)).toBe('Подана → Принята');
+    expect(
+      timelineEventText(ev({ toStatus: 'IN_PROGRESS', actorRole: 'STAFF', actorName: 'О' }), 'en'),
+    ).toBe('In progress');
   });
 });

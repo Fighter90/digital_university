@@ -6,8 +6,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import { t, type Locale } from '@/lib/i18n';
 
-export function CopyRequestNumber({ number }: { number: string }) {
+export function CopyRequestNumber({
+  number,
+  locale = 'ru',
+}: {
+  number: string;
+  /** DIG-84 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -50,7 +58,7 @@ export function CopyRequestNumber({ number }: { number: string }) {
       type="button"
       onClick={copy}
       data-testid="copy-request-number"
-      aria-label={`Скопировать номер заявки ${number}`}
+      aria-label={t(locale, 'requests.copyAria', { number })}
       className="inline-flex items-center gap-1 rounded-button px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-coral-600"
     >
       {copied ? (
@@ -58,7 +66,7 @@ export function CopyRequestNumber({ number }: { number: string }) {
       ) : (
         <Copy aria-hidden="true" className="size-3.5" />
       )}
-      {copied ? 'Скопировано' : 'Копировать'}
+      {copied ? t(locale, 'requests.copied') : t(locale, 'requests.copy')}
     </button>
   );
 }

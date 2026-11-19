@@ -22,6 +22,7 @@ import {
   type SemesterKey,
 } from '@/lib/performance-math';
 import { formatScore } from '@/lib/performance-format';
+import { t, type Locale } from '@/lib/i18n';
 
 // ── Вход (структурно совместим со строками слоя данных) ─────────────────────
 
@@ -132,9 +133,21 @@ function pluralRu(n: number, forms: [string, string, string]): string {
   return forms[2];
 }
 
-/** «6,2 пункта» (дробное) / «2 пункта» / «1 пункт» / «5 пунктов». */
-function pointsWord(value: number): string {
+/** «6,2 пункта» (дробное) / «2 пункта» / «1 пункт» / «5 пунктов»; EN — point/points. */
+function pointsWord(value: number, locale: Locale): string {
+  if (locale === 'en') {
+    return Number.isInteger(value) && Math.abs(value) === 1 ? 'point' : 'points';
+  }
   return Number.isInteger(value) ? pluralRu(value, ['пункта', 'пункта', 'пунктов']) : 'пункта';
+}
+
+/** «3 новые работы» — словесная форма новых работ месяца; EN — new grade(s). */
+function newWorksWord(count: number, locale: Locale): string {
+  return locale === 'en'
+    ? Math.abs(count) === 1
+      ? 'new grade'
+      : 'new grades'
+    : pluralRu(count, ['новая работа', 'новые работы', 'новых работ']);
 }
 
 /**
@@ -142,7 +155,10 @@ function pointsWord(value: number): string {
  * семестра последней оценки + детерминированное объяснение динамики за
  * окно месяца. Нет оценок — null (карточка не рендерится).
  */
-export function buildGradeInsight(inp: GradeInsightInput): GradeInsight | null {
+export function buildGradeInsight(
+  inp: GradeInsightInput,
+  locale: Locale = 'ru',
+): GradeInsight | null {
   const windowDays = inp.windowDays ?? 30;
 
   // Оцениваемые события по возрастанию даты; maxScore ≤ 0 неоцениваемы —
@@ -246,47 +262,66 @@ export function buildGradeInsight(inp: GradeInsightInput): GradeInsight | null {
     }
   }
 
-  const f = formatScore;
+  const f = (value: number): string => formatScore(value, locale);
   const firstMonth = monthWorks[monthWorks.length - 1] ?? null; // хронологически первая
 
   let headline: string;
   let detail: string;
   switch (direction) {
     case 'none': {
-      headline = 'За месяц новых оценок не было';
-      detail = `Средний балл держится на ${f(current)} из 100.`;
+      headline = t(locale, 'insight.h.none');
+      detail = t(locale, 'insight.d.none', { current: f(current) });
       break;
     }
     case 'new': {
       headline =
         monthWorks.length === 1
-          ? `За месяц появилась новая работа — средний балл достиг ${f(current)} из 100`
-          : `За месяц появились ${monthWorks.length} ${pluralRu(monthWorks.length, ['новая работа', 'новые работы', 'новых работ'])} — средний балл достиг ${f(current)} из 100`;
+          ? t(locale, 'insight.h.new.one', { current: f(current) })
+          : t(locale, 'insight.h.new.many', {
+              count: monthWorks.length,
+              word: newWorksWord(monthWorks.length, locale),
+              current: f(current),
+            });
       detail =
         topWork && topContribution !== 0
-          ? detailTopWork(topWork, topContribution)
-          : `Средний балл задаёт работа «${firstMonth!.elementName}» (${firstMonth!.disciplineName}, ${firstMonth!.score} из ${firstMonth!.maxScore}).`;
+          ? detailTopWork(topWork, topContribution, locale)
+          : t(locale, 'insight.d.new.first', {
+              work: firstMonth!.elementName,
+              discipline: firstMonth!.disciplineName,
+              score: firstMonth!.score,
+              max: firstMonth!.maxScore,
+            });
       break;
     }
     case 'up': {
-      headline = `Средний балл за месяц вырос на ${f(delta!)} ${pointsWord(delta!)}: было ${f(baseline!)}, стало ${f(current)}`;
-      detail = detailTopWork(topWork!, topContribution);
+      headline = t(locale, 'insight.h.up', {
+        delta: f(delta!),
+        word: pointsWord(delta!, locale),
+        baseline: f(baseline!),
+        current: f(current),
+      });
+      detail = detailTopWork(topWork!, topContribution, locale);
       break;
     }
     case 'down': {
-      headline = `Средний балл за месяц снизился на ${f(Math.abs(delta!))} ${pointsWord(Math.abs(delta!))}: было ${f(baseline!)}, стало ${f(current)}`;
-      detail = detailTopWork(topWork!, topContribution);
+      headline = t(locale, 'insight.h.down', {
+        delta: f(Math.abs(delta!)),
+        word: pointsWord(Math.abs(delta!), locale),
+        baseline: f(baseline!),
+        current: f(current),
+      });
+      detail = detailTopWork(topWork!, topContribution, locale);
       break;
     }
     case 'flat': {
-      headline = `Средний балл за месяц не изменился: ${f(current)} из 100`;
-      detail = `Свежие работы (${monthWorks.length}) не сдвинули средний.`;
+      headline = t(locale, 'insight.h.flat', { current: f(current) });
+      detail = t(locale, 'insight.d.flat', { count: monthWorks.length });
       break;
     }
   }
 
   return {
-    semesterLabel: semesterKeyLabel(semester),
+    semesterLabel: semesterKeyLabel(semester, locale),
     points,
     current,
     month: { direction, works: monthWorks, baseline, delta },
@@ -296,8 +331,16 @@ export function buildGradeInsight(inp: GradeInsightInput): GradeInsight | null {
 }
 
 /** Пояснение с сильнейшим влиянием: работа, дисциплина, балл, вклад. */
-function detailTopWork(work: InsightWork, contribution: number): string {
-  const verb = contribution > 0 ? 'подняла' : 'снизила';
+function detailTopWork(work: InsightWork, contribution: number, locale: Locale): string {
+  const verb = contribution > 0 ? t(locale, 'insight.verb.up') : t(locale, 'insight.verb.down');
   const value = Math.abs(contribution);
-  return `Сильнее всего средний ${verb} «${work.elementName}» (${work.disciplineName}, ${work.score} из ${work.maxScore}): ${formatScore(value)} ${pointsWord(value)}.`;
+  return t(locale, 'insight.d.topWork', {
+    verb,
+    work: work.elementName,
+    discipline: work.disciplineName,
+    score: work.score,
+    max: work.maxScore,
+    value: formatScore(value, locale),
+    word: pointsWord(value, locale),
+  });
 }
