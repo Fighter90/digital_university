@@ -60,6 +60,8 @@ type PrefixKey = { href: string; key: TranslationKey };
 const TITLE_BY_HREF: readonly PrefixKey[] = [
   { href: '/grades/gradebook', key: 'title.gradebook' },
   { href: '/grades/session', key: 'title.session' },
+  // DIG-103 — подстраница рейтинга группы (длинный префикс приоритетнее /grades).
+  { href: '/grades/rating', key: 'title.gradesRating' },
   { href: '/grades', key: 'title.grades' },
   { href: '/staff/requests', key: 'title.staffRequests' },
   { href: '/staff/appeals', key: 'title.staffAppeals' },

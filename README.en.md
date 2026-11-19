@@ -22,10 +22,26 @@ agents (OpenCode swarms); humans set tasks and approve merges.
 
 https://ostrovok.store — Timeweb Cloud VM + Docker Compose + Caddy (auto-TLS).
 
+## Deanery MCP server
+
+> For agents: connect to `https://ostrovok.store/api/mcp` (Streamable HTTP, MCP `2025-06-18`)
+> to read the token owner's schedule, grades and notifications — their data only, read-only.
+
+The portal ships a **real MCP server** (Model Context Protocol): any compatible assistant
+(Claude, Cursor, Codex, VS Code) connects with a personal Bearer token and calls the
+`my_schedule_today`, `my_grades`, `my_unread` tools. The token is issued by the student in
+**Settings → “MCP setup”**, stored as SHA-256 only, every call is owner-scoped (IDOR impossible),
+and request frequency is rate-limited.
+
+Full reference: **[`docs/mcp-en.md`](docs/mcp-en.md)** (EN) · **[`docs/mcp.md`](docs/mcp.md)** (RU) —
+endpoint, client JSON configs, a curl session, example prompts, FAQ.
+Interactive version: the `/mcp` page in the portal; a Help article at `/help` (RU/EN).
+
 ## Documentation — quick links
 
 | Section | Audience |
 |---|---|
+| [`docs/mcp-en.md`](docs/mcp-en.md) · [`docs/mcp.md`](docs/mcp.md) | **Deanery MCP server**: assistant connection (Claude/Cursor/Codex), tools, curl examples, security (EN/RU) |
 | [`docs/help.md`](docs/help.md) | Student: sign-in, schedule, grades, requests, notifications, verifiable certificates |
 | [`docs/assistant.md`](docs/assistant.md) | Digital assistant: capabilities, example queries, limitations, MCP integrations |
 | [`docs/architecture.md`](docs/architecture.md) | Developer: Next.js 15, Prisma, data layers, DB schema |

@@ -2,8 +2,14 @@
 // и сотрудники вуза в одном месте. Каталог — вымышленный публичный контент,
 // персональные пометки («Мои преподаватели», «Ваш менеджер», «дисциплины
 // студента у него») собирает getPeopleDirectory строго из скоупа сессии.
+// DIG-102 — поиск «Найти человека» (ФИО/email/телефон, одногруппники) и
+// «★ Избранное»: favorites собирает listFavoritePersons по владельцу сессии.
 // Поиск и фильтры — на клиенте (PeopleBrowser), данные приходят одним агрегатом.
-import { requireDataCtx, getPeopleDirectory } from '@/server/data';
+import {
+  requireDataCtx,
+  getPeopleDirectory,
+  listFavoritePersons,
+} from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { PeopleBrowser } from '@/components/people/people-browser';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -20,7 +26,10 @@ export async function generateMetadata() {
 
 export default async function PeoplePage() {
   const [ctx, locale] = await Promise.all([requireDataCtx('/people'), getLocale()]);
-  const data = await getPeopleDirectory(dataDb, ctx);
+  const [data, favorites] = await Promise.all([
+    getPeopleDirectory(dataDb, ctx),
+    listFavoritePersons(dataDb, ctx),
+  ]);
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
@@ -37,7 +46,13 @@ export default async function PeoplePage() {
         />
       ) : (
         <div className="mt-5">
-          <PeopleBrowser people={data.people} showPersonal={data.hasPersonalScope} locale={locale} />
+          <PeopleBrowser
+            people={data.people}
+            groupmates={data.groupmates}
+            favorites={favorites.favorites}
+            showPersonal={data.hasPersonalScope}
+            locale={locale}
+          />
         </div>
       )}
     </section>

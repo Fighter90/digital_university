@@ -43,6 +43,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'title.tasks': 'Tasks',
   'title.schedule': 'Schedule',
   'title.grades': 'Academic performance',
+  // DIG-103 — group ranking subpage.
+  'title.gradesRating': 'Group ranking',
   'title.gradebook': 'Gradebook',
   'title.session': 'Exam session',
   'title.requests': 'My requests',
@@ -358,6 +360,17 @@ export const en: Record<keyof RuDictionary, string> = {
   'grades.debt.closedPhrase': 'The debt is cleared — the retake on {date} has been credited',
   'grades.retakeSignup': 'Sign up for the retake',
 
+  // ── DIG-103 — group ranking (/grades/rating) ──────────────────────────────
+  'grades.rating.link': 'View full group ranking',
+  'grades.rating.caption': 'Group students by average score',
+  'grades.rating.place': 'Place',
+  'grades.rating.student': 'Student',
+  'grades.rating.average': 'Average score',
+  'grades.rating.you': 'you',
+  'grades.rating.emptyTitle': 'No grades in the group yet',
+  'grades.rating.emptyDesc': 'The ranking will appear once teachers publish the first grades.',
+  'grades.rating.backToSummary': '← Back to performance',
+
   // ── DIG-84 — gradebook and transcript ─────────────────────────────────────
   'gradebook.studentsOnlyDesc':
     'The gradebook shows a student’s grades — this section stays empty for staff.',
@@ -624,6 +637,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'schedule.nextWeekAria': 'Next week',
   'schedule.gotoTodayWeek': 'Go to the current week',
   'schedule.sync': 'Sync',
+  'schedule.sync.status': 'Syncing…',
+  'schedule.sync.done': 'Schedule updated',
   'schedule.day.listAria': 'Classes, {title}',
   'schedule.day.empty.title': 'No classes on this day',
   'schedule.day.empty.next': 'Next classes: {label}',
@@ -666,6 +681,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'schedule.listen.play': 'Listen to the day',
   'schedule.listen.stop': 'Stop',
   'schedule.listen.stopAria': 'Stop the narration',
+  'schedule.listen.unavailable': 'No speech engine in this browser — day narration is unavailable.',
   'schedule.building.main': 'Main building',
   'schedule.author.deanery': 'the deanery',
 
@@ -769,6 +785,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'wizard.review.profile': 'Student details',
   'wizard.consent.strong': 'The details are correct',
   'wizard.consent.rest': '— I have reviewed the summary and confirm the submission.',
+  'wizard.consent.hint': 'The Submit button unlocks after you tick the confirmation above.',
   'wizard.success.instantTitle': 'The certificate is ready',
   'wizard.success.sentTitle': 'The request has been submitted',
   'wizard.success.duplicate':
@@ -850,6 +867,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'meta.tasks': 'Tasks — Digital Deanery',
   'meta.finance': 'Finance — Digital Deanery',
   'meta.grades': 'Performance — Digital Deanery',
+  // DIG-103
+  'meta.gradesRating': 'Group ranking — Digital Deanery',
   'meta.gradebook': 'Gradebook — Digital Deanery',
   'meta.session': 'Exam session — Digital Deanery',
   'meta.discipline': 'Discipline — Digital Deanery',
@@ -872,6 +891,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'loading.people': 'Loading the directory',
   'loading.services': 'Loading services',
   'loading.grades': 'Performance is loading',
+  // DIG-103
+  'loading.gradesRating': 'The group ranking is loading',
   'loading.session': 'The exam session is loading',
   'loading.notifications': 'Loading notifications',
 
@@ -1262,6 +1283,22 @@ export const en: Record<keyof RuDictionary, string> = {
   'people.browser.empty.desc': 'Try another name, discipline or reset the filter.',
   'people.yourDisciplines': 'Your disciplines:',
   'people.loading.aria': 'Loading the directory',
+  // DIG-102 — «Find a person» search and the «★ Favorites» tab
+  'people.search.query.placeholder': 'Name, email or phone…',
+  'people.search.empty.title': 'Nothing found',
+  'people.search.empty.desc': 'Check the name, email or phone and try again.',
+  'people.filter.FAVORITES': '★ Favorites',
+  'people.fav.title': '★ Favorites',
+  'people.fav.cat.TEACHER': 'Teachers',
+  'people.fav.cat.STAFF': 'Deanery staff',
+  'people.fav.cat.GROUPMATE': 'Groupmates',
+  'people.fav.add': 'Add to favorites',
+  'people.fav.added': 'In favorites',
+  'people.fav.addAria': 'Add {name} to favorites',
+  'people.fav.removeAria': 'Remove {name} from favorites',
+  'people.fav.empty.title': 'No favorites yet',
+  'people.fav.empty.desc': 'Tap ★ on a person card and they will appear here, grouped by category.',
+  'people.groupmate.subtitle': 'Groupmate',
 
   // /services
   'services.subtitle':

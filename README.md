@@ -16,10 +16,25 @@
 |---|---|
 | [![Десктоп 1440](docs/design/screenshots/design-full-desktop-1440.png)](docs/design/screenshots/design-full-desktop-1440.png) | [![Мобильный 360](docs/design/screenshots/design-full-mobile-360.png)](docs/design/screenshots/design-full-mobile-360.png) |
 
+## MCP-сервер деканата
+
+> Для агентов: подключайтесь к `https://ostrovok.store/api/mcp` (Streamable HTTP, MCP `2025-06-18`),
+> чтобы читать расписание, оценки и уведомления владельца токена — только его данные, только чтение.
+
+Кабинет предоставляет **настоящий MCP-сервер** (Model Context Protocol): любой совместимый ассистент
+(Claude, Cursor, Codex, VS Code) подключается по персональному Bearer-токену и вызывает инструменты
+`my_schedule_today`, `my_grades`, `my_unread`. Токен выпускается студентом в **Настройках → «Настройка MCP»**,
+хранится только как SHA-256, каждый вызов скоуплен владельцем (IDOR исключён), частота ограничена.
+
+Полный референс: **[`docs/mcp.md`](docs/mcp.md)** (RU) · **[`docs/mcp-en.md`](docs/mcp-en.md)** (EN) —
+endpoint, JSON-конфиги для клиентов, curl-сессия, примеры промптов, FAQ.
+Интерактивная версия — страница `/mcp` в кабинете; статья в справке `/help` (RU/EN).
+
 ## Документация — быстрые ссылки
 
 | Раздел | Для кого |
 |---|---|
+| [`docs/mcp.md`](docs/mcp.md) · [`docs/mcp-en.md`](docs/mcp-en.md) | **MCP-сервер деканата**: подключение ассистента (Claude/Cursor/Codex), инструменты, curl-примеры, безопасность (RU/EN) |
 | [`docs/help.md`](docs/help.md) | Студент: вход, расписание, оценки, заявки, уведомления, справки с проверкой подлинности |
 | [`docs/assistant.md`](docs/assistant.md) | Цифровой ассистент: возможности, примеры запросов, ограничения, MCP-интеграции (Product Hunt и др.) |
 | [`docs/architecture.md`](docs/architecture.md) | Разработчику: Next.js 15, Prisma, слои данных, схема БД |

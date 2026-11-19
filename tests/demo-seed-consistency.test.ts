@@ -107,7 +107,7 @@ describe('BUG-08 — уведомления порождены записями 
     const ntf = rows.find((n) => n.id === 'ntf-anna-7');
     expect(ntf?.body).toContain(RU_DATE(retake!.date));
     expect(ntf?.body).toContain(HM(retake!.startsAt));
-    expect(ntf?.body).toContain(`каб. ${retake!.room}`);
+    expect(ntf?.body).toContain(`ауд. ${retake!.room}`);
     // дата не захардкожена: текст должен совпасть с записью при любом запуске сида
     expect(ntf?.body).not.toContain('21 декабря');
   });

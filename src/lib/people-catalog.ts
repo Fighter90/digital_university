@@ -43,13 +43,14 @@ export interface PersonEntry {
   disciplines: PersonDiscipline[];
 }
 
-/** Быстрые фильтры справочника (пилюли над списком). */
-export type PeopleFilter = 'MY_TEACHERS' | 'MY_DEANERY' | 'ALL';
+/** Быстрые фильтры справочника (пилюли над списком). DIG-102: + «★ Избранное». */
+export type PeopleFilter = 'MY_TEACHERS' | 'MY_DEANERY' | 'ALL' | 'FAVORITES';
 
 export const PEOPLE_FILTER_LABELS: Record<PeopleFilter, string> = {
   MY_TEACHERS: 'Мои преподаватели',
   MY_DEANERY: 'Мой деканат',
   ALL: 'Все',
+  FAVORITES: '★ Избранное',
 };
 
 // DIG-89 — EN-слой справочника: должности/подразделения/часы по id записи
@@ -180,7 +181,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'petr.petrov@example.edu',
     phone: '+7 495 010-11-22',
     room: '301',
-    consultationHours: 'Вт 14:00–16:00, каб. 301',
+    consultationHours: 'Вт 14:00–16:00, ауд. 301',
     faculty: null,
     program: null,
     isProgramManager: false,
@@ -195,7 +196,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'irina.ivanova@example.edu',
     phone: '+7 495 010-13-14',
     room: '405',
-    consultationHours: 'Ср 15:00–17:00, каб. 405',
+    consultationHours: 'Ср 15:00–17:00, ауд. 405',
     faculty: null,
     program: null,
     isProgramManager: false,
@@ -213,7 +214,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'sergey.sokolov@example.edu',
     phone: '+7 495 010-15-16',
     room: '212',
-    consultationHours: 'Чт 16:00–18:00, каб. 212',
+    consultationHours: 'Чт 16:00–18:00, ауд. 212',
     faculty: null,
     program: null,
     isProgramManager: false,
@@ -228,7 +229,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'oleg.orlov@example.edu',
     phone: '+7 495 010-17-18',
     room: '118',
-    consultationHours: 'Пт 12:00–14:00, каб. 118',
+    consultationHours: 'Пт 12:00–14:00, ауд. 118',
     faculty: null,
     program: null,
     isProgramManager: false,
@@ -243,7 +244,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'ksenia.kuznetsova@example.edu',
     phone: '+7 495 010-19-20',
     room: '207',
-    consultationHours: 'Ср 10:00–12:00, каб. 207',
+    consultationHours: 'Ср 10:00–12:00, ауд. 207',
     faculty: null,
     program: null,
     isProgramManager: false,
@@ -260,7 +261,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'maria.kovaleva@example.edu',
     phone: '+7 495 010-21-22',
     room: '214',
-    consultationHours: 'Пн–Пт 09:00–17:00, каб. 214',
+    consultationHours: 'Пн–Пт 09:00–17:00, ауд. 214',
     faculty: 'ИТ',
     program: null,
     isProgramManager: false,
@@ -275,7 +276,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'andrey.semenov@example.edu',
     phone: '+7 495 010-23-24',
     room: '210',
-    consultationHours: 'Чт 15:00–16:30, каб. 210 (по записи)',
+    consultationHours: 'Чт 15:00–16:30, ауд. 210 (по записи)',
     faculty: 'ИТ',
     program: null,
     isProgramManager: false,
@@ -290,7 +291,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'natalia.belova@example.edu',
     phone: '+7 495 010-25-26',
     room: '214',
-    consultationHours: 'Пн, Ср 10:00–12:00, каб. 214',
+    consultationHours: 'Пн, Ср 10:00–12:00, ауд. 214',
     faculty: 'ИТ',
     program: 'Прикладная информатика',
     isProgramManager: true,
@@ -305,7 +306,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'sergey.gavrilov@example.edu',
     phone: '+7 495 010-27-28',
     room: '12',
-    consultationHours: 'Вт 11:00–13:00, каб. 12',
+    consultationHours: 'Вт 11:00–13:00, ауд. 12',
     faculty: 'ЭК',
     program: null,
     isProgramManager: false,
@@ -320,7 +321,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'elena.romanova@example.edu',
     phone: '+7 495 010-29-30',
     room: '12',
-    consultationHours: 'Пн, Чт 14:00–16:00, каб. 12',
+    consultationHours: 'Пн, Чт 14:00–16:00, ауд. 12',
     faculty: 'ЭК',
     program: 'Экономика',
     isProgramManager: true,
@@ -337,7 +338,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'olga.titova@example.edu',
     phone: '+7 495 010-31-32',
     room: '305',
-    consultationHours: 'Пн–Пт 10:00–13:00, каб. 305',
+    consultationHours: 'Пн–Пт 10:00–13:00, ауд. 305',
     faculty: null,
     program: null,
     isProgramManager: false,
@@ -352,7 +353,7 @@ export const PEOPLE: PersonEntry[] = [
     email: 'viktor.nikitin@example.edu',
     phone: '+7 495 010-33-34',
     room: '216',
-    consultationHours: 'Пн–Пт 09:00–12:00, каб. 216',
+    consultationHours: 'Пн–Пт 09:00–12:00, ауд. 216',
     faculty: null,
     program: null,
     isProgramManager: false,
@@ -429,4 +430,103 @@ export function splitHighlight(text: string, query: string): HighlightChunk[] {
   if (chunks.length === 0) return [{ text, hit: false }];
   if (cursor < text.length) chunks.push({ text: text.slice(cursor), hit: false });
   return chunks;
+}
+
+// ── DIG-102 — поиск «Найти человека»: ФИО (словоформы), email, телефон ─────
+
+/** Нормализация имени для поиска: регистр, «ё»→«е», схлопнутые пробелы. */
+export function normalizePersonName(value: string): string {
+  return normalizePeopleQuery(value).replaceAll('ё', 'е');
+}
+
+/** Нормализация телефона: пробелы и дефисы убраны (задача DIG-102). */
+export function normalizePersonPhone(value: string): string {
+  return value.replaceAll(/[ -]/g, '').trim();
+}
+
+/**
+ * ФИО по подстроке И словоформам (паттерн faq-suggest DIG-39): запрос
+ * совпадает, если нормализованное ФИО содержит запрос целиком, ЛИБО каждое
+ * слово запроса — начало хоть одного слова ФИО («петр» → «Петров Пётр…»,
+ * «иванов» → «Иванова…»). Пустой запрос — совпадение.
+ */
+export function matchPersonFullName(fullName: string, query: string): boolean {
+  const q = normalizePersonName(query);
+  if (q === '') return true;
+  const name = normalizePersonName(fullName);
+  if (name.includes(q)) return true;
+  const queryTokens = q.split(' ').filter(Boolean);
+  const nameTokens = name.split(' ').filter(Boolean);
+  return queryTokens.every((token) => nameTokens.some((nameToken) => nameToken.startsWith(token)));
+}
+
+/** Что ищем в контактах человека: ФИО, email и телефон (может отсутствовать). */
+export interface PersonContactSearchable {
+  fullName: string;
+  email: string;
+  phone: string | null;
+}
+
+/**
+ * «ФИО, email или телефон»: ФИО — подстрока/словоформы, email — подстрока
+ * без учёта регистра, телефон — подстрока с нормализацией пробелов/дефисов.
+ * Пустой запрос — совпадение (состояние до ввода — весь каталог).
+ */
+export function matchPersonContacts(person: PersonContactSearchable, query: string): boolean {
+  const q = normalizePeopleQuery(query);
+  if (q === '') return true;
+  if (matchPersonFullName(person.fullName, q)) return true;
+  if (person.email.toLowerCase().includes(q)) return true;
+  if (person.phone !== null && normalizePersonPhone(person.phone).includes(normalizePersonPhone(q))) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Комбинированный поиск записи справочника: прежние поля (ФИО/должность/
+ * подразделение/дисциплины — контракт e2e DIG-37) плюс словоформы ФИО,
+ * email и телефон (DIG-102).
+ */
+export function matchPersonEntry(
+  person: PersonSearchable & PersonContactSearchable,
+  query: string,
+): boolean {
+  return matchPersonContacts(person, query) || matchPerson(person, query);
+}
+
+// ── DIG-102 — одногруппники и категории избранного ─────────────────────────
+
+/** Префикс id одногруппника в пространстве id людей: «groupmate:<Student.id>». */
+export const GROUPMATE_ID_PREFIX = 'groupmate:';
+
+/** id одногруппника (студента СВОЕЙ группы) в справочнике людей. */
+export function groupmatePersonId(studentId: string): string {
+  return `${GROUPMATE_ID_PREFIX}${studentId}`;
+}
+
+/** Разбор id одногруппника; не одногруппник (id каталога) — null. */
+export function parseGroupmatePersonId(personId: string): string | null {
+  if (!personId.startsWith(GROUPMATE_ID_PREFIX)) return null;
+  const studentId = personId.slice(GROUPMATE_ID_PREFIX.length);
+  return studentId === '' ? null : studentId;
+}
+
+/** Категория человека в избранном: преподаватель / сотрудник / одногруппник. */
+export type FavoritePersonKind = PersonKind | 'GROUPMATE';
+
+export interface FavoritePersonGroupable {
+  kind: FavoritePersonKind;
+}
+
+/**
+ * Разложение избранного по категориям (Преподаватели / Сотрудники деканата /
+ * Одногруппники). Пустые категории — пустые массивы: UI скрывает их.
+ */
+export function groupFavoritePersonsByKind<T extends FavoritePersonGroupable>(
+  favorites: readonly T[],
+): Record<FavoritePersonKind, T[]> {
+  const grouped: Record<FavoritePersonKind, T[]> = { TEACHER: [], STAFF: [], GROUPMATE: [] };
+  for (const item of favorites) grouped[item.kind].push(item);
+  return grouped;
 }

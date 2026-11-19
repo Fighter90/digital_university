@@ -383,6 +383,18 @@ describe('DIG-89: localizeNotification — известные шаблоны н�
           title: 'Заявка на пересдачу создана',
           body:
             'Заявка SR-2026-000001 — запись на пересдачу по «Базы данных» ' +
+            '(20 ноября, 10:00–11:30, ауд. 301). Деканат подтвердит запись в статусе заявки.',
+        }),
+      ).title,
+    ).toBe('Retake request created');
+    // Легаси-тексты в БД («каб.») переводятся тем же правилом (BUG-15).
+    expect(
+      localizeNotification(
+        'en',
+        row({
+          title: 'Заявка на пересдачу создана',
+          body:
+            'Заявка SR-2026-000001 — запись на пересдачу по «Базы данных» ' +
             '(20 ноября, 10:00–11:30, каб. 301). Деканат подтвердит запись в статусе заявки.',
         }),
       ).title,
@@ -943,7 +955,10 @@ describe('DIG-89: ДПО (/dpo) — EN без кириллицы', () => {
 describe('DIG-89: справочник (/people) и сервисы (/services) — EN', () => {
   it('PeopleBrowser, ServicesBrowser, ServiceCard', () => {
     const people = renderToStaticMarkup(
-      createElement(PeopleBrowser, { people: [], locale: 'en' } as never),
+      createElement(
+        PeopleBrowser,
+        { people: [], groupmates: [], favorites: [], locale: 'en' } as never,
+      ),
     );
     expectNoCyrillic(people, 'PeopleBrowser');
     const services = renderToStaticMarkup(

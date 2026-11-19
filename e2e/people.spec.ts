@@ -38,6 +38,7 @@ test.describe('DIG-37: справочник людей', () => {
 
     // Поиск по подразделению: «деканат» оставляет только сотрудников деканата.
     const search = page.getByTestId('people-search');
+    await expect(search).toHaveAttribute('placeholder', 'ФИО, email или телефон…');
     await search.fill('деканат');
     const list = page.getByTestId('people-list');
     await expect(list.getByTestId(/^person-card-/)).toHaveCount(5);
@@ -47,9 +48,9 @@ test.describe('DIG-37: справочник людей', () => {
     await search.fill('базы данных');
     await expect(page.getByTestId('person-card-teacher-sokolov')).toBeVisible();
 
-    // Мусорный запрос — пустое состояние.
+    // Мусорный запрос — пустое состояние «Ничего не найдено» (DIG-102).
     await search.fill('астронавт');
-    await expect(page.getByText('Никого не нашлось')).toBeVisible();
+    await expect(page.getByText('Ничего не найдено')).toBeVisible();
 
     // Фильтр «Мои преподаватели»: у Анны преподаватели группы ПИ-21 —
     // ровно пять, «свои» поверх по алфавиту (сценарий спеки «фильтр
@@ -83,6 +84,15 @@ test.describe('DIG-37: справочник людей', () => {
     await expect(
       page.getByTestId('person-card-staff-belova').getByText('Ваш менеджер'),
     ).toBeVisible();
+
+    // DIG-102 — вкладка «★ Избранное»: у Анны избранное пустое — честный
+    // empty-state (чтение без мутаций, параллельные проекты безопасны).
+    await page
+      .getByTestId('people-filters')
+      .getByRole('button', { name: '★ Избранное' })
+      .click();
+    await expect(page.getByTestId('people-fav-empty')).toBeVisible();
+    await expect(page.getByText('В избранном пока никого')).toBeVisible();
   });
 
   test('карточка преподавателя: контакты, консультации, пары, действия', async ({ page }) => {

@@ -282,6 +282,20 @@
       animation: du-float 6s ease-in-out infinite;
     }
   }
+  /* DIG-85 (BUG-17): статус «Расписание обновлено» плавно гаснет. */
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes du-fade-out {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+    .animate-fade-out-slow {
+      animation: du-fade-out 2.5s var(--ease-out, cubic-bezier(0, 0, 0.58, 1)) 0.9s forwards;
+    }
+  }
   /* hover-подъём на 2px + тень hover (карточки, primary-кнопки) */
   .lift-hover {
     transition:

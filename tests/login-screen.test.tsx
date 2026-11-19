@@ -141,6 +141,34 @@ describe('LoginForm — DIG-11 contract is preserved', () => {
     actionResult.current = null;
   });
 
+  // ── DIG-85 / BUG-19: после неудачного входа signedOut=1 не остаётся ────────
+
+  it('неудачный вход убирает signedOut из адреса и прячет устаревший статус', async () => {
+    window.history.replaceState(null, '', '/login?signedOut=1');
+    const replaceSpy = vi.spyOn(window.history, 'replaceState');
+    actionResult.current = { error: 'Неверный логин или пароль.' };
+    render(<LoginForm signedOutNotice />);
+
+    // До попытки входа статус об успехе выхода виден.
+    expect(screen.getByTestId('signed-out-notice')).toBeVisible();
+
+    fillCredentials('anna', 'wrong');
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+    await screen.findByRole('alert');
+
+    // Параметр cleaned: replaceState вызван с адресом без signedOut.
+    expect(replaceSpy).toHaveBeenCalled();
+    const url = String(replaceSpy.mock.calls.at(-1)![2]);
+    expect(url).toContain('/login');
+    expect(url).not.toContain('signedOut');
+    // Противоречащее сообщение скрыто: с ошибкой показан только role="alert".
+    expect(screen.queryByTestId('signed-out-notice')).toBeNull();
+
+    replaceSpy.mockRestore();
+    window.history.replaceState(null, '', '/login');
+    actionResult.current = null;
+  });
+
   it('renders the pending state on the submit button', async () => {
     let resolveAction: () => void = () => {};
     actionResult.current = new Promise<null>((resolve) => {

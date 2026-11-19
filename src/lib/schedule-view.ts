@@ -275,14 +275,27 @@ export function toScheduleEventViews(
     const timeLabel = `${formatMoscowTime(row.startsAt)}–${formatMoscowTime(row.endsAt)}`;
     const isMoved = row.status === 'ROOM_CHANGED' || row.status === 'TIME_CHANGED';
     const isCancelled = row.status === 'CANCELLED';
+    // DIG-85 (BUG-14): «было» печатает только реально изменившееся. Время
+    // входит в «было» лишь при смене московского настенного времени начала
+    // (ROOM_CHANGED может нести «унаследованный» previousStartsAt, равный
+    // текущему началу), аудитория — лишь при смене строки аудитории.
+    const previousRoom: string | null =
+      row.previousRoom != null && row.previousRoom.trim() !== row.room.trim()
+        ? row.previousRoom
+        : null;
+    const previousStartsAt: Date | null =
+      row.previousStartsAt != null &&
+      formatMoscowTime(row.previousStartsAt) !== formatMoscowTime(row.startsAt)
+        ? row.previousStartsAt
+        : null;
     const suffix = isMoved
       ? t(locale, 'schedule.aria.moved')
       : isCancelled
         ? t(locale, 'schedule.aria.cancelled')
         : '';
     const previousParts = [
-      row.previousRoom ? t(locale, 'schedule.room.was', { room: row.previousRoom }) : null,
-      row.previousStartsAt ? formatMoscowTime(row.previousStartsAt) : null,
+      previousRoom ? t(locale, 'schedule.room.was', { room: previousRoom }) : null,
+      previousStartsAt ? formatMoscowTime(previousStartsAt) : null,
     ].filter(Boolean);
     return {
       id: row.id,
@@ -298,11 +311,11 @@ export function toScheduleEventViews(
       status: row.status,
       isMoved,
       isCancelled,
-      previousRoomLabel: row.previousRoom
-        ? t(locale, 'schedule.was.room', { room: row.previousRoom })
+      previousRoomLabel: previousRoom
+        ? t(locale, 'schedule.was.room', { room: previousRoom })
         : null,
-      previousTimeLabel: row.previousStartsAt
-        ? t(locale, 'schedule.was.time', { time: formatMoscowTime(row.previousStartsAt) })
+      previousTimeLabel: previousStartsAt
+        ? t(locale, 'schedule.was.time', { time: formatMoscowTime(previousStartsAt) })
         : null,
       // «было: ауд. 214 / 11:10» — один префикс на обе части (блок и панель)
       previousLabel:

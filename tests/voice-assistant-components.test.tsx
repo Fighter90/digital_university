@@ -15,6 +15,7 @@ import type { ScheduleEventCard } from '@/lib/schedule-cards';
 class FakeUtterance {
   text: string;
   lang = '';
+  onstart: (() => void) | null = null;
   onend: (() => void) | null = null;
   onerror: (() => void) | null = null;
   constructor(text: string) {
@@ -183,6 +184,63 @@ describe('ListenDayButton (DIG-65)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Прослушать день' }));
     unmount();
     expect(cancelMock).toHaveBeenCalled();
+  });
+
+  // ── DIG-85 / BUG-18: без голосовых движков кнопка не молчит ────────────────
+
+  it('браузер без движков (нет onstart): сторож показывает запасное сообщение', () => {
+    vi.useFakeTimers();
+    try {
+      render(<ListenDayButton title="Среда, 11 ноября" isToday events={[card()]} enabled />);
+      fireEvent.click(screen.getByRole('button', { name: 'Прослушать день' }));
+      // Движка нет: ни onstart, ни onerror не придут — молчание недопустимо.
+      act(() => {
+        vi.advanceTimersByTime(1500);
+      });
+      const status = screen.getByRole('status');
+      expect(status).toHaveTextContent('Голосовой движок недоступен');
+      expect(status).toHaveAttribute('data-testid', 'listen-day-fallback');
+      // Состояние честно сброшено: повторный клик снова пытается озвучить.
+      expect(
+        screen.getByRole('button', { name: 'Прослушать день' }),
+      ).toHaveAttribute('aria-pressed', 'false');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('исключение при speak: запасное сообщение вместо тихого idle', () => {
+    speakMock.mockImplementationOnce(() => {
+      throw new Error('no voice engine');
+    });
+    render(<ListenDayButton title="Среда, 11 ноября" isToday events={[card()]} enabled />);
+    fireEvent.click(screen.getByRole('button', { name: 'Прослушать день' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Голосовой движок недоступен');
+    expect(screen.getByRole('button', { name: 'Прослушать день' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('стартовавшая озвучка (onstart): запасное сообщение не показывается', () => {
+    vi.useFakeTimers();
+    try {
+      render(<ListenDayButton title="Среда, 11 ноября" isToday events={[card()]} enabled />);
+      fireEvent.click(screen.getByRole('button', { name: 'Прослушать день' }));
+      const utterance = speakMock.mock.calls[0]![0] as FakeUtterance;
+      act(() => {
+        utterance.onstart?.();
+      });
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(screen.queryByRole('status')).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Остановить озвучку' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

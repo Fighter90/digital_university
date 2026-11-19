@@ -45,6 +45,8 @@ export const ru = {
   'title.tasks': 'Задачи',
   'title.schedule': 'Расписание',
   'title.grades': 'Успеваемость',
+  // DIG-103 — подстраница рейтинга группы.
+  'title.gradesRating': 'Рейтинг группы',
   'title.gradebook': 'Зачётная книжка',
   'title.session': 'Сессия',
   'title.requests': 'Мои заявки',
@@ -359,6 +361,17 @@ export const ru = {
   'grades.debt.closedPhrase': 'Долг закрыт — пересдача {date} зачтена',
   'grades.retakeSignup': 'Записаться на пересдачу',
 
+  // ── DIG-103 — рейтинг группы (/grades/rating) ─────────────────────────────
+  'grades.rating.link': 'Весь рейтинг группы',
+  'grades.rating.caption': 'Студенты группы по среднему баллу',
+  'grades.rating.place': 'Место',
+  'grades.rating.student': 'Студент',
+  'grades.rating.average': 'Средний балл',
+  'grades.rating.you': 'вы',
+  'grades.rating.emptyTitle': 'В группе пока нет оценок',
+  'grades.rating.emptyDesc': 'Рейтинг появится, когда преподаватели выставят первые оценки.',
+  'grades.rating.backToSummary': '← К успеваемости',
+
   // ── DIG-84 — зачётная книжка и выписка ────────────────────────────────────
   'gradebook.studentsOnlyDesc':
     'Зачётная книжка показывает оценки студента — у сотрудника деканата этот раздел пуст.',
@@ -625,6 +638,8 @@ export const ru = {
   'schedule.nextWeekAria': 'Следующая неделя',
   'schedule.gotoTodayWeek': 'Перейти к текущей неделе',
   'schedule.sync': 'Синхронизировать',
+  'schedule.sync.status': 'Обновляем…',
+  'schedule.sync.done': 'Расписание обновлено',
   'schedule.day.listAria': 'Пары, {title}',
   'schedule.day.empty.title': 'Пар в этот день нет',
   'schedule.day.empty.next': 'Ближайшие пары: {label}',
@@ -669,6 +684,8 @@ export const ru = {
   'schedule.listen.play': 'Прослушать день',
   'schedule.listen.stop': 'Остановить',
   'schedule.listen.stopAria': 'Остановить озвучку',
+  'schedule.listen.unavailable':
+    'Голосовой движок недоступен в этом браузере — озвучка дня не работает.',
   'schedule.building.main': 'Главный корпус',
   'schedule.author.deanery': 'деканат',
 
@@ -772,6 +789,7 @@ export const ru = {
   'wizard.review.profile': 'Данные студента',
   'wizard.consent.strong': 'Данные верны',
   'wizard.consent.rest': '— проверил сводку и подтверждаю отправку заявки.',
+  'wizard.consent.hint': 'Кнопка «Отправить» станет активной после отметки согласия выше.',
   'wizard.success.instantTitle': 'Справка готова',
   'wizard.success.sentTitle': 'Заявка отправлена',
   'wizard.success.duplicate':
@@ -849,6 +867,8 @@ export const ru = {
   'meta.tasks': 'Задачи — Цифровой деканат',
   'meta.finance': 'Финансы — Цифровой деканат',
   'meta.grades': 'Успеваемость — Цифровой деканат',
+  // DIG-103
+  'meta.gradesRating': 'Рейтинг группы — Цифровой деканат',
   'meta.gradebook': 'Зачётная книжка — Цифровой деканат',
   'meta.session': 'Сессия — Цифровой деканат',
   'meta.discipline': 'Дисциплина — Цифровой деканат',
@@ -871,6 +891,8 @@ export const ru = {
   'loading.people': 'Загрузка справочника',
   'loading.services': 'Загрузка сервисов',
   'loading.grades': 'Успеваемость загружается',
+  // DIG-103
+  'loading.gradesRating': 'Рейтинг группы загружается',
   'loading.session': 'Сессия загружается',
   'loading.notifications': 'Загрузка уведомлений',
 
@@ -1260,6 +1282,22 @@ export const ru = {
   'people.browser.empty.desc': 'Попробуйте другое имя, дисциплину или сбросьте фильтр.',
   'people.yourDisciplines': 'Ваши дисциплины:',
   'people.loading.aria': 'Загрузка справочника',
+  // DIG-102 — поиск «ФИО, email или телефон» и вкладка «★ Избранное»
+  'people.search.query.placeholder': 'ФИО, email или телефон…',
+  'people.search.empty.title': 'Ничего не найдено',
+  'people.search.empty.desc': 'Проверьте ФИО, email или телефон и попробуйте ещё раз.',
+  'people.filter.FAVORITES': '★ Избранное',
+  'people.fav.title': '★ Избранное',
+  'people.fav.cat.TEACHER': 'Преподаватели',
+  'people.fav.cat.STAFF': 'Сотрудники деканата',
+  'people.fav.cat.GROUPMATE': 'Одногруппники',
+  'people.fav.add': 'Добавить в Избранное',
+  'people.fav.added': 'В Избранном',
+  'people.fav.addAria': 'Добавить {name} в Избранное',
+  'people.fav.removeAria': 'Убрать {name} из Избранного',
+  'people.fav.empty.title': 'В избранном пока никого',
+  'people.fav.empty.desc': 'Нажмите ★ на карточке человека — он появится здесь по категориям.',
+  'people.groupmate.subtitle': 'Одногруппник',
 
   // /services
   'services.subtitle':
@@ -1515,7 +1553,7 @@ export const ru = {
   'session.exams.title': 'Экзамены и зачёты',
   'session.consultations.aria': 'Консультации перед экзаменами',
   'session.consultations.title': 'Консультации',
-  'session.room.short': 'каб. {room}',
+  'session.room.short': 'ауд. {room}',
   'session.exams.aria': 'Экзамены и зачёты сессии',
   'session.exams.whatToSubmit': 'Что сдать',
   'session.retakes.aria': 'Пересдачи',
@@ -1690,7 +1728,7 @@ export const ru = {
     'Ваше обращение принято в работу. Ответим в течение рабочего дня.',
   'staff.appealTemplate.invite-office.label': 'Приглашение в деканат',
   'staff.appealTemplate.invite-office.text':
-    'Пожалуйста, подойдите в деканат (каб. 214) в рабочие часы 10:00–16:00 с зачётной книжкой.',
+    'Пожалуйста, подойдите в деканат (ауд. 214) в рабочие часы 10:00–16:00 с зачётной книжкой.',
   'staff.appealTemplate.need-docs.label': 'Нужны документы',
   'staff.appealTemplate.need-docs.text':
     'Для решения вопроса приложите, пожалуйста, сканы документов в этот чат.',

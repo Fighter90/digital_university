@@ -215,7 +215,7 @@ describe('/grades/session — студент', () => {
     expect(html).toContain('Допущен');
     expect(html).toContain('Сдано · 74');
     expect(html).toContain('10:00');
-    expect(html).toContain('каб. 210');
+    expect(html).toContain('ауд. 210');
     expect(html).toContain('Петров Пётр Петрович');
     expect(html).toContain('Зачёт');
     expect(html).toContain('Экзамен');

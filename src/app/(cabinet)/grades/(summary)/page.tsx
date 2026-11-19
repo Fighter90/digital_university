@@ -337,6 +337,14 @@ function GradesView({
                 {t(locale, 'grades.howCalculated')}
               </Tooltip>
             </p>
+            {/* DIG-103 — полный рейтинг группы: отдельная страница (/grades/rating). */}
+            <Link
+              href="/grades/rating"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-accent-ink hover:underline"
+            >
+              {t(locale, 'grades.rating.link')}
+              <ExternalLink className="size-3.5" aria-hidden="true" />
+            </Link>
           </div>
         ) : null}
       </div>

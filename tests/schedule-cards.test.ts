@@ -129,6 +129,33 @@ describe('toScheduleEventCards', () => {
     ]);
     expect(cards.map((c) => c.id)).toEqual(['a', 'b']);
   });
+
+  it('перенос аудитории с прежним временем равным новому: «было: <время>» скрыто (BUG-14)', () => {
+    const card = toScheduleEventCards([
+      row({
+        status: 'ROOM_CHANGED',
+        room: '305',
+        previousRoom: '214',
+        previousStartsAt: fromMoscowWallClock(2026, 11, 11, 10, 0), // = новому началу
+      }),
+    ])[0]!;
+    expect(card.previousRoomLabel).toBe('было: ауд. 214');
+    expect(card.previousTimeLabel).toBeNull();
+  });
+
+  it('перенос времени без смены аудитории: «было: ауд.» скрыто (BUG-14)', () => {
+    const card = toScheduleEventCards([
+      row({
+        status: 'TIME_CHANGED',
+        room: '301',
+        previousRoom: '301',
+        startsAt: fromMoscowWallClock(2026, 11, 11, 12, 30),
+        previousStartsAt: fromMoscowWallClock(2026, 11, 11, 11, 10),
+      }),
+    ])[0]!;
+    expect(card.previousRoomLabel).toBeNull();
+    expect(card.previousTimeLabel).toBe('было: 11:10');
+  });
 });
 
 describe('groupCardsByDate', () => {
