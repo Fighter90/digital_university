@@ -7,7 +7,7 @@
 //   - Open Graph 1200×630 в layout metadata;
 //   - исходники и промпты генерации — в docs/ai-log/assets.md.
 import { describe, expect, it } from 'vitest';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const ROOT = resolve(__dirname, '..');
@@ -222,13 +222,16 @@ describe('DIG-16: документирование генерации', () => {
     expect(md).toMatch(/[Hh]iggsfield|[Rr]ecraft/);
   });
 
-  it('change-папка openspec/changes/dig-16-brand-assets создана', () => {
-    expect(existsSync(resolve(ROOT, 'openspec/changes/dig-16-brand-assets/proposal.md'))).toBe(
-      true,
+  it('дельта DIG-16 заархивирована: спека brand-assets в openspec/specs', () => {
+    expect(existsSync(resolve(ROOT, 'openspec/specs/brand-assets/spec.md'))).toBe(true);
+    const archived = readdirSync(resolve(ROOT, 'openspec/changes/archive')).find((d) =>
+      d.endsWith('-dig-16-brand-assets'),
     );
-    expect(existsSync(resolve(ROOT, 'openspec/changes/dig-16-brand-assets/tasks.md'))).toBe(true);
+    expect(archived, 'DIG-16 не найден в openspec/changes/archive').toBeTruthy();
     expect(
-      existsSync(resolve(ROOT, 'openspec/changes/dig-16-brand-assets/specs/brand-assets/spec.md')),
+      existsSync(
+        resolve(ROOT, 'openspec/changes/archive', archived!, 'specs/brand-assets/spec.md'),
+      ),
     ).toBe(true);
   });
 });
