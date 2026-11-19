@@ -135,6 +135,7 @@ export {
 } from './msp-slug';
 // DIG-43 — мероприятия вуза и запись (/events).
 export {
+  getDashboardEvents,
   getEventsPage,
   normalizeEventSlug,
   openEventView,
@@ -145,6 +146,7 @@ export type {
   EventDetail,
   EventView,
   EventsPageData,
+  EventsSummary,
   ToggleEventRegistrationResult,
 } from './events';
 export { listSchedule, listExams } from './schedule';

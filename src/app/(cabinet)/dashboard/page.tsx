@@ -33,7 +33,14 @@ import {
 import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 import { dataDb } from '@/server/data/db';
-import { getDashboard, getOwnSettings, listDeaneryNews, requireDataCtx } from '@/server/data';
+import {
+  getDashboard,
+  getDashboardEvents,
+  getOwnSettings,
+  listDeaneryNews,
+  requireDataCtx,
+} from '@/server/data';
+import type { DashboardSection, EventsSummary } from '@/server/data';
 import type { DataCtx } from '@/server/data/types';
 
 // DIG-87 — EN-локализация часть 1: строки страницы (включая заглушку
@@ -54,6 +61,16 @@ async function getOwnSettingsSafe(ctx: DataCtx) {
   }
 }
 
+// DIG-76 — виджет «Мероприятия» не должен ронять главную: сбой источника
+// оседает в секцию ошибки самого блока (тот же контракт, что блоки агрегата).
+async function getEventsSectionSafe(ctx: DataCtx): Promise<DashboardSection<EventsSummary>> {
+  try {
+    return { ok: true, value: await getDashboardEvents(dataDb, ctx) };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 async function DashboardContent() {
   const [ctx, locale] = await Promise.all([requireDataCtx('/dashboard'), getLocale()] as const);
   // Сотруднику деканата студенческая главная не показывается — его кабинет
@@ -67,9 +84,12 @@ async function DashboardContent() {
       </section>
     );
   }
-  const [data, settings] = await Promise.all([
+  const [data, settings, events] = await Promise.all([
     getDashboard(dataDb, ctx, new Date(), locale),
     getOwnSettingsSafe(ctx),
+    // DIG-76 — ближайшие события для виджета «Мероприятия» (параллельно
+    // агрегату; изоляция сбоя — getEventsSectionSafe выше).
+    getEventsSectionSafe(ctx),
   ]);
   const news = listDeaneryNews();
 
@@ -83,7 +103,7 @@ async function DashboardContent() {
     performance: <ProgressSection progress={data.progress} locale={locale} />,
     requests: <RequestsSection requests={data.requests} locale={locale} />,
     news: <NewsSection news={news} locale={locale} />,
-    events: <EventsSection locale={locale} />,
+    events: <EventsSection events={events} locale={locale} />,
   };
 
   return (

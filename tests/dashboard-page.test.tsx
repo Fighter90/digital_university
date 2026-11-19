@@ -214,6 +214,49 @@ const newsFixture = [
   },
 ];
 
+// DIG-76 — виджет «Мероприятия»: два ближайших будущих события (сид), у
+// карьерного дня — чип «Записан» владельца сессии.
+const eventsFixture = [
+  {
+    event: {
+      id: 'ev-lecture-ai',
+      slug: 'lekciya-ai-bbbb',
+      title: 'Лекция про AI',
+      description: 'Открытая лекция факультета ИТ (демо).',
+      startsAt: new Date(2026, 10, 20, 18, 30),
+      endsAt: new Date(2026, 10, 20, 20, 0),
+      location: 'Онлайн-трансляция',
+      isOnline: true,
+      onlineUrl: 'https://events.example.edu/live/ai',
+      capacity: 500,
+      tags: ['ai', 'ИТ'],
+      kind: 'LECTURE' as const,
+    },
+    taken: 2,
+    spotsLeft: 498,
+    registeredByMe: false,
+  },
+  {
+    event: {
+      id: 'ev-career-day',
+      slug: 'karernyj-den-cccc',
+      title: 'Карьерный день',
+      description: 'Стенды компаний-партнёров (демо).',
+      startsAt: new Date(2026, 10, 21, 14, 0),
+      endsAt: new Date(2026, 10, 21, 18, 0),
+      location: 'Главный корпус, атриум',
+      isOnline: false,
+      onlineUrl: null,
+      capacity: 2,
+      tags: ['ИТ', 'карьера'],
+      kind: 'CAREER' as const,
+    },
+    taken: 2,
+    spotsLeft: 0,
+    registeredByMe: true,
+  },
+];
+
 vi.mock('@/server/auth/session', () => ({
   getAuthSession: vi.fn(async () => null),
   requireUser: vi.fn(async () => ({
@@ -233,6 +276,8 @@ vi.mock('@/server/data', async () => {
     getDashboard: vi.fn(async () => fullDashboard),
     listDeaneryNews,
     getOwnSettings: vi.fn(async () => null),
+    // DIG-76 — виджет «Мероприятия» читает ближайшие события из фасада.
+    getDashboardEvents: vi.fn(async () => ({ items: eventsFixture })),
   };
 });
 
@@ -461,5 +506,43 @@ describe('/dashboard (DIG-34) — виджет «Что от меня ждут»
     // Остальные блоки живы.
     expect(html).toContain('Ближайшие дедлайны');
     expect(html).toContain('Как у меня дела');
+  });
+});
+
+describe('/dashboard (DIG-76) — виджет «Мероприятия» с реальными данными', () => {
+  it('показывает ближайшие события и ссылку «Все мероприятия» → /events', async () => {
+    const html = await renderPage(DashboardPage);
+    expect(html).toContain('data-testid="dashboard-events-list"');
+    expect(html).toContain('href="/events/lekciya-ai-bbbb"');
+    expect(html).toContain('href="/events/karernyj-den-cccc"');
+    expect(html).toContain('Осталось 498 мест');
+    expect(html).toContain('Мест нет');
+    // Чип «Записан» — на событии владельца сессии.
+    expect(html).toContain('data-testid="dashboard-event-chip-karernyj-den-cccc"');
+    // Ссылка на полный раздел.
+    expect(html).toContain('data-testid="dashboard-events-all"');
+    expect(html).toContain('href="/events"');
+    // Заглушки «скоро появятся» больше нет, пока есть будущие события.
+    expect(html).not.toContain('Мероприятия скоро появятся');
+  });
+
+  it('нет будущих событий → честная заглушка «Мероприятия скоро появятся»', async () => {
+    vi.mocked(
+      (await import('@/server/data')).getDashboardEvents as ReturnType<typeof vi.fn>,
+    ).mockResolvedValueOnce({ items: [] });
+    const html = await renderPage(DashboardPage);
+    expect(html).toContain('Мероприятия скоро появятся');
+    expect(html).not.toContain('data-testid="dashboard-events-list"');
+  });
+
+  it('сбой источника изолирован: блок «Мероприятия» в состоянии ошибки, остальные живы', async () => {
+    vi.mocked(
+      (await import('@/server/data')).getDashboardEvents as ReturnType<typeof vi.fn>,
+    ).mockRejectedValueOnce(new Error('events db down'));
+    const html = await renderPage(DashboardPage);
+    expect(html).toContain('Блок «Мероприятия» не загрузился');
+    // Остальные блоки живы.
+    expect(html).toContain('Как у меня дела');
+    expect(html).toContain('Заявки в работе и на проверке');
   });
 });

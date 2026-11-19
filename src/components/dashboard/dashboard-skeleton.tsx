@@ -25,7 +25,7 @@ export async function DashboardSkeleton() {
         </div>
       </div>
 
-      {/* Блоки (DIG-34: + «Что от меня ждут» после «Сегодня»/«Дедлайнов») */}
+      {/* Блоки (DIG-34: + «Что от меня ждут»; DIG-76: + «Мероприятия») */}
       {[
         'skeleton-today',
         'skeleton-deadlines',
@@ -33,6 +33,7 @@ export async function DashboardSkeleton() {
         'skeleton-progress',
         'skeleton-actions',
         'skeleton-news',
+        'skeleton-events',
       ].map((key) => (
         <div key={key} className="rounded-card border border-border bg-card p-5 shadow-soft">
           <Skeleton className="h-5 w-44" />
