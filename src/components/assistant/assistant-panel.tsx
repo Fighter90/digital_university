@@ -15,15 +15,18 @@ import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import { RefreshCw, Sparkles, X } from 'lucide-react';
 
 import type { AssistantContext } from '@/lib/assistant-engine';
+import { t, type Locale } from '@/lib/i18n';
 import { AssistantChat } from './assistant-chat';
 import { Icon } from '@/components/ui/icon';
 
 export interface AssistantPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** DIG-88 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
-export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
+export function AssistantPanel({ open, onOpenChange, locale = 'ru' }: AssistantPanelProps) {
   const [context, setContext] = useState<AssistantContext | null>(null);
   const [status, setStatus] = useState<'idle' | 'ready' | 'error'>('idle');
   const [reloadKey, setReloadKey] = useState(0);
@@ -55,7 +58,7 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
       <BaseDialog.Portal>
         <BaseDialog.Backdrop className="fixed inset-0 z-40 bg-foreground/25" />
         <BaseDialog.Popup
-          aria-label="Панель AI-ассистента"
+          aria-label={t(locale, 'assistant.panel.aria')}
           className={[
             // 360 px: панель на весь экран, чат полнофункциональный.
             'fixed inset-0 z-50 flex flex-col bg-neutral-50 outline-none',
@@ -71,11 +74,11 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
               <Sparkles className="size-4" />
             </span>
             <BaseDialog.Title className="flex-1 text-lg font-extrabold tracking-heading">
-              AI-ассистент
+              {t(locale, 'assistant.panel.title')}
             </BaseDialog.Title>
             <BaseDialog.Close
               data-testid="assistant-panel-close"
-              aria-label="Закрыть панель ассистента"
+              aria-label={t(locale, 'assistant.panel.closeAria')}
               className="-m-1.5 rounded-button p-2 text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
             >
               <Icon icon={X} size={18} />
@@ -86,7 +89,7 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
             {status === 'error' ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
                 <p className="text-sm text-muted-foreground">
-                  Не удалось загрузить ассистента. Проверьте связь и попробуйте ещё раз.
+                  {t(locale, 'assistant.panel.error')}
                 </p>
                 <button
                   type="button"
@@ -98,11 +101,15 @@ export function AssistantPanel({ open, onOpenChange }: AssistantPanelProps) {
                   className="inline-flex items-center gap-1.5 rounded-button bg-accent-soft px-3 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-soft/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
                 >
                   <RefreshCw className="size-4" aria-hidden="true" />
-                  Повторить
+                  {t(locale, 'assistant.panel.retry')}
                 </button>
               </div>
             ) : status === 'ready' && context !== null ? (
-              <AssistantChat context={context} onNavigate={() => onOpenChange(false)} />
+              <AssistantChat
+                context={context}
+                onNavigate={() => onOpenChange(false)}
+                locale={locale}
+              />
             ) : (
               // Скелетон загрузки контекста (панель открылась, данные в пути).
               <div

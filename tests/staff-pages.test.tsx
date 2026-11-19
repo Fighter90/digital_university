@@ -239,7 +239,10 @@ function queueFixture() {
     title: 'Заявление на перезачёт',
     status: 'IN_PROGRESS',
     assignee: 'Мария Петрова',
-    createdAt: new Date('2026-11-14T09:40:00'),
+    // Подача относительно «сейчас»: STATEMENT ждёт ответа 5 рабочих дней —
+    // заявка всегда внутри SLA, фильтр overdue обязан её скрывать
+    // (раньше дата была захардкожена и тест ломался после 19.11.2026).
+    createdAt: new Date(Date.now() - 24 * 3600000),
   });
   return [
     { request: overdue, student: anna },

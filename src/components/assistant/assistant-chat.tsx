@@ -17,11 +17,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { History, Plus, SendHorizonal, Sparkles } from 'lucide-react';
 
 import {
-  ASSISTANT_HINTS,
+  assistantHints,
   buildAssistantReply,
   type AssistantContext,
   type AssistantReply,
 } from '@/lib/assistant-engine';
+import { t, type Locale } from '@/lib/i18n';
 import { AssistantCardList, ReportWrongAnswer } from './assistant-cards';
 
 interface ChatMessage {
@@ -52,11 +53,9 @@ export interface AssistantChatProps {
   seedQuestion?: string | null;
   /** Панель закрывается при переходе по внутренним ссылкам карточек. */
   onNavigate?: () => void;
+  /** DIG-88 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
-
-const GREETING_SUFFIX =
-  'Я ассистент цифрового деканата: подскажу расписание и оценки, помогу ' +
-  'оформить заявку или разобраться в правилах. Спросите меня или выберите подсказку.';
 
 const STREAM_TICK_MS = 20;
 const STREAM_CHARS_PER_TICK = 3;
@@ -67,21 +66,26 @@ const nextId = (): number => {
   return idSeq;
 };
 
-function greetingMessage(context: AssistantContext | null): ChatMessage {
+function greetingMessage(context: AssistantContext | null, locale: Locale = 'ru'): ChatMessage {
   const name = context?.firstName;
+  const text = name
+    ? t(locale, 'assistant.greetingName', { name, suffix: t(locale, 'assistant.greetingSuffix') })
+    : t(locale, 'assistant.greeting', { suffix: t(locale, 'assistant.greetingSuffix') });
   return {
     id: nextId(),
     role: 'assistant',
-    text: name ? `Здравствуйте, ${name}! ${GREETING_SUFFIX}` : `Здравствуйте! ${GREETING_SUFFIX}`,
-    displayedText: name
-      ? `Здравствуйте, ${name}! ${GREETING_SUFFIX}`
-      : `Здравствуйте! ${GREETING_SUFFIX}`,
+    text,
+    displayedText: text,
     streaming: false,
     isGreeting: true,
   };
 }
 
-function seededDialog(seedQuestion: string, context: AssistantContext | null): Dialog {
+function seededDialog(
+  seedQuestion: string,
+  context: AssistantContext | null,
+  locale: Locale = 'ru',
+): Dialog {
   const reply = buildAssistantReply(
     seedQuestion,
     context ?? {
@@ -92,12 +96,13 @@ function seededDialog(seedQuestion: string, context: AssistantContext | null): D
       nextStudyDayLabel: null,
       disciplines: [],
     },
+    locale,
   );
   return {
     id: nextId(),
     title: seedQuestion,
     messages: [
-      greetingMessage(context),
+      greetingMessage(context, locale),
       {
         id: nextId(),
         role: 'user',
@@ -123,9 +128,14 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantChatProps) {
+export function AssistantChat({
+  context,
+  seedQuestion,
+  onNavigate,
+  locale = 'ru',
+}: AssistantChatProps) {
   const [dialogs, setDialogs] = useState<Dialog[]>(() =>
-    seedQuestion ? [seededDialog(seedQuestion, context)] : [makeInitialDialog(context)],
+    seedQuestion ? [seededDialog(seedQuestion, context, locale)] : [makeInitialDialog(context, locale)],
   );
   const [activeId, setActiveId] = useState<number>(() => dialogs[0]!.id);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -183,7 +193,7 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
     (rawQuestion: string) => {
       const question = rawQuestion.trim();
       if (question.length === 0 || streaming || context === null) return;
-      const reply = buildAssistantReply(question, context);
+      const reply = buildAssistantReply(question, context, locale);
       // Порядок важен: id вопроса МЕНЬШЕ id ответа — «Сообщить о неверном
       // ответе» ищет вопрос пары по `id < message.id` (поймано e2e DIG-46:
       // assistantId аллоцировался раньше и отчёт уходил с пустым вопросом).
@@ -220,21 +230,21 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
       setDraft('');
       // Стрим нового сообщения подхватит эффект выше (streaming: true).
     },
-    [activeId, context, streaming],
+    [activeId, context, streaming, locale],
   );
 
   const newDialog = useCallback(() => {
     const dialog: Dialog = {
       id: nextId(),
-      title: 'Новый диалог',
-      messages: [greetingMessage(context)],
+      title: t(locale, 'assistant.newDialog'),
+      messages: [greetingMessage(context, locale)],
     };
     setDialogs((prev) => [...prev, dialog]);
     setActiveId(dialog.id);
     setHistoryOpen(false);
     setDraft('');
     inputRef.current?.focus();
-  }, [context]);
+  }, [context, locale]);
 
   const restoreDialog = useCallback((dialogId: number) => {
     setActiveId(dialogId);
@@ -248,7 +258,7 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
     <section
       data-assistant-context={context ? JSON.stringify(context) : undefined}
       data-assistant-seed={seedQuestion ? '1' : undefined}
-      aria-label="Чат с AI-ассистентом"
+      aria-label={t(locale, 'assistant.chat.aria')}
       className="flex min-h-0 flex-1 flex-col"
     >
       {/* ── Панель действий диалога ─────────────────────────────────────── */}
@@ -260,7 +270,7 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
           className="inline-flex items-center gap-1.5 rounded-button bg-accent-soft px-2.5 py-1.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-soft/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
         >
           <Plus className="size-4" aria-hidden="true" />
-          Новый диалог
+          {t(locale, 'assistant.newDialog')}
         </button>
         <button
           type="button"
@@ -270,8 +280,8 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
           className="inline-flex items-center gap-1.5 rounded-button bg-muted px-2.5 py-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
         >
           <History className="size-4" aria-hidden="true" />
-          История
-          <span className="sr-only">диалогов</span>
+          {t(locale, 'assistant.history')}
+          <span className="sr-only">{t(locale, 'assistant.historySuffix')}</span>
           {dialogs.length > 1 ? (
             <span className="rounded-pill bg-foreground/10 px-1.5 text-xs font-bold">
               {dialogs.length}
@@ -283,13 +293,13 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
       {/* ── История диалогов ────────────────────────────────────────────── */}
       {historyOpen ? (
         <nav
-          aria-label="История диалогов"
+          aria-label={t(locale, 'assistant.historyAria')}
           data-testid="assistant-history-list"
           className="mt-3 flex flex-col gap-1.5 rounded-card border border-border bg-card p-2 shadow-soft"
         >
           {dialogs.length === 1 ? (
             <p className="px-2 py-1.5 text-sm text-muted-foreground">
-              Пока есть только текущий диалог.
+              {t(locale, 'assistant.historyEmpty')}
             </p>
           ) : (
             dialogs.map((dialog) => (
@@ -338,17 +348,20 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
 
                 {message.role === 'assistant' && message.reply ? (
                   <>
-                    <AssistantCardList cards={message.reply.cards} onNavigate={onNavigate} />
+                    <AssistantCardList cards={message.reply.cards} onNavigate={onNavigate} locale={locale} />
                     {message.reply.sources.length > 0 ? (
                       <p
                         data-testid="assistant-sources"
                         className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
                       >
-                        По данным: {message.reply.sources.join(', ')}
+                        {t(locale, 'assistant.sourcesPrefix', {
+                          sources: message.reply.sources.join(', '),
+                        })}
                       </p>
                     ) : null}
                     {!message.isGreeting ? (
                       <ReportWrongAnswer
+                        locale={locale}
                         question={
                           // Последний вопрос ПЕРЕД этим ответом (findLast, а
                           // не первый попавшийся — при нескольких обменах
@@ -372,9 +385,9 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
           <div
             data-testid="assistant-hints"
             className="mt-4 flex flex-col gap-2"
-            aria-label="Подсказки вопросов"
+            aria-label={t(locale, 'assistant.hintsAria')}
           >
-            {ASSISTANT_HINTS.map((hint) => (
+            {assistantHints(locale).map((hint) => (
               <button
                 key={hint}
                 type="button"
@@ -405,9 +418,11 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={
-            context === null ? 'Загружаем контекст…' : 'Спросите про учёбу: пара, оценка, справка…'
+            context === null
+              ? t(locale, 'assistant.input.loading')
+              : t(locale, 'assistant.input.placeholder')
           }
-          aria-label="Вопрос ассистенту"
+          aria-label={t(locale, 'assistant.inputAria')}
           autoComplete="off"
           enterKeyHint="send"
           disabled={context === null}
@@ -417,20 +432,23 @@ export function AssistantChat({ context, seedQuestion, onNavigate }: AssistantCh
           type="submit"
           data-testid="assistant-send"
           disabled={streaming || draft.trim().length === 0 || context === null}
-          aria-label="Отправить вопрос"
+          aria-label={t(locale, 'assistant.sendAria')}
           className="grid size-11 shrink-0 place-items-center rounded-button bg-coral-500 text-white transition-colors hover:bg-coral-600 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
         >
           <SendHorizonal className="size-5" aria-hidden="true" />
         </button>
       </form>
       <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-        Ассистент не отправляет заявки и не показывает чужие данные: любое действие — только после
-        вашего подтверждения. Концепт для конкурса.
+        {t(locale, 'assistant.disclaimer')}
       </p>
     </section>
   );
 }
 
-function makeInitialDialog(context: AssistantContext | null): Dialog {
-  return { id: nextId(), title: 'Новый диалог', messages: [greetingMessage(context)] };
+function makeInitialDialog(context: AssistantContext | null, locale: Locale = 'ru'): Dialog {
+  return {
+    id: nextId(),
+    title: t(locale, 'assistant.newDialog'),
+    messages: [greetingMessage(context, locale)],
+  };
 }

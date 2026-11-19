@@ -3,6 +3,7 @@
 // источник правды для страницы, клиентского поиска и тестов (как lib/faq-catalog
 // для DIG-38). Глубинные ссылки ведут в реальные разделы кабинета; поверхностей
 // данных нет — страница GET-only, IDOR невозможен по построению.
+import type { Locale } from '@/lib/i18n';
 
 /** Один шаг инструкции: текст и необязательная глубинная ссылка. */
 export interface HelpStep {
@@ -465,4 +466,448 @@ function sectionSearchText(section: HelpSection): string {
   }
   for (const callout of section.callouts ?? []) parts.push(callout.text);
   return parts.join(' ').toLowerCase();
+}
+
+// ── DIG-88 — EN-версия каталога (/guide при locale=en) ──────────────────────
+// RU-каталог выше — канон и источник RAG-чанков по умолчанию; EN-каталог
+// параллелен по id/href/kind callout'ов (паритет проверяет юнит-тест),
+// демо-данные и глубинные ссылки совпадают, переводятся только тексты.
+
+export const GUIDE_HEADING_EN = 'How to use the cabinet';
+
+export const GUIDE_INTRO_EN =
+  'Cabinet guide: short step-by-step instructions for every section — from signing in to ICS subscriptions. All cabinet data is fictional; the prototype is a contest concept.';
+
+export const EMPTY_SEARCH_MESSAGE_EN = 'Nothing found';
+
+export const EMPTY_SEARCH_HINT_EN =
+  'Try another word: for example “status”, “password” or “schedule”.';
+
+const GUIDE_SECTIONS_EN: HelpSection[] = [
+  {
+    id: 'login',
+    title: 'Sign-in and security',
+    href: '/login',
+    summary: 'How to get into the cabinet and sign out, and why your password stays safe.',
+    steps: [
+      {
+        text: 'Open the sign-in page and enter the login and password issued to you by the deanery (in the prototype — fictional demo accounts).',
+        link: { href: '/login', label: 'Open the sign-in page' },
+      },
+      {
+        text: 'Your password is stored only as an argon2id hash: nobody, including the deanery staff, can see it in plain text.',
+      },
+      {
+        text: 'To sign out, open the profile menu in the cabinet header and choose “Sign out” — the session ends immediately.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'Never share your password with anyone: deanery staff will never ask for it in a chat or by email.',
+      },
+    ],
+  },
+  {
+    id: 'schedule',
+    title: 'Schedule and class details',
+    href: '/schedule',
+    summary: 'Day, week and month; the class details panel and rescheduling marks.',
+    steps: [
+      {
+        text: 'By default mobile shows “Today” and desktop shows the week; the view switcher toggles Day / Week / Month.',
+        link: { href: '/schedule', label: 'Open the schedule' },
+      },
+      {
+        text: 'Tap a class — the details panel opens: time, room, teacher and class type; a reschedule or a cancellation is marked separately.',
+      },
+      {
+        text: 'Browse days and weeks with the arrows next to the date; the “Today” button returns you to the current day.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'Class details open via a direct link with the ?event= parameter — you can save or forward the link to a specific class.',
+      },
+    ],
+  },
+  {
+    id: 'requests',
+    title: 'Requests and certificates',
+    href: '/requests',
+    summary: 'The order wizard, request numbers, the status pipeline and ready PDFs.',
+    steps: [
+      {
+        text: 'Click “Order” — the wizard guides you through the steps: certificate type, your details, confirmation.',
+        link: { href: '/requests?order=new', label: 'Open the order wizard' },
+      },
+      {
+        text: 'A request gets a number like ZD-2026-000123 (or SR-2026-XXXXX for service requests) — it is visible in the list and on the request card.',
+      },
+      {
+        text: 'Follow the status: Submitted → Accepted → In progress → Ready → Issued.',
+      },
+      {
+        text: '“Needs revision” means the deanery is waiting for fixes: open the request card — it says what to correct.',
+      },
+      {
+        text: '“Rejected” and “Cancelled” are final statuses with the reason on the card; download the ready certificate as a PDF from the card.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'A status change sends a notification to your chosen channels — push, email or Telegram (see “Settings”).',
+      },
+      {
+        kind: 'warning',
+        text: 'The cabinet shows only your own requests: someone else’s number cannot be opened — the attempt is recorded in the access log.',
+      },
+    ],
+  },
+  {
+    id: 'deanery',
+    title: 'Messages to the deanery',
+    href: '/deanery',
+    summary: 'Chat with the deanery manager by ticket number TS-.',
+    steps: [
+      {
+        text: 'Pick a topic and write your message — the ticket gets a number like TS-2026-XXXXX.',
+        link: { href: '/deanery', label: 'Open deanery messages' },
+      },
+      {
+        text: 'The conversation with the manager happens in the ticket chat: the reply arrives as a notification and the history is kept.',
+      },
+      {
+        text: 'You can attach files to a ticket — a photo of a document or a screenshot.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'For one question, write in the existing chat rather than a new ticket: the manager sees the whole history.',
+      },
+    ],
+  },
+  {
+    id: 'feedback',
+    title: 'Suggestion or complaint',
+    href: '/feedback',
+    summary: 'A channel to the leadership: message types, recipients and anonymity.',
+    steps: [
+      {
+        text: 'Choose the type — Suggestion, Complaint or Thank-you — and the recipient: the deanery, the academic office, the programme leadership or the university.',
+        link: { href: '/feedback', label: 'Open the leadership channel' },
+      },
+      {
+        text: 'By default the recipient sees your name and group. Turn on “Anonymous” — then the message stores no link to your account anywhere.',
+      },
+      {
+        text: 'A reply arrives within 3 business days; statuses: Under review → Answered → Resolved.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'An anonymous message cannot be traced in the cabinet: save the number to match the reply in the “What we changed” feed.',
+      },
+    ],
+  },
+  {
+    id: 'tasks',
+    title: 'Tasks and deadlines',
+    href: '/tasks',
+    summary: 'Your personal task list: nearest deadlines and the menu counter.',
+    steps: [
+      {
+        text: 'The task list is built from your disciplines: the nearest deadlines are on top.',
+        link: { href: '/tasks', label: 'Open tasks' },
+      },
+      {
+        text: 'Check off a completed task; the counter of open tasks sits next to the “Tasks” menu item.',
+      },
+      {
+        text: 'Overdue tasks are highlighted separately so they don’t get lost.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'Deadline notifications are enabled in “Settings → Notifications”.',
+      },
+    ],
+  },
+  {
+    id: 'people',
+    title: 'Directory',
+    href: '/people',
+    summary: '“My teachers”, contacts, office hours and upcoming classes.',
+    steps: [
+      {
+        text: 'The “My teachers” list shows only those who teach your disciplines — with subject marks.',
+        link: { href: '/people', label: 'Open the directory' },
+      },
+      {
+        text: 'A teacher’s card has contacts, office hours and “Upcoming classes” with that teacher.',
+      },
+      {
+        text: 'Search matches names and disciplines — you can find who teaches the subject you need.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'A question about a specific class is best asked via “Messages to the deanery” — the answer stays in the chat.',
+      },
+    ],
+  },
+  {
+    id: 'ai-assistant',
+    title: 'AI assistant',
+    href: '/ai-assistant',
+    summary: 'Answers based on your cabinet data: schedule, requests, scholarships.',
+    steps: [
+      {
+        text: 'Ask by text or voice — the assistant answers from your cabinet data, not generic guesses.',
+        link: { href: '/ai-assistant', label: 'Open the AI assistant' },
+      },
+      {
+        text: 'Answers include links to sections: jump to a class, a request or a ticket in one click.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'The assistant gives hints, but official actions — requests and tickets — should be submitted in their own sections.',
+      },
+    ],
+  },
+  {
+    id: 'events',
+    title: 'Events',
+    href: '/events',
+    summary: 'The university events board: lectures, hackathons, career days — and one-click sign-up.',
+    steps: [
+      {
+        text: 'Filter the feed with chips: “This week”, “Career”, “Online” — or scroll the whole board.',
+        link: { href: '/events', label: 'Open events' },
+      },
+      {
+        text: 'Click “Sign up” on a card — your spot is reserved. Clicking again cancels it.',
+      },
+      {
+        text: '“N spots left” is counted from the event capacity; “No spots” means sign-up is closed.',
+      },
+      {
+        text: 'Open an event card — the full description, date, venue or stream link.',
+      },
+    ],
+    callouts: [
+      { kind: 'tip', text: 'Signed-up events carry the “You are signed up” chip — easy to find yours.' },
+    ],
+  },
+  {
+    id: 'msp',
+    title: 'MSP: student startups',
+    href: '/msp',
+    summary:
+      'A Product-Hunt-style catalog of student projects: voting, comments, launch of the day.',
+    steps: [
+      {
+        text: 'Vote with the “▲ Support” button — one vote per project, clicking again removes it.',
+        link: { href: '/msp', label: 'Open MSP' },
+      },
+      {
+        text: 'Sort the feed: “New” or “Top of the week”; the “Launch of the day” block is the project with the most votes.',
+      },
+      {
+        text: 'Open a launch card: description, team, comments. Reply to the author in the form below the description.',
+      },
+      {
+        text: 'Got your own team? Click “Launch a project” — name, slogan, description and tags. Your project appears in the feed.',
+      },
+    ],
+    callouts: [
+      { kind: 'tip', text: 'You can remove your vote with the same click — the counter recalculates honestly.' },
+      { kind: 'warning', text: 'All projects are fictional — this is a demo catalog for the concept.' },
+    ],
+  },
+  {
+    id: 'dpo',
+    title: 'Continuing education',
+    href: '/dpo',
+    summary: 'The catalog of continuing-education programmes, your enrolments with progress, and programme documents.',
+    steps: [
+      {
+        text: 'The “Catalog” tab: filters by format (online/offline/hybrid), price and duration — chips combine.',
+        link: { href: '/dpo', label: 'Open continuing education' },
+      },
+      {
+        text: '“Enroll” in a programme — it appears in the “My programmes” tab with a progress bar.',
+      },
+      {
+        text: 'The “Documents” tab: contracts, acceptance certificates, receipts and certificates of your programmes.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: '“Download” becomes active after the programme graduates — in the prototype it is a stub.',
+      },
+    ],
+  },
+  {
+    id: 'finance',
+    title: 'Finance',
+    href: '/finance',
+    summary: 'Study format, scholarship, debts, contracts and payments — in one place.',
+    steps: [
+      {
+        text: 'The summary on top: study format (state-funded/contract), the scholarship with its payment date, debts or a “none” mark.',
+        link: { href: '/finance', label: 'Open finance' },
+      },
+      {
+        text: 'Contracts and payments are listed with numbers and statuses; PDF documents become available after issuance.',
+      },
+    ],
+    callouts: [
+      { kind: 'warning', text: 'There is no real payment in the prototype — all payments are fictional.' },
+    ],
+  },
+  {
+    id: 'language',
+    title: 'Interface language (RU/EN)',
+    href: '/settings',
+    summary: 'Switching the interface between Russian and English — kept between visits.',
+    steps: [
+      {
+        text: 'The RU | EN switch is on the right side of the header. Click EN — the whole interface switches.',
+      },
+      {
+        text: 'The choice is remembered: after re-signing-in the cabinet opens in the selected language.',
+      },
+      {
+        text: 'Demo data (names, disciplines, news) stays in Russian — the interface is translated, not the content.',
+      },
+    ],
+    callouts: [{ kind: 'tip', text: 'Dates and numbers are formatted according to the selected language.' }],
+  },
+  {
+    id: 'settings',
+    title: 'Settings',
+    href: '/settings',
+    summary: 'Notifications, password change, appearance and interface language.',
+    steps: [
+      {
+        text: 'The “Notifications” tab: channels (push, email, Telegram) per event type and quiet hours.',
+        link: { href: '/settings?tab=notifications', label: 'Open notification settings' },
+      },
+      {
+        text: 'The “Security” tab: password change and the list of active sessions — you can terminate any session.',
+        link: { href: '/settings?tab=security', label: 'Open security' },
+      },
+      {
+        text: 'The “Appearance” tab: theme, interface language (Russian or English), font size and animations.',
+        link: { href: '/settings?tab=appearance', label: 'Open appearance' },
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'Settings apply immediately and are saved in your profile, not in the browser.',
+      },
+    ],
+  },
+  {
+    id: 'calendar',
+    title: 'ICS calendar and MCP',
+    href: '/grades/session',
+    summary: 'Subscribing to your schedule in your calendar and access for AI assistants.',
+    steps: [
+      {
+        text: 'Live calendar subscription: the “Calendar subscription” card on the “Session” page — add the link to your Google or Apple calendar.',
+        link: { href: '/grades/session', label: 'Open the session page' },
+      },
+      {
+        text: 'The deanery MCP server: the “MCP setup” tab — a personal URL and token for AI assistants (Claude and others).',
+        link: { href: '/settings?tab=mcp', label: 'Open MCP setup' },
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'The token is an access key to your data: never publish it, and re-issue it if it falls into the wrong hands.',
+      },
+    ],
+  },
+  {
+    id: 'mcp',
+    title: 'Connect an external AI assistant (MCP)',
+    href: '/mcp',
+    summary:
+      'The deanery MCP server: schedule, grades and notifications — in ChatGPT, Claude or Cursor via a personal token.',
+    steps: [
+      {
+        text: 'Open the “Connect your assistant (MCP)” page — it explains the protocol, lists the available data and gives a ready JSON config.',
+        link: { href: '/mcp', label: 'Open the MCP page' },
+      },
+      {
+        text: 'Issue a personal token in the “MCP setup” tab: the full token is shown once — only its hash and mask stay in the cabinet.',
+        link: { href: '/settings?tab=mcp', label: 'Open MCP setup' },
+      },
+      {
+        text: 'Copy the JSON config from the MCP page and paste it into Claude Desktop, Cursor or another MCP client, replacing <YOUR_TOKEN> with your token.',
+      },
+      {
+        text: 'Ask the assistant: “What is on my schedule today?” or “What are my latest grades?” — the answer comes from your cabinet.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'MCP access is read-only: the assistant sees only your data and cannot change anything. The token is personal — re-issue it if it falls into the wrong hands.',
+      },
+    ],
+  },
+];
+
+/**
+ * Заголовок гайда по локали (RU — канон, прежняя строка байт-в-байт).
+ */
+export function guideHeading(locale: Locale = 'ru'): string {
+  return locale === 'en' ? GUIDE_HEADING_EN : GUIDE_HEADING;
+}
+
+/** Интро страницы /guide по локали. */
+export function guideIntro(locale: Locale = 'ru'): string {
+  return locale === 'en' ? GUIDE_INTRO_EN : GUIDE_INTRO;
+}
+
+/** Подсказка пустого поиска по локали. */
+export function emptySearchHint(locale: Locale = 'ru'): string {
+  return locale === 'en' ? EMPTY_SEARCH_HINT_EN : EMPTY_SEARCH_HINT;
+}
+
+/** Заголовок пустого поиска по локали. */
+export function emptySearchMessage(locale: Locale = 'ru'): string {
+  return locale === 'en' ? EMPTY_SEARCH_MESSAGE_EN : EMPTY_SEARCH_MESSAGE;
+}
+
+/**
+ * Каталог разделов справки по локали. RU — канон (GUIDE_SECTIONS, прежний
+ * массив), EN — параллельный каталог с теми же id/href.
+ */
+export function guideSections(locale: Locale = 'ru'): HelpSection[] {
+  return locale === 'en' ? GUIDE_SECTIONS_EN : GUIDE_SECTIONS;
+}
+
+/** EN-плюрализация разделов для строки «Найдено: N …» (RU — прежняя). */
+export function guideStepCountLabel(n: number, locale: Locale = 'ru'): string {
+  if (locale === 'en') return n === 1 ? 'section' : 'sections';
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'раздел';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'раздела';
+  return 'разделов';
 }

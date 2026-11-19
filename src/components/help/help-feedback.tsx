@@ -8,6 +8,8 @@
 import { useState } from 'react';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 
+import { t, type Locale } from '@/lib/i18n';
+
 type Vote = 'yes' | 'no';
 
 const voteButtonClasses = (active: boolean) =>
@@ -17,7 +19,7 @@ const voteButtonClasses = (active: boolean) =>
       : 'border-border bg-card text-foreground hover:bg-muted'
   }`;
 
-export function HelpFeedback() {
+export function HelpFeedback({ locale = 'ru' }: { locale?: Locale }) {
   const [vote, setVote] = useState<Vote | null>(null);
 
   return (
@@ -26,8 +28,8 @@ export function HelpFeedback() {
       className="mt-6 flex flex-col gap-3 rounded-card border border-border bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between"
     >
       <p className="text-sm font-semibold">
-        Полезно?{' '}
-        {vote !== null ? <span className="text-success-ink">Спасибо! Ваш отзыв учтён.</span> : null}
+        {t(locale, 'help.feedback.question')}{' '}
+        {vote !== null ? <span className="text-success-ink">{t(locale, 'help.feedback.thanks')}</span> : null}
       </p>
       <div className="flex gap-2">
         <button
@@ -38,7 +40,7 @@ export function HelpFeedback() {
           className={voteButtonClasses(vote === 'yes')}
         >
           <ThumbsUp aria-hidden="true" className="size-4" />
-          Да
+          {t(locale, 'help.feedback.yes')}
         </button>
         <button
           type="button"
@@ -48,7 +50,7 @@ export function HelpFeedback() {
           className={voteButtonClasses(vote === 'no')}
         >
           <ThumbsDown aria-hidden="true" className="size-4" />
-          Нет
+          {t(locale, 'help.feedback.no')}
         </button>
       </div>
     </div>

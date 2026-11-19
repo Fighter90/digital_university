@@ -4,6 +4,7 @@
 // no-store: выдача персональная — кешировать запрещено.
 import { requireDataCtx, searchCabinet } from '@/server/data';
 import { dataDb } from '@/server/data/db';
+import { getLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,10 @@ const MAX_QUERY_LENGTH = 80;
 
 export async function GET(request: Request) {
   const rawQuery = (new URL(request.url).searchParams.get('q') ?? '').slice(0, MAX_QUERY_LENGTH);
-  const ctx = await requireDataCtx('/api/search');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/api/search'), getLocale()] as const);
 
   const started = performance.now();
-  const result = await searchCabinet(dataDb, ctx, rawQuery);
+  const result = await searchCabinet(dataDb, ctx, rawQuery, locale);
   const tookMs = Math.round(performance.now() - started);
 
   return Response.json({ ...result, tookMs }, { headers: { 'Cache-Control': 'no-store' } });

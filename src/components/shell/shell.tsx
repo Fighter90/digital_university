@@ -118,11 +118,11 @@ export function Shell({
         returnFocusRef={searchTriggerRef}
         role={user.role}
       />
-      <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} />
+      <AssistantPanel open={assistantOpen} onOpenChange={setAssistantOpen} locale={locale} />
       {/* DIG-72: попап-чат ассистента по справке (монтирован всегда —
           история сессии живёт в памяти компонента и переживает закрытие). */}
       {user.role === 'STUDENT' && (
-        <FloatingAssistantPopup open={fabOpen} onOpenChange={setFabOpen} />
+        <FloatingAssistantPopup open={fabOpen} onOpenChange={setFabOpen} locale={locale} />
       )}
     </div>
   );

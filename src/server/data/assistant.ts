@@ -16,8 +16,10 @@
 // которому предшествует явное «Подтвердить и отправить» пользователя.
 
 import { formatDayTitle, toScheduleEventCards } from '@/lib/schedule-cards';
-import { LESSON_KIND_LABELS } from '@/lib/dashboard-format';
+import { lessonKindLabel } from '@/lib/dashboard-format';
+import type { Locale } from '@/lib/i18n';
 import type { GradeElementKind } from '@/lib/gradebook';
+import type { ScheduleKind } from '@/server/data/types';
 import { accumulatedGrade, type GradedElementLike } from '@/lib/performance-math';
 import {
   dayRange,
@@ -44,14 +46,22 @@ const CONTEXT_RESOURCE = 'assistant-context';
 const ORDER_RESOURCE = 'assistant-order';
 const REPORT_RESOURCE = 'assistant-report';
 
-/** Полные подписи видов элементов плана контроля (для карточки калькулятора). */
-const ELEMENT_KIND_LABELS: Record<GradeElementKind, string> = {
-  HOMEWORK: 'Домашняя работа',
-  LAB: 'Лабораторная',
-  TEST: 'Тест',
-  PROJECT: 'Проект',
-  EXAM: 'Экзамен',
+/** Полные подписи видов элементов плана контроля по локали.
+ * ScheduleKind не знает EXAM — таблица EN расширена (DIG-88). */
+const ELEMENT_KIND_LABELS_EN: Record<GradeElementKind, string> = {
+  HOMEWORK: 'Homework',
+  LAB: 'Lab',
+  TEST: 'Test',
+  PROJECT: 'Project',
+  EXAM: 'Exam',
 };
+
+/** Подпись вида элемента плана контроля по локали (RU — канон lessonKindLabel). */
+function elementKindLabel(kind: GradeElementKind, locale: Locale): string {
+  const en = ELEMENT_KIND_LABELS_EN[kind];
+  if (locale === 'en') return kind === 'EXAM' ? en : lessonKindLabel(kind as ScheduleKind, 'en');
+  return kind === 'EXAM' ? 'Экзамен' : lessonKindLabel(kind as ScheduleKind);
+}
 
 /** Тема обращения «Сообщить о неверном ответе» (видна в «Связи с деканатом»). */
 export const ASSISTANT_REPORT_SUBJECT = 'AI-ассистент: неверный ответ';
@@ -70,17 +80,18 @@ function firstNameOf(fullName: string): string {
 
 /** Строки расписания → карточки ответа ассистента. Форматирование времени,
  * аудиторий и переносов — тот же сериализатор, что у экрана расписания
- * (toScheduleEventCards), чтобы ассистент не расходился с кабинетом. */
-function toAssistantLessons(rows: Parameters<typeof toScheduleEventCards>[0]) {
-  return toScheduleEventCards(rows).map((card) => ({
+ * (toScheduleEventCards), чтобы ассистент не расходился с кабинетом.
+ * DIG-88: подписи интерфейса (тип занятия, «ауд./онлайн») — по локали. */
+function toAssistantLessons(rows: Parameters<typeof toScheduleEventCards>[0], locale: Locale) {
+  return toScheduleEventCards(rows, locale).map((card) => ({
     timeLabel: card.timeLabel,
     discipline: card.discipline,
-    kindLabel: LESSON_KIND_LABELS[card.kind],
+    kindLabel: lessonKindLabel(card.kind, locale),
     roomLabel: card.roomLabel,
     teacher: card.teacher,
     isMoved: card.isMoved,
     isCancelled: card.isCancelled,
-    isOnline: card.roomLabel === 'онлайн',
+    isOnline: card.roomLabel.toLowerCase() === (locale === 'en' ? 'online' : 'онлайн'),
     previousRoomLabel: card.previousRoomLabel,
   }));
 }
@@ -97,6 +108,7 @@ function toAssistantDiscipline(
   plan: DisciplineElementRow[],
   graded: GradedElementLike[],
   fallbackName: string,
+  locale: Locale = 'ru',
 ): AssistantDiscipline {
   const latest = new Map<string, GradedElementLike>();
   for (const row of graded) {
@@ -111,7 +123,7 @@ function toAssistantDiscipline(
     return {
       code: el.elementCode,
       name: el.elementName,
-      kindLabel: ELEMENT_KIND_LABELS[el.kind],
+      kindLabel: elementKindLabel(el.kind, locale),
       weightPercent: Math.round(el.weight * 100),
       maxScore: el.maxScore,
       graded: row !== undefined,
@@ -156,6 +168,7 @@ export async function getAssistantContext(
   db: DataDb,
   ctx: DataCtx,
   now: Date = new Date(),
+  locale: Locale = 'ru',
 ): Promise<AssistantContext> {
   if (ctx.role !== 'STUDENT' || ctx.studentId === null || ctx.groupName === null) {
     await denyAccess(db, {
@@ -193,8 +206,8 @@ export async function getAssistantContext(
   const tomorrowDate = shiftMoscowDays(now, 1);
   const tomorrow = {
     dateKey: moscowDateKey(tomorrowDate),
-    dateLabel: formatDayTitle(tomorrowDate),
-    events: toAssistantLessons(tomorrowEvents),
+    dateLabel: formatDayTitle(tomorrowDate, locale),
+    events: toAssistantLessons(tomorrowEvents, locale),
   };
 
   // Ближайший учебный день (когда завтра пар нет): от завтрашнего дня
@@ -205,7 +218,7 @@ export async function getAssistantContext(
     if (from.getTime() < bounds.end.getTime()) {
       const upcoming = await db.listScheduleByGroupRange(ctx.groupName, { from, to: bounds.end });
       if (upcoming.length > 0) {
-        nextStudyDayLabel = formatDayTitle(upcoming[0]!.startsAt);
+        nextStudyDayLabel = formatDayTitle(upcoming[0]!.startsAt, locale);
       }
     }
   }
@@ -236,6 +249,7 @@ export async function getAssistantContext(
         plan,
         graded,
         ownRows[0]?.disciplineName ?? code,
+        locale,
       );
     })
     .filter((d): d is AssistantDiscipline => d !== null)

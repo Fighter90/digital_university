@@ -15,12 +15,16 @@ import { AssistantChat } from '@/components/assistant/assistant-chat';
 import { Sparkles } from 'lucide-react';
 import { getAssistantContext, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
+import { t, type Locale } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 
-export const metadata: Metadata = {
-  title: 'AI-ассистент — Цифровой деканат',
-  description:
-    'AI-ассистент цифрового деканата: расписание, калькулятор цели по экзамену, заявки и правила — с карточками действий. Концепт для конкурса.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return {
+    title: t(locale, 'meta.assistant'),
+    description: t(locale, 'meta.assistantDescription'),
+  };
+}
 
 /** Коды дисциплин в deep-link: латиница/цифры и дефис (PI21-INFO). */
 const DEEP_LINK_CODE = /^[A-Za-z0-9][A-Za-z0-9-]{0,63}$/;
@@ -32,9 +36,10 @@ const MAX_SEED_QUERY_LENGTH = 300;
 function buildSeedQuestion(
   intent: string | undefined,
   discipline: string | undefined,
+  locale: Locale,
 ): string | null {
   if (intent !== 'exam-prep' || !discipline || !DEEP_LINK_CODE.test(discipline)) return null;
-  return `Сколько нужно на экзамене по ${discipline}, чтобы получить 8?`;
+  return t(locale, 'assistant.seed.exam', { discipline });
 }
 
 /**
@@ -54,11 +59,11 @@ export default async function AiAssistantPage({
 }: {
   searchParams?: Promise<Record<string, string>>;
 }) {
-  const ctx = await requireDataCtx('/ai-assistant');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/ai-assistant'), getLocale()] as const);
   const params = await searchParams;
-  const context = await getAssistantContext(dataDb, ctx);
+  const context = await getAssistantContext(dataDb, ctx, new Date(), locale);
   const seedQuestion =
-    buildSeedQuestion(params.intent, params.discipline) ?? seedFromQuery(params.q);
+    buildSeedQuestion(params.intent, params.discipline, locale) ?? seedFromQuery(params.q);
 
   return (
     // Высота = вьюпорт минус каркас (топбар, баннер концепта, отступы main):
@@ -73,16 +78,15 @@ export default async function AiAssistantPage({
         </span>
         <div className="min-w-0">
           <h1 className="text-xl font-extrabold tracking-heading text-foreground md:text-2xl">
-            AI-ассистент
+            {t(locale, 'assistant.panel.title')}
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Отвечает по вашим данным и предлагает карточки действий. Отправка заявок — только по
-            вашему подтверждению.
+            {t(locale, 'assistant.page.subtitle')}
           </p>
         </div>
       </header>
 
-      <AssistantChat context={context} seedQuestion={seedQuestion} />
+      <AssistantChat context={context} seedQuestion={seedQuestion} locale={locale} />
     </section>
   );
 }
