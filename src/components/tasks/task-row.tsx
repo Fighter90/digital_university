@@ -9,7 +9,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import { TASK_ACTION_LABELS, TASK_SOURCE_LABELS, dueLabel } from '@/lib/task-format';
+import { dueLabel, taskSourceLabel, taskActionLabel } from '@/lib/task-format';
+import { t, type Locale } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { TaskSource, TaskView } from '@/server/data/tasks';
 
@@ -30,7 +31,14 @@ const SOURCE_ICON: Record<TaskSource, LucideIcon> = {
   MANUAL: SquareCheckBig,
 };
 
-export function TaskRow({ task }: { task: TaskView }) {
+export function TaskRow({
+  task,
+  locale = 'ru',
+}: {
+  task: TaskView;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const Icon = SOURCE_ICON[task.source];
   const overdue = (task.daysLeft ?? 1) < 0;
   const dueToday = task.daysLeft === 0;
@@ -55,13 +63,13 @@ export function TaskRow({ task }: { task: TaskView }) {
       <div className="min-w-[12rem] flex-1">
         <p className="text-sm font-semibold text-neutral-900">{task.verb}</p>
         <p className="mt-0.5 text-xs text-neutral-600">
-          {TASK_SOURCE_LABELS[task.source]} · {task.origin}
+          {taskSourceLabel(task.source, locale)} · {task.origin}
         </p>
       </div>
 
       <span
         data-testid="task-due"
-        title={task.dueAt === null ? 'Срок не назначен — задача ждёт сейчас' : undefined}
+        title={task.dueAt === null ? t(locale, 'tasks.due.noneTitle') : undefined}
         className={cn(
           'shrink-0 rounded-pill px-2.5 py-0.5 text-[11px] font-semibold',
           overdue && 'bg-error-soft text-error-ink',
@@ -69,18 +77,18 @@ export function TaskRow({ task }: { task: TaskView }) {
           !overdue && !dueToday && 'bg-muted text-muted-foreground',
         )}
       >
-        {dueLabel(task.daysLeft, task.dueAt)}
+        {dueLabel(task.daysLeft, task.dueAt, locale)}
       </span>
 
       {task.manual ? (
-        <MarkTaskDoneButton taskId={task.id.replace(/^manual-/, '')} />
+        <MarkTaskDoneButton taskId={task.id.replace(/^manual-/, '')} locale={locale} />
       ) : (
         <Link
           data-testid="task-action"
           href={task.href}
           className="shrink-0 rounded-pill border border-border px-3 py-1.5 text-xs font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
         >
-          {TASK_ACTION_LABELS[task.source as Exclude<TaskSource, 'MANUAL'>]}
+          {taskActionLabel(task.source as Exclude<TaskSource, 'MANUAL'>, locale)}
         </Link>
       )}
     </li>

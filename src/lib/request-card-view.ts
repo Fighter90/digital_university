@@ -166,8 +166,13 @@ export function requestWizardView(
   };
 }
 
-/** «512 Б» / «2 КБ» / «1,2 МБ» — размер вложения для карточки. */
-export function formatAttachmentSize(bytes: number): string {
+/** «512 Б» / «2 КБ» / «1,2 МБ» — RU; EN — «512 B» / «2 KB» / «1.2 MB». */
+export function formatAttachmentSize(bytes: number, locale: Locale = 'ru'): string {
+  if (locale === 'en') {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
   if (bytes < 1024) return `${bytes} Б`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} КБ`;
   return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} МБ`;

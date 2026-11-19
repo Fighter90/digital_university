@@ -24,6 +24,7 @@ import {
   swipeDirection,
   type ScheduleEventCard,
 } from '@/lib/schedule-cards';
+import { t, type Locale } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListenDayButton } from '@/components/schedule/listen-day-button';
 import { EventCard } from './event-card';
@@ -32,7 +33,7 @@ export interface MobileDayView {
   dateKey: string;
   weekdayShort: string;
   dayNumber: number;
-  /** «чт, 12 ноября» — подпись для компактного списка и пустых дней. */
+  /** «чт, 12 ноября» / «Thu, November 12» — подпись для компактного списка. */
   listLabel: string;
   isToday: boolean;
   events: ScheduleEventCard[];
@@ -49,6 +50,8 @@ export interface MobileScheduleProps {
   voiceEnabled?: boolean;
   /** DIG-24 — query-часть ссылки на детали (?view=…&date=…). */
   eventQuery?: string;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 const SWIPE_THRESHOLD = 48;
@@ -60,6 +63,7 @@ export function MobileSchedule({
   nextStudy,
   voiceEnabled = true,
   eventQuery,
+  locale = 'ru',
 }: MobileScheduleProps) {
   const [selectedKey, setSelectedKey] = useState(initialDateKey);
   const ribbonRef = useRef<HTMLDivElement | null>(null);
@@ -117,7 +121,11 @@ export function MobileSchedule({
 
   if (mode === 'week') {
     return (
-      <WeekList days={weekDays.length > 0 ? weekDays : days.slice(0, 7)} eventQuery={eventQuery} />
+      <WeekList
+        days={weekDays.length > 0 ? weekDays : days.slice(0, 7)}
+        eventQuery={eventQuery}
+        locale={locale}
+      />
     );
   }
 
@@ -174,24 +182,27 @@ export function MobileSchedule({
 
       <div className="flex items-baseline justify-between gap-2">
         <h2 data-testid="mobile-day-title" className="text-base font-bold tracking-heading">
-          {formatDayTitleFromKey(selected.dateKey)}
+          {formatDayTitleFromKey(selected.dateKey, locale)}
           {selected.isToday ? (
             <span className="ml-2 rounded-pill bg-accent-soft px-2 py-0.5 align-middle text-xs font-semibold text-accent-ink">
-              сегодня
+              {t(locale, 'schedule.todayBadge')}
             </span>
           ) : null}
         </h2>
-        <span className="text-xs text-muted-foreground">{pairsLabel(selected.events.length)}</span>
+        <span className="text-xs text-muted-foreground">
+          {pairsLabel(selected.events.length, locale)}
+        </span>
       </div>
 
       {/* DIG-65 — «Прослушать день» для выбранного в ленте дня: озвучка идёт
           вслед за свайпом (события берутся из выбранного дня, не из «сегодня»).
           Отдельная строка — предсказуемая раскладка на 360 px. */}
       <ListenDayButton
-        title={formatDayTitleFromKey(selected.dateKey)}
+        title={formatDayTitleFromKey(selected.dateKey, locale)}
         isToday={selected.isToday}
         events={selected.events}
         enabled={voiceEnabled}
+        locale={locale}
         className="self-start"
       />
 
@@ -199,9 +210,9 @@ export function MobileSchedule({
         <div data-testid="mobile-day-empty">
           <EmptyState
             icon={CalendarOff}
-            title="Пар в этот день нет"
+            title={t(locale, 'schedule.day.empty.title')}
             className="px-4 py-8"
-            description={emptyDescription(days, selectedKey, selectedIndex, nextStudy)}
+            description={emptyDescription(days, selectedKey, selectedIndex, nextStudy, locale)}
           />
         </div>
       ) : (
@@ -234,6 +245,7 @@ export function MobileSchedule({
               event={event}
               href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
               riseIndex={index}
+              locale={locale}
             />
           ))}
         </ol>
@@ -248,21 +260,31 @@ function emptyDescription(
   selectedKey: string,
   selectedIndex: number,
   nextStudy: MobileScheduleProps['nextStudy'],
+  locale: Locale,
 ): string {
   for (let i = selectedIndex + 1; i < days.length; i += 1) {
     const day = days[i]!;
     if (day.events.length > 0 && day.dateKey > selectedKey) {
-      return `Ближайшие пары: ${day.listLabel}.`;
+      return `${t(locale, 'schedule.day.empty.next', { label: day.listLabel })}.`;
     }
   }
   if (nextStudy && nextStudy.dateKey > selectedKey) {
-    return `Ближайшие пары: ${nextStudy.label}.`;
+    return `${t(locale, 'schedule.day.empty.next', { label: nextStudy.label })}.`;
   }
-  return 'В семестре пар больше нет';
+  return t(locale, 'schedule.day.empty.none');
 }
 
 /** Компактный список недели (переключатель «Неделя» на мобильном). */
-function WeekList({ days, eventQuery }: { days: readonly MobileDayView[]; eventQuery?: string }) {
+function WeekList({
+  days,
+  eventQuery,
+  locale = 'ru',
+}: {
+  days: readonly MobileDayView[];
+  eventQuery?: string;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   return (
     <div data-testid="mobile-week-list" className="flex flex-col gap-4">
       {days.map((day) => (
@@ -276,17 +298,17 @@ function WeekList({ days, eventQuery }: { days: readonly MobileDayView[]; eventQ
               {day.listLabel}
               {day.isToday ? (
                 <span className="ml-2 rounded-pill bg-accent-soft px-1.5 py-0.5 align-middle text-[11px] font-semibold text-accent-ink">
-                  сегодня
+                  {t(locale, 'schedule.todayBadge')}
                 </span>
               ) : null}
             </h3>
             <span className="text-xs text-muted-foreground">
-              {day.events.length > 0 ? pairsLabel(day.events.length) : null}
+              {day.events.length > 0 ? pairsLabel(day.events.length, locale) : null}
             </span>
           </div>
           {day.events.length === 0 ? (
             <p className="rounded-card border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
-              Нет пар
+              {t(locale, 'schedule.mobile.noPairs')}
             </p>
           ) : (
             <ol className="flex flex-col gap-1.5">
@@ -297,6 +319,7 @@ function WeekList({ days, eventQuery }: { days: readonly MobileDayView[]; eventQ
                   compact
                   href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
                   riseIndex={index}
+                  locale={locale}
                 />
               ))}
             </ol>

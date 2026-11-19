@@ -17,6 +17,7 @@ import { personHrefByFullName } from '@/lib/people-catalog';
 // списка (обратная совместимость рендеров без контекста панели).
 import { LESSON_KIND_META } from '@/lib/schedule-cards';
 import type { ScheduleEventCard } from '@/lib/schedule-cards';
+import { t, type Locale } from '@/lib/i18n';
 import { riseDelayStyle } from '@/lib/motion';
 import { Badge } from '@/components/ui/badge';
 import { EventTypePill } from './event-type-pill';
@@ -32,9 +33,17 @@ export interface EventCardProps {
    * --du-rise-delay через riseDelayStyle). Без пропса анимации нет.
    */
   riseIndex?: number;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
-export function EventCard({ event, compact = false, href, riseIndex }: EventCardProps) {
+export function EventCard({
+  event,
+  compact = false,
+  href,
+  riseIndex,
+  locale = 'ru',
+}: EventCardProps) {
   const meta = LESSON_KIND_META[event.kind];
   /** DIG-37: имя преподавателя — ссылка на карточку в справочнике. */
   const teacherHref = personHrefByFullName(event.teacher);
@@ -53,7 +62,9 @@ export function EventCard({ event, compact = false, href, riseIndex }: EventCard
       {/* время слева */}
       <span className="flex w-14 shrink-0 flex-col pt-0.5 font-mono">
         <span className="text-sm font-bold text-neutral-900">{event.startLabel}</span>
-        <span className="text-[11px] leading-tight text-neutral-500">до {event.endLabel}</span>
+        <span className="text-[11px] leading-tight text-neutral-500">
+          {t(locale, 'schedule.untilPrefix')} {event.endLabel}
+        </span>
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -65,7 +76,7 @@ export function EventCard({ event, compact = false, href, riseIndex }: EventCard
           >
             {event.discipline}
           </span>
-          <EventTypePill kind={event.kind} />
+          <EventTypePill kind={event.kind} locale={locale} />
         </div>
         {compact ? (
           <p className="truncate text-xs text-neutral-600">{event.roomLabel}</p>
@@ -87,8 +98,12 @@ export function EventCard({ event, compact = false, href, riseIndex }: EventCard
         )}
         {event.isMoved || event.isCancelled ? (
           <div className="flex flex-wrap items-center gap-1.5">
-            {event.isMoved ? <Badge status="warning">Перенос</Badge> : null}
-            {event.isCancelled ? <Badge status="error">Отмена</Badge> : null}
+            {event.isMoved ? (
+              <Badge status="warning">{t(locale, 'schedule.badge.moved')}</Badge>
+            ) : null}
+            {event.isCancelled ? (
+              <Badge status="error">{t(locale, 'schedule.badge.cancelled')}</Badge>
+            ) : null}
             {event.isMoved && event.previousRoomLabel ? (
               <span className="text-xs font-semibold text-warning-ink">
                 {event.previousRoomLabel}

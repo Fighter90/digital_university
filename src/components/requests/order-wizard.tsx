@@ -19,6 +19,7 @@
 
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import { t, type Locale } from '@/lib/i18n';
+import { pluralRu } from '@/lib/dashboard-format';
 import { Check, FileText, Paperclip, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -32,7 +33,7 @@ import {
   MAX_WIZARD_FILES,
   MAX_WIZARD_COPIES,
   WIZARD_DELIVERIES,
-  WIZARD_DELIVERY_LABELS,
+  wizardDeliveryLabel,
   WIZARD_LANGUAGES,
   WIZARD_LANGUAGE_LABELS,
   wizardFilesError,
@@ -41,7 +42,7 @@ import {
   type WizardMeta,
   type WizardDelivery,
 } from '@/lib/request-wizard-schema';
-import { REQUEST_FORMAT_LABELS, requestTypeHint, type OrderTarget } from '@/lib/request-order-map';
+import { requestFormatLabel, requestTypeHint, type OrderTarget } from '@/lib/request-order-map';
 import {
   parseRequestFormSchema,
   requestTitleFromParams,
@@ -88,14 +89,34 @@ export interface OrderWizardProps {
 
 type WizardStep = 1 | 2 | 3;
 
-const STEP_TITLES: Record<WizardStep, string> = {
-  1: 'Что нужно',
-  2: 'Параметры',
-  3: 'Проверка',
+const STEP_TITLE_KEYS: Record<
+  WizardStep,
+  'wizard.step.what' | 'wizard.step.params' | 'wizard.step.review'
+> = {
+  1: 'wizard.step.what',
+  2: 'wizard.step.params',
+  3: 'wizard.step.review',
 };
 
 const inputClass =
   'mt-1 w-full rounded-button border border-border bg-card px-3 py-2 text-sm text-foreground shadow-soft outline-none transition-colors placeholder:text-muted-foreground focus:border-muted-foreground/40';
+
+/** Метка срока/формата типа для шагов 1 и 3 (по локали, DIG-87). */
+function typeBadgeLabel(
+  type: { isInstant: boolean; etaDays: number | null },
+  locale: Locale,
+): string {
+  if (type.isInstant) return t(locale, 'wizard.badge.instant');
+  return type.etaDays !== null
+    ? t(locale, 'wizard.badge.eta', { days: type.etaDays })
+    : t(locale, 'wizard.badge.etaUnknown');
+}
+
+/** «N файл/файла/файлов» / «N file(s)» — сводка вложений шага 3 (DIG-87). */
+function filesCountLabel(count: number, locale: Locale): string {
+  if (locale === 'en') return `${count} ${count === 1 ? 'file' : 'files'}`;
+  return `${count} ${pluralRu(count, ['файл', 'файла', 'файлов'])}`;
+}
 
 export function OrderWizard({
   types,
@@ -256,7 +277,7 @@ export function OrderWizard({
     const chosen = Array.from(list ?? []);
     if (chosen.length === 0) return;
     const metas = chosen.map((file) => ({ name: file.name, size: file.size }));
-    const error = wizardFilesError(metas, files.length);
+    const error = wizardFilesError(metas, files.length, locale);
     if (error) {
       setFilesError(error);
       return;
@@ -282,7 +303,7 @@ export function OrderWizard({
   const etaLabel = (() => {
     if (!selectedType || selectedType.isInstant) return null;
     const ready = slaReadyDate(new Date(), selectedType.etaDays);
-    return ready ? formatReadyBy(ready) : null;
+    return ready ? formatReadyBy(ready, locale) : null;
   })();
 
   const progress = created || duplicate ? 3 : step;
@@ -311,11 +332,11 @@ export function OrderWizard({
           <div className="sticky top-0 z-10 border-b border-border bg-card px-5 pb-3 pt-5 sm:px-6">
             <div className="flex items-start justify-between gap-4">
               <BaseDialog.Title className="text-lg font-extrabold tracking-heading">
-                Заказ справки или заявления
+                {t(locale, 'wizard.title')}
               </BaseDialog.Title>
               <BaseDialog.Close
                 data-testid="wizard-close"
-                aria-label="Закрыть мастер"
+                aria-label={t(locale, 'wizard.closeAria')}
                 className="-m-2 rounded-button p-2 text-muted-foreground hover:text-foreground"
               >
                 <Icon icon={X} size={18} />
@@ -326,11 +347,17 @@ export function OrderWizard({
                 data-testid="wizard-step-label"
                 className="whitespace-nowrap text-xs font-semibold text-muted-foreground"
               >
-                {created || duplicate ? 'Готово' : `Шаг ${step} из 3 · ${STEP_TITLES[step]}`}
+                {created || duplicate
+                  ? t(locale, 'wizard.done')
+                  : t(locale, 'wizard.stepLabel', {
+                      step,
+                      total: 3,
+                      title: t(locale, STEP_TITLE_KEYS[step]),
+                    })}
               </span>
               <div
                 role="progressbar"
-                aria-label="Прогресс заказа"
+                aria-label={t(locale, 'wizard.progressAria')}
                 aria-valuemin={1}
                 aria-valuemax={3}
                 aria-valuenow={progress}
@@ -372,9 +399,10 @@ export function OrderWizard({
                   instant={instantType}
                   duplicate={duplicate !== null}
                   etaLabel={etaLabel}
+                  locale={locale}
                 />
               ) : step === 1 ? (
-                <StepWhat types={types} typeCode={typeCode} onSelect={selectType} />
+                <StepWhat types={types} typeCode={typeCode} onSelect={selectType} locale={locale} />
               ) : step === 2 ? (
                 <StepParams
                   schemaFields={schema?.fields ?? []}
@@ -388,6 +416,7 @@ export function OrderWizard({
                   onFiles={onFilesChosen}
                   onRemoveFile={removeFile}
                   profile={profile}
+                  locale={locale}
                 />
               ) : (
                 <StepReview
@@ -399,6 +428,7 @@ export function OrderWizard({
                   files={files}
                   profile={profile}
                   consent={consent}
+                  locale={locale}
                   onConsent={(next) => {
                     setConsent(next);
                     markDirty();
@@ -418,7 +448,7 @@ export function OrderWizard({
                   onClick={() => setStep((prev) => (prev === 3 ? 2 : 1))}
                   className="inline-flex items-center rounded-button border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted"
                 >
-                  Назад
+                  {t(locale, 'wizard.back')}
                 </button>
               ) : (
                 <span />
@@ -431,7 +461,7 @@ export function OrderWizard({
                   onClick={closeNow}
                   className={cn(buttonVariants({ variant: 'primary', size: 'md' }))}
                 >
-                  Готово
+                  {t(locale, 'wizard.done')}
                 </button>
               ) : step === 3 ? (
                 <button
@@ -450,7 +480,7 @@ export function OrderWizard({
                   disabled={step === 1 && !typeCode}
                   className={cn(buttonVariants({ variant: 'primary', size: 'md' }))}
                 >
-                  {step === 2 ? 'Далее: проверка' : 'Далее'}
+                  {step === 2 ? t(locale, 'wizard.nextReview') : t(locale, 'wizard.next')}
                 </button>
               )}
             </div>
@@ -467,10 +497,10 @@ export function OrderWizard({
             className="fixed top-1/2 left-1/2 z-[70] w-[min(400px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-block border border-border bg-card p-6 text-card-foreground shadow-hover outline-none"
           >
             <BaseDialog.Title className="text-lg font-extrabold tracking-heading">
-              Выйти без сохранения?
+              {t(locale, 'wizard.exit.title')}
             </BaseDialog.Title>
             <BaseDialog.Description className="mt-1 text-sm text-muted-foreground">
-              Заполненные данные будут потеряны.
+              {t(locale, 'wizard.exit.desc')}
             </BaseDialog.Description>
             <div className="mt-5 flex justify-end gap-3">
               <button
@@ -479,7 +509,7 @@ export function OrderWizard({
                 onClick={() => setConfirmExit(false)}
                 className="inline-flex items-center rounded-button border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted"
               >
-                Продолжить заполнение
+                {t(locale, 'wizard.exit.stay')}
               </button>
               <button
                 type="button"
@@ -487,7 +517,7 @@ export function OrderWizard({
                 onClick={closeNow}
                 className="inline-flex items-center rounded-button bg-error px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-error/90"
               >
-                Выйти без сохранения
+                {t(locale, 'wizard.exit.discard')}
               </button>
             </div>
           </BaseDialog.Popup>
@@ -503,16 +533,17 @@ function StepWhat({
   types,
   typeCode,
   onSelect,
+  locale = 'ru',
 }: {
   types: WizardTypeDto[];
   typeCode: string | null;
   onSelect: (code: string) => void;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   return (
-    <div role="radiogroup" aria-label="Тип документа">
-      <p className="text-sm text-muted-foreground">
-        Выберите тип документа — его можно сменить в любой момент до отправки.
-      </p>
+    <div role="radiogroup" aria-label={t(locale, 'wizard.type.groupAria')}>
+      <p className="text-sm text-muted-foreground">{t(locale, 'wizard.type.intro')}</p>
       <div className="mt-3 flex flex-col gap-2">
         {types.map((type) => {
           const selected = type.code === typeCode;
@@ -545,17 +576,13 @@ function StepWhat({
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold leading-snug">{type.name}</span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {requestTypeHint(type.code)}
+                  {requestTypeHint(type.code, locale)}
                 </span>
                 <span className="mt-2 flex flex-wrap gap-1.5">
                   <Badge status={type.isInstant ? 'success' : 'neutral'}>
-                    {type.isInstant
-                      ? 'Мгновенно'
-                      : type.etaDays !== null
-                        ? `≈ ${type.etaDays} раб. дн.`
-                        : 'Срок уточнит деканат'}
+                    {typeBadgeLabel(type, locale)}
                   </Badge>
-                  <Badge>{REQUEST_FORMAT_LABELS[type.format]}</Badge>
+                  <Badge>{requestFormatLabel(type.format, locale)}</Badge>
                 </span>
               </span>
               {selected ? (
@@ -597,6 +624,7 @@ function StepParams({
   onFiles,
   onRemoveFile,
   profile,
+  locale = 'ru',
 }: {
   schemaFields: SchemaField[];
   values: Record<string, string>;
@@ -609,6 +637,8 @@ function StepParams({
   onFiles: (list: FileList | null) => void;
   onRemoveFile: (index: number) => void;
   profile: WizardProfileDto | null;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   return (
     <div>
@@ -617,14 +647,15 @@ function StepParams({
         className="rounded-card border border-border bg-muted/40 p-3"
       >
         <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-          Данные из профиля
+          {t(locale, 'wizard.profile.title')}
         </p>
         <p className="mt-1 text-sm font-bold">
-          {profile?.fullName ?? 'Данные появятся из профиля'}
+          {profile?.fullName ?? t(locale, 'wizard.profile.empty')}
         </p>
         {profile ? (
           <p className="text-xs text-muted-foreground">
-            {profile.groupName} · {profile.course} курс · {profile.faculty}
+            {profile.groupName} · {t(locale, 'wizard.profile.course', { course: profile.course })} ·{' '}
+            {profile.faculty}
           </p>
         ) : null}
       </div>
@@ -649,7 +680,7 @@ function StepParams({
                 className={inputClass}
               >
                 <option value="" disabled={field.required === true}>
-                  — выберите —
+                  {t(locale, 'wizard.selectPlaceholder')}
                 </option>
                 {(field.options ?? []).map((option) => (
                   <option key={option} value={option}>
@@ -697,7 +728,7 @@ function StepParams({
 
       <div className="mt-4">
         <label htmlFor="wizard-destination" className="text-sm font-semibold">
-          Куда предоставляется
+          {t(locale, 'wizard.destination.label')}
         </label>
         <input
           id="wizard-destination"
@@ -705,7 +736,7 @@ function StepParams({
           type="text"
           value={meta.destination}
           maxLength={MAX_WIZARD_DESTINATION_LENGTH}
-          placeholder="Например: банк, работодатель, военкомат"
+          placeholder={t(locale, 'wizard.destination.placeholder')}
           onChange={(event) => onMeta({ destination: event.target.value })}
           className={inputClass}
         />
@@ -713,7 +744,7 @@ function StepParams({
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div data-testid="wizard-language">
-          <p className="text-sm font-semibold">Язык справки</p>
+          <p className="text-sm font-semibold">{t(locale, 'wizard.language.label')}</p>
           <div className="mt-1">
             <Segmented
               options={WIZARD_LANGUAGES.map((lang: WizardLanguage) => ({
@@ -722,13 +753,13 @@ function StepParams({
               }))}
               value={meta.language}
               onChange={(lang) => onMeta({ language: lang })}
-              aria-label="Язык справки"
+              aria-label={t(locale, 'wizard.language.label')}
             />
           </div>
         </div>
         <div>
           <label htmlFor="wizard-copies" className="text-sm font-semibold">
-            Количество экземпляров
+            {t(locale, 'wizard.copies.label')}
           </label>
           <select
             id="wizard-copies"
@@ -747,8 +778,12 @@ function StepParams({
       </div>
 
       <div className="mt-4">
-        <p className="text-sm font-semibold">Способ получения</p>
-        <div role="radiogroup" aria-label="Способ получения" className="mt-1 flex flex-col gap-2">
+        <p className="text-sm font-semibold">{t(locale, 'wizard.delivery.label')}</p>
+        <div
+          role="radiogroup"
+          aria-label={t(locale, 'wizard.delivery.label')}
+          className="mt-1 flex flex-col gap-2"
+        >
           {WIZARD_DELIVERIES.map((delivery: WizardDelivery) => {
             const checked = meta.delivery === delivery;
             return (
@@ -771,7 +806,7 @@ function StepParams({
                   onChange={() => onMeta({ delivery })}
                   className="size-4 accent-coral-600"
                 />
-                {WIZARD_DELIVERY_LABELS[delivery]}
+                {wizardDeliveryLabel(delivery, locale)}
               </label>
             );
           })}
@@ -780,7 +815,10 @@ function StepParams({
 
       <div className="mt-4">
         <label htmlFor="wizard-comment" className="text-sm font-semibold">
-          Комментарий <span className="font-normal text-muted-foreground">(необязательно)</span>
+          {t(locale, 'wizard.comment.label')}{' '}
+          <span className="font-normal text-muted-foreground">
+            {t(locale, 'wizard.comment.optional')}
+          </span>
         </label>
         <textarea
           id="wizard-comment"
@@ -788,7 +826,7 @@ function StepParams({
           value={meta.comment}
           rows={2}
           maxLength={MAX_WIZARD_COMMENT_LENGTH}
-          placeholder="Что важно учесть деканату"
+          placeholder={t(locale, 'wizard.comment.placeholder')}
           onChange={(event) => onMeta({ comment: event.target.value })}
           className={inputClass}
         />
@@ -796,9 +834,12 @@ function StepParams({
 
       <div className="mt-4">
         <label htmlFor="wizard-files" className="text-sm font-semibold">
-          Вложения{' '}
+          {t(locale, 'wizard.files.label')}{' '}
           <span className="font-normal text-muted-foreground">
-            (до {MAX_WIZARD_FILES} файлов, до {MAX_WIZARD_FILE_SIZE_MB} МБ каждый)
+            {t(locale, 'wizard.files.hint', {
+              files: MAX_WIZARD_FILES,
+              size: MAX_WIZARD_FILE_SIZE_MB,
+            })}
           </span>
         </label>
         <div className="mt-1 flex items-center gap-2 rounded-button border border-dashed border-border bg-muted/30 px-3 py-2.5">
@@ -837,7 +878,7 @@ function StepParams({
                 <span className="min-w-0 truncate">{file.name}</span>
                 <button
                   type="button"
-                  aria-label={`Убрать файл ${file.name}`}
+                  aria-label={t(locale, 'wizard.files.removeAria', { name: file.name })}
                   onClick={() => onRemoveFile(index)}
                   className="rounded-button p-1 text-muted-foreground hover:text-foreground"
                 >
@@ -867,6 +908,7 @@ function StepReview({
   onEditDocument,
   onEditParams,
   submitError,
+  locale = 'ru',
 }: {
   documentTitle: string;
   keyFieldLabel: string;
@@ -880,6 +922,8 @@ function StepReview({
   onEditDocument: () => void;
   onEditParams: () => void;
   submitError: string | null;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   const editButton =
     'rounded-button border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground shadow-soft transition-colors hover:bg-muted';
@@ -890,14 +934,14 @@ function StepReview({
         className="rounded-card border border-border p-3"
       >
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-bold">Документ</h3>
+          <h3 className="text-sm font-bold">{t(locale, 'wizard.review.document')}</h3>
           <button
             type="button"
             data-testid="wizard-edit-document"
             onClick={onEditDocument}
             className={editButton}
           >
-            Изменить
+            {t(locale, 'wizard.review.edit')}
           </button>
         </div>
         <p className="mt-1 text-sm">{documentTitle}</p>
@@ -905,13 +949,9 @@ function StepReview({
           {selectedType ? (
             <>
               <Badge status={selectedType.isInstant ? 'success' : 'neutral'}>
-                {selectedType.isInstant
-                  ? 'Мгновенно'
-                  : selectedType.etaDays !== null
-                    ? `≈ ${selectedType.etaDays} раб. дн.`
-                    : 'Срок уточнит деканат'}
+                {typeBadgeLabel(selectedType, locale)}
               </Badge>
-              <Badge>{REQUEST_FORMAT_LABELS[selectedType.format]}</Badge>
+              <Badge>{requestFormatLabel(selectedType.format, locale)}</Badge>
             </>
           ) : null}
         </div>
@@ -922,14 +962,14 @@ function StepReview({
         className="rounded-card border border-border p-3"
       >
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-bold">Параметры</h3>
+          <h3 className="text-sm font-bold">{t(locale, 'wizard.review.params')}</h3>
           <button
             type="button"
             data-testid="wizard-edit-params"
             onClick={onEditParams}
             className={editButton}
           >
-            Изменить
+            {t(locale, 'wizard.review.edit')}
           </button>
         </div>
         <dl className="mt-1 flex flex-col gap-1 text-sm">
@@ -940,31 +980,29 @@ function StepReview({
             </div>
           ) : null}
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Куда предоставляется</dt>
+            <dt className="text-muted-foreground">{t(locale, 'wizard.review.destination')}</dt>
             <dd className="text-right font-medium">{meta.destination.trim() || '—'}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Язык</dt>
+            <dt className="text-muted-foreground">{t(locale, 'wizard.review.language')}</dt>
             <dd className="text-right font-medium">{WIZARD_LANGUAGE_LABELS[meta.language]}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Экземпляры</dt>
+            <dt className="text-muted-foreground">{t(locale, 'wizard.review.copies')}</dt>
             <dd className="text-right font-medium">{meta.copies}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Способ получения</dt>
-            <dd className="text-right font-medium">{WIZARD_DELIVERY_LABELS[meta.delivery]}</dd>
+            <dt className="text-muted-foreground">{t(locale, 'wizard.review.delivery')}</dt>
+            <dd className="text-right font-medium">{wizardDeliveryLabel(meta.delivery, locale)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Комментарий</dt>
+            <dt className="text-muted-foreground">{t(locale, 'wizard.review.comment')}</dt>
             <dd className="text-right font-medium">{meta.comment.trim() || '—'}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Вложения</dt>
+            <dt className="text-muted-foreground">{t(locale, 'wizard.review.attachments')}</dt>
             <dd className="text-right font-medium">
-              {files.length > 0
-                ? `${files.length} ${files.length === 1 ? 'файл' : files.length < 5 ? 'файла' : 'файлов'}`
-                : '—'}
+              {files.length > 0 ? filesCountLabel(files.length, locale) : '—'}
             </dd>
           </div>
         </dl>
@@ -975,15 +1013,16 @@ function StepReview({
         className="rounded-card border border-border p-3"
       >
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-bold">Данные студента</h3>
+          <h3 className="text-sm font-bold">{t(locale, 'wizard.review.profile')}</h3>
           <Link href="/profile" className={editButton}>
-            Изменить
+            {t(locale, 'wizard.review.edit')}
           </Link>
         </div>
         <p className="mt-1 text-sm font-medium">{profile?.fullName ?? '—'}</p>
         {profile ? (
           <p className="text-xs text-muted-foreground">
-            {profile.groupName} · {profile.course} курс · {profile.faculty}
+            {profile.groupName} · {t(locale, 'wizard.profile.course', { course: profile.course })} ·{' '}
+            {profile.faculty}
           </p>
         ) : null}
       </section>
@@ -997,8 +1036,8 @@ function StepReview({
           className="mt-0.5 size-4 accent-coral-600"
         />
         <span>
-          <span className="font-semibold">Данные верны</span> — проверил сводку и подтверждаю
-          отправку заявки.
+          <span className="font-semibold">{t(locale, 'wizard.consent.strong')}</span>{' '}
+          {t(locale, 'wizard.consent.rest')}
         </span>
       </label>
 
@@ -1022,11 +1061,14 @@ function SuccessScreen({
   instant,
   duplicate,
   etaLabel,
+  locale = 'ru',
 }: {
   number: string;
   instant: boolean;
   duplicate: boolean;
   etaLabel: string | null;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   return (
     <div data-testid="wizard-success" className="flex flex-col items-center py-2 text-center">
@@ -1034,17 +1076,15 @@ function SuccessScreen({
       <Illustration name="success" className="size-24 md:size-28" />
 
       <h3 className="mt-3 text-lg font-extrabold tracking-heading">
-        {instant ? 'Справка готова' : 'Заявка отправлена'}
+        {instant ? t(locale, 'wizard.success.instantTitle') : t(locale, 'wizard.success.sentTitle')}
       </h3>
       {duplicate ? (
         <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-          Такая справка уже готова — новая заявка не создавалась, скачайте документ.
+          {t(locale, 'wizard.success.duplicate')}
         </p>
       ) : (
         <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-          {instant
-            ? 'Документ сформирован автоматически — можно скачать прямо сейчас.'
-            : 'Деканат принял заявку и сообщит о готовности в уведомлениях.'}
+          {instant ? t(locale, 'wizard.success.instantDesc') : t(locale, 'wizard.success.sentDesc')}
         </p>
       )}
 
@@ -1059,11 +1099,11 @@ function SuccessScreen({
             href={`/api/requests/${number}/document`}
             className={cn(buttonVariants({ variant: 'primary', size: 'md' }), 'w-full sm:w-auto')}
           >
-            Скачать PDF
+            {t(locale, 'wizard.success.download')}
           </a>
         ) : etaLabel ? (
           <p data-testid="wizard-success-eta" className="text-sm text-muted-foreground">
-            Готовность до {etaLabel}
+            {t(locale, 'requests.readyBy', { date: etaLabel })}
           </p>
         ) : null}
 
@@ -1072,7 +1112,7 @@ function SuccessScreen({
           href={`/requests/${number}`}
           className="text-sm font-semibold text-coral-600 underline-offset-2 hover:underline"
         >
-          Следить за статусом
+          {t(locale, 'wizard.success.track')}
         </Link>
       </div>
     </div>

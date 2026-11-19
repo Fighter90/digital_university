@@ -30,6 +30,7 @@ import {
   type RequestCardView,
   type RequestIconKind,
   nextActionLineLocalized,
+  requestNumberLabel,
   unifyRequestStatus,
 } from '@/lib/requests-view';
 import {
@@ -86,6 +87,10 @@ export function RequestCard({
       ? formatRequestDate(new Date(request.createdAtISO), locale)
       : request.createdAtLabel;
 
+  // DIG-87: на EN канонический номер «ЗД-…» показывается латиницей («ZD-…»);
+  // ссылки остаются на каноническом номере — роут и поиск не меняются.
+  const numberLabel = requestNumberLabel(request.number, locale);
+
   return (
     <article
       data-testid="request-card"
@@ -102,7 +107,7 @@ export function RequestCard({
         className="absolute inset-0 z-10 rounded-card focus-visible:outline-2 focus-visible:outline-coral-600"
       >
         <span className="sr-only">
-          {t(locale, 'card.openAria', { number: request.number, title: request.title })}
+          {t(locale, 'card.openAria', { number: numberLabel, title: request.title })}
         </span>
       </Link>
 
@@ -128,7 +133,7 @@ export function RequestCard({
             </span>
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-            <span className="font-mono">{request.number}</span>
+            <span className="font-mono">{numberLabel}</span>
             <span aria-hidden="true">·</span>
             <span>{t(locale, 'card.submittedAt', { date: createdAtLabel })}</span>
           </p>

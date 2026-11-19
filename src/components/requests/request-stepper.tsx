@@ -46,6 +46,7 @@ export function RequestStepper({
         <Stepper
           steps={REQUEST_PIPELINE_STEPS.map((s, index) => ({ label: stepLabel(index) }))}
           states={states}
+          ariaLabel={t(locale, 'requests.stepper.aria')}
         />
       </div>
       {/* Компактный степпер на 360 px: точки + подпись текущего шага. */}

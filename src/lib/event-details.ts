@@ -17,7 +17,9 @@
 //  - примечание деканата обычной пары (note) — info-строка панели.
 
 import { formatMoscowTime } from '@/lib/schedule-time';
+import { lessonKindLabel } from '@/lib/dashboard-format';
 import { LESSON_KIND_META, formatDayTitle } from '@/lib/schedule-cards';
+import { t, type Locale } from '@/lib/i18n';
 import { type IcsEventInput } from '@/lib/ics';
 import type { ScheduleEventRow } from '@/server/data/types';
 
@@ -26,12 +28,14 @@ function isOnlineRoom(room: string): boolean {
   return room.trim().toLowerCase() === 'онлайн';
 }
 
-function roomLabelOf(room: string): string {
-  return isOnlineRoom(room) ? 'онлайн' : `ауд. ${room.trim()}`;
+function roomLabelOf(room: string, locale: Locale = 'ru'): string {
+  return isOnlineRoom(room)
+    ? t(locale, 'schedule.room.online')
+    : t(locale, 'schedule.room.label', { room: room.trim() });
 }
 
 /** Корпус по умолчанию (в демо-данных здания деканата не ведутся отдельно). */
-const DEFAULT_BUILDING = 'Главный корпус';
+const DEFAULT_BUILDING_KEY = 'schedule.building.main' as const;
 
 /** Ссылка на карточку преподавателя в справочнике (экран «Справочник» DIG-37). */
 const DIRECTORY_HREF = '/directory';
@@ -100,12 +104,12 @@ export interface EventDetailsView {
 }
 
 /** Строка слоя данных → сериализуемая вью-модель панели деталей. */
-export function toEventDetailsView(row: ScheduleEventRow): EventDetailsView {
+export function toEventDetailsView(row: ScheduleEventRow, locale: Locale = 'ru'): EventDetailsView {
   const isMoved = row.status === 'ROOM_CHANGED' || row.status === 'TIME_CHANGED';
   const isCancelled = row.status === 'CANCELLED';
 
   const wasParts: string[] = [];
-  if (row.previousRoom) wasParts.push(`ауд. ${row.previousRoom}`);
+  if (row.previousRoom) wasParts.push(t(locale, 'schedule.room.was', { room: row.previousRoom }));
   if (row.previousStartsAt) wasParts.push(formatMoscowTime(row.previousStartsAt));
 
   return {
@@ -113,14 +117,14 @@ export function toEventDetailsView(row: ScheduleEventRow): EventDetailsView {
     status: isMoved ? 'MOVED' : isCancelled ? 'CANCELLED' : 'SCHEDULED',
     isMoved,
     isCancelled,
-    kindLabel: LESSON_KIND_META[row.kind].label,
+    kindLabel: lessonKindLabel(row.kind, locale),
     stripeClass: LESSON_KIND_META[row.kind].stripe,
     discipline: row.disciplineName,
     disciplineCode: row.disciplineCode,
-    dateLabel: formatDayTitle(row.startsAt),
+    dateLabel: formatDayTitle(row.startsAt, locale),
     timeLabel: `${formatMoscowTime(row.startsAt)}–${formatMoscowTime(row.endsAt)}`,
-    roomLabel: roomLabelOf(row.room),
-    buildingLabel: row.building ?? DEFAULT_BUILDING,
+    roomLabel: roomLabelOf(row.room, locale),
+    buildingLabel: row.building ?? t(locale, DEFAULT_BUILDING_KEY),
     onlineUrl: row.onlineUrl ?? null,
     teacherName: row.teacherName,
     teacherEmail: row.teacherEmail ?? null,
@@ -132,9 +136,11 @@ export function toEventDetailsView(row: ScheduleEventRow): EventDetailsView {
     move: isMoved
       ? {
           wasLabel: wasParts.length > 0 ? wasParts.join(', ') : null,
-          nowLabel: `${roomLabelOf(row.room)}, ${formatMoscowTime(row.startsAt)}`,
+          nowLabel: `${roomLabelOf(row.room, locale)}, ${formatMoscowTime(row.startsAt)}`,
           reason: row.changeNote ?? null,
-          authorLabel: row.changeAuthor?.trim() ? row.changeAuthor.trim() : 'деканат',
+          authorLabel: row.changeAuthor?.trim()
+            ? row.changeAuthor.trim()
+            : t(locale, 'schedule.author.deanery'),
         }
       : null,
     cancel: isCancelled ? { reason: row.note ?? null, makeupLabel: row.changeNote ?? null } : null,
@@ -163,7 +169,7 @@ export function toEventIcsInput(view: EventDetailsView): IcsEventInput {
     startsAt: view.startsAt,
     endsAt: view.endsAt,
     location:
-      view.onlineUrl || view.roomLabel === 'онлайн'
+      view.onlineUrl || ['онлайн', 'online'].includes(view.roomLabel.trim().toLowerCase())
         ? 'Онлайн'
         : `${view.roomLabel}, ${view.buildingLabel}`,
     description,
