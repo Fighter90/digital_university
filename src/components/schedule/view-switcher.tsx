@@ -26,6 +26,7 @@ import { cn } from 'cn';
 // не используются — они дают расхождения SSR/гидрации и подвешивают
 // soft-навигацию без Suspense-границы.
 import { buildViewHref, parseDateKey, type ScheduleView } from '@/lib/schedule-cards';
+import { t, type Locale } from '@/lib/i18n';
 
 export interface ViewSwitcherProps {
   /** Вид, отмеченный на ЭТОМ брейкпоинте (десктоп и мобильный могут различаться в auto-режиме). */
@@ -36,19 +37,31 @@ export interface ViewSwitcherProps {
   currentQuery: string;
   /** Московский ключ «сегодня» («2026-11-12») — для buildViewHref (детерминизм SSR). */
   todayKey: string;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
-const VIEWS: ReadonlyArray<{ value: ScheduleView; label: string }> = [
-  { value: 'day', label: 'День' },
-  { value: 'week', label: 'Неделя' },
-  { value: 'month', label: 'Месяц' },
-];
+const VIEW_KEYS = {
+  day: 'schedule.view.day',
+  week: 'schedule.view.week',
+  month: 'schedule.view.month',
+} as const;
 
-export function ViewSwitcher({ view, platform, currentQuery, todayKey }: ViewSwitcherProps) {
+export function ViewSwitcher({
+  view,
+  platform,
+  currentQuery,
+  todayKey,
+  locale = 'ru',
+}: ViewSwitcherProps) {
   const refs = useRef<Array<HTMLAnchorElement | null>>([]);
   // now нужен buildViewHref только для фокуса месяца; серверный todayKey
   // делает href одинаковым на сервере и после гидрации.
   const now = parseDateKey(todayKey) ?? new Date();
+
+  const VIEWS: ReadonlyArray<{ value: ScheduleView; label: string }> = (
+    ['day', 'week', 'month'] as const
+  ).map((value) => ({ value, label: t(locale, VIEW_KEYS[value]) }));
 
   const selectedIndex = Math.max(
     VIEWS.findIndex((option) => option.value === view),
@@ -72,7 +85,12 @@ export function ViewSwitcher({ view, platform, currentQuery, todayKey }: ViewSwi
     <div
       ref={rootRef}
       role="radiogroup"
-      aria-label={`Вид расписания (${platform === 'desktop' ? 'основной' : 'мобильный'})`}
+      aria-label={t(locale, 'schedule.switchAria', {
+        platform: t(
+          locale,
+          platform === 'desktop' ? 'schedule.platform.desktop' : 'schedule.platform.mobile',
+        ),
+      })}
       data-testid={`view-switcher-${platform}`}
       data-hydrated="false"
       className="inline-flex rounded-pill border border-border bg-card p-1"

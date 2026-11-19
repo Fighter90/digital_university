@@ -34,6 +34,7 @@ import { cn } from 'cn';
 import { buttonVariants } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
+import { t, type Locale } from '@/lib/i18n';
 import type { EventDetailsView } from '@/lib/event-details';
 import { deleteEventNoteAction, saveEventNoteAction } from '@/server/actions/schedule';
 
@@ -43,6 +44,8 @@ export interface EventDetailsPanelProps {
   note: string | null;
   /** URL текущего вида без ?event= — сюда ведут закрытие и «Назад». */
   closeHref: string;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 /** Лимит заметки — дублирует MAX_NOTE_LENGTH слоя данных (500). */
@@ -52,7 +55,12 @@ const NOTE_MAX_LENGTH = 500;
 const PANEL_CLASSES =
   'fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-block border-t border-border bg-card p-5 text-card-foreground shadow-hover outline-none md:top-0 md:bottom-0 md:left-auto md:right-0 md:max-h-none md:w-[420px] md:rounded-t-none md:rounded-l-block md:border-t-0 md:border-l';
 
-export function EventDetailsPanel({ view, note, closeHref }: EventDetailsPanelProps) {
+export function EventDetailsPanel({
+  view,
+  note,
+  closeHref,
+  locale = 'ru',
+}: EventDetailsPanelProps) {
   // Панель открыта ровно пока жив ?event=: локальный open нужен, чтобы Esc
   // закрывал панель сразу, а URL обновлялся следом (без навигации).
   const [open, setOpen] = useState(true);
@@ -140,7 +148,7 @@ export function EventDetailsPanel({ view, note, closeHref }: EventDetailsPanelPr
           </h2>
           <button
             type="button"
-            aria-label="Закрыть панель"
+            aria-label={t(locale, 'schedule.panel.closeAria')}
             onClick={dismiss}
             className="-m-2 rounded-button p-2 text-muted-foreground hover:text-foreground"
           >
@@ -152,7 +160,13 @@ export function EventDetailsPanel({ view, note, closeHref }: EventDetailsPanelPr
         </p>
 
         <div className="mt-4">
-          <PanelContent view={view} note={note} closeHref={closeHref} onDismiss={dismiss} />
+          <PanelContent
+            view={view}
+            note={note}
+            closeHref={closeHref}
+            onDismiss={dismiss}
+            locale={locale}
+          />
         </div>
       </div>
     </>
@@ -164,12 +178,16 @@ function PanelContent({
   note,
   closeHref,
   onDismiss,
+  locale = 'ru',
 }: {
   view: EventDetailsView;
   note: string | null;
   closeHref: string;
   onDismiss: () => void;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
+  const isOnlineRoom = ['онлайн', 'online'].includes(view.roomLabel.trim().toLowerCase());
   return (
     <div className="flex flex-col gap-5">
       {/* ── Шапка: цветная полоса типа, статус ─────────────────────────── */}
@@ -180,13 +198,15 @@ function PanelContent({
         />
         <div className="flex flex-wrap items-center gap-2">
           {view.isCancelled ? (
-            <Badge status="error">Отменена</Badge>
+            <Badge status="error">{t(locale, 'schedule.badge.cancelledFull')}</Badge>
           ) : view.isMoved ? (
-            <Badge status="warning">Перенос</Badge>
+            <Badge status="warning">{t(locale, 'schedule.badge.moved')}</Badge>
           ) : (
-            <Badge status="success">По расписанию</Badge>
+            <Badge status="success">{t(locale, 'schedule.status.scheduled')}</Badge>
           )}
-          <span className="text-xs text-muted-foreground">группа · {view.disciplineCode}</span>
+          <span className="text-xs text-muted-foreground">
+            {t(locale, 'schedule.panel.group', { code: view.disciplineCode })}
+          </span>
         </div>
       </div>
 
@@ -194,10 +214,19 @@ function PanelContent({
       {view.move ? (
         <div className="rounded-button border border-warning-soft bg-warning-soft px-3 py-2.5 text-sm text-warning-ink">
           <p className="font-semibold">
-            Было: {view.move.wasLabel ?? '—'} → Стало: {view.move.nowLabel}
+            {t(locale, 'schedule.panel.wasNow', {
+              was: view.move.wasLabel ?? '—',
+              now: view.move.nowLabel,
+            })}
           </p>
-          {view.move.reason ? <p className="mt-1">Причина: {view.move.reason}</p> : null}
-          <p className="mt-1">Изменил(а): {view.move.authorLabel}</p>
+          {view.move.reason ? (
+            <p className="mt-1">
+              {t(locale, 'schedule.panel.reason', { reason: view.move.reason })}
+            </p>
+          ) : null}
+          <p className="mt-1">
+            {t(locale, 'schedule.panel.author', { author: view.move.authorLabel })}
+          </p>
         </div>
       ) : null}
 
@@ -205,10 +234,14 @@ function PanelContent({
       {view.cancel ? (
         <div className="rounded-button border border-error-soft bg-error-soft px-3 py-2.5 text-sm text-error-ink">
           {view.cancel.reason ? (
-            <p className="font-semibold">Причина: {view.cancel.reason}</p>
+            <p className="font-semibold">
+              {t(locale, 'schedule.panel.reason', { reason: view.cancel.reason })}
+            </p>
           ) : null}
           {view.cancel.makeupLabel ? (
-            <p className="mt-1">Что делать: {view.cancel.makeupLabel}</p>
+            <p className="mt-1">
+              {t(locale, 'schedule.panel.whatToDo', { label: view.cancel.makeupLabel })}
+            </p>
           ) : null}
         </div>
       ) : null}
@@ -220,11 +253,19 @@ function PanelContent({
       ) : null}
 
       {/* ── Аудитория и корпус ─────────────────────────────────────────── */}
-      <section className="flex flex-col gap-2" aria-label="Место занятия">
-        <Row label={view.roomLabel === 'онлайн' ? 'Формат' : 'Аудитория'}>
+      <section className="flex flex-col gap-2" aria-label={t(locale, 'schedule.panel.placeAria')}>
+        <Row
+          label={
+            isOnlineRoom ? t(locale, 'schedule.panel.format') : t(locale, 'schedule.details.room')
+          }
+        >
           <span className="font-semibold">{view.roomLabel}</span>
-          {view.roomLabel !== 'онлайн' ? (
-            <BuildingRoute roomLabel={view.roomLabel} buildingLabel={view.buildingLabel} />
+          {!isOnlineRoom ? (
+            <BuildingRoute
+              roomLabel={view.roomLabel}
+              buildingLabel={view.buildingLabel}
+              locale={locale}
+            />
           ) : null}
           {view.onlineUrl ? (
             <a
@@ -233,13 +274,13 @@ function PanelContent({
               rel="noreferrer noopener"
               className="break-all text-sm font-semibold text-accent-ink underline underline-offset-2"
             >
-              Ссылка на онлайн-встречу
+              {t(locale, 'schedule.panel.onlineLink')}
             </a>
           ) : null}
         </Row>
 
         {/* ── Преподаватель: справочник, email, «Написать» ───────────────── */}
-        <Row label="Преподаватель">
+        <Row label={t(locale, 'schedule.details.teacher')}>
           <Link
             href={view.teacherCardHref}
             className="text-sm font-semibold underline underline-offset-2 hover:no-underline"
@@ -258,26 +299,26 @@ function PanelContent({
                 })}
               >
                 <Icon icon={MessageCircle} size={14} />
-                Написать
+                {t(locale, 'schedule.panel.write')}
               </a>
             </>
           ) : null}
         </Row>
 
         {view.homework ? (
-          <Row label="Домашнее задание">
+          <Row label={t(locale, 'schedule.panel.homework')}>
             <p className="text-sm">{view.homework}</p>
           </Row>
         ) : null}
         {view.materials ? (
-          <Row label="Материалы">
+          <Row label={t(locale, 'schedule.panel.materials')}>
             <p className="text-sm">{view.materials}</p>
           </Row>
         ) : null}
       </section>
 
       {/* ── Моя заметка ────────────────────────────────────────────────── */}
-      <NoteEditor eventId={view.id} note={note} />
+      <NoteEditor eventId={view.id} note={note} locale={locale} />
 
       {/* ── Действия ───────────────────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2 border-t border-border pt-4">
@@ -287,11 +328,11 @@ function PanelContent({
           download
         >
           <Icon icon={CalendarPlus} size={14} />
-          Добавить в календарь
+          {t(locale, 'schedule.panel.addToCalendar')}
         </a>
         <Link href="/ai-assistant" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
           <Icon icon={Sparkles} size={14} />
-          Спросить AI об этой паре
+          {t(locale, 'schedule.panel.askAi')}
         </Link>
       </div>
 
@@ -306,7 +347,7 @@ function PanelContent({
           }}
           className={buttonVariants({ variant: 'secondary', size: 'sm' })}
         >
-          Закрыть
+          {t(locale, 'schedule.panel.close')}
         </Link>
       </div>
     </div>
@@ -316,7 +357,16 @@ function PanelContent({
 // ── Строка «метка → содержимое» ──────────────────────────────────────────────
 
 /** Аудитория + корпус + «Как пройти» (схема корпуса — заглушка концепта). */
-function BuildingRoute({ roomLabel, buildingLabel }: { roomLabel: string; buildingLabel: string }) {
+function BuildingRoute({
+  roomLabel,
+  buildingLabel,
+  locale = 'ru',
+}: {
+  roomLabel: string;
+  buildingLabel: string;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const [routeOpen, setRouteOpen] = useState(false);
   return (
     <>
@@ -328,12 +378,11 @@ function BuildingRoute({ roomLabel, buildingLabel }: { roomLabel: string; buildi
         className={buttonVariants({ variant: 'secondary', size: 'sm', className: 'w-fit' })}
       >
         <Icon icon={MapPin} size={14} />
-        Как пройти
+        {t(locale, 'schedule.panel.route')}
       </button>
       {routeOpen ? (
         <p className="rounded-button bg-muted px-3 py-2 text-xs text-muted-foreground">
-          Схема корпуса «{buildingLabel}» — заглушка концепта: маршрут от входа до аудитории{' '}
-          {roomLabel} появится в финальном макете.
+          {t(locale, 'schedule.panel.routeStub', { building: buildingLabel, room: roomLabel })}
         </p>
       ) : null}
     </>
@@ -351,7 +400,16 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 // ── Заметка студента (server actions) ────────────────────────────────────────
 
-function NoteEditor({ eventId, note }: { eventId: string; note: string | null }) {
+function NoteEditor({
+  eventId,
+  note,
+  locale = 'ru',
+}: {
+  eventId: string;
+  note: string | null;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const [saveState, saveAction, savePending] = useActionState(saveEventNoteAction, null);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteEventNoteAction, null);
   // Управляемое поле: истина о тексте — сервер (note из RSC после
@@ -384,11 +442,11 @@ function NoteEditor({ eventId, note }: { eventId: string; note: string | null })
   return (
     <section
       className="flex flex-col gap-2 rounded-card border border-border p-3"
-      aria-label="Моя заметка"
+      aria-label={t(locale, 'schedule.note.title')}
     >
-      <h3 className="text-sm font-bold tracking-heading">Моя заметка</h3>
+      <h3 className="text-sm font-bold tracking-heading">{t(locale, 'schedule.note.title')}</h3>
       <p className="text-xs text-muted-foreground">
-        Видна только вам. До {NOTE_MAX_LENGTH} символов.
+        {t(locale, 'schedule.note.hint', { max: NOTE_MAX_LENGTH })}
       </p>
       <form action={saveAction} className="flex flex-col gap-2">
         <input type="hidden" name="eventId" value={eventId} />
@@ -398,7 +456,7 @@ function NoteEditor({ eventId, note }: { eventId: string; note: string | null })
           onChange={(event) => setText(event.target.value)}
           maxLength={NOTE_MAX_LENGTH}
           rows={3}
-          placeholder="Например: принести ноутбук, спросить про зачёт…"
+          placeholder={t(locale, 'schedule.note.placeholder')}
           className="w-full resize-y rounded-button border border-border bg-card px-3 py-2 text-sm outline-none focus:border-accent"
         />
         <div className="flex items-center gap-2">
@@ -407,7 +465,7 @@ function NoteEditor({ eventId, note }: { eventId: string; note: string | null })
             disabled={savePending}
             className={buttonVariants({ variant: 'primary', size: 'sm' })}
           >
-            {savePending ? 'Сохраняем…' : 'Сохранить'}
+            {savePending ? t(locale, 'btn.saving') : t(locale, 'btn.save')}
           </button>
           {note ? (
             <button
@@ -417,14 +475,14 @@ function NoteEditor({ eventId, note }: { eventId: string; note: string | null })
               className={buttonVariants({ variant: 'ghost', size: 'sm' })}
             >
               <Icon icon={Trash2} size={14} />
-              {deletePending ? 'Удаляем…' : 'Удалить'}
+              {deletePending ? t(locale, 'btn.deleting') : t(locale, 'btn.delete')}
             </button>
           ) : null}
         </div>
       </form>
       {error ? <p className="text-xs font-medium text-error-ink">{error}</p> : null}
       {saveState?.ok ? (
-        <p className="text-xs font-medium text-success-ink">Заметка сохранена</p>
+        <p className="text-xs font-medium text-success-ink">{t(locale, 'schedule.note.saved')}</p>
       ) : null}
     </section>
   );

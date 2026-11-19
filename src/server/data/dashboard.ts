@@ -13,16 +13,18 @@
 // по построению (тот же контракт, что requests.ts / schedule.ts).
 
 import {
-  LESSON_KIND_LABELS,
   buildWeekSummary,
+  deadlineKindLabel,
   disciplineLevel,
-  formatDateBadge,
   formatLongDate,
   formatTime,
   greetingFor,
   headingDateLabel,
+  lessonKindLabel,
   nearestStudyDayLabel,
+  formatDateBadge,
 } from '@/lib/dashboard-format';
+import { t, type Locale } from '@/lib/i18n';
 import { getPerformance } from './performance';
 import { getRequestsScreen } from './requests-screen';
 import { requestFilterCounts } from '@/lib/requests-view';
@@ -181,13 +183,17 @@ function averageDeltaPercent(rows: GradeRow[]): number | null {
 }
 
 /** Пересдачи = академические долги: ближайшие будущие RETAKE-сессии группы. */
-function debtsFromExams(exams: ExamSessionRow[], startOfToday: number): DebtView[] {
+function debtsFromExams(
+  exams: ExamSessionRow[],
+  startOfToday: number,
+  locale: Locale = 'ru',
+): DebtView[] {
   return exams
     .filter((e) => e.kind === 'RETAKE' && startOfDay(e.date).getTime() >= startOfToday)
     .sort((a, b) => a.date.getTime() - b.date.getTime())
     .map((e) => ({
       disciplineName: e.disciplineName,
-      dateLabel: formatLongDate(e.date),
+      dateLabel: formatLongDate(e.date, locale),
       daysLeft: calendarDaysLeft(e.date, startOfToday),
     }));
 }
@@ -216,7 +222,11 @@ const sameLocalDay = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
-export function toTodayView(events: ScheduleEventRow[], now: Date): TodayView {
+export function toTodayView(
+  events: ScheduleEventRow[],
+  now: Date,
+  locale: Locale = 'ru',
+): TodayView {
   const todayLessons = events
     .filter((e) => sameLocalDay(e.date, now))
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
@@ -227,16 +237,19 @@ export function toTodayView(events: ScheduleEventRow[], now: Date): TodayView {
     const isOnline = e.room.trim().toLowerCase() === 'онлайн';
     const transferNote =
       e.status === 'ROOM_CHANGED'
-        ? `Перенос: ауд. ${e.previousRoom ?? '—'} → ${e.room}`
+        ? t(locale, 'dashboard.transfer.room', {
+            from: e.previousRoom ?? '—',
+            to: e.room,
+          })
         : e.status === 'TIME_CHANGED' && e.previousStartsAt
-          ? `Время изменено: было ${formatTime(e.previousStartsAt)}`
+          ? t(locale, 'dashboard.transfer.time', { time: formatTime(e.previousStartsAt) })
           : null;
     return {
       id: e.id,
       startsAt: e.startsAt,
       endsAt: e.endsAt,
       kind: e.kind,
-      kindLabel: LESSON_KIND_LABELS[e.kind],
+      kindLabel: lessonKindLabel(e.kind, locale),
       disciplineName: e.disciplineName,
       room: e.room,
       teacherName: e.teacherName,
@@ -257,7 +270,7 @@ export function toTodayView(events: ScheduleEventRow[], now: Date): TodayView {
     nearestKey === null
       ? null
       : {
-          label: nearestStudyDayLabel(new Date(nearestKey)),
+          label: nearestStudyDayLabel(new Date(nearestKey), locale),
           count: nextDay.filter((e) => startOfDay(e.date).getTime() === nearestKey).length,
         };
 
@@ -269,18 +282,28 @@ export function toTodayView(events: ScheduleEventRow[], now: Date): TodayView {
   };
 }
 
-export function toDeadlineViews(exams: ExamSessionRow[], now: Date, limit = 3): DeadlineView[] {
+export function toDeadlineViews(
+  exams: ExamSessionRow[],
+  now: Date,
+  limit = 3,
+  locale: Locale = 'ru',
+): DeadlineView[] {
   const startOfToday = startOfDay(now).getTime();
   return exams
     .filter((e) => calendarDaysLeft(e.date, startOfToday) >= 0)
     .sort((a, b) => a.date.getTime() - b.date.getTime())
     .slice(0, limit)
     .map((e) => {
-      const badge = formatDateBadge(e.date);
+      const badge = formatDateBadge(e.date, locale);
       return {
         id: e.id,
         disciplineName: e.disciplineName,
-        kindLabel: e.kind === 'RETAKE' ? 'Пересдача' : e.kind === 'CREDIT' ? 'Зачёт' : 'Экзамен',
+        kindLabel:
+          e.kind === 'RETAKE'
+            ? deadlineKindLabel('RETAKE', locale)
+            : e.kind === 'CREDIT'
+              ? deadlineKindLabel('CREDIT', locale)
+              : deadlineKindLabel('EXAM', locale),
         date: e.date,
         dayBadge: badge.day,
         monthBadge: badge.month,
@@ -345,11 +368,14 @@ export function toRequestsView(requests: ServiceRequestRow[]): RequestsView {
  * (profile, schedule, exams, grades, requests) — один «запрос» со стороны
  * страницы, нулевой водопад. Формат ошибок — Section, чтобы страница могла
  * отрисовать состояние ошибки отдельно для каждого блока.
+ * DIG-87 — строки-вью (тип занятия, переносы, даты, сводка) по локали
+ * (дефолт 'ru' — прежние байт-в-байт строки).
  */
 export async function getDashboard(
   db: DataDb,
   ctx: DataCtx,
   now: Date = new Date(),
+  locale: Locale = 'ru',
 ): Promise<DashboardData> {
   const [student, schedule, exams, grades, performance, screen, tasks] = await Promise.all([
     settle(ctx.studentId === null ? Promise.resolve(null) : db.findStudentById(ctx.studentId)),
@@ -364,14 +390,14 @@ export async function getDashboard(
     settle(
       ctx.studentId === null
         ? Promise.resolve({ openCount: 0, top: [] })
-        : getTasksSummary(db, ctx, now),
+        : getTasksSummary(db, ctx, now, locale),
     ),
   ]);
 
   const firstName = student.ok && student.value ? student.value.fullName.split(' ')[0] : null;
 
-  const today = derive(schedule, (events) => toTodayView(events, now));
-  const deadlines = derive(exams, (rows) => toDeadlineViews(rows, now));
+  const today = derive(schedule, (events) => toTodayView(events, now, locale));
+  const deadlines = derive(exams, (rows) => toDeadlineViews(rows, now, 3, locale));
   const progress = combine(performance, exams, (perf, e) => {
     const base = toProgressView(
       grades.ok ? grades.value : [],
@@ -404,22 +430,25 @@ export async function getDashboard(
         };
 
   const summary = derive(schedule, (events) => {
-    const view = toTodayView(events, now);
-    const retake = derive(exams, (rows) => debtsFromExams(rows, startOfDay(now).getTime()));
+    const view = toTodayView(events, now, locale);
+    const retake = derive(exams, (rows) => debtsFromExams(rows, startOfDay(now).getTime(), locale));
     const retakeDaysLeft =
       retake.ok && retake.value.length > 0 ? (retake.value[0]?.daysLeft ?? null) : null;
-    return buildWeekSummary({
-      pairs: view.lessons.length,
-      moved: view.movedCount,
-      cancelled: view.cancelledCount,
-      retakeDaysLeft,
-    });
+    return buildWeekSummary(
+      {
+        pairs: view.lessons.length,
+        moved: view.movedCount,
+        cancelled: view.cancelledCount,
+        retakeDaysLeft,
+      },
+      locale,
+    );
   });
 
   return {
     firstName,
-    greeting: greetingFor(now),
-    headingDate: headingDateLabel(now),
+    greeting: greetingFor(now, locale),
+    headingDate: headingDateLabel(now, locale),
     summary: summary.ok ? summary.value : null,
     today,
     deadlines,

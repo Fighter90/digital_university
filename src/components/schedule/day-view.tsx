@@ -4,14 +4,16 @@ import { CalendarOff, ChevronLeft, ChevronRight } from 'lucide-react';
 // Заголовок дня со стрелками-соседями и кнопкой «Сегодня», список пар
 // карточками EventCard; пустой день — иллюстрация и «Ближайшие пары: …».
 // Серверный компонент: листание — ссылки (?view=day&date=…), без клиента.
+// DIG-87 — строки интерфейса по локали (дефолт 'ru').
 import type { ScheduleEventCard } from '@/lib/schedule-cards';
+import { t, type Locale } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListenDayButton } from '@/components/schedule/listen-day-button';
 import { EventCard } from './event-card';
 
 export interface NextStudyDayInfo {
   dateKey: string;
-  /** «чт, 12 ноября». */
+  /** «чт, 12 ноября» / «Thu, November 12». */
   label: string;
 }
 
@@ -27,6 +29,8 @@ export interface DayViewProps {
   eventQuery?: string;
   /** DIG-65 — «Озвучка и голосовой ввод» (настройка студента). */
   voiceEnabled?: boolean;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 const arrowClasses =
@@ -42,18 +46,23 @@ export function DayView({
   nextStudy,
   voiceEnabled = true,
   eventQuery,
+  locale = 'ru',
 }: DayViewProps) {
   return (
     <div data-testid="desktop-day" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="flex items-center gap-2">
           {prevHref ? (
-            <a href={prevHref} aria-label="Предыдущий день" className={arrowClasses}>
+            <a
+              href={prevHref}
+              aria-label={t(locale, 'schedule.prevDayAria')}
+              className={arrowClasses}
+            >
               <ChevronLeft size={18} aria-hidden="true" />
             </a>
           ) : (
             <span
-              aria-label="Предыдущий день"
+              aria-label={t(locale, 'schedule.prevDayAria')}
               aria-disabled="true"
               className={`${arrowClasses} cursor-not-allowed opacity-50`}
             >
@@ -61,12 +70,16 @@ export function DayView({
             </span>
           )}
           {nextHref ? (
-            <a href={nextHref} aria-label="Следующий день" className={arrowClasses}>
+            <a
+              href={nextHref}
+              aria-label={t(locale, 'schedule.nextDayAria')}
+              className={arrowClasses}
+            >
               <ChevronRight size={18} aria-hidden="true" />
             </a>
           ) : (
             <span
-              aria-label="Следующий день"
+              aria-label={t(locale, 'schedule.nextDayAria')}
               aria-disabled="true"
               className={`${arrowClasses} cursor-not-allowed opacity-50`}
             >
@@ -80,7 +93,7 @@ export function DayView({
             {title}
             {isToday ? (
               <span className="ml-2 rounded-pill bg-accent-soft px-2 py-0.5 align-middle text-xs font-semibold text-accent-ink">
-                сегодня
+                {t(locale, 'schedule.todayBadge')}
               </span>
             ) : null}
           </h2>
@@ -93,10 +106,16 @@ export function DayView({
               href={todayHref}
               className="rounded-button border border-border bg-card px-3 py-1.5 text-sm font-semibold shadow-soft transition-colors hover:bg-muted"
             >
-              Сегодня
+              {t(locale, 'schedule.todayBtn')}
             </a>
           ) : null}
-          <ListenDayButton title={title} isToday={isToday} events={events} enabled={voiceEnabled} />
+          <ListenDayButton
+            title={title}
+            isToday={isToday}
+            events={events}
+            enabled={voiceEnabled}
+            locale={locale}
+          />
         </div>
       </div>
 
@@ -105,20 +124,26 @@ export function DayView({
           <EmptyState
             icon={CalendarOff}
             illustration="no-classes"
-            title="Пар в этот день нет"
+            title={t(locale, 'schedule.day.empty.title')}
             description={
-              nextStudy ? `Ближайшие пары: ${nextStudy.label}` : 'В семестре пар больше нет'
+              nextStudy
+                ? t(locale, 'schedule.day.empty.next', { label: nextStudy.label })
+                : t(locale, 'schedule.day.empty.none')
             }
           />
         </div>
       ) : (
-        <ol className="flex flex-col gap-2" aria-label={`Пары, ${title}`}>
+        <ol
+          className="flex flex-col gap-2"
+          aria-label={t(locale, 'schedule.day.listAria', { title })}
+        >
           {events.map((event, index) => (
             <EventCard
               key={event.id}
               event={event}
               href={eventQuery ? `/schedule?${eventQuery}&event=${event.id}` : undefined}
               riseIndex={index}
+              locale={locale}
             />
           ))}
         </ol>

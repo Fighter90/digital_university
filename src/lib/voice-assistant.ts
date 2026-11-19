@@ -12,8 +12,9 @@
 // ниже минимальные локальные интерфейсы (только то, что использует
 // VoiceInputButton: start/stop, onresult/onend/onerror, ru-RU).
 
-import { LESSON_KIND_LABELS } from '@/lib/dashboard-format';
+import { lessonKindLabel, pairWord } from '@/lib/dashboard-format';
 import { pairsLabel } from '@/lib/schedule-cards';
+import { t } from '@/lib/i18n';
 import type { ScheduleKind } from '@/server/data/types';
 
 /** Минимальный набор полей карточки пары, достаточный для текста озвучки. */
@@ -34,13 +35,28 @@ export interface DaySpeechInput {
   /** «Сегодня, среда, 11 ноября» — интро для текущего дня. */
   isToday: boolean;
   events: readonly SpeechEventInput[];
+  /** DIG-87 — язык озвучки (дефолт 'ru' — прежний русский текст). */
+  locale?: 'ru' | 'en';
 }
 
-const ORDINALS = ['Первая', 'Вторая', 'Третья', 'Четвёртая', 'Пятая', 'Шестая'] as const;
+const ORDINAL_KEYS = [
+  'speech.ordinal1',
+  'speech.ordinal2',
+  'speech.ordinal3',
+  'speech.ordinal4',
+  'speech.ordinal5',
+  'speech.ordinal6',
+] as const;
 
-/** «ауд. 305» → «аудитория 305» (синтез читает сокращение плохо); «онлайн» — как есть. */
-function spokenRoom(roomLabel: string): string {
-  return roomLabel.startsWith('ауд. ') ? `аудитория ${roomLabel.slice('ауд. '.length)}` : roomLabel;
+/** «ауд. 305» → «аудитория 305» / «Room 305» → «room 305» (синтез читает сокращение плохо). */
+function spokenRoom(roomLabel: string, locale: 'ru' | 'en'): string {
+  const ruPrefix = 'ауд. ';
+  const enPrefix = 'Room ';
+  if (roomLabel.startsWith(ruPrefix))
+    return t(locale, 'speech.room', { room: roomLabel.slice(ruPrefix.length) });
+  if (locale === 'en' && roomLabel.startsWith(enPrefix))
+    return `${enPrefix.toLowerCase()}${roomLabel.slice(enPrefix.length)}`;
+  return roomLabel;
 }
 
 /**
@@ -49,27 +65,41 @@ function spokenRoom(roomLabel: string): string {
  * отменены — честное «Все пары на этот день отменены»; пустой день —
  * «Пар в этот день нет» (те же формулировки, что видит студент на экране).
  */
-export function buildDaySpeechText({ title, isToday, events }: DaySpeechInput): string {
-  const intro = isToday ? `Сегодня, ${title.toLowerCase()}` : title;
+export function buildDaySpeechText({
+  title,
+  isToday,
+  events,
+  locale = 'ru',
+}: DaySpeechInput): string {
+  const intro = isToday ? t(locale, 'speech.intro.today', { title: title.toLowerCase() }) : title;
   const active = events.filter((event) => !event.isCancelled);
 
   if (active.length === 0) {
     return events.length > 0
-      ? `${intro}. Все пары на этот день отменены.`
-      : `${intro}. Пар в этот день нет.`;
+      ? `${intro}. ${t(locale, 'speech.allCancelled')}`
+      : `${intro}. ${t(locale, 'speech.empty')}`;
   }
 
   const items = active.map((event, index) => {
-    const prefix = ORDINALS[index] ? `${ORDINALS[index]} пара` : `Пара ${index + 1}`;
-    const kind = LESSON_KIND_LABELS[event.kind]?.toLowerCase() ?? 'занятие';
-    const item =
-      `${prefix} — ${event.discipline}, ${kind}, ` +
-      `с ${event.startLabel} до ${event.endLabel}, ${spokenRoom(event.roomLabel)}, ` +
-      `преподаватель ${event.teacher}`;
-    return event.isMoved ? `${item}. Пара перенесена` : item;
+    const ordinal = t(locale, ORDINAL_KEYS[index] ?? 'speech.ordinal6');
+    const prefix = ORDINAL_KEYS[index]
+      ? `${ordinal} ${pairWord(1, locale)}`
+      : t(locale, 'speech.pairN', { n: index + 1 });
+    const kind =
+      lessonKindLabel(event.kind, locale).toLowerCase() || t(locale, 'speech.kindFallback');
+    const item = t(locale, 'speech.item', {
+      prefix,
+      discipline: event.discipline,
+      kind,
+      start: event.startLabel,
+      end: event.endLabel,
+      room: spokenRoom(event.roomLabel, locale),
+      teacher: event.teacher,
+    });
+    return event.isMoved ? `${item}. ${t(locale, 'speech.moved')}` : item;
   });
 
-  return `${intro}. ${pairsLabel(active.length)}. ${items.join('. ')}.`;
+  return `${intro}. ${pairsLabel(active.length, locale)}. ${items.join('. ')}.`;
 }
 
 /** Браузерный синтез речи (озвучка дня). false — на сервере и в старых браузерах. */

@@ -49,6 +49,8 @@ import {
   WEEK_GUTTER_PX,
   WEEK_MIN_COLUMN_PX,
 } from '@/lib/schedule-view';
+import { lessonKindLabel } from '@/lib/dashboard-format';
+import { t, type Locale } from '@/lib/i18n';
 import type { ScheduleKind } from '@/server/data/types';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -85,6 +87,8 @@ export interface WeekViewProps {
   currentQuery: string;
   /** URL открыт с явным ?view=week — листание недель сохраняет параметр вида. */
   keepViewParam: boolean;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 const weekHrefDefault = (weekKey: string) => `/schedule?week=${weekKey}`;
@@ -107,6 +111,7 @@ export function WeekView({
   teachers,
   currentQuery,
   keepViewParam,
+  locale = 'ru',
 }: WeekViewProps) {
   const router = useRouter();
   // DIG-23: страница может быть открыта с явным ?view=week — листание недель
@@ -290,15 +295,15 @@ export function WeekView({
                 невалидная вложенность интерактива (ревью раунд 2) */}
             <Link
               href={weekHref(todayWeekKey)}
-              aria-label="Перейти к текущей неделе"
+              aria-label={t(locale, 'schedule.gotoTodayWeek')}
               className={buttonVariants({ variant: 'secondary', size: 'sm' })}
             >
-              Сегодня
+              {t(locale, 'schedule.todayBtn')}
             </Link>
             {prevWeekKey ? (
               <Link
                 href={weekHref(prevWeekKey)}
-                aria-label="Предыдущая неделя"
+                aria-label={t(locale, 'schedule.prevWeekAria')}
                 className="inline-flex size-9 items-center justify-center rounded-button border border-border bg-card text-foreground shadow-soft transition-colors hover:bg-muted"
               >
                 <Icon icon={ChevronLeft} size={18} />
@@ -306,7 +311,7 @@ export function WeekView({
             ) : (
               <button
                 type="button"
-                aria-label="Предыдущая неделя"
+                aria-label={t(locale, 'schedule.prevWeekAria')}
                 aria-disabled="true"
                 disabled
                 className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-button border border-border bg-card text-muted-foreground opacity-50"
@@ -317,7 +322,7 @@ export function WeekView({
             {nextWeekKey ? (
               <Link
                 href={weekHref(nextWeekKey)}
-                aria-label="Следующая неделя"
+                aria-label={t(locale, 'schedule.nextWeekAria')}
                 className="inline-flex size-9 items-center justify-center rounded-button border border-border bg-card text-foreground shadow-soft transition-colors hover:bg-muted"
               >
                 <Icon icon={ChevronRight} size={18} />
@@ -325,7 +330,7 @@ export function WeekView({
             ) : (
               <button
                 type="button"
-                aria-label="Следующая неделя"
+                aria-label={t(locale, 'schedule.nextWeekAria')}
                 aria-disabled="true"
                 disabled
                 className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-button border border-border bg-card text-muted-foreground opacity-50"
@@ -349,6 +354,7 @@ export function WeekView({
               platform="desktop"
               currentQuery={currentQuery}
               todayKey={todayKey}
+              locale={locale}
             />
             <Button
               variant="secondary"
@@ -357,7 +363,7 @@ export function WeekView({
               disabled={pending}
             >
               <Icon icon={RefreshCw} size={16} className={pending ? 'animate-spin' : ''} />
-              Синхронизировать
+              {t(locale, 'schedule.sync')}
             </Button>
           </div>
         </div>
@@ -373,7 +379,7 @@ export function WeekView({
               weekDateKeys={days.map((day) => day.dateKey)}
             />
             <div className="rounded-card border border-border bg-card p-3">
-              <p className="mb-2 text-sm font-bold">Типы занятий</p>
+              <p className="mb-2 text-sm font-bold">{t(locale, 'schedule.filters.kinds')}</p>
               <div className="flex flex-col gap-2">
                 {kindCounts.map(({ kind, count }) => {
                   const meta = lessonKindMeta(kind);
@@ -387,7 +393,7 @@ export function WeekView({
                         }
                         className={cn('size-4 rounded border-border', meta.checkbox)}
                       />
-                      <span className="flex-1">{meta.label}</span>
+                      <span className="flex-1">{lessonKindLabel(kind, locale)}</span>
                       <span
                         className="text-xs tabular-nums text-muted-foreground"
                         data-count={count}
@@ -400,15 +406,15 @@ export function WeekView({
               </div>
             </div>
             <div className="rounded-card border border-border bg-card p-3">
-              <p className="mb-2 text-sm font-bold">Преподаватель</p>
+              <p className="mb-2 text-sm font-bold">{t(locale, 'schedule.filters.teacher')}</p>
               <select
                 data-testid="teacher-filter"
-                aria-label="Фильтр по преподавателю"
+                aria-label={t(locale, 'schedule.filters.teacherAria')}
                 value={teacher}
                 onChange={(e) => setTeacher(e.target.value)}
                 className="h-10 w-full rounded-button border border-border bg-card px-3 text-sm"
               >
-                <option value="ALL">Все преподаватели</option>
+                <option value="ALL">{t(locale, 'schedule.filters.allTeachers')}</option>
                 {teachers.map((name) => (
                   <option key={name} value={name}>
                     {name}
@@ -515,6 +521,7 @@ export function WeekView({
                             column={column}
                             columns={columns}
                             onOpen={() => setSelected(event)}
+                            locale={locale}
                           />
                         ))}
                       </div>
@@ -540,11 +547,11 @@ export function WeekView({
                       <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
                         <EmptyState
                           icon={CalendarOff}
-                          title="На этой неделе пар нет"
+                          title={t(locale, 'schedule.week.empty.title')}
                           description={
                             teacher === 'ALL' && Object.values(visibleKinds).every(Boolean)
-                              ? 'Листайте недели стрелками или нажмите «Сегодня».'
-                              : 'Попробуйте включить фильтры типов занятий или «Все преподаватели».'
+                              ? t(locale, 'schedule.week.empty.hint')
+                              : t(locale, 'schedule.week.empty.filters')
                           }
                           className="pointer-events-auto w-72 border-none shadow-none"
                         />
@@ -569,10 +576,10 @@ export function WeekView({
         }}
         title={selected?.discipline ?? ''}
         description={
-          selected ? `${lessonKindMeta(selected.kind).label} · ${selected.timeLabel}` : undefined
+          selected ? `${lessonKindLabel(selected.kind, locale)} · ${selected.timeLabel}` : undefined
         }
       >
-        {selected ? <LessonDetails event={selected} /> : null}
+        {selected ? <LessonDetails event={selected} locale={locale} /> : null}
       </Sheet>
     </>
   );
@@ -585,9 +592,12 @@ function eventTop(minutes: number): number {
 
 // ── Блок пары ────────────────────────────────────────────────────────────────
 
-const STATUS_BADGE: Record<string, { label: string; status: 'warning' | 'neutral' }> = {
-  moved: { label: 'Перенос', status: 'warning' },
-  cancelled: { label: 'Отменена', status: 'neutral' },
+const STATUS_BADGE: Record<
+  string,
+  { key: 'schedule.badge.moved' | 'schedule.badge.cancelledFull'; status: 'warning' | 'neutral' }
+> = {
+  moved: { key: 'schedule.badge.moved', status: 'warning' },
+  cancelled: { key: 'schedule.badge.cancelledFull', status: 'neutral' },
 };
 
 function LessonBlock({
@@ -595,11 +605,14 @@ function LessonBlock({
   column,
   columns,
   onOpen,
+  locale = 'ru',
 }: {
   event: ScheduleEventView & { start: number; end: number };
   column: number;
   columns: number;
   onOpen: () => void;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   const meta = lessonKindMeta(event.kind);
   const status = event.isMoved ? 'moved' : event.isCancelled ? 'cancelled' : 'scheduled';
@@ -635,7 +648,7 @@ function LessonBlock({
           event.isCancelled && 'line-through',
         )}
       >
-        {meta.label}
+        {lessonKindLabel(event.kind, locale)}
       </span>
       <span
         className={cn('text-[11px] font-bold leading-tight', event.isCancelled && 'line-through')}
@@ -647,7 +660,7 @@ function LessonBlock({
       </span>
       {status !== 'scheduled' ? (
         <Badge status={STATUS_BADGE[status]!.status} className="px-1.5 py-0 text-[10px]">
-          {STATUS_BADGE[status]!.label}
+          {t(locale, STATUS_BADGE[status]!.key)}
         </Badge>
       ) : null}
       {previous ? <span className="text-[10px] leading-tight opacity-80">{previous}</span> : null}
@@ -663,14 +676,17 @@ function LessonBlock({
 
 // ── Детали пары в боковой панели ─────────────────────────────────────────────
 
-function LessonDetails({ event }: { event: ScheduleEventView }) {
+function LessonDetails({ event, locale = 'ru' }: { event: ScheduleEventView; locale?: Locale }) {
   const previous = event.previousLabel;
   const rows: Array<[string, React.ReactNode]> = [
-    ['Тип', lessonKindMeta(event.kind).label],
-    ['Время', event.timeLabel],
-    ['Аудитория', event.roomLabel],
-    ['Преподаватель', event.teacher],
-    ['Статус', <LessonStatusLabel key="status" event={event} />],
+    [t(locale, 'schedule.details.type'), lessonKindLabel(event.kind, locale)],
+    [t(locale, 'schedule.details.time'), event.timeLabel],
+    [t(locale, 'schedule.details.room'), event.roomLabel],
+    [t(locale, 'schedule.details.teacher'), event.teacher],
+    [
+      t(locale, 'schedule.details.status'),
+      <LessonStatusLabel key="status" event={event} locale={locale} />,
+    ],
   ];
   return (
     <div className="flex flex-col gap-4">
@@ -689,7 +705,7 @@ function LessonDetails({ event }: { event: ScheduleEventView }) {
       ) : null}
       {event.changeNote ? (
         <p className="rounded-button bg-warning-soft px-3 py-2 text-sm text-warning-ink">
-          Причина: {event.changeNote}
+          {t(locale, 'schedule.details.reason', { note: event.changeNote })}
         </p>
       ) : null}
       {event.note ? (
@@ -701,10 +717,17 @@ function LessonDetails({ event }: { event: ScheduleEventView }) {
   );
 }
 
-function LessonStatusLabel({ event }: { event: ScheduleEventView }) {
-  if (event.isCancelled) return <Badge status="neutral">Отменена</Badge>;
-  if (event.isMoved) return <Badge status="warning">Перенос</Badge>;
-  return <Badge status="success">По расписанию</Badge>;
+function LessonStatusLabel({
+  event,
+  locale = 'ru',
+}: {
+  event: ScheduleEventView;
+  locale?: Locale;
+}) {
+  if (event.isCancelled)
+    return <Badge status="neutral">{t(locale, 'schedule.badge.cancelledFull')}</Badge>;
+  if (event.isMoved) return <Badge status="warning">{t(locale, 'schedule.badge.moved')}</Badge>;
+  return <Badge status="success">{t(locale, 'schedule.status.scheduled')}</Badge>;
 }
 
 // ── Мини-календарь месяца ────────────────────────────────────────────────────

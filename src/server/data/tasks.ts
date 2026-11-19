@@ -23,6 +23,7 @@
 import { listCanonicalRequestsByStudent } from './canonical-requests';
 import { denyAccess } from './access';
 import { disciplineAdmission, RETAKE_TITLE_PREFIX } from './session';
+import { t, type Locale } from '@/lib/i18n';
 import type { DataDb } from './port';
 import type { DataCtx, StudentTaskRow } from './types';
 
@@ -127,6 +128,7 @@ export async function getTasks(
   db: DataDb,
   ctx: DataCtx,
   now: Date = new Date(),
+  locale: Locale = 'ru',
 ): Promise<TasksData> {
   if (ctx.studentId === null || ctx.groupName === null) {
     await denyAccess(db, {
@@ -168,7 +170,7 @@ export async function getTasks(
       view({
         id: `request-${request.id}`,
         source: 'REQUEST',
-        verb: 'Доработать заявку',
+        verb: t(locale, 'tasks.verb.fixRequest'),
         origin: `${request.title} · ${request.number}`,
         dueAt: null,
         href: `/requests/${request.number}`,
@@ -181,7 +183,7 @@ export async function getTasks(
     view({
       id: `course-${deadline.id}`,
       source: 'COURSE',
-      verb: `Сдать: ${deadline.title}`,
+      verb: t(locale, 'tasks.verb.submit', { title: deadline.title }),
       origin: deadline.disciplineName,
       dueAt: deadline.dueAt,
       href: `/grades/${deadline.disciplineCode}`,
@@ -206,7 +208,9 @@ export async function getTasks(
     const candidate = view({
       id: `session-${exam.id}`,
       source: 'SESSION',
-      verb: `Сдать: ${reason.replace(/^Не сдано: /, '')}`,
+      verb: t(locale, 'tasks.verb.submit', {
+        title: reason.replace(/^Не сдано: /, ''),
+      }),
       origin: exam.disciplineName,
       dueAt: exam.date,
       href: `/grades/${exam.disciplineCode}`,
@@ -237,7 +241,7 @@ export async function getTasks(
       view({
         id: `retake-${exam.id}`,
         source: 'RETAKE',
-        verb: 'Записаться на пересдачу',
+        verb: t(locale, 'tasks.verb.retakeSignup'),
         origin: exam.disciplineName,
         dueAt: exam.date,
         href: '/grades/session',
@@ -257,7 +261,7 @@ export async function getTasks(
       view({
         id: `deanery-${appeal.id}`,
         source: 'DEANERY',
-        verb: 'Ответить на обращение',
+        verb: t(locale, 'tasks.verb.replyAppeal'),
         origin: appeal.subject,
         dueAt: null,
         href: '/deanery',
@@ -270,7 +274,7 @@ export async function getTasks(
   //    самом экране задач.
   const manualRows = manualTasks
     .filter((row) => row.doneAt === null)
-    .map((row) => viewManual(row, now));
+    .map((row) => viewManual(row, now, locale));
 
   const grouped = groupTasks(
     [
@@ -291,12 +295,12 @@ export async function getTasks(
   };
 }
 
-function viewManual(row: StudentTaskRow, now: Date): TaskView {
+function viewManual(row: StudentTaskRow, now: Date, locale: Locale = 'ru'): TaskView {
   return {
     id: `manual-${row.id}`,
     source: 'MANUAL',
     verb: row.title,
-    origin: row.note ?? 'Деканат',
+    origin: row.note ?? t(locale, 'tasks.origin.deanery'),
     dueAt: row.dueAt,
     daysLeft: calendarDaysLeft(row.dueAt, startOfDay(now).getTime()),
     href: '/tasks',
@@ -309,8 +313,9 @@ export async function getTasksSummary(
   db: DataDb,
   ctx: DataCtx,
   now: Date = new Date(),
+  locale: Locale = 'ru',
 ): Promise<TasksSummary> {
-  const data = await getTasks(db, ctx, now);
+  const data = await getTasks(db, ctx, now, locale);
   return {
     openCount: data.openCount,
     top: [...data.overdue, ...data.today, ...data.week, ...data.later].slice(0, 3),

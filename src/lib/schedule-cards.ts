@@ -35,7 +35,14 @@ import {
   type SemesterBounds,
 } from '@/lib/schedule-time';
 import { isoWeekKeyOf, mondayOfIsoWeekKey } from '@/lib/schedule-view';
-import { LESSON_KIND_LABELS, pluralRu } from '@/lib/dashboard-format';
+import {
+  capitalizeFirst,
+  lessonKindLabel,
+  LESSON_KIND_LABELS,
+  pairWord,
+  pluralRu,
+} from '@/lib/dashboard-format';
+import { t, type Locale } from '@/lib/i18n';
 import type { ScheduleEventRow, ScheduleKind, ScheduleStatus } from '@/server/data/types';
 
 // ── Виды расписания и параметры URL ──────────────────────────────────────────
@@ -68,15 +75,15 @@ export interface ScheduleEventCard {
   discipline: string;
   teacher: string;
   room: string;
-  /** «ауд. 305» или «онлайн». */
+  /** «ауд. 305» / «Room 305» или «онлайн» / «online». */
   roomLabel: string;
   status: ScheduleStatus;
   /** ROOM_CHANGED | TIME_CHANGED — штриховка, бейдж «Перенос», «было: …». */
   isMoved: boolean;
   isCancelled: boolean;
-  /** «было: ауд. 214». */
+  /** «было: ауд. 214» / «was: room 214». */
   previousRoomLabel: string | null;
-  /** «было: 11:10». */
+  /** «было: 11:10» / «was: 11:10». */
   previousTimeLabel: string | null;
   /** Заметка студента к паре (своя, видна только владельцу). */
   note: string | null;
@@ -86,25 +93,35 @@ export interface ScheduleEventCard {
   ariaLabel: string;
 }
 
-function roomLabelOf(room: string): string {
-  return room.trim().toLowerCase() === 'онлайн' ? 'онлайн' : `ауд. ${room.trim()}`;
+/** Подпись аудитории по локали: «ауд. 305» / «Room 305», «онлайн» / «online». */
+function roomLabelOf(room: string, locale: Locale = 'ru'): string {
+  return room.trim().toLowerCase() === 'онлайн'
+    ? t(locale, 'schedule.room.online')
+    : t(locale, 'schedule.room.label', { room: room.trim() });
 }
 
 /** Строки слоя данных → серийализуемые карточки (вход уже отсортирован). */
-export function toScheduleEventCards(rows: readonly ScheduleEventRow[]): ScheduleEventCard[] {
+export function toScheduleEventCards(
+  rows: readonly ScheduleEventRow[],
+  locale: Locale = 'ru',
+): ScheduleEventCard[] {
   return rows.map((row) => {
     const start = moscowParts(row.startsAt);
     const end = moscowParts(row.endsAt);
     const startMinutes = start.hour * 60 + start.minute;
     const endMinutes = end.hour * 60 + end.minute;
-    const kindLabel = LESSON_KIND_LABELS[row.kind];
-    const roomLabel = roomLabelOf(row.room);
+    const kindLabel = lessonKindLabel(row.kind, locale);
+    const roomLabel = roomLabelOf(row.room, locale);
     const startLabel = formatMoscowTime(row.startsAt);
     const endLabel = formatMoscowTime(row.endsAt);
     const timeLabel = `${startLabel}–${endLabel}`;
     const isMoved = row.status === 'ROOM_CHANGED' || row.status === 'TIME_CHANGED';
     const isCancelled = row.status === 'CANCELLED';
-    const suffix = isMoved ? ', перенос' : isCancelled ? ', отменена' : '';
+    const suffix = isMoved
+      ? t(locale, 'schedule.aria.moved')
+      : isCancelled
+        ? t(locale, 'schedule.aria.cancelled')
+        : '';
     return {
       id: row.id,
       dateKey: moscowDateKey(row.startsAt),
@@ -121,9 +138,11 @@ export function toScheduleEventCards(rows: readonly ScheduleEventRow[]): Schedul
       status: row.status,
       isMoved,
       isCancelled,
-      previousRoomLabel: row.previousRoom ? `было: ауд. ${row.previousRoom}` : null,
+      previousRoomLabel: row.previousRoom
+        ? t(locale, 'schedule.was.room', { room: row.previousRoom })
+        : null,
       previousTimeLabel: row.previousStartsAt
-        ? `было: ${formatMoscowTime(row.previousStartsAt)}`
+        ? t(locale, 'schedule.was.time', { time: formatMoscowTime(row.previousStartsAt) })
         : null,
       note: row.note ?? null,
       changeNote: row.changeNote ?? null,
@@ -192,6 +211,7 @@ export const LESSON_KIND_META: Record<ScheduleKind, LessonKindMeta> = {
 
 // ── Форматирование дат ───────────────────────────────────────────────────────
 
+/** «пн вт ср чт пт сб вс» (RU-канон, нижний регистр) — MonthView/лента дат. */
 export const WEEKDAY_SHORT = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'] as const;
 
 const WEEKDAY_FULL = [
@@ -202,21 +222,6 @@ const WEEKDAY_FULL = [
   'Пятница',
   'Суббота',
   'Воскресенье',
-] as const;
-
-const MONTHS_GENITIVE = [
-  'января',
-  'февраля',
-  'марта',
-  'апреля',
-  'мая',
-  'июня',
-  'июля',
-  'августа',
-  'сентября',
-  'октября',
-  'ноября',
-  'декабря',
 ] as const;
 
 const MONTHS_NOMINATIVE = [
@@ -234,29 +239,104 @@ const MONTHS_NOMINATIVE = [
   'Декабрь',
 ] as const;
 
-/** «чт, 12 ноября» — подпись ближайшего учебного дня (пустой день). */
-export function formatDayShort(date: Date): string {
-  const p = moscowParts(date);
-  const weekday = WEEKDAY_SHORT[moscowWeekdayIndex(date)];
-  return `${weekday}, ${p.day} ${MONTHS_GENITIVE[p.month - 1]}`;
+/** Ключи словаря коротких подписей дней недели (пн=0 … вс=6). */
+const WEEKDAY_SHORT_KEYS = [
+  'schedule.wd.mon',
+  'schedule.wd.tue',
+  'schedule.wd.wed',
+  'schedule.wd.thu',
+  'schedule.wd.fri',
+  'schedule.wd.sat',
+  'schedule.wd.sun',
+] as const;
+
+/** Короткая подпись дня недели по индексу (0 = пн): «чт» / «Thu». */
+export function weekdayShortLabel(index: number, locale: Locale = 'ru'): string {
+  return t(locale, WEEKDAY_SHORT_KEYS[Math.max(0, Math.min(6, index))]!);
 }
 
-/** «Среда, 11 ноября» — заголовок вида «День». */
-export function formatDayTitle(date: Date): string {
+/** Массив коротких подписей недели по локали: «пн…вс» / «Mon…Sun». */
+export function weekdayShortLabels(locale: Locale = 'ru'): string[] {
+  return WEEKDAY_SHORT_KEYS.map((key) => t(locale, key));
+}
+
+/**
+ * Родительный падеж месяца по дате: «ноября» (RU) / «November» (EN).
+ * Трюк с Intl: формат «{day} {month}» отдаёт согласованную форму месяца,
+ * из которой отрезается числительный префикс (у RU — родительный падеж).
+ */
+function monthLongLabel(date: Date, locale: Locale): string {
+  const tag = locale === 'en' ? 'en-US' : 'ru-RU';
+  const formatted = new Intl.DateTimeFormat(tag, {
+    timeZone: 'Europe/Moscow',
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
+  // «12 ноября» → число в начале; «November 12» → число в конце (DIG-87).
+  return locale === 'en' ? formatted.replace(/\s*\d+$/, '') : formatted.replace(/^\d+\s*/, '');
+}
+
+const monthNominativeFormatter = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: 'Europe/Moscow',
+  month: 'long',
+});
+
+const monthNominativeFormatterEn = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Europe/Moscow',
+  month: 'long',
+});
+
+/** Именительный падеж месяца: «Ноябрь» / «November» (заголовок вида «Месяц»). */
+function monthNominativeLabel(month: number, locale: Locale): string {
+  const date = fromMoscowWallClock(2026, month, 15);
+  const value =
+    locale === 'en'
+      ? monthNominativeFormatterEn.format(date)
+      : monthNominativeFormatter.format(date);
+  return capitalizeFirst(value);
+}
+
+/** «чт, 12 ноября» / «Thu, November 12» — подпись ближайшего учебного дня. */
+export function formatDayShort(date: Date, locale: Locale = 'ru'): string {
   const p = moscowParts(date);
-  const weekday = WEEKDAY_FULL[moscowWeekdayIndex(date)];
-  return `${weekday}, ${p.day} ${MONTHS_GENITIVE[p.month - 1]}`;
+  const weekday =
+    locale === 'en'
+      ? weekdayShortLabel(moscowWeekdayIndex(date), locale)
+      : WEEKDAY_SHORT[moscowWeekdayIndex(date)];
+  return `${weekday}, ${dayMonthLabel(date, p.day, locale)}`;
+}
+
+/** «Среда, 11 ноября» / «Wednesday, November 11» — заголовок вида «День». */
+export function formatDayTitle(date: Date, locale: Locale = 'ru'): string {
+  const p = moscowParts(date);
+  const weekday =
+    locale === 'en'
+      ? capitalizeFirst(
+          new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Moscow', weekday: 'long' }).format(
+            date,
+          ),
+        )
+      : WEEKDAY_FULL[moscowWeekdayIndex(date)];
+  return `${weekday}, ${dayMonthLabel(date, p.day, locale)}`;
+}
+
+/** «12 ноября» (RU) / «November 12» (EN, порядок по правилам локали). */
+function dayMonthLabel(date: Date, day: number, locale: Locale): string {
+  const month = monthLongLabel(date, locale);
+  return locale === 'en' ? `${month} ${day}` : `${day} ${month}`;
 }
 
 /** «Среда, 11 ноября» по ключу дня (мобильный список листает дни без Date). */
-export function formatDayTitleFromKey(dateKey: string): string {
+export function formatDayTitleFromKey(dateKey: string, locale: Locale = 'ru'): string {
   const date = parseDateKey(dateKey);
-  return date ? formatDayTitle(date) : '';
+  return date ? formatDayTitle(date, locale) : '';
 }
 
-/** «Ноябрь 2026» — заголовок вида «Месяц» (month: 1..12). */
-export function formatMonthTitle(year: number, month: number): string {
-  return `${MONTHS_NOMINATIVE[month - 1]} ${year}`;
+/** «Ноябрь 2026» / «November 2026» — заголовок вида «Месяц» (month: 1..12). */
+export function formatMonthTitle(year: number, month: number, locale: Locale = 'ru'): string {
+  return locale === 'en'
+    ? `${monthNominativeLabel(month, locale)} ${year}`
+    : `${MONTHS_NOMINATIVE[month - 1]} ${year}`;
 }
 
 // ── Ключи дат и месяцев ──────────────────────────────────────────────────────
@@ -474,8 +554,9 @@ export function swipeDirection(
 
 const PAIR_FORMS = ['пара', 'пары', 'пар'] as const;
 
-/** «3 пары», «1 пара», «5 пар» — для счётчиков в списке недели. */
-export function pairsLabel(count: number): string {
+/** «3 пары» / «3 classes», «1 пара» / «1 class» — счётчики в списках. */
+export function pairsLabel(count: number, locale: Locale = 'ru'): string {
+  if (locale === 'en') return `${count} ${pairWord(count, locale)}`;
   return `${count} ${pluralRu(count, PAIR_FORMS)}`;
 }
 

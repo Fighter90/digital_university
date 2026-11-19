@@ -29,7 +29,7 @@ export function RequestQuestionForm({
         className="inline-flex cursor-pointer select-none items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-coral-600"
       >
         <MessageCircleQuestion aria-hidden="true" className="size-4" />
-        Задать вопрос по заявке
+        {t(locale, 'requests.question.summary')}
       </summary>
       <form action={formAction} className="mt-2 rounded-button border border-border bg-card p-3">
         <input type="hidden" name="requestId" value={requestId} />
@@ -37,7 +37,7 @@ export function RequestQuestionForm({
           htmlFor="request-question-message"
           className="block text-xs font-semibold text-foreground"
         >
-          Вопрос деканату
+          {t(locale, 'requests.question.label')}
         </label>
         <textarea
           id="request-question-message"
@@ -46,7 +46,7 @@ export function RequestQuestionForm({
           maxLength={500}
           required
           data-testid="request-question-message"
-          placeholder="Сформулируйте вопрос — номер заявки приложится автоматически"
+          placeholder={t(locale, 'requests.question.placeholder')}
           className="mt-1.5 w-full resize-y rounded-button border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-coral-600"
         />
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -69,7 +69,7 @@ export function RequestQuestionForm({
               role="status"
               className="text-xs text-success-ink"
             >
-              Обращение создано — деканат ответит в уведомлениях
+              {t(locale, 'requests.question.success')}
             </p>
           ) : null}
         </div>

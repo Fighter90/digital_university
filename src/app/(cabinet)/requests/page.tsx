@@ -36,7 +36,10 @@ import { orderTargetForService } from '@/lib/request-order-map';
 import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 
-export const metadata = { title: 'Мои заявки — Цифровой деканат' };
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: `${t(locale, 'title.requests')} — ${t(locale, 'shell.brandName')}` };
+}
 
 export default async function RequestsPage({
   searchParams,

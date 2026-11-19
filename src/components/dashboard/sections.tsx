@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { t, type Locale } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
@@ -23,7 +24,9 @@ import {
   formatDelta,
   formatLongDate,
   formatTime,
-  pluralRu,
+  pairWord,
+  requestsInWorkLabel,
+  requestsReadyLabel,
   type DisciplineLevel,
 } from '@/lib/dashboard-format';
 import type {
@@ -39,18 +42,30 @@ import type { ScheduleKind } from '@/server/data';
 // DIG-20 — блоки главной «Ваша неделя». Каждый блок получает свою секцию
 // агрегата (DashboardSection): сбой источника не роняет страницу — блок
 // рисует собственное состояние ошибки (role="alert"), остальные живы.
+//
+// DIG-87 — EN-локализация часть 1: все строки интерфейса виджетов берутся
+// из словаря t(locale, key); локаль приходит с страницы (cookie du-locale,
+// дефолт 'ru' — прежние RU-строки байт-в-байт). ДЕМО-КОНТЕНТ (дисциплины,
+// имена, новости) не переводится.
 
 /** Состояние ошибки блока: заголовок с названием блока + причина для отладки. */
-export function SectionFailure({ title, error }: { title: string; error: string }) {
+export function SectionFailure({
+  title,
+  error,
+  locale = 'ru',
+}: {
+  title: string;
+  error: string;
+  /** DIG-87 — локаль интерфейса. */
+  locale?: Locale;
+}) {
   return (
     <ErrorState
-      title={`Блок «${title}» не загрузился`}
-      description={`${error}. Обновите страницу — остальные разделы работают.`}
+      title={t(locale, 'dashboard.failure.title', { title })}
+      description={t(locale, 'dashboard.failure.desc', { error })}
     />
   );
 }
-
-const PAIR_FORMS = ['пара', 'пары', 'пар'] as const;
 
 /** Пилюля типа занятия на цветах дизайн-токенов типов занятий. */
 const KIND_PILL: Record<ScheduleKind, string> = {
@@ -68,6 +83,7 @@ export function Hero({
   summary,
   progress,
   requests,
+  locale = 'ru',
 }: {
   firstName: string | null;
   greeting: string;
@@ -75,6 +91,8 @@ export function Hero({
   summary: string | null;
   progress: DashboardSection<ProgressView>;
   requests: DashboardSection<RequestsView>;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   const average = progress.ok ? progress.value.average : null;
   const delta = progress.ok ? progress.value.averageDelta : null;
@@ -86,32 +104,43 @@ export function Hero({
   const tiles = [
     {
       href: '/grades',
-      label: 'Средний балл',
-      value: formatAverage(average),
+      label: t(locale, 'dashboard.tile.average'),
+      value: formatAverage(average, locale),
       hint:
         delta === null || average === null ? null : (
           <span className={delta >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-            {formatDelta(delta)} к предыдущим работам
+            {t(locale, 'dashboard.tile.deltaToPrev', { delta: formatDelta(delta, locale) })}
           </span>
         ),
     },
     {
       href: '/profile',
-      label: 'Кредиты',
+      label: t(locale, 'dashboard.tile.credits'),
       value: credits === null ? '—' : credits,
-      hint: <>{`из ${creditsTotal}`}</>,
+      hint: <>{t(locale, 'dashboard.tile.creditsOf', { total: creditsTotal })}</>,
     },
     {
       href: '/schedule',
-      label: 'Долги',
+      label: t(locale, 'dashboard.tile.debts'),
       value: debts === null ? '—' : debts,
-      hint: debts === null ? null : debts > 0 ? <>требуется пересдача</> : <>всё сдано</>,
+      hint:
+        debts === null ? null : debts > 0 ? (
+          <>{t(locale, 'dashboard.tile.debtsRetake')}</>
+        ) : (
+          <>{t(locale, 'dashboard.tile.debtsDone')}</>
+        ),
     },
     {
       href: '/requests',
-      label: 'Заявки в работе',
+      label: t(locale, 'dashboard.tile.requestsInWork'),
       value: inWork === null ? '—' : inWork,
-      hint: <>{`всего заявок: ${requests.ok ? requests.value.total : '—'}`}</>,
+      hint: (
+        <>
+          {t(locale, 'dashboard.tile.requestsTotal', {
+            total: requests.ok ? requests.value.total : '—',
+          })}
+        </>
+      ),
     },
   ];
 
@@ -129,7 +158,7 @@ export function Hero({
 
       <div className="relative">
         <h1 className="text-xl font-extrabold tracking-heading text-white md:text-2xl">
-          {`Ваша неделя · ${headingDate}`}
+          {`${t(locale, 'dashboard.hero.title')} · ${headingDate}`}
         </h1>
         <p className="mt-1 text-sm text-neutral-300">
           {`${greeting}${firstName ? `, ${firstName}` : ''}!`}
@@ -165,25 +194,43 @@ export function Hero({
   );
 }
 
-export function TodaySection({ today }: { today: DashboardSection<TodayView> }) {
-  if (!today.ok) return <SectionFailure title="Сегодня" error={today.error} />;
+export function TodaySection({
+  today,
+  locale = 'ru',
+}: {
+  today: DashboardSection<TodayView>;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  if (!today.ok)
+    return (
+      <SectionFailure
+        title={t(locale, 'dashboard.section.today')}
+        error={today.error}
+        locale={locale}
+      />
+    );
   const { lessons, nearestStudyDay } = today.value;
 
   return (
     <section aria-labelledby="dashboard-today-title">
       <h2 id="dashboard-today-title" className="text-lg font-extrabold tracking-heading">
-        Сегодня
+        {t(locale, 'dashboard.widget.today')}
       </h2>
       {lessons.length === 0 ? (
         <EmptyState
           className="mt-3"
           icon={CalendarClock}
           illustration="no-classes"
-          title="Нет пар сегодня"
+          title={t(locale, 'dashboard.today.empty.title')}
           description={
             nearestStudyDay
-              ? `Ближайший учебный день — ${nearestStudyDay.label}: ${nearestStudyDay.count} ${pluralRu(nearestStudyDay.count, PAIR_FORMS)}.`
-              : 'Расписание пока не заполнено деканатом.'
+              ? t(locale, 'dashboard.today.empty.nearest', {
+                  label: nearestStudyDay.label,
+                  count: nearestStudyDay.count,
+                  pairs: pairWord(nearestStudyDay.count, locale),
+                })
+              : t(locale, 'dashboard.today.empty.desc')
           }
         />
       ) : (
@@ -205,7 +252,7 @@ export function TodaySection({ today }: { today: DashboardSection<TodayView> }) 
                     {formatTime(lesson.startsAt)}
                   </span>
                   <span className="font-mono text-[11px] text-neutral-500">
-                    до {formatTime(lesson.endsAt)}
+                    {t(locale, 'schedule.untilPrefix')} {formatTime(lesson.endsAt)}
                   </span>
                 </span>
                 <span
@@ -229,10 +276,12 @@ export function TodaySection({ today }: { today: DashboardSection<TodayView> }) 
                     href="/schedule"
                     className="rounded-pill border border-info-soft bg-info-soft px-2.5 py-0.5 text-xs font-semibold text-info-ink hover:bg-info/10"
                   >
-                    Онлайн
+                    {t(locale, 'dashboard.online')}
                   </Link>
                 ) : (
-                  <span className="text-xs text-neutral-600">ауд. {lesson.room}</span>
+                  <span className="text-xs text-neutral-600">
+                    {t(locale, 'schedule.room.label', { room: lesson.room })}
+                  </span>
                 )}
               </div>
               <p className="mt-1 text-xs text-neutral-600">{lesson.teacherName}</p>
@@ -255,21 +304,35 @@ export function TodaySection({ today }: { today: DashboardSection<TodayView> }) 
   );
 }
 
-export function DeadlinesSection({ deadlines }: { deadlines: DashboardSection<DeadlineView[]> }) {
-  if (!deadlines.ok) return <SectionFailure title="Дедлайны" error={deadlines.error} />;
+export function DeadlinesSection({
+  deadlines,
+  locale = 'ru',
+}: {
+  deadlines: DashboardSection<DeadlineView[]>;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  if (!deadlines.ok)
+    return (
+      <SectionFailure
+        title={t(locale, 'dashboard.section.deadlines')}
+        error={deadlines.error}
+        locale={locale}
+      />
+    );
   const items = deadlines.value;
 
   return (
     <section aria-labelledby="dashboard-deadlines-title">
       <h2 id="dashboard-deadlines-title" className="text-lg font-extrabold tracking-heading">
-        Ближайшие дедлайны
+        {t(locale, 'dashboard.widget.deadlines')}
       </h2>
       {items.length === 0 ? (
         <EmptyState
           className="mt-3"
           icon={CalendarClock}
-          title="Дедлайнов нет"
-          description="Сессия и контрольные точки ещё не запланированы — загляните позже."
+          title={t(locale, 'dashboard.deadlines.empty.title')}
+          description={t(locale, 'dashboard.deadlines.empty.desc')}
         />
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
@@ -300,7 +363,7 @@ export function DeadlinesSection({ deadlines }: { deadlines: DashboardSection<De
                         urgent && 'rounded-pill bg-error-soft px-1.5 py-0.5 text-error-ink',
                       )}
                     >
-                      {daysLeftLabel(item.daysLeft)}
+                      {daysLeftLabel(item.daysLeft, locale)}
                     </span>
                   </p>
                 </div>
@@ -308,7 +371,7 @@ export function DeadlinesSection({ deadlines }: { deadlines: DashboardSection<De
                   href="/schedule"
                   className="shrink-0 rounded-pill border border-border px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                 >
-                  Подробнее
+                  {t(locale, 'dashboard.details')}
                 </Link>
               </li>
             );
@@ -325,35 +388,59 @@ const LEVEL_FILL: Record<DisciplineLevel, string> = {
   risk: 'bg-error',
 };
 
-export function ProgressSection({ progress }: { progress: DashboardSection<ProgressView> }) {
-  if (!progress.ok) return <SectionFailure title="Как у меня дела" error={progress.error} />;
+export function ProgressSection({
+  progress,
+  locale = 'ru',
+}: {
+  progress: DashboardSection<ProgressView>;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  if (!progress.ok)
+    return (
+      <SectionFailure
+        title={t(locale, 'dashboard.section.progress')}
+        error={progress.error}
+        locale={locale}
+      />
+    );
   const { average, credits, creditsTotal, debts, disciplines } = progress.value;
   const nearestDebt = debts[0] ?? null;
 
   return (
     <section aria-labelledby="dashboard-progress-title">
       <h2 id="dashboard-progress-title" className="text-lg font-extrabold tracking-heading">
-        Как у меня дела
+        {t(locale, 'dashboard.widget.progress')}
       </h2>
       <div className="mt-3 rounded-card border border-border bg-card p-5 shadow-soft">
         <div className="flex flex-wrap items-center gap-4">
-          <ProgressRing value={average ?? 0} label="Средний балл" size={88} stroke={8}>
-            <span className="text-lg">{formatAverage(average)}</span>
+          <ProgressRing
+            value={average ?? 0}
+            label={t(locale, 'dashboard.tile.average')}
+            size={88}
+            stroke={8}
+          >
+            <span className="text-lg">{formatAverage(average, locale)}</span>
           </ProgressRing>
           <div className="min-w-0 flex-1">
             <p className="text-sm text-neutral-600">
-              Кредиты: <span className="font-semibold text-neutral-900">{credits}</span> из{' '}
-              {creditsTotal}
+              {t(locale, 'dashboard.progress.creditsLine', { credits, total: creditsTotal })}
             </p>
             <div className="mt-2">
               {debts.length > 0 && nearestDebt ? (
                 <Badge status="error" data-urgent="true">
                   {debts.length === 1
-                    ? `${debtLabel(debts.length)} — пересдача ${nearestDebt.dateLabel}`
-                    : `${debtLabel(debts.length)} — ближайшая пересдача ${nearestDebt.dateLabel}`}
+                    ? t(locale, 'dashboard.progress.debtOne', {
+                        debts: debtLabel(debts.length, locale),
+                        date: nearestDebt.dateLabel,
+                      })
+                    : t(locale, 'dashboard.progress.debtMany', {
+                        debts: debtLabel(debts.length, locale),
+                        date: nearestDebt.dateLabel,
+                      })}
                 </Badge>
               ) : (
-                <Badge status="success">Долгов нет</Badge>
+                <Badge status="success">{t(locale, 'dashboard.progress.noDebts')}</Badge>
               )}
             </div>
           </div>
@@ -365,7 +452,9 @@ export function ProgressSection({ progress }: { progress: DashboardSection<Progr
               <li key={d.code} data-level={d.level}>
                 <div className="flex items-baseline justify-between gap-2 text-xs">
                   <span className="truncate font-medium text-neutral-800">{d.disciplineName}</span>
-                  <span className="shrink-0 text-neutral-600">{formatAverage(d.average)}</span>
+                  <span className="shrink-0 text-neutral-600">
+                    {formatAverage(d.average, locale)}
+                  </span>
                 </div>
                 <div className="mt-1 h-2 rounded-pill bg-muted">
                   <div
@@ -378,7 +467,7 @@ export function ProgressSection({ progress }: { progress: DashboardSection<Progr
           </ul>
         ) : (
           <p className="mt-4 border-t border-border pt-4 text-sm text-neutral-600">
-            Оценок пока нет — здесь появится прогресс по дисциплинам.
+            {t(locale, 'dashboard.progress.emptyDisciplines')}
           </p>
         )}
       </div>
@@ -386,21 +475,21 @@ export function ProgressSection({ progress }: { progress: DashboardSection<Progr
   );
 }
 
-const QUICK_ACTIONS = [
-  { href: '/requests', label: 'Заказать справку', icon: FileText },
-  { href: '/requests', label: 'Подать заявление', icon: PenLine },
-  { href: '/deanery', label: 'Написать в деканат', icon: MessagesSquare },
-  { href: '/ai-assistant', label: 'Спросить AI', icon: Sparkles },
-] as const;
+export function QuickActionsSection({ locale = 'ru' }: { locale?: Locale }) {
+  const actions = [
+    { href: '/requests', label: t(locale, 'dashboard.action.orderCertificate'), icon: FileText },
+    { href: '/requests', label: t(locale, 'dashboard.action.submitStatement'), icon: PenLine },
+    { href: '/deanery', label: t(locale, 'dashboard.action.writeDeanery'), icon: MessagesSquare },
+    { href: '/ai-assistant', label: t(locale, 'dashboard.action.askAi'), icon: Sparkles },
+  ] as const;
 
-export function QuickActionsSection() {
   return (
     <section aria-labelledby="dashboard-actions-title">
       <h2 id="dashboard-actions-title" className="text-lg font-extrabold tracking-heading">
-        Быстрые действия
+        {t(locale, 'dashboard.widget.quickActions')}
       </h2>
       <div className="mt-3 grid grid-cols-2 gap-3">
-        {QUICK_ACTIONS.map(({ href, label, icon: Icon }) => (
+        {actions.map(({ href, label, icon: Icon }) => (
           <Link
             key={label}
             href={href}
@@ -422,20 +511,23 @@ export function QuickActionsSection() {
 
 export function NewsSection({
   news,
+  locale = 'ru',
 }: {
   news: Array<{ id: string; title: string; excerpt: string; publishedAt: Date }>;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   return (
     <section aria-labelledby="dashboard-news-title">
       <h2 id="dashboard-news-title" className="text-lg font-extrabold tracking-heading">
-        Новости деканата
+        {t(locale, 'dashboard.widget.news')}
       </h2>
       {news.length === 0 ? (
         <EmptyState
           className="mt-3"
           icon={Newspaper}
-          title="Новостей пока нет"
-          description="Объявления деканата появятся здесь."
+          title={t(locale, 'dashboard.news.empty.title')}
+          description={t(locale, 'dashboard.news.empty.desc')}
         />
       ) : (
         <ul className="mt-3 flex snap-x gap-3 overflow-x-auto pb-1">
@@ -447,7 +539,7 @@ export function NewsSection({
                 className="lift-hover flex h-full w-64 flex-col rounded-card border border-border bg-card p-4 shadow-soft"
               >
                 <span className="text-[11px] uppercase text-neutral-500">
-                  {formatLongDate(item.publishedAt)}
+                  {formatLongDate(item.publishedAt, locale)}
                 </span>
                 <span className="mt-1 line-clamp-2 text-sm font-semibold text-neutral-900">
                   {item.title}
@@ -464,7 +556,7 @@ export function NewsSection({
         data-testid="dashboard-news-all"
         className="mt-3 inline-flex items-center gap-1.5 rounded-button px-1 text-sm font-semibold text-coral-600 transition-colors hover:text-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
       >
-        Все новости и объявления
+        {t(locale, 'dashboard.news.all')}
         <ArrowRight aria-hidden="true" className="size-4" />
       </Link>
     </section>
@@ -473,40 +565,50 @@ export function NewsSection({
 
 // ── DIG-44 — виджеты «Заявки» и «Мероприятия» ───────────────────────────────
 
-export function RequestsSection({ requests }: { requests: DashboardSection<RequestsView> }) {
-  if (!requests.ok) return <SectionFailure title="Заявки" error={requests.error} />;
+export function RequestsSection({
+  requests,
+  locale = 'ru',
+}: {
+  requests: DashboardSection<RequestsView>;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  if (!requests.ok)
+    return (
+      <SectionFailure
+        title={t(locale, 'dashboard.section.requests')}
+        error={requests.error}
+        locale={locale}
+      />
+    );
   const { inWork, total } = requests.value;
   const ready = Math.max(0, total - inWork);
 
   return (
     <section aria-labelledby="dashboard-requests-title">
       <h2 id="dashboard-requests-title" className="text-lg font-extrabold tracking-heading">
-        Заявки
+        {t(locale, 'dashboard.widget.requests')}
       </h2>
       <div className="lift-hover mt-3 rounded-card border border-border bg-card p-5 shadow-soft">
-        <p className="text-sm text-neutral-600">Заявки в работе и на проверке</p>
+        <p className="text-sm text-neutral-600">{t(locale, 'dashboard.requests.subtitle')}</p>
         <div className="mt-3 flex flex-wrap items-end gap-6">
           <p className="flex items-baseline gap-2">
             <span className="text-3xl font-extrabold tracking-heading text-neutral-900">
               {inWork}
             </span>
-            <span className="text-sm text-neutral-600">
-              {pluralRu(inWork, ['заявка в работе', 'заявки в работе', 'заявок в работе'])}
-            </span>
+            <span className="text-sm text-neutral-600">{requestsInWorkLabel(inWork, locale)}</span>
           </p>
           <p className="flex items-baseline gap-2">
             <span className="text-3xl font-extrabold tracking-heading text-neutral-900">
               {ready}
             </span>
-            <span className="text-sm text-neutral-600">
-              {pluralRu(ready, ['готова к получению', 'готовы к получению', 'готово к получению'])}
-            </span>
+            <span className="text-sm text-neutral-600">{requestsReadyLabel(ready, locale)}</span>
           </p>
           <Link
             href="/requests"
             className="ml-auto rounded-pill border border-border px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
           >
-            Все заявки
+            {t(locale, 'dashboard.requests.all')}
           </Link>
         </div>
       </div>
@@ -514,17 +616,17 @@ export function RequestsSection({ requests }: { requests: DashboardSection<Reque
   );
 }
 
-export function EventsSection() {
+export function EventsSection({ locale = 'ru' }: { locale?: Locale }) {
   return (
     <section aria-labelledby="dashboard-events-title">
       <h2 id="dashboard-events-title" className="text-lg font-extrabold tracking-heading">
-        Мероприятия
+        {t(locale, 'dashboard.widget.events')}
       </h2>
       <EmptyState
         className="mt-3"
         icon={CalendarDays}
-        title="Мероприятия скоро появятся"
-        description="Раздел готовится — здесь будут события и мероприятия вуза."
+        title={t(locale, 'dashboard.events.empty.title')}
+        description={t(locale, 'dashboard.events.empty.desc')}
       />
     </section>
   );
@@ -532,20 +634,34 @@ export function EventsSection() {
 
 // DIG-34 — виджет «Что от меня ждут»: счётчик открытых задач и до трёх самых
 // срочных. Строки реюзают экран /tasks; ссылка ведёт в полный список.
-export function TasksSection({ tasks }: { tasks: DashboardSection<TasksSummary> }) {
-  if (!tasks.ok) return <SectionFailure title="Что от меня ждут" error={tasks.error} />;
+export function TasksSection({
+  tasks,
+  locale = 'ru',
+}: {
+  tasks: DashboardSection<TasksSummary>;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  if (!tasks.ok)
+    return (
+      <SectionFailure
+        title={t(locale, 'dashboard.section.tasks')}
+        error={tasks.error}
+        locale={locale}
+      />
+    );
   const { openCount, top } = tasks.value;
 
   return (
     <section aria-labelledby="dashboard-tasks-title" data-testid="dashboard-tasks">
       <div className="flex items-baseline justify-between gap-2">
         <h2 id="dashboard-tasks-title" className="text-lg font-extrabold tracking-heading">
-          Что от меня ждут
+          {t(locale, 'dashboard.widget.tasks')}
         </h2>
         {openCount > 0 ? (
           <span
             data-testid="dashboard-tasks-count"
-            title="Открытых задач"
+            title={t(locale, 'dashboard.tasks.countTitle')}
             className="rounded-pill bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-ink"
           >
             {openCount}
@@ -557,14 +673,14 @@ export function TasksSection({ tasks }: { tasks: DashboardSection<TasksSummary> 
         <EmptyState
           className="mt-3"
           icon={PartyPopper}
-          title="Все дела сделаны 🎉"
-          description="Сейчас от вас ничего не требуется — новые задачи появятся здесь."
+          title={t(locale, 'dashboard.tasks.empty.title')}
+          description={t(locale, 'dashboard.tasks.empty.desc')}
         />
       ) : (
         <>
           <ol className="mt-3 flex flex-col gap-2">
             {top.map((task) => (
-              <TaskRow key={task.id} task={task} />
+              <TaskRow key={task.id} task={task} locale={locale} />
             ))}
           </ol>
           <Link
@@ -572,7 +688,7 @@ export function TasksSection({ tasks }: { tasks: DashboardSection<TasksSummary> 
             href="/tasks"
             className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-coral-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
           >
-            Все задачи
+            {t(locale, 'dashboard.tasks.all')}
             <span aria-hidden="true">→</span>
           </Link>
         </>

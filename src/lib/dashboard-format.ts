@@ -2,7 +2,13 @@
 // No server imports: every function is deterministic and safe for client
 // components. The summary line is DERIVED FROM DATA here (never via an LLM),
 // which keeps the hero reproducible in tests and demo runs.
+//
+// DIG-87 — EN-локализация часть 1: функции форматирования получили
+// необязательный параметр locale (дефолт 'ru' — прежние вызовы дают
+// байт-в-байт прежние RU-строки). Строки интерфейса берутся из словаря
+// t(locale, key); плюрализация RU — pluralRu, EN — простые формы.
 
+import { t, type Locale } from '@/lib/i18n';
 import type { ScheduleKind } from '@/server/data/types';
 
 /** Русская плюрализация: 1 пара, 2 пары, 5 пар / 1 день, 2 дня, 5 дней. */
@@ -15,6 +21,33 @@ export function pluralRu(count: number, forms: readonly [string, string, string]
   return forms[2];
 }
 
+// ── слова с плюрализацией по локали ──────────────────────────────────────────
+
+const PAIR_FORMS = ['пара', 'пары', 'пар'] as const;
+const DAY_FORMS = ['день', 'дня', 'дней'] as const;
+
+/** «пара/пары/пар» (RU) или «class/classes» (EN). */
+export function pairWord(count: number, locale: Locale = 'ru'): string {
+  if (locale === 'en') return count === 1 ? 'class' : 'classes';
+  return pluralRu(count, PAIR_FORMS);
+}
+
+/** «день/дня/дней» (RU) или «day/days» (EN). */
+export function dayWord(count: number, locale: Locale = 'ru'): string {
+  if (locale === 'en') return count === 1 ? 'day' : 'days';
+  return pluralRu(count, DAY_FORMS);
+}
+
+/** «1 класс/class…» счётчик пар для EN-рендера (для тестов и хинтов). */
+export function pluralEnClasses(count: number): string {
+  return count === 1 ? 'class' : 'classes';
+}
+
+/** Заглавная первая буква (Intl для RU отдаёт строчные, словарь требует «Ноябрь»). */
+export function capitalizeFirst(value: string): string {
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 const TZ = 'Europe/Moscow';
 
 /** Час суток по московскому времени (независимо от TZ сервера/браузера). */
@@ -24,15 +57,12 @@ function moscowHour(now: Date): number {
   );
 }
 
-const PAIR_FORMS = ['пара', 'пары', 'пар'] as const;
-const DAY_FORMS = ['день', 'дня', 'дней'] as const;
-
-export function greetingFor(now: Date): string {
+export function greetingFor(now: Date, locale: Locale = 'ru'): string {
   const hour = moscowHour(now);
-  if (hour < 5) return 'Доброй ночи';
-  if (hour < 12) return 'Доброе утро';
-  if (hour < 18) return 'Добрый день';
-  return 'Добрый вечер';
+  if (hour < 5) return t(locale, 'dashboard.greeting.night');
+  if (hour < 12) return t(locale, 'dashboard.greeting.morning');
+  if (hour < 18) return t(locale, 'dashboard.greeting.day');
+  return t(locale, 'dashboard.greeting.evening');
 }
 
 const headingFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -42,14 +72,21 @@ const headingFormatter = new Intl.DateTimeFormat('ru-RU', {
   month: 'long',
 });
 
-/** Дата для заголовка героя: «среда, 11 ноября». */
-export function headingDateLabel(now: Date): string {
-  return headingFormatter.format(now);
+const headingFormatterEn = new Intl.DateTimeFormat('en-US', {
+  timeZone: TZ,
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+
+/** Дата для заголовка героя: «среда, 11 ноября» / «Wednesday, November 11». */
+export function headingDateLabel(now: Date, locale: Locale = 'ru'): string {
+  return locale === 'en' ? headingFormatterEn.format(now) : headingFormatter.format(now);
 }
 
 /** Заголовок героя: «Ваша неделя · среда, 11 ноября». */
-export function weekHeading(now: Date): string {
-  return `Ваша неделя · ${headingDateLabel(now)}`;
+export function weekHeading(now: Date, locale: Locale = 'ru'): string {
+  return `${t(locale, 'dashboard.hero.title')} · ${headingDateLabel(now, locale)}`;
 }
 
 const weekdayDateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -59,9 +96,16 @@ const weekdayDateFormatter = new Intl.DateTimeFormat('ru-RU', {
   month: 'long',
 });
 
-/** Ближайший учебный день: «четверг, 12 ноября». */
-export function nearestStudyDayLabel(date: Date): string {
-  return weekdayDateFormatter.format(date);
+const weekdayDateFormatterEn = new Intl.DateTimeFormat('en-US', {
+  timeZone: TZ,
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+
+/** Ближайший учебный день: «четверг, 12 ноября» / «Thursday, November 12». */
+export function nearestStudyDayLabel(date: Date, locale: Locale = 'ru'): string {
+  return locale === 'en' ? weekdayDateFormatterEn.format(date) : weekdayDateFormatter.format(date);
 }
 
 const longDateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -70,9 +114,15 @@ const longDateFormatter = new Intl.DateTimeFormat('ru-RU', {
   month: 'long',
 });
 
-/** Дата пересдачи для бейджа риска: «18 ноября». */
-export function formatLongDate(date: Date): string {
-  return longDateFormatter.format(date);
+const longDateFormatterEn = new Intl.DateTimeFormat('en-US', {
+  timeZone: TZ,
+  day: 'numeric',
+  month: 'long',
+});
+
+/** Дата пересдачи для бейджа риска: «18 ноября» / «November 18». */
+export function formatLongDate(date: Date, locale: Locale = 'ru'): string {
+  return locale === 'en' ? longDateFormatterEn.format(date) : longDateFormatter.format(date);
 }
 
 const timeFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -99,20 +149,27 @@ const shortMonthFormatter = new Intl.DateTimeFormat('ru-RU', {
   timeZone: TZ,
   month: 'short',
 });
+const shortMonthFormatterEn = new Intl.DateTimeFormat('en-US', {
+  timeZone: TZ,
+  month: 'short',
+});
 
-/** Бейдж дедлайна: { day: '18', month: 'нояб.' }. */
-export function formatDateBadge(date: Date): { day: string; month: string } {
-  return { day: dayFormatter.format(date), month: shortMonthFormatter.format(date) };
+/** Бейдж дедлайна: { day: '18', month: 'нояб.' } / { day: '18', month: 'Nov' }. */
+export function formatDateBadge(date: Date, locale: Locale = 'ru'): { day: string; month: string } {
+  return {
+    day: dayFormatter.format(date),
+    month: locale === 'en' ? shortMonthFormatterEn.format(date) : shortMonthFormatter.format(date),
+  };
 }
 
 /**
  * «осталось N дн.» с плюрализацией; 0 → «Сегодня», 1 → «Завтра».
  * Красная подсветка (≤3 дней) — ответственность компонента, здесь только текст.
  */
-export function daysLeftLabel(daysLeft: number): string {
-  if (daysLeft <= 0) return 'Сегодня';
-  if (daysLeft === 1) return 'Завтра';
-  return `осталось ${daysLeft} ${pluralRu(daysLeft, DAY_FORMS)}`;
+export function daysLeftLabel(daysLeft: number, locale: Locale = 'ru'): string {
+  if (daysLeft <= 0) return t(locale, 'dashboard.daysLeft.today');
+  if (daysLeft === 1) return t(locale, 'dashboard.daysLeft.tomorrow');
+  return t(locale, 'dashboard.daysLeft.in', { count: daysLeft, days: dayWord(daysLeft, locale) });
 }
 
 /**
@@ -129,16 +186,18 @@ export function calendarDaysLeft(due: Date, now: Date): number {
   return moscowDay(due) - moscowDay(now);
 }
 
-/** Средний балл: десятичная запятая, один знак; нет данных → «—». */
-export function formatAverage(average: number | null): string {
-  return average === null ? '—' : average.toFixed(1).replace('.', ',');
+/** Средний балл: RU — десятичная запятая, EN — точка; нет данных → «—». */
+export function formatAverage(average: number | null, locale: Locale = 'ru'): string {
+  if (average === null) return '—';
+  return locale === 'en' ? average.toFixed(1) : average.toFixed(1).replace('.', ',');
 }
 
 /** Дельта со знаком и типографским минусом; нет данных → ''. */
-export function formatDelta(delta: number | null): string {
+export function formatDelta(delta: number | null, locale: Locale = 'ru'): string {
   if (delta === null) return '';
   const sign = delta >= 0 ? '+' : '−';
-  return `${sign}${Math.abs(delta).toFixed(1).replace('.', ',')}`;
+  const value = Math.abs(delta).toFixed(1);
+  return locale === 'en' ? `${sign}${value}` : `${sign}${value.replace('.', ',')}`;
 }
 
 export interface WeekSummaryInput {
@@ -152,29 +211,34 @@ export interface WeekSummaryInput {
 /**
  * Строка-резюме героя, детерминированно из данных:
  * «Сегодня 4 пары, одна перенесена, одна отменена. До пересдачи 7 дней.»
+ * EN: «Today 4 classes, one rescheduled, one cancelled. 7 days until the retake.»
  */
-export function buildWeekSummary({
-  pairs,
-  moved,
-  cancelled,
-  retakeDaysLeft,
-}: WeekSummaryInput): string {
-  let base = pairs === 0 ? 'Сегодня пар нет' : `Сегодня ${pairs} ${pluralRu(pairs, PAIR_FORMS)}`;
-  if (moved === 1) base += ', одна перенесена';
-  if (moved > 1) base += `, перенесено пар: ${moved}`;
-  if (cancelled === 1) base += ', одна отменена';
-  if (cancelled > 1) base += `, отменено пар: ${cancelled}`;
+export function buildWeekSummary(
+  { pairs, moved, cancelled, retakeDaysLeft }: WeekSummaryInput,
+  locale: Locale = 'ru',
+): string {
+  let base =
+    pairs === 0
+      ? t(locale, 'dashboard.summary.noPairs')
+      : t(locale, 'dashboard.summary.pairs', { count: pairs, pairs: pairWord(pairs, locale) });
+  if (moved === 1) base += t(locale, 'dashboard.summary.movedOne');
+  if (moved > 1) base += t(locale, 'dashboard.summary.movedMany', { count: moved });
+  if (cancelled === 1) base += t(locale, 'dashboard.summary.cancelledOne');
+  if (cancelled > 1) base += t(locale, 'dashboard.summary.cancelledMany', { count: cancelled });
   base += '.';
   if (retakeDaysLeft !== null) {
     base +=
       retakeDaysLeft <= 0
-        ? ' Пересдача сегодня.'
-        : ` До пересдачи ${retakeDaysLeft} ${pluralRu(retakeDaysLeft, DAY_FORMS)}.`;
+        ? t(locale, 'dashboard.summary.retakeToday')
+        : t(locale, 'dashboard.summary.retakeIn', {
+            count: retakeDaysLeft,
+            days: dayWord(retakeDaysLeft, locale),
+          });
   }
   return base;
 }
 
-/** Русские подписи типов занятий (пилюли таймлайна). */
+/** Русские подписи типов занятий (пилюли таймлайна) — канон RU-рендера. */
 export const LESSON_KIND_LABELS: Record<ScheduleKind, string> = {
   LECTURE: 'Лекция',
   PRACTICE: 'Практика',
@@ -182,6 +246,26 @@ export const LESSON_KIND_LABELS: Record<ScheduleKind, string> = {
   SEMINAR: 'Семинар',
   CONSULTATION: 'Консультация',
 };
+
+const LESSON_KIND_KEYS: Record<
+  ScheduleKind,
+  | 'schedule.kind.lecture'
+  | 'schedule.kind.seminar'
+  | 'schedule.kind.lab'
+  | 'schedule.kind.practice'
+  | 'schedule.kind.consultation'
+> = {
+  LECTURE: 'schedule.kind.lecture',
+  SEMINAR: 'schedule.kind.seminar',
+  LAB: 'schedule.kind.lab',
+  PRACTICE: 'schedule.kind.practice',
+  CONSULTATION: 'schedule.kind.consultation',
+};
+
+/** Подпись типа занятия по локали: «Лекция» / «Lecture» (DIG-87). */
+export function lessonKindLabel(kind: ScheduleKind, locale: Locale = 'ru'): string {
+  return t(locale, LESSON_KIND_KEYS[kind]);
+}
 
 /**
  * Пороговые уровни среднего по дисциплине для мини-полосок:
@@ -197,7 +281,34 @@ export function disciplineLevel(average: number): DisciplineLevel {
   return 'risk';
 }
 
-/** Склонение слова «долг» для бейджа риска: 1 долг, 2 долга, 5 долгов. */
-export function debtLabel(count: number): string {
+/** Склонение слова «долг» для бейджа риска: RU «1 долг», EN «1 debt». */
+export function debtLabel(count: number, locale: Locale = 'ru'): string {
+  if (locale === 'en') return `${count} ${count === 1 ? 'debt' : 'debts'}`;
   return `${count} ${pluralRu(count, ['долг', 'долга', 'долгов'])}`;
+}
+
+/** «N заявок в работе» для виджета «Заявки»: RU плюрализация, EN простые формы. */
+export function requestsInWorkLabel(count: number, locale: Locale = 'ru'): string {
+  if (locale === 'en') return `${count} ${count === 1 ? 'request' : 'requests'} in progress`;
+  return `${count} ${pluralRu(count, ['заявка в работе', 'заявки в работе', 'заявок в работе'])}`;
+}
+
+/** «N готово к получению» для виджета «Заявки». */
+export function requestsReadyLabel(count: number, locale: Locale = 'ru'): string {
+  if (locale === 'en') return `${count} ${count === 1 ? 'request' : 'requests'} ready for pickup`;
+  return `${count} ${pluralRu(count, ['готова к получению', 'готовы к получению', 'готово к получению'])}`;
+}
+
+/** Подпись вида занятия для дедлайна дашборда: «Пересдача» / «Зачёт» / «Экзамен». */
+export function deadlineKindLabel(
+  kind: 'RETAKE' | 'CREDIT' | 'EXAM',
+  locale: Locale = 'ru',
+): string {
+  const key: 'dashboard.kind.retake' | 'dashboard.kind.credit' | 'dashboard.kind.exam' =
+    kind === 'RETAKE'
+      ? 'dashboard.kind.retake'
+      : kind === 'CREDIT'
+        ? 'dashboard.kind.credit'
+        : 'dashboard.kind.exam';
+  return t(locale, key);
 }

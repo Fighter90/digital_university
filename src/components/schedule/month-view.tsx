@@ -6,7 +6,9 @@ import { cn } from 'cn';
 // «сегодня» выделено; клик по дню открывает вид «День» (?view=day&date=…).
 // Серверный компонент: навигация по месяцам — ссылки, работает без JS и
 // укладывается в 360 px (сетка сжимается, точки 6 px).
-import { LESSON_KIND_META, WEEKDAY_SHORT, type MonthCellView } from '@/lib/schedule-cards';
+// DIG-87 — подписи дней недели и aria-метки по локали (дефолт 'ru').
+import { weekdayShortLabels, LESSON_KIND_META, type MonthCellView } from '@/lib/schedule-cards';
+import { t, type Locale } from '@/lib/i18n';
 import { Icon } from '@/components/ui/icon';
 
 export interface MonthViewProps {
@@ -15,6 +17,8 @@ export interface MonthViewProps {
   prevHref: string | null;
   nextHref: string | null;
   cells: MonthCellView[];
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 const arrowClasses =
@@ -26,18 +30,24 @@ export function MonthView({
   prevHref,
   nextHref,
   cells,
+  locale = 'ru',
 }: MonthViewProps) {
+  const weekdays = weekdayShortLabels(locale);
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <div className="flex items-center gap-2">
           {prevHref ? (
-            <a href={prevHref} aria-label="Предыдущий месяц" className={arrowClasses}>
+            <a
+              href={prevHref}
+              aria-label={t(locale, 'schedule.month.prevAria')}
+              className={arrowClasses}
+            >
               <Icon icon={ChevronLeft} size={18} />
             </a>
           ) : (
             <span
-              aria-label="Предыдущий месяц"
+              aria-label={t(locale, 'schedule.month.prevAria')}
               aria-disabled="true"
               className={`${arrowClasses} cursor-not-allowed opacity-50`}
             >
@@ -45,12 +55,16 @@ export function MonthView({
             </span>
           )}
           {nextHref ? (
-            <a href={nextHref} aria-label="Следующий месяц" className={arrowClasses}>
+            <a
+              href={nextHref}
+              aria-label={t(locale, 'schedule.month.nextAria')}
+              className={arrowClasses}
+            >
               <Icon icon={ChevronRight} size={18} />
             </a>
           ) : (
             <span
-              aria-label="Следующий месяц"
+              aria-label={t(locale, 'schedule.month.nextAria')}
               aria-disabled="true"
               className={`${arrowClasses} cursor-not-allowed opacity-50`}
             >
@@ -75,7 +89,7 @@ export function MonthView({
             data-testid="month-weekdays"
             className="mb-1.5 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
           >
-            {WEEKDAY_SHORT.map((weekday) => (
+            {weekdays.map((weekday) => (
               <span key={weekday}>{weekday}</span>
             ))}
           </div>
@@ -87,7 +101,10 @@ export function MonthView({
                   href={cell.href}
                   data-testid={`month-cell-${cell.dateKey}`}
                   data-today={cell.isToday ? 'true' : undefined}
-                  aria-label={`${cell.dayNumber}, пар: ${cell.dots.length + cell.extra}`}
+                  aria-label={t(locale, 'schedule.month.cellAria', {
+                    day: cell.dayNumber,
+                    count: cell.dots.length + cell.extra,
+                  })}
                   className={cn(
                     'flex min-h-14 flex-col items-center gap-1 rounded-card border px-1 py-1.5 text-center transition-colors sm:min-h-16',
                     cell.isToday

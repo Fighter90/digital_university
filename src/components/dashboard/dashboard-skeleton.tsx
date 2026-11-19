@@ -1,12 +1,16 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { t } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 
 // DIG-20 — скелетон главной на время загрузки агрегата: зеркалит структуру
 // экрана (тёмный hero + блоки), скрыт от скринридеров вместе с заглушками.
-export function DashboardSkeleton() {
+// DIG-87 — aria-подпись по локали (cookie du-locale, дефолт ru).
+export async function DashboardSkeleton() {
+  const locale = await getLocale();
   return (
     <section
       aria-busy="true"
-      aria-label="Главная загружается"
+      aria-label={t(locale, 'dashboard.loading.aria')}
       className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8"
     >
       {/* Hero */}

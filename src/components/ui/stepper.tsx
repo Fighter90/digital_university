@@ -40,11 +40,13 @@ export interface StepperProps {
   steps: ReadonlyArray<{ label: string }>;
   states: ReadonlyArray<StepState>;
   className?: string;
+  /** aria-метка списка шагов (DIG-87 — по локали; дефолт прежний RU-канон). */
+  ariaLabel?: string;
 }
 
-export function Stepper({ steps, states, className }: StepperProps) {
+export function Stepper({ steps, states, className, ariaLabel = 'Шаги заявки' }: StepperProps) {
   return (
-    <ol aria-label="Шаги заявки" className={cn('flex w-full', className)}>
+    <ol aria-label={ariaLabel} className={cn('flex w-full', className)}>
       {steps.map((step, i) => {
         const state = states[i] ?? 'pending';
         const meta = STEP_META[state];

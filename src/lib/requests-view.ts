@@ -230,6 +230,62 @@ export function requestFilterLabel(locale: 'ru' | 'en', key: RequestFilterKey): 
   return t(locale, `filter.${key}`);
 }
 
+// ── номер заявки ─────────────────────────────────────────────────────────────
+
+// DIG-87 — канонический номер «ЗД-2026-000123» содержит кириллицу (префикс
+// «ЗД» — «заявка деканата»). На EN-версии интерфейса кириллицы быть не должно:
+// для отображения номер транслитерируется («ZD-2026-000123»), канонический
+// номер в ссылках (/requests/ЗД-…) и поиске остаётся прежним.
+const CYRILLIC_TO_LATIN: Record<string, string> = {
+  А: 'a',
+  Б: 'b',
+  В: 'v',
+  Г: 'g',
+  Д: 'd',
+  Е: 'e',
+  Ё: 'e',
+  Ж: 'zh',
+  З: 'z',
+  И: 'i',
+  Й: 'y',
+  К: 'k',
+  Л: 'l',
+  М: 'm',
+  Н: 'n',
+  О: 'o',
+  П: 'p',
+  Р: 'r',
+  С: 's',
+  Т: 't',
+  У: 'u',
+  Ф: 'f',
+  Х: 'kh',
+  Ц: 'ts',
+  Ч: 'ch',
+  Ш: 'sh',
+  Щ: 'shch',
+  Ъ: '',
+  Ы: 'y',
+  Ь: '',
+  Э: 'e',
+  Ю: 'yu',
+  Я: 'ya',
+};
+
+/** Номер заявки для отображения: RU — как есть, EN — латиницей (транслит). */
+export function requestNumberLabel(number: string, locale: 'ru' | 'en'): string {
+  if (locale === 'ru') return number;
+  return number.replace(/[А-Яа-яЁё]/g, (ch) => {
+    const mapped = CYRILLIC_TO_LATIN[ch.toUpperCase()] ?? '';
+    return ch === ch.toUpperCase() ? capitalizeWord(mapped) : mapped;
+  });
+}
+
+/** «zd» → «Zd», «shch» → «Shch» — первая буква транслита в верхний регистр. */
+function capitalizeWord(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 /** DIG-69 — подпись шага конвейера по локали (RU — прежние метки канона). */
 export function pipelineStepLabel(locale: 'ru' | 'en', status: UnifiedRequestStatus): string {
   return t(locale, `status.${status}`);

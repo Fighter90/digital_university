@@ -39,7 +39,8 @@ import {
   startOfMoscowWeek,
   type SemesterBounds,
 } from '@/lib/schedule-time';
-import { LESSON_KIND_LABELS } from '@/lib/dashboard-format';
+import { capitalizeFirst, lessonKindLabel, LESSON_KIND_LABELS } from '@/lib/dashboard-format';
+import { t, type Locale } from '@/lib/i18n';
 import type { ScheduleEventRow, ScheduleKind, ScheduleStatus } from '@/server/data/types';
 
 // ── Сетка дня: 08:00–20:00, 64 px на час ─────────────────────────────────────
@@ -124,42 +125,37 @@ export function mondayOfIsoWeekKey(key: string): Date | null {
 
 // ── Подпись недели ───────────────────────────────────────────────────────────
 
-const MONTHS_GENITIVE = [
-  'января',
-  'февраля',
-  'марта',
-  'апреля',
-  'мая',
-  'июня',
-  'июля',
-  'августа',
-  'сентября',
-  'октября',
-  'ноября',
-  'декабря',
-] as const;
+/**
+ * Родительный падеж месяца по дате: «ноября» (RU) / «November» (EN).
+ * Трюк с Intl: формат «{day} {month}» отдаёт согласованную форму месяца,
+ * из которой отрезается числительный префикс.
+ */
+function monthGenitiveLabel(date: Date, locale: Locale): string {
+  const tag = locale === 'en' ? 'en-US' : 'ru-RU';
+  const formatted = new Intl.DateTimeFormat(tag, {
+    timeZone: 'Europe/Moscow',
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
+  // «12 ноября» → число в начале; «November 12» → число в конце (DIG-87).
+  return locale === 'en' ? formatted.replace(/\s*\d+$/, '') : formatted.replace(/^\d+\s*/, '');
+}
 
-const MONTHS_NOMINATIVE = [
-  'Январь',
-  'Февраль',
-  'Март',
-  'Апрель',
-  'Май',
-  'Июнь',
-  'Июль',
-  'Август',
-  'Сентябрь',
-  'Октябрь',
-  'Ноябрь',
-  'Декабрь',
-] as const;
-
-/** Подпись диапазона недели: «9 – 15 ноября 2026» (переход месяца/года учтён). */
-export function weekLabel(monday: Date): string {
+/** Подпись диапазона недели: «9 – 15 ноября 2026» / «November 9 – 15, 2026». */
+export function weekLabel(monday: Date, locale: Locale = 'ru'): string {
   const start = moscowParts(monday);
   const end = moscowParts(shiftMoscowDays(monday, 6));
-  const startDay = `${start.day} ${MONTHS_GENITIVE[start.month - 1]}`;
-  const endDay = `${end.day} ${MONTHS_GENITIVE[end.month - 1]} ${end.year}`;
+  if (locale === 'en') {
+    const startMonth = monthGenitiveLabel(monday, locale);
+    const endMonth = monthGenitiveLabel(shiftMoscowDays(monday, 6), locale);
+    if (start.year !== end.year)
+      return `${startMonth} ${start.day}, ${start.year} – ${endMonth} ${end.day}, ${end.year}`;
+    if (start.month !== end.month)
+      return `${startMonth} ${start.day} – ${endMonth} ${end.day}, ${end.year}`;
+    return `${startMonth} ${start.day} – ${end.day}, ${end.year}`;
+  }
+  const startDay = `${start.day} ${monthGenitiveLabel(monday, locale)}`;
+  const endDay = `${end.day} ${monthGenitiveLabel(shiftMoscowDays(monday, 6), locale)} ${end.year}`;
   if (start.year !== end.year) return `${startDay} ${start.year} – ${endDay}`;
   if (start.month !== end.month) return `${startDay} – ${endDay}`;
   return `${start.day} – ${endDay}`;
@@ -258,25 +254,34 @@ export interface ScheduleEventView {
   ariaLabel: string;
 }
 
-function roomLabelOf(room: string): string {
-  return room.trim().toLowerCase() === 'онлайн' ? 'онлайн' : `ауд. ${room.trim()}`;
+function roomLabelOf(room: string, locale: Locale = 'ru'): string {
+  return room.trim().toLowerCase() === 'онлайн'
+    ? t(locale, 'schedule.room.online')
+    : t(locale, 'schedule.room.label', { room: room.trim() });
 }
 
 /** Строки слоя данных → серийализуемая модель блока недели. */
-export function toScheduleEventViews(rows: readonly ScheduleEventRow[]): ScheduleEventView[] {
+export function toScheduleEventViews(
+  rows: readonly ScheduleEventRow[],
+  locale: Locale = 'ru',
+): ScheduleEventView[] {
   return rows.map((row) => {
     const start = moscowParts(row.startsAt);
     const end = moscowParts(row.endsAt);
     const startMinutes = start.hour * 60 + start.minute;
     const endMinutes = end.hour * 60 + end.minute;
-    const kindLabel = LESSON_KIND_LABELS[row.kind];
-    const roomLabel = roomLabelOf(row.room);
+    const kindLabel = lessonKindLabel(row.kind, locale);
+    const roomLabel = roomLabelOf(row.room, locale);
     const timeLabel = `${formatMoscowTime(row.startsAt)}–${formatMoscowTime(row.endsAt)}`;
     const isMoved = row.status === 'ROOM_CHANGED' || row.status === 'TIME_CHANGED';
     const isCancelled = row.status === 'CANCELLED';
-    const suffix = isMoved ? ', перенос' : isCancelled ? ', отменена' : '';
+    const suffix = isMoved
+      ? t(locale, 'schedule.aria.moved')
+      : isCancelled
+        ? t(locale, 'schedule.aria.cancelled')
+        : '';
     const previousParts = [
-      row.previousRoom ? `ауд. ${row.previousRoom}` : null,
+      row.previousRoom ? t(locale, 'schedule.room.was', { room: row.previousRoom }) : null,
       row.previousStartsAt ? formatMoscowTime(row.previousStartsAt) : null,
     ].filter(Boolean);
     return {
@@ -293,12 +298,17 @@ export function toScheduleEventViews(rows: readonly ScheduleEventRow[]): Schedul
       status: row.status,
       isMoved,
       isCancelled,
-      previousRoomLabel: row.previousRoom ? `было: ауд. ${row.previousRoom}` : null,
+      previousRoomLabel: row.previousRoom
+        ? t(locale, 'schedule.was.room', { room: row.previousRoom })
+        : null,
       previousTimeLabel: row.previousStartsAt
-        ? `было: ${formatMoscowTime(row.previousStartsAt)}`
+        ? t(locale, 'schedule.was.time', { time: formatMoscowTime(row.previousStartsAt) })
         : null,
       // «было: ауд. 214 / 11:10» — один префикс на обе части (блок и панель)
-      previousLabel: previousParts.length > 0 ? `было: ${previousParts.join(' / ')}` : null,
+      previousLabel:
+        previousParts.length > 0
+          ? t(locale, 'schedule.was', { parts: previousParts.join(' / ') })
+          : null,
       changeNote: row.changeNote ?? null,
       note: row.note ?? null,
       ariaLabel: `${kindLabel}, ${row.disciplineName}, ${timeLabel}, ${roomLabel}${suffix}`,
@@ -383,9 +393,14 @@ export interface WeekPage {
  * Страница недели по параметру ?week= (undefined → неделя «сейчас»).
  * Ключ валидируется, страница клампится по границам семестра; за пределами
  * семестра — ближайшая валидная (текущая) неделя; совсем вне семестра — null.
+ * DIG-87 — подписи недели/семестра по локали (дефолт 'ru').
  */
-export function resolveWeekPage(rawWeek: string | undefined, now: Date): WeekPage | null {
-  const bounds: SemesterBounds = semesterBounds(now);
+export function resolveWeekPage(
+  rawWeek: string | undefined,
+  now: Date,
+  locale: Locale = 'ru',
+): WeekPage | null {
+  const bounds: SemesterBounds = semesterBounds(now, locale);
   const requested = rawWeek ? mondayOfIsoWeekKey(rawWeek) : null;
   const fallback = startOfMoscowWeek(now);
   const page =
@@ -403,7 +418,7 @@ export function resolveWeekPage(rawWeek: string | undefined, now: Date): WeekPag
 
   return {
     weekKey: isoWeekKeyOf(page.from),
-    weekLabel: weekLabel(page.from),
+    weekLabel: weekLabel(page.from, locale),
     semesterLabel: bounds.label,
     days,
     from: page.from,
@@ -416,8 +431,22 @@ export function resolveWeekPage(rawWeek: string | undefined, now: Date): WeekPag
 
 // ── Мини-календарь месяца ────────────────────────────────────────────────────
 
-/** Короткие подписи дней недели, понедельник первый (индекс moscowWeekdayIndex). */
+/** Короткие подписи дней недели (RU-канон, заглавные): «Пн Вт Ср Чт Пт Сб Вс». */
 export const WEEKDAY_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] as const;
+
+/** Короткие подписи дней недели по локали: «Пн…» (RU) / «Mon…» (EN). */
+export function weekdayShortLabels(locale: Locale = 'ru'): string[] {
+  const keys = [
+    'schedule.wd.mon',
+    'schedule.wd.tue',
+    'schedule.wd.wed',
+    'schedule.wd.thu',
+    'schedule.wd.fri',
+    'schedule.wd.sat',
+    'schedule.wd.sun',
+  ] as const;
+  return keys.map((key) => (locale === 'en' ? t(locale, key) : capitalizeFirst(t(locale, key))));
+}
 
 export interface MiniCalendarCell {
   /** Московский ключ дня «2026-11-09». */
@@ -430,8 +459,12 @@ export interface MiniCalendarCell {
 /**
  * Месяц, в котором находится отображаемая неделя (якорь — её четверг,
  * чтобы месяц был стабилен внутри недели), целыми строками Пн–Вс.
+ * DIG-87 — подписи месяца/дней недели по локали (дефолт 'ru').
  */
-export function miniCalendarCells(weekMonday: Date): {
+export function miniCalendarCells(
+  weekMonday: Date,
+  locale: Locale = 'ru',
+): {
   monthLabel: string;
   weekdays: readonly string[];
   cells: MiniCalendarCell[];
@@ -458,8 +491,19 @@ export function miniCalendarCells(weekMonday: Date): {
     }
   }
   return {
-    monthLabel: `${MONTHS_NOMINATIVE[anchor.month - 1]} ${anchor.year}`,
-    weekdays: WEEKDAY_SHORT,
+    monthLabel: monthNominativeWithYear(anchor.month, anchor.year, locale),
+    weekdays: weekdayShortLabels(locale),
     cells,
   };
+}
+
+/** «Ноябрь 2026» / «November 2026» — подпись месяца мини-календаря. */
+function monthNominativeWithYear(month: number, year: number, locale: Locale): string {
+  const probe = fromMoscowWallClock(2026, month, 15);
+  const tag = locale === 'en' ? 'en-US' : 'ru-RU';
+  const value = new Intl.DateTimeFormat(tag, {
+    timeZone: 'Europe/Moscow',
+    month: 'long',
+  }).format(probe);
+  return `${capitalizeFirst(value)} ${year}`;
 }

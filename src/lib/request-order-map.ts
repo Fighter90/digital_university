@@ -6,6 +6,10 @@
 // Неизвестный id (в том числе «new» от кнопки «Заказать справку») — это
 // НЕ ошибка: мастер открывается без предвыбора, студент выбирает тип сам.
 // Модуль чистый: работает и на сервере, и в клиентском мастере.
+//
+// DIG-87 — подсказки типов и метки форматов по локали (дефолт 'ru').
+
+import { t, type Locale } from '@/lib/i18n';
 
 /** Предвыбор мастера: тип словаря + опциональные значения полей формы. */
 export interface OrderTarget {
@@ -34,7 +38,7 @@ export function orderTargetForService(serviceId: string | null | undefined): Ord
   return ORDER_TYPE_BY_SERVICE[id] ?? null;
 }
 
-/** Одна строка «что это за документ» для шага 1 мастера. */
+/** Одна строка «что это за документ» для шага 1 мастера (RU-канон). */
 export const REQUEST_TYPE_HINTS: Record<string, string> = {
   CERT_ENROLLMENT: 'Подтверждает, что вы студент вуза: программа, курс, форма обучения',
   GRADES_EXTRACT: 'Официальная выписка оценок и среднего балла за все сессии',
@@ -44,15 +48,42 @@ export const REQUEST_TYPE_HINTS: Record<string, string> = {
   SCHOLARSHIP_CERT: 'Сумма назначенной стипендии и срок её выплаты',
 };
 
-const FALLBACK_TYPE_HINT = 'Официальный документ деканата';
+const HINT_KEYS: Record<
+  string,
+  | 'wizard.hint.CERT_ENROLLMENT'
+  | 'wizard.hint.GRADES_EXTRACT'
+  | 'wizard.hint.DIPLOMA_COPY'
+  | 'wizard.hint.ACADEMIC_LEAVE'
+  | 'wizard.hint.MATERIAL_AID'
+  | 'wizard.hint.SCHOLARSHIP_CERT'
+> = {
+  CERT_ENROLLMENT: 'wizard.hint.CERT_ENROLLMENT',
+  GRADES_EXTRACT: 'wizard.hint.GRADES_EXTRACT',
+  DIPLOMA_COPY: 'wizard.hint.DIPLOMA_COPY',
+  ACADEMIC_LEAVE: 'wizard.hint.ACADEMIC_LEAVE',
+  MATERIAL_AID: 'wizard.hint.MATERIAL_AID',
+  SCHOLARSHIP_CERT: 'wizard.hint.SCHOLARSHIP_CERT',
+};
 
-export function requestTypeHint(typeCode: string): string {
-  return REQUEST_TYPE_HINTS[typeCode] ?? FALLBACK_TYPE_HINT;
+/** Подсказка типа для шага 1 мастера по локали (RU — прежние байт-в-байт). */
+export function requestTypeHint(typeCode: string, locale: Locale = 'ru'): string {
+  const key = HINT_KEYS[typeCode];
+  if (!key) return t(locale, 'wizard.hint.fallback');
+  return t(locale, key);
 }
 
-/** Метки формата словаря типов (CanonicalRequestTypeRow.format). */
+/** Метки формата словаря типов по локали (CanonicalRequestTypeRow.format). */
 export const REQUEST_FORMAT_LABELS: Record<'ELECTRONIC' | 'PAPER' | 'HYBRID', string> = {
   ELECTRONIC: 'PDF',
   PAPER: 'Бумажный документ',
   HYBRID: 'PDF и оригинал',
 };
+
+/** Метка формата по локали: «Бумажный документ» / «Paper document». */
+export function requestFormatLabel(
+  format: 'ELECTRONIC' | 'PAPER' | 'HYBRID',
+  locale: Locale = 'ru',
+): string {
+  if (format === 'ELECTRONIC') return 'PDF';
+  return t(locale, format === 'PAPER' ? 'wizard.format.PAPER' : 'wizard.format.HYBRID');
+}

@@ -11,6 +11,12 @@
 // функции написаны зона-независимо — офсет вычисляется, а не захардкожен.
 // Модуль чистый (без серверных импортов) — используется и данными, и UI,
 // и покрыт юнит-тестами (tests/schedule.test.ts).
+//
+// DIG-87 — semesterBounds получил необязательный locale (дефолт 'ru'):
+// подпись семестра «Осенний семестр 2026/27» / «Fall semester 2026/27»
+// идёт из словаря интерфейса; прочие функции времени локали не требуют.
+
+import { t, type Locale } from '@/lib/i18n';
 
 export const MOSCOW_TZ = 'Europe/Moscow';
 
@@ -196,37 +202,50 @@ export function monthRange(year: number, month: number): DateRange {
  * Границы текущего семестра по московской дате `now` (учебный календарь
  * прототипа, вымышленный): осень 1 сентября — 25 января, весна 9 февраля —
  * 30 июня; июль/август относятся к предстоящей осени.
+ * DIG-87 — подпись семестра по локали (дефолт 'ru' — прежние байты).
  */
-export function semesterBounds(now: Date): SemesterBounds {
+export function semesterBounds(now: Date, locale: Locale = 'ru'): SemesterBounds {
   const p = moscowParts(now);
   const padYear = (y: number) => String(y % 100).padStart(2, '0');
+  const semesterLabel = (kind: 'fall' | 'spring', startYear: number): string =>
+    t(locale, kind === 'fall' ? 'schedule.semester.fall' : 'schedule.semester.spring', {
+      years: `${startYear}/${padYear(startYear + 1)}`,
+    });
   if (p.month >= 9) {
     return {
-      label: `Осенний семестр ${p.year}/${padYear(p.year + 1)}`,
+      label: semesterLabel('fall', p.year),
       start: fromMoscowWallClock(p.year, 9, 1),
       end: fromMoscowWallClock(p.year + 1, 1, 25),
     };
   }
   if (p.month >= 2 && p.month <= 6) {
     return {
-      label: `Весенний семестр ${p.year - 1}/${padYear(p.year)}`,
+      label: semesterLabel('spring', p.year - 1),
       start: fromMoscowWallClock(p.year, 2, 9),
       end: fromMoscowWallClock(p.year, 6, 30),
     };
   }
   if (p.month >= 7) {
     return {
-      label: `Осенний семестр ${p.year}/${padYear(p.year + 1)}`,
+      label: semesterLabel('fall', p.year),
       start: fromMoscowWallClock(p.year, 9, 1),
       end: fromMoscowWallClock(p.year + 1, 1, 25),
     };
   }
   // Январь: хвост осеннего семестра предыдущей осени.
   return {
-    label: `Осенний семестр ${p.year - 1}/${padYear(p.year)}`,
+    label: semesterLabel('fall', p.year - 1),
     start: fromMoscowWallClock(p.year - 1, 9, 1),
     end: fromMoscowWallClock(p.year, 1, 25),
   };
+}
+
+/**
+ * Подпись семестра по московской дате (удобный доступ без полных границ):
+ * «Осенний семестр 2026/27» / «Fall semester 2026/27».
+ */
+export function semesterBoundsLabel(now: Date, locale: Locale = 'ru'): string {
+  return semesterBounds(now, locale).label;
 }
 
 /**

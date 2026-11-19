@@ -35,7 +35,7 @@ import {
   shiftMonth,
   toScheduleEventCards,
   weekWindow,
-  WEEKDAY_SHORT,
+  weekdayShortLabels,
   type ScheduleView,
 } from '@/lib/schedule-cards';
 import {
@@ -64,8 +64,17 @@ import {
 import { EventDetailsPanel } from '@/components/schedule/event-details-panel';
 import { SectionTitle } from '@/components/shell/section-title';
 import { toEventDetailsView } from '@/lib/event-details';
+import { t } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 
-export const metadata = { title: 'Расписание — Цифровой деканат' };
+// DIG-87 — EN-локализация часть 1: страница /schedule строит вью-модели
+// (карточки пар, подписи дат, недели и семестра) по локали cookie du-locale;
+// RU — байт-в-байт прежние строки.
+
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: `${t(locale, 'title.schedule')} — ${t(locale, 'shell.brandName')}` };
+}
 
 interface SchedulePageProps {
   /** Next 15 передаёт промис; рендер без пропсов (юнит-прендер) тоже валиден. */
@@ -93,7 +102,7 @@ async function ScheduleContent({
   month?: string;
   event?: string;
 }) {
-  const ctx = await requireDataCtx('/schedule');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/schedule'), getLocale()] as const);
 
   // Query текущего URL без «?» — контекст для переключателя видов и листания
   // недель. Передаётся пропсами (сервер его уже распарсил): клиентские
@@ -111,15 +120,15 @@ async function ScheduleContent({
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 py-6 md:py-8">
         <SectionTitle href="/schedule" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <EmptyState
-          title="Расписание доступно студентам"
-          description="Учебные пары показываются по учебной группе. Кабинет сотрудника с управлением расписанием — отдельная задача."
+          title={t(locale, 'schedule.staff.title')}
+          description={t(locale, 'schedule.staff.desc')}
         />
       </section>
     );
   }
 
   const now = new Date();
-  const bounds = semesterBounds(now);
+  const bounds = semesterBounds(now, locale);
   const todayKey = moscowDateKey(now);
   // Дефолт без ?view=: десктоп — неделя (DIG-22), мобильный — «сегодня».
   const desktopView = resolveScheduleView(view, 'week');
@@ -132,7 +141,15 @@ async function ScheduleContent({
     const settings = ctx.role === 'STUDENT' ? await getOwnSettings(dataDb, ctx) : null;
     const voiceEnabled = settings?.voiceAssistant ?? true;
     if (desktopView === 'month') {
-      return await MonthContent({ ctx, now, bounds, todayKey, monthParam: month, currentQuery });
+      return await MonthContent({
+        ctx,
+        now,
+        bounds,
+        todayKey,
+        monthParam: month,
+        currentQuery,
+        locale,
+      });
     }
     return await DayWeekContent({
       ctx,
@@ -147,6 +164,7 @@ async function ScheduleContent({
       mobileView,
       currentQuery,
       voiceEnabled,
+      locale,
     });
   } catch (error) {
     // не глотаем: без лога «Расписание не загрузилось» недиагностируемо
@@ -154,8 +172,8 @@ async function ScheduleContent({
     return (
       <section className="mx-auto flex w-full max-w-3xl flex-col py-6 md:py-8">
         <ErrorState
-          title="Расписание не загрузилось"
-          description="Обновите страницу — если ошибка повторится, сообщите в деканат."
+          title={t(locale, 'schedule.error.title')}
+          description={t(locale, 'schedule.error.desc')}
         />
       </section>
     );
@@ -182,6 +200,8 @@ interface DayWeekProps {
   event?: string;
   /** DIG-65 — настройка «Озвучка и голосовой ввод» владельца сессии. */
   voiceEnabled: boolean;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale: Awaited<ReturnType<typeof getLocale>>;
 }
 
 async function DayWeekContent({
@@ -197,13 +217,16 @@ async function DayWeekContent({
   mobileView,
   currentQuery,
   voiceEnabled,
+  locale,
 }: DayWeekProps) {
   // Страховка типов: ветка «месяца» уже отработала в ScheduleContent.
   const desktopMode: 'day' | 'week' = desktopView === 'week' ? 'week' : 'day';
   const mobileMode: 'day' | 'week' = mobileView === 'week' ? 'week' : 'day';
   // Недельная страница нужна виду «неделя» (десктоп и мобильный компакт).
   const weekPage =
-    desktopMode === 'week' || mobileMode === 'week' ? resolveWeekPage(weekParam, now) : null;
+    desktopMode === 'week' || mobileMode === 'week'
+      ? resolveWeekPage(weekParam, now, locale)
+      : null;
 
   // Фокус дня: ?date, иначе «сегодня»; если открытая неделя не содержит
   // сегодня — её понедельник (лента и неделя остаются согласованы).
@@ -227,18 +250,18 @@ async function DayWeekContent({
     if (weekPage.to.getTime() > to.getTime()) to = weekPage.to;
   }
   const rows = from.getTime() >= to.getTime() ? [] : await getSchedule(dataDb, ctx, { from, to });
-  const cards = toScheduleEventCards(rows);
+  const cards = toScheduleEventCards(rows, locale);
   const byDate = groupCardsByDate(cards);
-  const views = toScheduleEventViews(rows);
+  const views = toScheduleEventViews(rows, locale);
 
   // Мобильная лента: 35 дней окна, свайп и выбор дня — без сети.
   const mobileDays: MobileDayView[] = win.dateKeys.map((dateKey) => {
     const dayDate = parseDateKey(dateKey);
     return {
       dateKey,
-      weekdayShort: dayDate ? WEEKDAY_SHORT[moscowWeekdayIndex(dayDate)] : '',
+      weekdayShort: dayDate ? (weekdayShortLabels(locale)[moscowWeekdayIndex(dayDate)] ?? '') : '',
       dayNumber: Number(dateKey.slice(8, 10)),
-      listLabel: dayDate ? formatDayShort(dayDate) : dateKey,
+      listLabel: dayDate ? formatDayShort(dayDate, locale) : dateKey,
       isToday: dateKey === todayKey,
       events: byDate.get(dateKey) ?? [],
     };
@@ -249,7 +272,7 @@ async function DayWeekContent({
   let nextStudy: NextStudyDayInfo | null = null;
   if ((desktopMode === 'day' || mobileMode === 'day') && selectedEvents.length === 0) {
     const next = await getNextStudyDay(dataDb, ctx, selectedDate);
-    nextStudy = next ? { dateKey: next.dateKey, label: formatDayShort(next.date) } : null;
+    nextStudy = next ? { dateKey: next.dateKey, label: formatDayShort(next.date, locale) } : null;
   }
 
   // Колонки недельной сетки DIG-22.
@@ -301,14 +324,15 @@ async function DayWeekContent({
               todayWeekKey={isoWeekKeyOf(now)}
               todayKey={todayKey}
               days={weekDays}
-              mini={miniCalendarCells(weekPage.from)}
+              mini={miniCalendarCells(weekPage.from, locale)}
               kindCounts={kindCounts}
               teachers={teachers}
               currentQuery={currentQuery}
               keepViewParam={viewParam === 'week'}
+              locale={locale}
             />
           ) : (
-            <OutOfSemester />
+            <OutOfSemester locale={locale} />
           )
         ) : (
           <>
@@ -318,10 +342,11 @@ async function DayWeekContent({
                 platform="desktop"
                 currentQuery={currentQuery}
                 todayKey={todayKey}
+                locale={locale}
               />
             </div>
             <DayView
-              title={formatDayTitle(selectedDate)}
+              title={formatDayTitle(selectedDate, locale)}
               isToday={selectedKey === todayKey}
               events={selectedEvents}
               prevHref={prev ? dayHref(moscowDateKey(prev)) : null}
@@ -330,6 +355,7 @@ async function DayWeekContent({
               nextStudy={nextStudy}
               voiceEnabled={voiceEnabled}
               eventQuery={currentQuery}
+              locale={locale}
             />
           </>
         )}
@@ -343,10 +369,11 @@ async function DayWeekContent({
             platform="mobile"
             currentQuery={currentQuery}
             todayKey={todayKey}
+            locale={locale}
           />
         </div>
         {mobileMode === 'week' && !(weekPage && weekDays) ? (
-          <OutOfSemester />
+          <OutOfSemester locale={locale} />
         ) : (
           <MobileSchedule
             mode={mobileMode}
@@ -355,14 +382,16 @@ async function DayWeekContent({
             nextStudy={nextStudy}
             voiceEnabled={voiceEnabled}
             eventQuery={currentQuery}
+            locale={locale}
           />
         )}
       </div>
       {event && details ? (
         <EventDetailsPanel
-          view={toEventDetailsView(details.event)}
+          view={toEventDetailsView(details.event, locale)}
           note={details.note?.text ?? null}
           closeHref={currentQuery ? `/schedule?${currentQuery}` : '/schedule'}
+          locale={locale}
         />
       ) : null}
     </section>
@@ -379,9 +408,19 @@ interface MonthProps {
   monthParam?: string;
   /** Query URL для ViewSwitcher (см. ScheduleContent). */
   currentQuery: string;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale: Awaited<ReturnType<typeof getLocale>>;
 }
 
-async function MonthContent({ ctx, now, bounds, todayKey, monthParam, currentQuery }: MonthProps) {
+async function MonthContent({
+  ctx,
+  now,
+  bounds,
+  todayKey,
+  monthParam,
+  currentQuery,
+  locale,
+}: MonthProps) {
   const ym = resolveSelectedMonth(monthParam, now);
   const visible = monthVisible(ym, bounds);
   const prevMonth = shiftMonth(ym, -1);
@@ -390,7 +429,7 @@ async function MonthContent({ ctx, now, bounds, todayKey, monthParam, currentQue
   let cells: ReturnType<typeof monthCellViews> = [];
   if (visible) {
     const rows = await getMonth(dataDb, ctx, { year: ym.year, month: ym.month }, now);
-    cells = monthCellViews(ym, groupCardsByDate(toScheduleEventCards(rows)), todayKey);
+    cells = monthCellViews(ym, groupCardsByDate(toScheduleEventCards(rows, locale)), todayKey);
   }
 
   return (
@@ -402,6 +441,7 @@ async function MonthContent({ ctx, now, bounds, todayKey, monthParam, currentQue
           platform="desktop"
           currentQuery={currentQuery}
           todayKey={todayKey}
+          locale={locale}
         />
       </div>
       <div className="mb-1 md:hidden">
@@ -410,13 +450,14 @@ async function MonthContent({ ctx, now, bounds, todayKey, monthParam, currentQue
           platform="mobile"
           currentQuery={currentQuery}
           todayKey={todayKey}
+          locale={locale}
         />
       </div>
 
       {visible ? (
         // Одна сетка на оба брейкпоинта: 7 колонок сжимаются до 360 px.
         <MonthView
-          monthLabel={formatMonthTitle(ym.year, ym.month)}
+          monthLabel={formatMonthTitle(ym.year, ym.month, locale)}
           semesterLabel={bounds.label}
           prevHref={
             monthVisible(prevMonth, bounds)
@@ -429,20 +470,21 @@ async function MonthContent({ ctx, now, bounds, todayKey, monthParam, currentQue
               : null
           }
           cells={cells}
+          locale={locale}
         />
       ) : (
-        <OutOfSemester />
+        <OutOfSemester locale={locale} />
       )}
     </section>
   );
 }
 
 /** Вне семестра пар нет: учебный календарь прототипа их не задаёт. */
-function OutOfSemester() {
+function OutOfSemester({ locale = 'ru' }: { locale?: Awaited<ReturnType<typeof getLocale>> }) {
   return (
     <EmptyState
-      title="Сейчас вне семестра"
-      description="Учебный календарь прототипа не задаёт пары за пределами семестра — расписание появится к его началу."
+      title={t(locale, 'schedule.outOfSemester.title')}
+      description={t(locale, 'schedule.outOfSemester.desc')}
     />
   );
 }

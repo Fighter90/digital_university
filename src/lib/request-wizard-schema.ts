@@ -10,6 +10,7 @@
 // (защита в глубину).
 
 import { z } from 'zod';
+import { t, type Locale } from '@/lib/i18n';
 
 export const MAX_WIZARD_FILES = 5;
 export const MAX_WIZARD_FILE_SIZE_MB = 10;
@@ -39,6 +40,11 @@ export const WIZARD_DELIVERY_LABELS_EN: Record<WizardDelivery, string> = {
   PICKUP: 'Pick up at the deanery',
   MAIL: 'By mail',
 };
+
+/** DIG-87 — метка способа получения по локали (RU — прежние байт-в-байт). */
+export function wizardDeliveryLabel(delivery: WizardDelivery, locale: Locale = 'ru'): string {
+  return locale === 'en' ? WIZARD_DELIVERY_LABELS_EN[delivery] : WIZARD_DELIVERY_LABELS[delivery];
+}
 
 export const WIZARD_DELIVERIES: WizardDelivery[] = ['PDF_ONLINE', 'PICKUP', 'MAIL'];
 export const WIZARD_LANGUAGES: WizardLanguage[] = ['RU', 'EN'];
@@ -199,18 +205,22 @@ export function validateWizardMeta(input: unknown): WizardMetaValidation {
 /**
  * Ошибка лимитов вложений для выбранных файлов (клиент мастера) или null.
  * Один источник правил с сервером (validateWizardMeta): ≤5 файлов,
- * каждый ≤10 МБ.
+ * каждый ≤10 МБ. DIG-87 — сообщение по локали (дефолт 'ru').
  */
 export function wizardFilesError(
   newFiles: WizardAttachmentMeta[],
   currentCount: number,
+  locale: Locale = 'ru',
 ): string | null {
   if (newFiles.length + currentCount > MAX_WIZARD_FILES) {
-    return `Можно приложить не больше ${MAX_WIZARD_FILES} файлов`;
+    return t(locale, 'wizard.files.tooMany', { count: MAX_WIZARD_FILES });
   }
   const oversized = newFiles.find((file) => file.size > MAX_WIZARD_FILE_SIZE_BYTES);
   if (oversized) {
-    return `Файл «${oversized.name}» больше ${MAX_WIZARD_FILE_SIZE_MB} МБ`;
+    return t(locale, 'wizard.files.tooBig', {
+      name: oversized.name,
+      size: MAX_WIZARD_FILE_SIZE_MB,
+    });
   }
   return null;
 }

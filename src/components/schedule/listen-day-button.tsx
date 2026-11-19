@@ -6,6 +6,7 @@ import { cn } from 'cn';
 
 import type { ScheduleEventCard } from '@/lib/schedule-cards';
 import { buildDaySpeechText, isSpeechSynthesisSupported } from '@/lib/voice-assistant';
+import { t, type Locale } from '@/lib/i18n';
 
 // DIG-65 — «Прослушать день»: озвучка выбранного дня расписания браузерным
 // синтезом речи (SpeechSynthesis, ru-RU) — доступность на мобильном и для
@@ -13,6 +14,7 @@ import { buildDaySpeechText, isSpeechSynthesisSupported } from '@/lib/voice-assi
 // (aria-pressed): повторный клик останавливает, уход со страницы отменяет
 // озвучку (cleanup). При выключенной настройке voiceAssistant или в браузере
 // без speechSynthesis кнопка честно не отрисовывается.
+// DIG-87 — подписи и текст озвучки по локали (дефолт 'ru').
 export interface ListenDayButtonProps {
   /** Заголовок дня («Среда, 11 ноября») — попадает в интро озвучки. */
   title: string;
@@ -23,6 +25,8 @@ export interface ListenDayButtonProps {
   /** Настройка «Озвучка и голосовой ввод» (voiceAssistant студента). */
   enabled: boolean;
   className?: string;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 export function ListenDayButton({
@@ -31,6 +35,7 @@ export function ListenDayButton({
   events,
   enabled,
   className,
+  locale = 'ru',
 }: ListenDayButtonProps) {
   const [speaking, setSpeaking] = useState(false);
   const speakingRef = useRef(false);
@@ -57,9 +62,9 @@ export function ListenDayButton({
     }
     try {
       const utterance = new SpeechSynthesisUtterance(
-        buildDaySpeechText({ title, isToday, events }),
+        buildDaySpeechText({ title, isToday, events, locale }),
       );
-      utterance.lang = 'ru-RU';
+      utterance.lang = locale === 'en' ? 'en-US' : 'ru-RU';
       utterance.onend = () => {
         speakingRef.current = false;
         setSpeaking(false);
@@ -85,7 +90,9 @@ export function ListenDayButton({
       data-testid="listen-day"
       onClick={toggle}
       aria-pressed={speaking}
-      aria-label={speaking ? 'Остановить озвучку' : 'Прослушать день'}
+      aria-label={
+        speaking ? t(locale, 'schedule.listen.stopAria') : t(locale, 'schedule.listen.play')
+      }
       className={cn(
         'inline-flex items-center gap-1.5 self-start rounded-button border border-border bg-card px-3 py-1.5 text-sm font-semibold text-neutral-900 shadow-soft transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600',
         speaking && 'border-accent bg-accent-soft text-accent-ink hover:bg-accent-soft',
@@ -93,7 +100,7 @@ export function ListenDayButton({
       )}
     >
       <Volume2 className="size-4 shrink-0" aria-hidden="true" />
-      {speaking ? 'Остановить' : 'Прослушать день'}
+      {speaking ? t(locale, 'schedule.listen.stop') : t(locale, 'schedule.listen.play')}
     </button>
   );
 }
