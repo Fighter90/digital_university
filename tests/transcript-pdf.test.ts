@@ -4,20 +4,25 @@
 // Приёмка: «Выписка PDF скачивается без заявки и очереди». PDF собирается
 // собственным минимальным писателем с векторным шрифтом (глифы —
 // прямоугольники), поэтому кириллица открывается в любом просмотрщике
-// без вложенных шрифтов. Сканируемый QR и страница /verify/<код> —
-// DIG-47: сейчас печатается код проверки (128 бит) и рамка под QR.
+// без вложенных шрифтов.
+// DIG-82 — выписка несёт сканируемый QR со ссылкой на /verify/<код>,
+// код проверки регистрируется в реестре справок (BUG-01 вар. А).
 import { describe, expect, it } from 'vitest';
 
+import { decodeQrMatrix } from './helpers/qr-decode';
 import {
   buildTranscriptPdf,
   newVerificationCode,
   transcriptLines,
   transcriptFilename,
+  transcriptQrMatrix,
   type TranscriptData,
 } from '@/lib/transcript-pdf';
 import { hasGlyphFor } from '@/lib/pdf/vector-font';
 
 const NOW = new Date(2026, 10, 12, 15, 30, 0);
+
+const VERIFY_URL = 'http://localhost:3000/verify/ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-6777';
 
 const data: TranscriptData = {
   student: {
@@ -58,7 +63,11 @@ const data: TranscriptData = {
 
 describe('transcript-pdf: модель строк', () => {
   it('строки выписки содержат студента, семестры, дисциплины и итоги', () => {
-    const lines = transcriptLines(data, { now: NOW, code: 'ABCD-EFGH-JKLM-NPQR' });
+    const lines = transcriptLines(data, {
+      now: NOW,
+      code: 'ABCD-EFGH-JKLM-NPQR',
+      verifyUrl: VERIFY_URL,
+    });
     const text = lines.join('\n');
     expect(text).toContain('Выписка из зачётной книжки');
     expect(text).toContain('Анна Ковалёва');
@@ -76,7 +85,11 @@ describe('transcript-pdf: модель строк', () => {
   });
 
   it('незавершённая дисциплина: вместо оценки прочерк', () => {
-    const lines = transcriptLines(data, { now: NOW, code: 'X' });
+    const lines = transcriptLines(data, {
+      now: NOW,
+      code: 'X',
+      verifyUrl: VERIFY_URL,
+    });
     const infoRow = lines.find((line) => line.includes('Информатика'))!;
     expect(infoRow).toContain('-');
   });
@@ -85,6 +98,7 @@ describe('transcript-pdf: модель строк', () => {
     const lines = transcriptLines(data, {
       now: NOW,
       code: newVerificationCode(() => 0.5),
+      verifyUrl: VERIFY_URL,
     });
     const missing = new Set<string>();
     for (const line of lines) {
@@ -111,10 +125,18 @@ describe('transcript-pdf: код проверки', () => {
 });
 
 describe('transcript-pdf: писатель PDF', () => {
-  const pdf = buildTranscriptPdf(data, { now: NOW, code: 'ABCD-EFGH-JKLM-NPQR' });
+  const pdf = buildTranscriptPdf(data, {
+    now: NOW,
+    code: 'ABCD-EFGH-JKLM-NPQR',
+    verifyUrl: VERIFY_URL,
+  });
 
   it('детерминирован: одинаковые входы — байты в байт', () => {
-    const again = buildTranscriptPdf(data, { now: NOW, code: 'ABCD-EFGH-JKLM-NPQR' });
+    const again = buildTranscriptPdf(data, {
+      now: NOW,
+      code: 'ABCD-EFGH-JKLM-NPQR',
+      verifyUrl: VERIFY_URL,
+    });
     expect(Buffer.from(again).equals(Buffer.from(pdf))).toBe(true);
   });
 
@@ -152,5 +174,88 @@ describe('transcript-pdf: писатель PDF', () => {
 describe('transcript-pdf: имя файла', () => {
   it('ASCII без кириллицы, с датой выдачи', () => {
     expect(transcriptFilename(NOW)).toBe('transcript-2026-11-12.pdf');
+  });
+});
+
+describe('transcript-pdf: QR проверки подлинности (DIG-82, BUG-01)', () => {
+  it('строки блока проверки содержат ссылку; обещание «QR-код появится» снято', () => {
+    const lines = transcriptLines(data, {
+      now: NOW,
+      code: 'ABCD-EFGH-JKLM-NPQR',
+      verifyUrl: VERIFY_URL,
+    });
+    const text = lines.join('\n');
+    expect(text).toContain('Проверить по ссылке или QR-коду');
+    expect(text).not.toContain('появится');
+    // URL печатается текстом (переносится по ширине блока): чанки строк
+    // склеиваются в полную ссылку.
+    expect(lines.join('')).toContain(VERIFY_URL);
+  });
+
+  it('QR-матрица строится по verifyUrl и декодируется обратно в неё', () => {
+    const matrix = transcriptQrMatrix(data, {
+      now: NOW,
+      code: 'ABCD-EFGH-JKLM-NPQR',
+      verifyUrl: VERIFY_URL,
+    });
+    expect(matrix).not.toBeNull();
+    expect(decodeQrMatrix(matrix!)).toBe(VERIFY_URL);
+  });
+
+  it('в контенте PDF ровно тёмные модули QR вместо пунктирной заглушки (парсер)', () => {
+    const options = { now: NOW, code: 'ABCD-EFGH-JKLM-NPQR', verifyUrl: VERIFY_URL };
+    const matrix = transcriptQrMatrix(data, options)!;
+    const darkModules = matrix.flat().filter(Boolean).length;
+    const pdfText = Buffer.from(buildTranscriptPdf(data, options)).toString('latin1');
+    const modulePt = (96 / matrix.length).toFixed(2);
+    const rects = [...pdfText.matchAll(/([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re/g)].filter(
+      (m) => m[3] === modulePt && m[4] === modulePt,
+    );
+    expect(rects.length).toBe(darkModules);
+    expect(rects.length).toBeGreaterThan(300);
+  });
+
+  it('плотная выписка: QR целиком на странице, без пересечения нижнего поля', () => {
+    // Шесть семестров выталкивают блок проверки в «опасную зону» у низа
+    // страницы — строитель обязан унести блок с QR на новую страницу.
+    const semesters = Array.from({ length: 6 }, (_, i) => ({
+      label: `Семестр ${i + 1}`,
+      average: 82.5,
+      creditsEarned: 18,
+      creditsTotal: 18,
+      disciplines: [
+        {
+          name: `Дисциплина ${i + 1}.1`,
+          controlType: 'Экзамен',
+          credits: 4,
+          grade: 88,
+          completedAt: new Date(2026, 5, 10, 12, 0),
+        },
+        {
+          name: `Дисциплина ${i + 1}.2`,
+          controlType: 'Зачёт',
+          credits: 3,
+          grade: 91,
+          completedAt: new Date(2026, 5, 11, 12, 0),
+        },
+      ],
+    }));
+    const long: TranscriptData = {
+      ...data,
+      semesters,
+      creditsEarned: 108,
+    };
+    const options = { now: NOW, code: 'ABCD-EFGH-JKLM-NPQR', verifyUrl: VERIFY_URL };
+    const pdfText = Buffer.from(buildTranscriptPdf(long, options)).toString('latin1');
+    const modulePt = (96 / transcriptQrMatrix(long, options)!.length).toFixed(2);
+    const ys = [...pdfText.matchAll(/([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re/g)]
+      .filter((m) => m[3] === modulePt && m[4] === modulePt)
+      .map((m) => Number(m[2]));
+    expect(ys.length).toBeGreaterThan(0);
+    for (const pdfY of ys) {
+      // PDF-координаты (y вверх): нижнее поле страницы = 44.
+      expect(pdfY).toBeGreaterThanOrEqual(44 - 0.5);
+      expect(pdfY).toBeLessThanOrEqual(842 - 44 + 0.5);
+    }
   });
 });

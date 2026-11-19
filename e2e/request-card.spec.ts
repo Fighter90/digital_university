@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { decodeQrMatrix } from '../tests/helpers/qr-decode';
+
 // DIG-33 — e2e экрана «Карточка заявки» (Figma «06 · Заявки — карточка»).
 //
 // Анна — read-only сценарии: шапка (номер с копированием, пилюля,
@@ -27,6 +29,55 @@ async function signIn(page: Page, login: string, password: string, next: string)
   } else {
     await expect(page.getByTestId('canonical-request-card')).toBeVisible();
   }
+}
+
+/**
+ * DIG-82 — «сканирование» QR из PDF (имитация камеры телефона): из
+ * контент-стрима извлекаются квадратные модули-прямоугольники; группы
+ * одинаковых квадратов по очереди собираются в матрицу и декодируются
+ * (проверка BCH + Рида–Соломона автоматически отбрасывает не-QR группы,
+ * например одиночные точки векторного шрифта).
+ */
+function decodePdfQr(pdfBytes: Buffer): string | null {
+  const text = pdfBytes.toString('latin1');
+  const rects = [...text.matchAll(/([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+) re/g)].map((m) => ({
+    x: Number(m[1]),
+    y: Number(m[2]),
+    w: m[3],
+    h: m[4],
+  }));
+  const groups = new Map<string, { x: number; y: number }[]>();
+  for (const r of rects) {
+    if (r.w !== r.h) continue;
+    const arr = groups.get(r.w) ?? [];
+    arr.push({ x: r.x, y: r.y });
+    groups.set(r.w, arr);
+  }
+  const candidates = [...groups.entries()]
+    .filter(([, arr]) => arr.length >= 200)
+    .sort((a, b) => b[1].length - a[1].length);
+
+  for (const [dim, squares] of candidates) {
+    const modulePt = Number(dim);
+    if (!Number.isFinite(modulePt) || modulePt <= 0) continue;
+    const x0 = Math.min(...squares.map((s) => s.x));
+    const y0 = Math.min(...squares.map((s) => s.y));
+    const cols = Math.round((Math.max(...squares.map((s) => s.x)) - x0) / modulePt) + 1;
+    const rows = Math.round((Math.max(...squares.map((s) => s.y)) - y0) / modulePt) + 1;
+    if (cols !== rows || cols < 21 || cols > 45) continue;
+    const matrix: boolean[][] = Array.from({ length: rows }, () =>
+      new Array<boolean>(cols).fill(false),
+    );
+    for (const s of squares) {
+      const col = Math.round((s.x - x0) / modulePt);
+      const row = Math.round((s.y - y0) / modulePt);
+      matrix[row]![col] = true;
+    }
+    // PDF-координаты (y вверх) → матрица энкодера (y вниз): переворот строк.
+    const decoded = decodeQrMatrix(matrix.slice().reverse()) ?? decodeQrMatrix(matrix);
+    if (decoded) return decoded;
+  }
+  return null;
 }
 
 test('шапка карточки: номер, срок, «Ведёт», степпер, история в МСК', async ({ page }) => {
@@ -100,13 +151,26 @@ test('готовый документ: превью, скачать, прове�
   expect(pdf.headers()['content-type']).toContain('application/pdf');
   expect(pdf.headers()['content-disposition']).toContain('attachment');
 
+  // DIG-82 (BUG-01): в PDF есть сканируемый QR, и он ведёт на карточку
+  // проверки подлинности — цепочка «скачал → отсканировал → проверил».
+  const pdfBody = Buffer.from(await pdf.body());
+  const qrUrl = decodePdfQr(pdfBody);
+  expect(qrUrl, 'QR в PDF обязан декодироваться в ссылку проверки').toMatch(/\/verify\//);
+
+  const cardUrl = page.url();
+  await page.goto(qrUrl!);
+  await expect(page.getByTestId('verify-status')).toContainText('действителен');
+  await expect(page.getByTestId('verify-type')).not.toBeEmpty();
+
+  // Возврат в карточку — остальные элементы блока документа на месте.
+  await page.goto(cardUrl);
+  await expect(page.getByTestId('request-document-verify')).toHaveAttribute('href', '/verify');
+  await expect(page.getByTestId('request-email-send')).toBeVisible();
+
   // Превью отдаёт тот же PDF, но inline.
   const inline = await page.request.get(`${download!}?inline=1`);
   expect(inline.status()).toBe(200);
   expect(inline.headers()['content-disposition']).toContain('inline');
-
-  await expect(page.getByTestId('request-document-verify')).toHaveAttribute('href', '/verify');
-  await expect(page.getByTestId('request-email-send')).toBeVisible();
 });
 
 test('чужой номер «ЗД-…» отвечает единым 404', async ({ page }) => {

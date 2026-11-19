@@ -237,6 +237,7 @@ export type { FinancePageData, FinanceStudentView } from './finance';
 export {
   getCertificatePdfInput,
   getOrCreateCertificateForRequest,
+  getOrCreateDocumentVerification,
   getStaffCertificatePdfInput,
   newCertificateNumber,
   revokeCertificateByCode,
