@@ -1414,6 +1414,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'settings.voice.desc2': 'The “Listen to the day” button on the schedule and the AI-guide microphone.',
   'settings.voice.aria': 'Read-aloud and voice input',
   'settings.voice.saved': 'Saved — voice features updated across the cabinet.',
+  'settings.voice.saving': 'Saving…',
+  'settings.voice.error': 'Could not save the setting. Please try again.',
   'settings.voice.on': 'On: the schedule day can be read aloud and the assistant accepts dictation.',
   'settings.voice.off': 'Off: the read-aloud button and the microphone are hidden across the cabinet.',
   'settings.widgets.aria': 'Dashboard widgets',
