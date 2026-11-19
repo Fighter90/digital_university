@@ -178,8 +178,17 @@ export type {
   StaffChangeStatus,
 } from './schedule';
 export { listFacultyStudents, getFacultyStudent } from './staff';
-export { getPeopleDirectory, getPersonCard, MAX_UPCOMING_EVENTS } from './people';
+export {
+  getPeopleDirectory,
+  getPersonCard,
+  listFavoritePersons,
+  toggleFavoritePerson,
+  MAX_UPCOMING_EVENTS,
+} from './people';
 export type {
+  FavoritePersonEntry,
+  FavoritePersonsData,
+  FavoriteToggleResult,
   PeopleDirectoryData,
   PersonCardData,
   PersonListEntry,
@@ -369,6 +378,7 @@ export {
   type DisciplineRow,
   type DisciplineElementRow,
   type ServiceFavoriteRow,
+  type FavoritePersonRow,
   type CertificateRow,
   type CalendarSubscriptionRow,
   type TicketRow,

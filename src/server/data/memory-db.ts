@@ -38,6 +38,7 @@ import type {
   StudentRow,
   StudentSettingsRow,
   ServiceFavoriteRow,
+  FavoritePersonRow,
   StudyDeadlineRow,
   StudentTaskRow,
   TicketMessageRow,
@@ -86,6 +87,8 @@ export interface MemorySeed {
   elements?: DisciplineElementRow[];
   /** DIG-29 — закреплённые студентом сервисы каталога. */
   serviceFavorites?: ServiceFavoriteRow[];
+  /** DIG-102 — избранные люди студента (/people). */
+  favoritePersons?: FavoritePersonRow[];
   /** DIG-34 — дедлайны заданий группы (система курсов, в концепте — сиды). */
   studyDeadlines?: StudyDeadlineRow[];
   /** DIG-34 — ручные задачи студентов (подписать/оплатить…). */
@@ -142,6 +145,7 @@ export function createMemoryDataDb(): MemoryDataDb {
   let settings: StudentSettingsRow[] = [];
   let notes: StudentNoteRow[] = [];
   let serviceFavorites: ServiceFavoriteRow[] = [];
+  let favoritePersons: FavoritePersonRow[] = [];
   let studyDeadlines: StudyDeadlineRow[] = [];
   let studentTasks: StudentTaskRow[] = [];
   let certificates: CertificateRow[] = [];
@@ -205,6 +209,7 @@ export function createMemoryDataDb(): MemoryDataDb {
       settings = seed.settings ? seed.settings.map(clone) : [];
       notes = seed.notes ? seed.notes.map(clone) : [];
       serviceFavorites = seed.serviceFavorites ? seed.serviceFavorites.map(clone) : [];
+      favoritePersons = seed.favoritePersons ? seed.favoritePersons.map(clone) : [];
       studyDeadlines = seed.studyDeadlines ? seed.studyDeadlines.map(clone) : [];
       studentTasks = seed.studentTasks ? seed.studentTasks.map(clone) : [];
       certificates = seed.certificates ? seed.certificates.map(clone) : [];
@@ -731,6 +736,27 @@ export function createMemoryDataDb(): MemoryDataDb {
     async removeFavoriteServiceByStudent(studentId, serviceId) {
       serviceFavorites = serviceFavorites.filter(
         (f) => !(f.studentId === studentId && f.serviceId === serviceId),
+      );
+    },
+
+    // ── DIG-102: избранное справочника людей (owner-scoped) ───────────────
+    async listFavoritePersonIdsByStudent(studentId) {
+      return favoritePersons
+        .filter((f) => f.studentId === studentId)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+        .map((f) => f.personId);
+    },
+    async addFavoritePersonByStudent(studentId, personId) {
+      const exists = favoritePersons.some(
+        (f) => f.studentId === studentId && f.personId === personId,
+      );
+      if (!exists) {
+        favoritePersons.push({ studentId, personId, createdAt: new Date() });
+      }
+    },
+    async removeFavoritePersonByStudent(studentId, personId) {
+      favoritePersons = favoritePersons.filter(
+        (f) => !(f.studentId === studentId && f.personId === personId),
       );
     },
 

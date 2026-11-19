@@ -36,6 +36,7 @@ vi.mock('@/server/data', () => ({
     state.lastId = id;
     return state.card;
   }),
+  listFavoritePersons: vi.fn(async () => ({ favorites: [], hasPersonalScope: true })),
 }));
 
 vi.mock('next/navigation', () => ({
