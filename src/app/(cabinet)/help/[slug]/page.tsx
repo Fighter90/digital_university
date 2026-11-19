@@ -15,6 +15,7 @@ import {
   getRelatedFaqArticlesLocalized,
 } from '@/lib/faq-kb-catalog';
 import { HelpFeedback } from '@/components/help/help-feedback';
+import { ShareButtons } from '@/components/share/share-buttons';
 import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 
@@ -71,6 +72,11 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </Link>
           </div>
         ) : null}
+
+        {/* DIG-101 — «Поделиться»: статья справки публична (нет личных данных). */}
+        <div className="mt-6 border-t border-border pt-4">
+          <ShareButtons url={`/help/${slug}`} title={article.question} locale={locale} />
+        </div>
 
         <HelpFeedback locale={locale} />
       </article>

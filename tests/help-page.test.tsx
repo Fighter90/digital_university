@@ -104,6 +104,24 @@ describe('/help/[slug] — статья', () => {
     expect(html).toMatch(/href="\/help\/schol-when"/);
   });
 
+  it('блок «Поделиться»: VK/TG/WA/копирование со ссылкой на статью (DIG-101)', async () => {
+    const html = await renderPage(
+      createElement(Article, {
+        params: Promise.resolve({ slug: 'schol-increased' }),
+      }),
+    );
+    expect(html).toContain('data-testid="share-buttons"');
+    expect(html).toContain('Поделиться ссылкой');
+    // SSR ещё без origin: href share-сервиса содержит путь статьи (закодирован).
+    expect(html).toContain(
+      `https://vk.com/share.php?url=${encodeURIComponent('/help/schol-increased')}`,
+    );
+    expect(html).toMatch(/data-testid="share-telegram"/);
+    expect(html).toMatch(/data-testid="share-whatsapp"/);
+    expect(html).toMatch(/data-testid="share-copy"/);
+    expect(html).toMatch(/aria-label="Поделиться во ВКонтакте"/);
+  });
+
   it('неизвестный slug — notFound', async () => {
     await expect(
       renderPage(

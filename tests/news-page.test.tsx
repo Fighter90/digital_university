@@ -251,6 +251,13 @@ describe('/news/[id] (DIG-36) — страница новости', () => {
     expect(html).toMatch(/<img[^>]+loading="lazy"/);
     expect(html).toMatch(/<img[^>]+decoding="async"/);
     expect(html).toContain('Поделиться ссылкой');
+    // DIG-101 — полный блок «Поделиться»: VK-ссылка на статью и три сети.
+    expect(html).toContain('data-testid="share-buttons"');
+    expect(html).toContain(
+      `https://vk.com/share.php?url=${encodeURIComponent('/news/retake-order')}`,
+    );
+    expect(html).toMatch(/data-testid="news-share"/);
+    expect(html).toMatch(/data-testid="news-share-status"/);
     // Возврат в ленту.
     expect(html).toMatch(/href="\/news"/);
   });

@@ -726,6 +726,31 @@ export const ru = {
   'schedule.note.placeholder': 'Например: принести ноутбук, спросить про зачёт…',
   'schedule.note.saved': 'Заметка сохранена',
 
+  // ── DIG-101 — «Поделиться» (статьи, новости, детали пары) ────────────────
+  'share.groupAria': 'Поделиться в соцсетях',
+  'share.vk': 'Поделиться во ВКонтакте',
+  'share.telegram': 'Поделиться в Telegram',
+  'share.whatsapp': 'Поделиться в WhatsApp',
+  'share.copy': 'Скопировать ссылку',
+  'share.copied': 'Ссылка скопирована',
+  'share.copyFailed': 'Не удалось скопировать',
+  'share.title': 'Поделиться ссылкой',
+  'schedule.share.dayTitle': 'Расписание на {date}',
+
+  // ── DIG-101 — экспорт расписания (MD / XLSX / PDF) ───────────────────────
+  'schedule.export.title': 'Экспорт',
+  'schedule.export.aria': 'Скачать расписание',
+  'schedule.export.docTitle': 'Расписание',
+  'schedule.export.mdBtn': 'Скачать в Markdown',
+  'schedule.export.xlsxBtn': 'Скачать в Excel',
+  'schedule.export.pdfBtn': 'Скачать в PDF',
+  'schedule.export.col.time': 'Время',
+  'schedule.export.col.subject': 'Дисциплина',
+  'schedule.export.col.type': 'Тип',
+  'schedule.export.col.room': 'Аудитория',
+  'schedule.export.col.teacher': 'Преподаватель',
+  'schedule.export.empty': 'Пар нет',
+
   // ── DIG-87 — мастер заказа справки/заявления (формы мастера) ──────────────
   'wizard.title': 'Заказ справки или заявления',
   'wizard.closeAria': 'Закрыть мастер',

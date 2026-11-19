@@ -722,6 +722,31 @@ export const en: Record<keyof RuDictionary, string> = {
   'schedule.note.placeholder': 'For example: bring a laptop, ask about the credit test…',
   'schedule.note.saved': 'Note saved',
 
+  // ── DIG-101 — share (articles, news, class details) ──────────────────────
+  'share.groupAria': 'Share on social media',
+  'share.vk': 'Share on VK',
+  'share.telegram': 'Share on Telegram',
+  'share.whatsapp': 'Share on WhatsApp',
+  'share.copy': 'Copy the link',
+  'share.copied': 'Link copied',
+  'share.copyFailed': 'Could not copy',
+  'share.title': 'Share the link',
+  'schedule.share.dayTitle': 'Schedule for {date}',
+
+  // ── DIG-101 — schedule export (MD / XLSX / PDF) ──────────────────────────
+  'schedule.export.title': 'Export',
+  'schedule.export.aria': 'Download the schedule',
+  'schedule.export.docTitle': 'Schedule',
+  'schedule.export.mdBtn': 'Download as Markdown',
+  'schedule.export.xlsxBtn': 'Download as Excel',
+  'schedule.export.pdfBtn': 'Download as PDF',
+  'schedule.export.col.time': 'Time',
+  'schedule.export.col.subject': 'Subject',
+  'schedule.export.col.type': 'Type',
+  'schedule.export.col.room': 'Room',
+  'schedule.export.col.teacher': 'Teacher',
+  'schedule.export.empty': 'No classes',
+
   // ── DIG-87 — certificate/application order wizard (wizard forms) ──────────
   'wizard.title': 'Order a certificate or application',
   'wizard.closeAria': 'Close the wizard',
