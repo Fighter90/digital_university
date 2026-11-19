@@ -459,6 +459,12 @@ describe('/grades (DIG-26) — «Успеваемость: сводка»', () =
     expect(html).toContain('Как считается');
   });
 
+  it('DIG-103 — блок рейтинга ведёт на полный рейтинг группы (/grades/rating)', async () => {
+    const html = await renderWith({});
+    expect(html).toMatch(/href="\/grades\/rating"/);
+    expect(html).toContain('Весь рейтинг группы');
+  });
+
   it('сокращения (GPA, кредит, перцентиль) объясняются тултипами (aria-label триггера)', async () => {
     const html = await renderWith({});
     expect(html).toMatch(/aria-label="[^"]*GPA[^"]*"/);

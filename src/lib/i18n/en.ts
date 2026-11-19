@@ -39,6 +39,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'title.tasks': 'Tasks',
   'title.schedule': 'Schedule',
   'title.grades': 'Academic performance',
+  // DIG-103 — group ranking subpage.
+  'title.gradesRating': 'Group ranking',
   'title.gradebook': 'Gradebook',
   'title.session': 'Exam session',
   'title.requests': 'My requests',
@@ -353,6 +355,17 @@ export const en: Record<keyof RuDictionary, string> = {
   'grades.debt.assignedIn': 'The retake is scheduled for {date} ({days} {word} left)',
   'grades.debt.closedPhrase': 'The debt is cleared — the retake on {date} has been credited',
   'grades.retakeSignup': 'Sign up for the retake',
+
+  // ── DIG-103 — group ranking (/grades/rating) ──────────────────────────────
+  'grades.rating.link': 'View full group ranking',
+  'grades.rating.caption': 'Group students by average score',
+  'grades.rating.place': 'Place',
+  'grades.rating.student': 'Student',
+  'grades.rating.average': 'Average score',
+  'grades.rating.you': 'you',
+  'grades.rating.emptyTitle': 'No grades in the group yet',
+  'grades.rating.emptyDesc': 'The ranking will appear once teachers publish the first grades.',
+  'grades.rating.backToSummary': '← Back to performance',
 
   // ── DIG-84 — gradebook and transcript ─────────────────────────────────────
   'gradebook.studentsOnlyDesc':
@@ -850,6 +863,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'meta.tasks': 'Tasks — Digital Deanery',
   'meta.finance': 'Finance — Digital Deanery',
   'meta.grades': 'Performance — Digital Deanery',
+  // DIG-103
+  'meta.gradesRating': 'Group ranking — Digital Deanery',
   'meta.gradebook': 'Gradebook — Digital Deanery',
   'meta.session': 'Exam session — Digital Deanery',
   'meta.discipline': 'Discipline — Digital Deanery',
@@ -872,6 +887,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'loading.people': 'Loading the directory',
   'loading.services': 'Loading services',
   'loading.grades': 'Performance is loading',
+  // DIG-103
+  'loading.gradesRating': 'The group ranking is loading',
   'loading.session': 'The exam session is loading',
   'loading.notifications': 'Loading notifications',
 
