@@ -133,6 +133,39 @@ export async function getEventsPage(
   return { filter, items: applyFilter(views, filter, ctx.faculty, now) };
 }
 
+// ── DIG-76 — виджет «Мероприятия» на главной ──────────────────────────────────
+
+/** Лимит виджета главной: до трёх ближайших будущих событий. */
+export const MAX_DASHBOARD_EVENTS = 3;
+
+/** Блок виджета «Мероприятия» главной: ближайшие будущие события с агрегатами. */
+export interface EventsSummary {
+  /** Ближайшие будущие события от now, по возрастанию даты старта. */
+  items: EventView[];
+}
+
+/**
+ * Виджет «Мероприятия» главной: до MAX_DASHBOARD_EVENTS ближайших будущих
+ * событий от now (порт фильтрует прошедшие и сортирует по дате старта),
+ * с агрегатами записи владельца (toEventView — тот же контракт, что лента
+ * /events). Чтение — любой вошедший (афиша общая); мутаций здесь нет —
+ * запись идёт через существующий owner-scoped toggleEventRegistration
+ * (см. ниже), владельцем данных виджет не управляет.
+ */
+export async function getDashboardEvents(
+  db: DataDb,
+  ctx: DataCtx,
+  now: Date = new Date(),
+  limit: number = MAX_DASHBOARD_EVENTS,
+): Promise<EventsSummary> {
+  const events = await db.listEventsByRange(now);
+  const items: EventView[] = [];
+  for (const event of events.slice(0, Math.max(0, limit))) {
+    items.push(await toEventView(db, ctx, event));
+  }
+  return { items };
+}
+
 /**
  * Карточка мероприятия по публичному slug. Чтение — любой вошедший.
  * Чужой slug в афише отсутствует по определению, поэтому несуществующий
