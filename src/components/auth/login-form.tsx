@@ -4,7 +4,11 @@
 // кнопкой «показать пароль», чипами тестовых аккаунтов (клик заполняет поля),
 // ссылкой «Забыли пароль?» и сохранённым контрактом DIG-11 (server action,
 // role="alert", загрузка на кнопке, неактивная «Госуслуги (демо)»).
-import { useActionState, useState } from 'react';
+// DIG-85 (BUG-19): форма владеет статусом «Вы вышли из кабинета» (?signedOut=1
+// приходит от выхода): при ошибке входа параметр signedOut убирается из адреса
+// (history.replaceState, без перезагрузки), а устаревший статус скрывается —
+// чтобы рядом с «Неверный логин или пароль» не висело противоречащее «Вы вышли».
+import { useActionState, useEffect, useState } from 'react';
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react';
 import { signInAction, type SignInFormState } from '@/server/actions/auth';
 import { cn } from 'cn';
@@ -23,7 +27,14 @@ export { TEST_ACCOUNTS };
 const FIELD_CLASS =
   'h-12 w-full rounded-button border border-input bg-card px-4 text-[15px] text-foreground placeholder:text-foreground-muted focus:border-muted-foreground/40 focus:outline-none';
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({
+  next,
+  signedOutNotice = false,
+}: {
+  next?: string;
+  /** Страница видит ?signedOut=1 (редирект после выхода) — DIG-55. */
+  signedOutNotice?: boolean;
+}) {
   const [state, formAction, isPending] = useActionState<SignInFormState, FormData>(
     signInAction,
     null,
@@ -31,6 +42,17 @@ export function LoginForm({ next }: { next?: string }) {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const hasError = Boolean(state?.error);
+
+  // DIG-85 (BUG-19): неудачный вход при /login?signedOut=1 оставлял параметр
+  // в адресе — чистим его, как только пришла ошибка (страницу не перезагружаем).
+  useEffect(() => {
+    if (!hasError || typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('signedOut')) return;
+    url.searchParams.delete('signedOut');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+  }, [hasError]);
 
   return (
     <form action={formAction} className="w-full max-w-md">
@@ -38,6 +60,18 @@ export function LoginForm({ next }: { next?: string }) {
       <p className="mt-2 text-sm text-muted-foreground">
         Логин и пароль выдаёт деканат. Вход защищён от подбора пароля.
       </p>
+
+      {/* Статус выхода (DIG-55): пока нет ошибки входа. При ошибке параметр
+          signedOut вычищен из адреса и статус скрыт (BUG-19). */}
+      {signedOutNotice && !hasError ? (
+        <p
+          role="status"
+          data-testid="signed-out-notice"
+          className="mb-4 mt-4 rounded-card-sm border border-success-soft bg-success-soft px-4 py-3 text-sm font-medium text-success-ink"
+        >
+          Вы вышли из кабинета. Войдите снова, чтобы продолжить.
+        </p>
+      ) : null}
 
       {/* Тестовые аккаунты: один клик — поля заполнены (сценарий для жюри). */}
       <div className="mt-6 rounded-card border border-border bg-accent-soft/60 p-4">

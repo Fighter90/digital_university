@@ -117,6 +117,17 @@ export function toScheduleEventCards(
     const timeLabel = `${startLabel}–${endLabel}`;
     const isMoved = row.status === 'ROOM_CHANGED' || row.status === 'TIME_CHANGED';
     const isCancelled = row.status === 'CANCELLED';
+    // DIG-85 (BUG-14): «было» дублирует только реальные изменения —
+    // время по московскому настенному HH:MM, аудиторию по строке.
+    const previousRoom: string | null =
+      row.previousRoom != null && row.previousRoom.trim() !== row.room.trim()
+        ? row.previousRoom
+        : null;
+    const previousStartsAt: Date | null =
+      row.previousStartsAt != null &&
+      formatMoscowTime(row.previousStartsAt) !== formatMoscowTime(row.startsAt)
+        ? row.previousStartsAt
+        : null;
     const suffix = isMoved
       ? t(locale, 'schedule.aria.moved')
       : isCancelled
@@ -138,11 +149,11 @@ export function toScheduleEventCards(
       status: row.status,
       isMoved,
       isCancelled,
-      previousRoomLabel: row.previousRoom
-        ? t(locale, 'schedule.was.room', { room: row.previousRoom })
+      previousRoomLabel: previousRoom
+        ? t(locale, 'schedule.was.room', { room: previousRoom })
         : null,
-      previousTimeLabel: row.previousStartsAt
-        ? t(locale, 'schedule.was.time', { time: formatMoscowTime(row.previousStartsAt) })
+      previousTimeLabel: previousStartsAt
+        ? t(locale, 'schedule.was.time', { time: formatMoscowTime(previousStartsAt) })
         : null,
       note: row.note ?? null,
       changeNote: row.changeNote ?? null,

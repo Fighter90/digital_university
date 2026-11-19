@@ -126,16 +126,9 @@ export default async function LoginPage({
             <BrandLogo className="size-10 shrink-0 rounded-card shadow-soft" />
             <span className="text-lg font-extrabold tracking-heading">Цифровой деканат</span>
           </div>
-          {signedOut ? (
-            <p
-              role="status"
-              data-testid="signed-out-notice"
-              className="mb-4 rounded-card-sm border border-success-soft bg-success-soft px-4 py-3 text-sm font-medium text-success-ink"
-            >
-              Вы вышли из кабинета. Войдите снова, чтобы продолжить.
-            </p>
-          ) : null}
-          <LoginForm next={next} />
+          {/* DIG-85 (BUG-19): статус «Вы вышли…» отдаётся форме LoginForm —
+              при ошибке входа она чистит signedOut из адреса и прячет статус. */}
+          <LoginForm next={next} signedOutNotice={signedOut} />
         </div>
       </section>
     </main>

@@ -464,14 +464,26 @@ export function OrderWizard({
                   {t(locale, 'wizard.done')}
                 </button>
               ) : step === 3 ? (
-                <button
-                  type="submit"
-                  data-testid="wizard-submit"
-                  disabled={!consent || pending}
-                  className={cn(buttonVariants({ variant: 'primary', size: 'md' }))}
-                >
-                  {pending ? t(locale, 'btn.submitting') : t(locale, 'btn.submit')}
-                </button>
+                // DIG-85 (BUG-20): неактивная «Отправить» объясняется подписью —
+                // студент видит, ЧТО разблокирует кнопку, а не угадывает.
+                <div className="flex items-center justify-end gap-3">
+                  {!consent && !pending ? (
+                    <p
+                      data-testid="wizard-consent-hint"
+                      className="text-right text-xs text-muted-foreground"
+                    >
+                      {t(locale, 'wizard.consent.hint')}
+                    </p>
+                  ) : null}
+                  <button
+                    type="submit"
+                    data-testid="wizard-submit"
+                    disabled={!consent || pending}
+                    className={cn(buttonVariants({ variant: 'primary', size: 'md' }))}
+                  >
+                    {pending ? t(locale, 'btn.submitting') : t(locale, 'btn.submit')}
+                  </button>
+                </div>
               ) : (
                 <button
                   type="button"

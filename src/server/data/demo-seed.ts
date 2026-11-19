@@ -250,7 +250,7 @@ function buildRequests(): {
       'ISSUED',
       -9,
       'Мария Ковалёва',
-      'Справка готова, можно забрать в деканате (каб. 214)',
+      'Справка готова, можно забрать в деканате (ауд. 214)',
     ),
     mk(
       'req-anna-2',
@@ -839,7 +839,7 @@ function buildDemoNotifications(): NotificationRow[] {
   const progMove = scheduleRow('sch-pi21-4'); // сегодня: Программирование 214 → 305
   const physCancel = scheduleRow('sch-pi21-5'); // сегодня: Физика отменена
   const mathMove = scheduleRow('sch-ek11-1'); // сегодня: Матан 9:00 вместо 10:40
-  const infoRetake = examRow('exm-pi21-4'); // пересдача «Информатика», каб. 305
+  const infoRetake = examRow('exm-pi21-4'); // пересдача «Информатика», ауд. 305
 
   return [
     // ── Анна (ПИ-21, бюджет): 8 строк, 3 непрочитанных ────────────────────────
@@ -860,7 +860,7 @@ function buildDemoNotifications(): NotificationRow[] {
       studentId: 'st-anna',
       type: 'REQUEST',
       title: 'Справка для военкомата готова',
-      body: 'Справка оформлена: PDF с кодом проверки доступен в карточке заявки, забрать можно в каб. 214.',
+      body: 'Справка оформлена: PDF с кодом проверки доступен в карточке заявки, забрать можно в ауд. 214.',
       isRead: false,
       createdAt: day(0, 10, 40),
       link: '/requests',
@@ -912,7 +912,7 @@ function buildDemoNotifications(): NotificationRow[] {
       studentId: 'st-anna',
       type: 'DEADLINE',
       title: 'Долг по коллоквиуму «Информатика» — до начала сессии',
-      body: `Коллоквиум «${infoRetake.disciplineName}» не сдан — до допуска к экзамену нужна пересдача: ${ruDate(infoRetake.date)} в ${hm(infoRetake.startsAt)}, каб. ${infoRetake.room}.`,
+      body: `Коллоквиум «${infoRetake.disciplineName}» не сдан — до допуска к экзамену нужна пересдача: ${ruDate(infoRetake.date)} в ${hm(infoRetake.startsAt)}, ауд. ${infoRetake.room}.`,
       isRead: true,
       createdAt: day(-7, 10, 0),
       link: '/grades',

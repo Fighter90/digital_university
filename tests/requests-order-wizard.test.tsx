@@ -201,8 +201,13 @@ describe('шаг 3 «Проверка»', () => {
 
     const submit = screen.getByTestId('wizard-submit');
     expect(submit).toBeDisabled();
+    // BUG-20/DIG-85: неактивная кнопка объясняется подписью рядом.
+    const hint = screen.getByTestId('wizard-consent-hint');
+    expect(hint).toBeVisible();
+    expect(hint.textContent).toContain('согласи');
     fireEvent.click(screen.getByTestId('wizard-consent'));
     expect(submit).toBeEnabled();
+    expect(screen.queryByTestId('wizard-consent-hint')).toBeNull();
   });
 
   it('«Изменить» возвращает на соответствующий шаг с сохранением значений', () => {

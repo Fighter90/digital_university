@@ -621,6 +621,8 @@ export const ru = {
   'schedule.nextWeekAria': 'Следующая неделя',
   'schedule.gotoTodayWeek': 'Перейти к текущей неделе',
   'schedule.sync': 'Синхронизировать',
+  'schedule.sync.status': 'Обновляем…',
+  'schedule.sync.done': 'Расписание обновлено',
   'schedule.day.listAria': 'Пары, {title}',
   'schedule.day.empty.title': 'Пар в этот день нет',
   'schedule.day.empty.next': 'Ближайшие пары: {label}',
@@ -665,6 +667,8 @@ export const ru = {
   'schedule.listen.play': 'Прослушать день',
   'schedule.listen.stop': 'Остановить',
   'schedule.listen.stopAria': 'Остановить озвучку',
+  'schedule.listen.unavailable':
+    'Голосовой движок недоступен в этом браузере — озвучка дня не работает.',
   'schedule.building.main': 'Главный корпус',
   'schedule.author.deanery': 'деканат',
 
@@ -768,6 +772,7 @@ export const ru = {
   'wizard.review.profile': 'Данные студента',
   'wizard.consent.strong': 'Данные верны',
   'wizard.consent.rest': '— проверил сводку и подтверждаю отправку заявки.',
+  'wizard.consent.hint': 'Кнопка «Отправить» станет активной после отметки согласия выше.',
   'wizard.success.instantTitle': 'Справка готова',
   'wizard.success.sentTitle': 'Заявка отправлена',
   'wizard.success.duplicate':
@@ -1511,7 +1516,7 @@ export const ru = {
   'session.exams.title': 'Экзамены и зачёты',
   'session.consultations.aria': 'Консультации перед экзаменами',
   'session.consultations.title': 'Консультации',
-  'session.room.short': 'каб. {room}',
+  'session.room.short': 'ауд. {room}',
   'session.exams.aria': 'Экзамены и зачёты сессии',
   'session.exams.whatToSubmit': 'Что сдать',
   'session.retakes.aria': 'Пересдачи',
@@ -1686,7 +1691,7 @@ export const ru = {
     'Ваше обращение принято в работу. Ответим в течение рабочего дня.',
   'staff.appealTemplate.invite-office.label': 'Приглашение в деканат',
   'staff.appealTemplate.invite-office.text':
-    'Пожалуйста, подойдите в деканат (каб. 214) в рабочие часы 10:00–16:00 с зачётной книжкой.',
+    'Пожалуйста, подойдите в деканат (ауд. 214) в рабочие часы 10:00–16:00 с зачётной книжкой.',
   'staff.appealTemplate.need-docs.label': 'Нужны документы',
   'staff.appealTemplate.need-docs.text':
     'Для решения вопроса приложите, пожалуйста, сканы документов в этот чат.',

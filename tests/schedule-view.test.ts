@@ -227,10 +227,11 @@ describe('toScheduleEventViews: модель блока и aria-label', () => {
     expect(view?.endMinutes).toBe(750);
     expect(view?.timeLabel).toBe('11:10–12:30');
     expect(view?.previousRoomLabel).toBe('было: ауд. 214');
-    expect(view?.previousTimeLabel).toBe('было: 11:10');
-    // общий лейбл для блока/панели: один префикс «было:» на обе части
-    // («было: ауд. 214 / 11:10», а не «было: ауд. 214 / было: 11:10»)
-    expect(view?.previousLabel).toBe('было: ауд. 214 / 11:10');
+    // DIG-85 (BUG-14): время пары не менялось (previousStartsAt = 11:10 =
+    // новому началу) — «было: 11:10» дублировать запрещено.
+    expect(view?.previousTimeLabel).toBeNull();
+    // общий лейбл для блока/панели — только реальное изменение
+    expect(view?.previousLabel).toBe('было: ауд. 214');
     expect(view?.isMoved).toBe(true);
     expect(view?.isCancelled).toBe(false);
   });
@@ -265,6 +266,62 @@ describe('toScheduleEventViews: модель блока и aria-label', () => {
     expect(views[0]?.ariaLabel).toBe('Семинар, Математический анализ, 10:00–11:30, ауд. 305');
     expect(views[1]?.ariaLabel).toBe('Семинар, Математический анализ, 15:40–17:10, онлайн');
     expect(views[1]?.roomLabel).toBe('онлайн');
+  });
+});
+
+// ── 5b. Перенос: «было» только о реальных изменениях (DIG-85 / BUG-14) ──────
+
+describe('toScheduleEventViews: «было» дублирует только изменившееся (BUG-14)', () => {
+  it('ROOM_CHANGED с прежним временем равным новому: часть «было: <время>» скрыта', () => {
+    // Смена аудитории деканатом: previousStartsAt «наследуется» в данных,
+    // но время пары не менялось — дублировать его в «было» нельзя.
+    const [view] = toScheduleEventViews([
+      ev('mov-1', '2026-11-11', 15, 0, 16, 30, {
+        status: 'ROOM_CHANGED',
+        room: '305',
+        previousRoom: '214',
+        previousStartsAt: fromMoscowWallClock(2026, 11, 11, 15, 0),
+      }),
+    ]);
+    expect(view?.previousRoomLabel).toBe('было: ауд. 214');
+    expect(view?.previousTimeLabel).toBeNull();
+    expect(view?.previousLabel).toBe('было: ауд. 214');
+  });
+
+  it('TIME_CHANGED с реальной сменой времени: «было: <время>» печатается как прежде', () => {
+    const [view] = toScheduleEventViews([
+      ev('mov-2', '2026-11-11', 15, 0, 16, 30, {
+        status: 'TIME_CHANGED',
+        previousStartsAt: fromMoscowWallClock(2026, 11, 11, 11, 10),
+      }),
+    ]);
+    expect(view?.previousTimeLabel).toBe('было: 11:10');
+    expect(view?.previousLabel).toBe('было: 11:10');
+  });
+
+  it('перенос со сменой и аудитории, и времени: показываются обе части', () => {
+    const [view] = toScheduleEventViews([
+      ev('mov-3', '2026-11-11', 15, 0, 16, 30, {
+        status: 'TIME_CHANGED',
+        room: '305',
+        previousRoom: '214',
+        previousStartsAt: fromMoscowWallClock(2026, 11, 11, 11, 10),
+      }),
+    ]);
+    expect(view?.previousLabel).toBe('было: ауд. 214 / 11:10');
+  });
+
+  it('previousRoom равен текущей аудитории: часть «было: ауд.» скрыта', () => {
+    const [view] = toScheduleEventViews([
+      ev('mov-4', '2026-11-11', 15, 0, 16, 30, {
+        status: 'TIME_CHANGED',
+        room: '305',
+        previousRoom: '305',
+        previousStartsAt: fromMoscowWallClock(2026, 11, 11, 11, 10),
+      }),
+    ]);
+    expect(view?.previousRoomLabel).toBeNull();
+    expect(view?.previousLabel).toBe('было: 11:10');
   });
 });
 
