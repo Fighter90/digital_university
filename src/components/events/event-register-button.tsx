@@ -5,6 +5,7 @@
 // пояснение вместо формы (мутации студентов).
 import { toggleEventRegistrationAction } from '@/server/actions/events';
 import { cn } from 'cn';
+import { t, type Locale } from '@/lib/i18n';
 
 export function EventRegisterButton({
   eventId,
@@ -12,6 +13,7 @@ export function EventRegisterButton({
   registeredByMe,
   canRegister = true,
   testId,
+  locale = 'ru',
 }: {
   eventId: string;
   /** Свободные места: 0 — «Мест нет» (кроме отмены собственной записи). */
@@ -20,15 +22,17 @@ export function EventRegisterButton({
   /** false — сотрудник: афишу читает, не записывается. */
   canRegister?: boolean;
   testId?: string;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   if (!canRegister) {
     return (
       <span
         data-testid={testId}
-        title="Запись доступна студентам"
+        title={t(locale, 'events.register.studentsOnly.title')}
         className="select-none rounded-button border border-border bg-muted px-3 py-1.5 text-sm text-muted-foreground"
       >
-        Запись — студентам
+        {t(locale, 'events.register.studentsOnly')}
       </span>
     );
   }
@@ -44,10 +48,10 @@ export function EventRegisterButton({
         aria-pressed={registeredByMe}
         title={
           disabled
-            ? 'Свободных мест не осталось'
+            ? t(locale, 'events.register.full')
             : registeredByMe
-              ? 'Отменить запись'
-              : 'Записаться на мероприятие'
+              ? t(locale, 'events.register.cancel')
+              : t(locale, 'events.register')
         }
         className={cn(
           'rounded-button px-3 py-1.5 text-sm font-medium shadow-soft transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600 disabled:cursor-not-allowed',
@@ -58,7 +62,11 @@ export function EventRegisterButton({
               : 'bg-foreground text-background hover:bg-muted-foreground/80',
         )}
       >
-        {registeredByMe ? 'Вы записаны ✓' : disabled ? 'Мест нет' : 'Записаться'}
+        {registeredByMe
+        ? t(locale, 'events.register.done')
+        : disabled
+          ? t(locale, 'events.spots.none')
+          : t(locale, 'events.register.short')}
       </button>
     </form>
   );

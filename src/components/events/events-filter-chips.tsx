@@ -4,21 +4,25 @@
 // без JS; активный чип в стиле вкладок «МСП» (чёрная заливка, DIG-13).
 import Link from 'next/link';
 
-import { EVENTS_FILTER_LABELS, type EventsFilter } from '@/lib/events';
+import { eventsFilterLabel, type EventsFilter } from '@/lib/events';
+import { t, type Locale } from '@/lib/i18n';
 
 const ORDER: EventsFilter[] = ['all', 'week', 'faculty', 'career', 'online'];
 
 export function EventsFilterChips({
   filter,
   showFaculty = true,
+  locale = 'ru',
 }: {
   filter: EventsFilter;
   /** Факультета в контексте нет — чип «Мой факультет» не показываем. */
   showFaculty?: boolean;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   const chips = ORDER.filter((chip) => chip !== 'faculty' || showFaculty);
   return (
-    <nav aria-label="Фильтры мероприятий" className="flex flex-wrap items-center gap-2">
+    <nav aria-label={t(locale, 'events.filter.aria')} className="flex flex-wrap items-center gap-2">
       {chips.map((chip) => {
         const active = chip === filter;
         return (
@@ -33,7 +37,7 @@ export function EventsFilterChips({
                 : 'inline-flex h-9 items-center rounded-pill border border-border bg-card px-4 text-sm font-medium text-foreground hover:border-muted-foreground/40'
             }
           >
-            {EVENTS_FILTER_LABELS[chip]}
+            {eventsFilterLabel(chip, locale)}
           </Link>
         );
       })}

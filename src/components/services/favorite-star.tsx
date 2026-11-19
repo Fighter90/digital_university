@@ -5,6 +5,7 @@ import { Star } from 'lucide-react';
 import { cn } from 'cn';
 
 import { toggleFavoriteAction, type FavoriteState } from '@/server/actions/services';
+import { t, type Locale } from '@/lib/i18n';
 
 // DIG-29 — звёздочка избранного на карточке сервиса: server action форма
 // (работает без JS), aria-pressed + говорящая aria-label. Ошибки — лимит
@@ -13,9 +14,11 @@ export interface FavoriteStarProps {
   serviceId: string;
   serviceTitle: string;
   isFavorite: boolean;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
-export function FavoriteStar({ serviceId, serviceTitle, isFavorite }: FavoriteStarProps) {
+export function FavoriteStar({ serviceId, serviceTitle, isFavorite, locale = 'ru' }: FavoriteStarProps) {
   const [state, formAction, isPending] = useActionState<FavoriteState, FormData>(
     toggleFavoriteAction,
     null,
@@ -32,8 +35,8 @@ export function FavoriteStar({ serviceId, serviceTitle, isFavorite }: FavoriteSt
         aria-pressed={isFavorite}
         aria-label={
           isFavorite
-            ? `Убрать «${serviceTitle}» из избранного`
-            : `Добавить «${serviceTitle}» в избранное`
+            ? t(locale, 'services.star.removeAria', { title: serviceTitle })
+            : t(locale, 'services.star.addAria', { title: serviceTitle })
         }
         data-testid={`favorite-toggle-${serviceId}`}
         className="flex size-8 items-center justify-center rounded-pill text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-coral-600"

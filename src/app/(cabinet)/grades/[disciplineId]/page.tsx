@@ -15,19 +15,24 @@
 // и токенам DIG-13 (Inter/Onest, Shell из (cabinet)).
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { ArrowLeft, ArrowUpRight, BookMarked, Calculator, Info } from 'lucide-react';
 
 import { personHrefByFullName } from '@/lib/people-catalog';
 import { GradeAppealForm } from '@/components/gradebook/grade-appeal-form';
 import { GradeFormula, GradeRows } from '@/components/gradebook/grade-formula';
 import { Badge } from '@/components/ui/badge';
-import { pluralRu } from '@/lib/dashboard-format';
+import { creditWord } from '@/lib/performance-format';
+import { t } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 import { dataDb } from '@/server/data/db';
 import { getDisciplineCard, requireDataCtx } from '@/server/data';
 
-export const metadata = { title: 'Дисциплина — Цифровой деканат' };
-
-const CREDIT_FORMS = ['кредит', 'кредита', 'кредитов'] as const;
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.discipline') };
+}
 
 export default async function DisciplineCardPage({
   params,
@@ -43,7 +48,10 @@ export default async function DisciplineCardPage({
   } catch {
     notFound();
   }
-  const ctx = await requireDataCtx(`/grades/${rawCode}`);
+  const [ctx, locale] = await Promise.all([
+    requireDataCtx(`/grades/${rawCode}`),
+    getLocale(),
+  ]);
 
   const card = await getDisciplineCard(dataDb, ctx, disciplineCode);
   if (!card) notFound();
@@ -51,8 +59,12 @@ export default async function DisciplineCardPage({
   // DIG-37: href карточки преподавателя считаем один раз — и проверка, и переход.
   const teacherHref = card.teacherName ? personHrefByFullName(card.teacherName) : null;
 
+  // «86,5» (RU, канон) / «86.5» (EN) — одна десятичная с разделителем локали.
+  const oneDecimal = (value: number): string =>
+    locale === 'en' ? value.toFixed(1) : value.toFixed(1).replace('.', ',');
+
   const accumulatedLabel =
-    card.accumulated === null ? '—' : card.accumulated.toFixed(1).replace('.', ',');
+    card.accumulated === null ? '—' : oneDecimal(card.accumulated);
 
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 md:py-8">
@@ -61,7 +73,7 @@ export default async function DisciplineCardPage({
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
-        Зачётная книжка
+        {t(locale, 'discipline.backGradebook')}
       </Link>
 
       {/* ── Шапка: название, преподаватель, кредиты, накопленная крупно ── */}
@@ -75,7 +87,9 @@ export default async function DisciplineCardPage({
               {card.teacherName ? (
                 card.teacherName
               ) : (
-                <span className="text-muted-foreground">Преподаватель не указан</span>
+                <span className="text-muted-foreground">
+                  {t(locale, 'discipline.noTeacher')}
+                </span>
               )}
             </p>
             {teacherHref ? (
@@ -84,17 +98,17 @@ export default async function DisciplineCardPage({
                 data-testid="discipline-teacher-link"
                 className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-coral-600 transition-colors hover:text-coral-500"
               >
-                Профиль в справочнике
+                {t(locale, 'discipline.personProfile')}
                 <ArrowUpRight aria-hidden="true" className="size-3.5" />
               </Link>
             ) : card.teacherName ? (
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Профиль преподавателя появится в справочнике
+                {t(locale, 'discipline.personStub')}
               </p>
             ) : null}
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Badge status="neutral">
-                {card.credits} {pluralRu(card.credits, CREDIT_FORMS)}
+                {card.credits} {creditWord(card.credits, locale)}
               </Badge>
               {card.semesterLabel ? (
                 <span className="rounded-pill bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
@@ -103,13 +117,13 @@ export default async function DisciplineCardPage({
               ) : null}
               {card.isComplete ? (
                 card.creditEarned ? (
-                  <Badge status="success">Кредит зачтён</Badge>
+                  <Badge status="success">{t(locale, 'discipline.creditEarned')}</Badge>
                 ) : (
-                  <Badge status="error">Кредит не зачтён</Badge>
+                  <Badge status="error">{t(locale, 'discipline.creditLost')}</Badge>
                 )
               ) : (
                 <span className="rounded-pill bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent-ink">
-                  в процессе
+                  {t(locale, 'discipline.inProgress')}
                 </span>
               )}
             </div>
@@ -119,18 +133,24 @@ export default async function DisciplineCardPage({
           <div className="flex shrink-0 flex-col items-end">
             {card.isComplete && card.finalGrade !== null ? (
               <>
-                <p className="text-xs uppercase text-muted-foreground">Итог дисциплины</p>
+                <p className="text-xs uppercase text-muted-foreground">
+                  {t(locale, 'discipline.finalLabel')}
+                </p>
                 <p
                   data-testid="final-grade"
                   className="text-5xl font-extrabold leading-none tracking-heading text-foreground"
                 >
                   {card.finalGrade}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">из 100</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t(locale, 'discipline.of100')}
+                </p>
               </>
             ) : (
               <>
-                <p className="text-xs uppercase text-muted-foreground">Накопленная оценка</p>
+                <p className="text-xs uppercase text-muted-foreground">
+                  {t(locale, 'discipline.accumulatedLabel')}
+                </p>
                 <p
                   data-testid="accumulated-grade"
                   className="text-5xl font-extrabold leading-none tracking-heading text-foreground"
@@ -138,9 +158,9 @@ export default async function DisciplineCardPage({
                   {accumulatedLabel}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  из 100
+                  {t(locale, 'discipline.of100')}
                   {card.maxPossible !== null && !card.isComplete
-                    ? ` · максимум ${card.maxPossible.toFixed(1).replace('.', ',')}`
+                    ? t(locale, 'discipline.maxSuffix', { score: oneDecimal(card.maxPossible) })
                     : ''}
                 </p>
               </>
@@ -152,20 +172,20 @@ export default async function DisciplineCardPage({
       {/* ── Формула оценки полосами ─────────────────────────────────────── */}
       <section aria-labelledby="card-formula-title">
         <h2 id="card-formula-title" className="text-lg font-extrabold tracking-heading">
-          Из чего складывается оценка
+          {t(locale, 'discipline.formula.title')}
         </h2>
         <div className="mt-3 rounded-card border border-border bg-card p-5 shadow-soft">
-          <GradeFormula parts={card.parts} />
+          <GradeFormula parts={card.parts} locale={locale} />
         </div>
       </section>
 
       {/* ── Отдельные оценки ────────────────────────────────────────────── */}
       <section aria-labelledby="card-grades-title">
         <h2 id="card-grades-title" className="text-lg font-extrabold tracking-heading">
-          Отдельные оценки
+          {t(locale, 'discipline.grades.title')}
         </h2>
         <div className="mt-3">
-          <GradeRows grades={card.grades} />
+          <GradeRows grades={card.grades} locale={locale} />
         </div>
       </section>
 
@@ -174,7 +194,7 @@ export default async function DisciplineCardPage({
           страницы. Данные экзамена плана уже приходят в card.exam. */}
       <section aria-labelledby="card-calculator-title" id="calculator">
         <h2 id="card-calculator-title" className="text-lg font-extrabold tracking-heading">
-          Что нужно на экзамене
+          {t(locale, 'discipline.exam.title')}
         </h2>
         <div
           data-testid="calculator-slot"
@@ -190,17 +210,17 @@ export default async function DisciplineCardPage({
             <div className="min-w-0 text-sm text-muted-foreground">
               {card.exam ? (
                 <p>
-                  <span className="font-semibold text-foreground">{card.exam.elementName}</span> ·{' '}
-                  {card.exam.weightPercent}% итога · максимум {card.exam.maxScore}
-                  {card.exam.graded ? ' · уже сдан' : ''}
+                  <span className="font-semibold text-foreground">{card.exam.elementName}</span>{' '}
+                  {t(locale, 'discipline.exam.weight', {
+                    weight: card.exam.weightPercent,
+                    max: card.exam.maxScore,
+                  })}
+                  {card.exam.graded ? t(locale, 'discipline.exam.graded') : ''}
                 </p>
               ) : (
-                <p>В плане дисциплины нет экзаменационного элемента.</p>
+                <p>{t(locale, 'discipline.exam.none')}</p>
               )}
-              <p className="mt-1.5">
-                Калькулятор подскажет балл, который нужен на экзамене ради целевой оценки, — он
-                встроится в этот блок в ближайшем обновлении кабинета.
-              </p>
+              <p className="mt-1.5">{t(locale, 'discipline.exam.stub')}</p>
             </div>
           </div>
         </div>
@@ -209,10 +229,10 @@ export default async function DisciplineCardPage({
       {/* ── Ошибка в оценке? → обращение в деканат ──────────────────────── */}
       <section aria-labelledby="card-appeal-title">
         <h2 id="card-appeal-title" className="text-lg font-extrabold tracking-heading">
-          Нашли ошибку в оценке?
+          {t(locale, 'discipline.appeal.title')}
         </h2>
         <div className="mt-3 rounded-card border border-border bg-card p-5 shadow-soft">
-          <GradeAppealForm disciplineCode={card.disciplineCode} />
+          <GradeAppealForm disciplineCode={card.disciplineCode} locale={locale} />
         </div>
       </section>
 
@@ -220,8 +240,7 @@ export default async function DisciplineCardPage({
         <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
         <span>
           <BookMarked aria-hidden="true" className="mr-1 inline size-3.5" />
-          Накопленная оценка — вклад сданных работ в итог по правилам docs/grading.md: пересдача не
-          удваивает счёт, учитывается последняя попытка.
+          {t(locale, 'discipline.formula.note')}
         </span>
       </p>
     </section>

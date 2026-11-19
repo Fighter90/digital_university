@@ -1,9 +1,13 @@
 // DIG-36 — скелетон ленты новостей: показывается в Suspense, пока агрегат
 // getNewsPage читает скоуп и отметки «Прочитано» (тот же паттерн, что у
 // DashboardSkeleton DIG-20).
-export function NewsSkeleton() {
+export function NewsSkeleton({ label }: { label?: string }) {
   return (
-    <div aria-hidden="true" className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
+    <div
+      aria-label={label}
+      className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8"
+      aria-busy={label ? 'true' : undefined}
+    >
       <div className="h-7 w-72 animate-pulse rounded-pill bg-neutral-200" />
       <div className="mt-6 h-28 w-full animate-pulse rounded-card bg-neutral-200" />
       <div className="mt-6 flex gap-2">

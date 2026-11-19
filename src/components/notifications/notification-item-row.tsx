@@ -3,12 +3,15 @@
 import { MessageSquareText, CalendarDays, FileText, GraduationCap, Info, Megaphone, Wallet } from 'lucide-react';
 import type { NotificationType } from '@/server/data/types';
 import { cn } from '@/lib/utils';
+import { t, type Locale } from '@/lib/i18n';
 import { formatNotificationTime } from '@/lib/notification-view';
+import { requestNumberLabel } from '@/lib/requests-view';
 
 // DIG-35 — строка уведомления (экран и панель колокольчика).
 // variant="full" — строка экрана: вся площадь кликабельна (кнопка-стретч),
 // действие («Скачать», «Открыть расписание») — отдельная кнопка поверх.
 // variant="compact" — строка панели: одна кнопка на всю строку.
+// DIG-89 — метки категории/«Важно»/aria по локали.
 
 type NotificationItemRowProps = {
   itemId: string;
@@ -21,28 +24,30 @@ type NotificationItemRowProps = {
   createdAt: string;
   variant?: 'full' | 'compact';
   onOpen: () => void;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 };
 
 const CATEGORY: Record<
   NotificationType,
-  { icon: typeof CalendarDays; tint: string; label: string }
+  { icon: typeof CalendarDays; tint: string; labelKey: `notif.type.${NotificationType}` }
 > = {
-  SCHEDULE: { icon: CalendarDays, tint: 'bg-info-soft text-info-ink', label: 'Расписание' },
-  GRADE: { icon: GraduationCap, tint: 'bg-success-soft text-success-ink', label: 'Оценки' },
+  SCHEDULE: { icon: CalendarDays, tint: 'bg-info-soft text-info-ink', labelKey: 'notif.type.SCHEDULE' },
+  GRADE: { icon: GraduationCap, tint: 'bg-success-soft text-success-ink', labelKey: 'notif.type.GRADE' },
   REQUEST: {
     icon: FileText,
     tint: 'bg-lesson-seminar-soft text-lesson-seminar-ink',
-    label: 'Заявки',
+    labelKey: 'notif.type.REQUEST',
   },
-  NEWS: { icon: Megaphone, tint: 'bg-warning-soft text-warning-ink', label: 'Деканат' },
+  NEWS: { icon: Megaphone, tint: 'bg-warning-soft text-warning-ink', labelKey: 'notif.type.NEWS' },
   TICKET: {
     icon: MessageSquareText,
     tint: 'bg-sky-100 text-sky-700',
-    label: 'Обращение в деканат',
+    labelKey: 'notif.type.TICKET',
   },
 
-  SYSTEM: { icon: Info, tint: 'bg-warning-soft text-warning-ink', label: 'Системные' },
-  DEADLINE: { icon: Wallet, tint: 'bg-error-soft text-error-ink', label: 'Финансы' },
+  SYSTEM: { icon: Info, tint: 'bg-warning-soft text-warning-ink', labelKey: 'notif.type.SYSTEM' },
+  DEADLINE: { icon: Wallet, tint: 'bg-error-soft text-error-ink', labelKey: 'notif.type.DEADLINE' },
 };
 
 export function NotificationItemRow({
@@ -56,11 +61,15 @@ export function NotificationItemRow({
   createdAt,
   variant = 'full',
   onOpen,
+  locale = 'ru',
 }: NotificationItemRowProps) {
   const category = CATEGORY[type];
   const Icon = category.icon;
   const time = formatNotificationTime(createdAt, new Date());
   const compact = variant === 'compact';
+  // DIG-89 — EN: кириллические номера заявок в заголовке транслитерируются
+  // («ЗД-2026-000123» → «ZD-2026-000123»); RU — заголовок без изменений.
+  const displayTitle = requestNumberLabel(title, locale);
 
   const meta = (
     <span
@@ -77,7 +86,7 @@ export function NotificationItemRow({
           className="size-2 rounded-full bg-coral-500"
         />
       )}
-      {!isRead && <span className="sr-only">Не прочитано</span>}
+      {!isRead && <span className="sr-only">{t(locale, 'notif.row.unread')}</span>}
     </span>
   );
 
@@ -98,11 +107,11 @@ export function NotificationItemRow({
           isRead ? 'font-medium text-neutral-900' : 'font-bold text-neutral-900',
         )}
       >
-        {title}
+        {displayTitle}
       </span>
       {important && (
         <span className="shrink-0 rounded-pill bg-error-soft px-2 py-0.5 text-[11px] font-semibold text-error-ink">
-          Важно
+          {t(locale, 'notif.row.important')}
         </span>
       )}
     </span>
@@ -139,7 +148,7 @@ export function NotificationItemRow({
       <button
         type="button"
         onClick={onOpen}
-        aria-label={`Открыть: ${title}`}
+        aria-label={t(locale, 'notif.row.openAria', { title: displayTitle })}
         className="absolute inset-0 z-0 rounded-card focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-coral-600"
       />
       <div

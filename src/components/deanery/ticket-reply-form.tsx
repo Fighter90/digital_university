@@ -33,19 +33,21 @@ export function TicketReplyForm({
       {/* Номер обращения уходит в action; скоуп владельца проверяет слой данных. */}
       <input type="hidden" name="ticketNumber" value={ticketNumber} />
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Сообщение</span>
+        <span className="font-medium">{t(locale, 'deanery.reply.message')}</span>
         <textarea
           name="body"
           rows={3}
           required
-          placeholder="Напишите сообщение менеджеру"
+          placeholder={t(locale, 'deanery.reply.placeholder')}
           className="rounded-button border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-coral-600"
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-muted-foreground">
         <span>
-          Вложения (до {MAX_TICKET_ATTACHMENTS} файлов, каждый до{' '}
-          {Math.round(MAX_ATTACHMENT_BYTES / (1024 * 1024))} МБ)
+          {t(locale, 'deanery.reply.attachments', {
+            files: MAX_TICKET_ATTACHMENTS,
+            size: Math.round(MAX_ATTACHMENT_BYTES / (1024 * 1024)),
+          })}
         </span>
         <input
           type="file"

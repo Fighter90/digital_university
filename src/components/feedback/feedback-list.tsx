@@ -8,17 +8,29 @@ import { MailPlus, MessagesSquare } from 'lucide-react';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { FeedbackStatusBadge } from '@/components/feedback/feedback-status-badge';
-import { FEEDBACK_KIND_LABELS, FEEDBACK_TARGET_LABELS, formatFeedbackDueAt } from '@/lib/feedback';
+import {
+  feedbackDueLabel,
+  feedbackTargetLabel,
+  feedbackTypeLabel,
+} from '@/lib/feedback';
+import { t, type Locale } from '@/lib/i18n';
 import type { FeedbackRow } from '@/server/data';
 
-export function FeedbackList({ items }: { items: FeedbackRow[] }) {
+export function FeedbackList({
+  items,
+  locale = 'ru',
+}: {
+  items: FeedbackRow[];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   if (items.length === 0) {
     return (
-      <section data-testid="feedback-list" aria-label="Мои обращения">
+      <section data-testid="feedback-list" aria-label={t(locale, 'feedback.list.aria')}>
         <EmptyState
           icon={MessagesSquare}
-          title="Обращений пока нет"
-          description="Создайте предложение, жалобу или благодарность — руководство увидит их здесь же."
+          title={t(locale, 'feedback.list.emptyTitle')}
+          description={t(locale, 'feedback.list.emptyDesc')}
         />
       </section>
     );
@@ -27,10 +39,10 @@ export function FeedbackList({ items }: { items: FeedbackRow[] }) {
   return (
     <section
       data-testid="feedback-list"
-      aria-label="Мои обращения"
+      aria-label={t(locale, 'feedback.list.aria')}
       className="flex min-w-0 flex-col gap-3"
     >
-      <h2 className="text-base font-semibold">Мои обращения</h2>
+      <h2 className="text-base font-semibold">{t(locale, 'feedback.list.title')}</h2>
       <ul className="flex flex-col gap-3">
         {items.map((item) => (
           <li key={item.id}>
@@ -41,14 +53,14 @@ export function FeedbackList({ items }: { items: FeedbackRow[] }) {
             >
               <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                 <span className="font-mono text-xs text-muted-foreground">{item.number}</span>
-                <FeedbackStatusBadge status={item.status} />
+                <FeedbackStatusBadge status={item.status} locale={locale} />
               </div>
               <p className="text-sm font-semibold text-foreground">
-                {FEEDBACK_KIND_LABELS[item.kind]} · {FEEDBACK_TARGET_LABELS[item.target]}
+                {feedbackTypeLabel(item.kind, locale)} · {feedbackTargetLabel(item.target, locale)}
               </p>
               <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.text}</p>
               <p className="mt-2 text-xs text-muted-foreground">
-                Срок ответа: {formatFeedbackDueAt(item.dueAt)}
+                {t(locale, 'feedback.list.due', { date: feedbackDueLabel(item.dueAt, locale) })}
               </p>
             </Link>
           </li>
@@ -60,7 +72,7 @@ export function FeedbackList({ items }: { items: FeedbackRow[] }) {
         className="inline-flex items-center gap-2 text-sm font-medium text-accent-ink hover:underline"
       >
         <MailPlus className="size-4" aria-hidden="true" />
-        Новое обращение
+        {t(locale, 'feedback.compose.title')}
       </Link>
     </section>
   );

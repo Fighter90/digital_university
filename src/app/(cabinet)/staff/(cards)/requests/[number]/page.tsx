@@ -7,14 +7,16 @@
 // NOTE: карточка живёт в route group (cards) — на пути от корня нет ни
 // одного loading.tsx, поэтому notFound() успевает выставить статус 404
 // (контракт e2e staff-cabinet и data-isolation; см. (dashboard)/loading.tsx).
+// DIG-89 — интерфейс по локали (cookie du-locale): RU — байт-в-байт прежний.
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { FileDown } from 'lucide-react';
 import { getStaffRequestDetail, normalizeRequestNumber, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { RequestStatusBadge } from '@/components/request-status-badge';
-import { REQUEST_TYPE_LABELS, formatRequestDate } from '@/lib/request-labels';
+import { formatRequestDate, requestTypeLabel } from '@/lib/request-labels';
 import { RequestStatusForm } from '@/components/staff/request-status-form';
+import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 
 export default async function StaffRequestCardPage({
@@ -45,7 +47,7 @@ export default async function StaffRequestCardPage({
         href="/staff/requests"
         className="mb-4 inline-block text-sm text-neutral-600 hover:text-neutral-900"
       >
-        ← К очереди заявок
+        {t(locale, 'staff.backToQueue')}
       </Link>
 
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -54,46 +56,54 @@ export default async function StaffRequestCardPage({
       </div>
       <h1 className="text-xl font-bold text-neutral-900 sm:text-2xl">{request.title}</h1>
       <p className="mb-6 text-sm text-neutral-600">
-        {REQUEST_TYPE_LABELS[request.type]} · подана {formatRequestDate(request.createdAt)}
-        {request.assignee ? ` · исполнитель: ${request.assignee}` : ''}
+        {requestTypeLabel(request.type, locale)} ·{' '}
+        {t(locale, 'staff.card.submitted', { date: formatRequestDate(request.createdAt, locale) })}
+        {request.assignee ? t(locale, 'staff.card.assignee', { name: request.assignee }) : ''}
       </p>
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Студент — владелец заявки (данные деканат видит по своему факультету). */}
         <section
           className="rounded-2xl border border-neutral-200 bg-card p-4"
-          aria-label="Данные студента"
+          aria-label={t(locale, 'staff.card.studentAria')}
         >
-          <h2 className="text-sm font-bold text-neutral-900">Студент</h2>
+          <h2 className="text-sm font-bold text-neutral-900">{t(locale, 'staff.card.student')}</h2>
           <p className="mt-2 text-sm font-semibold text-neutral-900">{student.fullName}</p>
           <ul className="mt-1 flex flex-col gap-0.5 text-sm text-neutral-600">
             <li>
-              Группа: {student.groupName}, {student.course} курс
+              {t(locale, 'staff.card.groupCourse', {
+                group: student.groupName,
+                course: student.course,
+              })}
             </li>
-            <li>Программа: {student.program}</li>
-            <li>Форма обучения: {student.studyForm}</li>
-            <li>Зачётная книжка: {student.gradebookNumber}</li>
+            <li>{t(locale, 'staff.card.program', { program: student.program })}</li>
+            <li>{t(locale, 'staff.card.studyForm', { form: student.studyForm })}</li>
+            <li>{t(locale, 'staff.card.gradebook', { number: student.gradebookNumber })}</li>
             {contacts.email ? <li>Email: {contacts.email}</li> : null}
-            {contacts.phone ? <li>Телефон: {contacts.phone}</li> : null}
+            {contacts.phone ? <li>{t(locale, 'staff.card.phone', { phone: contacts.phone })}</li> : null}
           </ul>
         </section>
 
         {/* Параметры заявки. */}
         <section
           className="rounded-2xl border border-neutral-200 bg-card p-4"
-          aria-label="Параметры заявки"
+          aria-label={t(locale, 'staff.card.paramsAria')}
         >
-          <h2 className="text-sm font-bold text-neutral-900">Параметры</h2>
+          <h2 className="text-sm font-bold text-neutral-900">{t(locale, 'staff.card.params')}</h2>
           <ul className="mt-1 flex flex-col gap-0.5 text-sm text-neutral-600">
-            <li>Тип: {REQUEST_TYPE_LABELS[request.type]}</li>
+            <li>{t(locale, 'staff.card.type', { type: requestTypeLabel(request.type, locale) })}</li>
             <li>
-              Номер: <span className="font-mono">{request.number}</span>
+              {t(locale, 'staff.card.number')} <span className="font-mono">{request.number}</span>
             </li>
-            <li>Последнее обновление: {formatRequestDate(request.updatedAt)}</li>
+            <li>
+              {t(locale, 'staff.card.lastUpdate', {
+                date: formatRequestDate(request.updatedAt, locale),
+              })}
+            </li>
           </ul>
           {request.resultNote ? (
             <p className="mt-2 rounded-xl bg-neutral-50 p-2 text-sm text-neutral-800">
-              Комментарий: {request.resultNote}
+              {t(locale, 'staff.card.comment', { comment: request.resultNote })}
             </p>
           ) : null}
 
@@ -104,7 +114,7 @@ export default async function StaffRequestCardPage({
               className="mt-3 inline-flex items-center gap-2 rounded-button bg-coral-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
             >
               <FileDown className="size-4" aria-hidden="true" />
-              Сформировать PDF
+              {t(locale, 'staff.card.generatePdf')}
             </a>
           )}
         </section>
@@ -114,7 +124,9 @@ export default async function StaffRequestCardPage({
         <RequestStatusForm number={request.number} status={request.status} locale={locale} />
       </div>
 
-      <h2 className="mb-3 mt-6 text-base font-semibold text-neutral-900">История заявки</h2>
+      <h2 className="mb-3 mt-6 text-base font-semibold text-neutral-900">
+        {t(locale, 'staff.card.history')}
+      </h2>
       <ol className="flex flex-col gap-3">
         {events.map((event) => (
           <li key={event.id} className="rounded-2xl border border-neutral-200 bg-card p-4">
@@ -122,10 +134,14 @@ export default async function StaffRequestCardPage({
               <span className="text-sm font-medium text-neutral-900">
                 {event.actorName}
                 <span className="ml-1 text-xs font-normal text-neutral-500">
-                  {event.actorRole === 'STAFF' ? '· деканат' : '· студент'}
+                  {event.actorRole === 'STAFF'
+                    ? t(locale, 'staff.card.actorStaff')
+                    : t(locale, 'staff.card.actorStudent')}
                 </span>
               </span>
-              <span className="text-xs text-neutral-500">{formatRequestDate(event.createdAt)}</span>
+              <span className="text-xs text-neutral-500">
+                {formatRequestDate(event.createdAt, locale)}
+              </span>
             </div>
             <p className="text-sm text-neutral-700">{event.message}</p>
           </li>

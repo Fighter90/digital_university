@@ -3,11 +3,11 @@
 // долги), скрыт от скринридеров вместе с заглушками.
 import { Skeleton } from '@/components/ui/skeleton';
 
-export function GradesSkeleton() {
+export function GradesSkeleton({ label }: { label?: string }) {
   return (
     <section
       aria-busy="true"
-      aria-label="Успеваемость загружается"
+      aria-label={label ?? 'Успеваемость загружается'}
       className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8"
       data-testid="grades-skeleton"
     >

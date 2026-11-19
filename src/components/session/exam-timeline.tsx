@@ -6,17 +6,26 @@
 import Link from 'next/link';
 import { ArrowRight, DoorOpen, User } from 'lucide-react';
 
-import { formatSessionDate, formatSessionTime } from '@/lib/session-format';
+import { formatSessionTime } from '@/lib/session-format';
+import { sessionMonthWord } from '@/lib/performance-format';
 import { moscowParts } from '@/lib/schedule-time';
+import { t, type Locale } from '@/lib/i18n';
 import type { SessionExamItem } from '@/server/data/session';
 import { Badge } from '@/components/ui/badge';
 
-export function ExamTimeline({ exams }: { exams: SessionExamItem[] }) {
+export function ExamTimeline({
+  exams,
+  locale = 'ru',
+}: {
+  exams: SessionExamItem[];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   return (
     <ul
       data-testid="session-timeline"
       className="flex flex-col gap-3"
-      aria-label="Экзамены и зачёты сессии"
+      aria-label={t(locale, 'session.exams.aria')}
     >
       {exams.map((exam, index) => (
         <li
@@ -31,7 +40,7 @@ export function ExamTimeline({ exams }: { exams: SessionExamItem[] }) {
               {moscowParts(exam.date).day}
             </span>
             <span className="text-xs text-muted-foreground">
-              {formatSessionDate(exam.date).split(' ')[1]}
+              {sessionMonthWord(exam.date, locale)}
             </span>
           </div>
 
@@ -46,7 +55,7 @@ export function ExamTimeline({ exams }: { exams: SessionExamItem[] }) {
               </span>
               <span className="inline-flex items-center gap-1">
                 <DoorOpen aria-hidden="true" className="size-3.5" />
-                каб. {exam.room}
+                {t(locale, 'session.room.short', { room: exam.room })}
               </span>
               {exam.teacherName ? (
                 <span className="inline-flex min-w-0 items-center gap-1">
@@ -68,7 +77,7 @@ export function ExamTimeline({ exams }: { exams: SessionExamItem[] }) {
                     href={exam.actionHref}
                     className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-accent-ink hover:underline"
                   >
-                    Что сдать
+                    {t(locale, 'session.exams.whatToSubmit')}
                     <ArrowRight aria-hidden="true" className="size-3.5" />
                   </Link>
                 ) : null}

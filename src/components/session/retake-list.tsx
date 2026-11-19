@@ -4,19 +4,30 @@
 // кнопка записи — клиентская форма.
 import { Clock, DoorOpen } from 'lucide-react';
 
-import { formatSessionDate, formatSessionTime } from '@/lib/session-format';
+import { formatSessionTime } from '@/lib/session-format';
+import { sessionDateShort } from '@/lib/performance-format';
+import { t, type Locale } from '@/lib/i18n';
 import type { SessionRetakeItem } from '@/server/data/session';
 import { RetakeSignupForm } from './retake-signup-form';
 
-export function RetakeList({ retakes }: { retakes: SessionRetakeItem[] }) {
+export function RetakeList({
+  retakes,
+  locale = 'ru',
+}: {
+  retakes: SessionRetakeItem[];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   return (
     <section
       data-testid="session-retakes"
-      aria-label="Пересдачи"
+      aria-label={t(locale, 'session.retakes.aria')}
       className="animate-rise rounded-card border border-border bg-card p-5 shadow-soft"
       style={{ '--du-rise-delay': '120ms' } as React.CSSProperties}
     >
-      <h2 className="text-base font-extrabold tracking-heading">Пересдачи</h2>
+      <h2 className="text-base font-extrabold tracking-heading">
+        {t(locale, 'session.retakes.title')}
+      </h2>
       <ul className="mt-3 flex flex-col divide-y divide-border">
         {retakes.map((retake) => (
           <li
@@ -28,12 +39,12 @@ export function RetakeList({ retakes }: { retakes: SessionRetakeItem[] }) {
               <p className="font-semibold">{retake.disciplineName}</p>
               <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Clock aria-hidden="true" className="size-3.5" />
-                {formatSessionDate(retake.date)}, {formatSessionTime(retake.startsAt)}
+                {sessionDateShort(retake.date, locale)}, {formatSessionTime(retake.startsAt)}
               </p>
             </div>
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <DoorOpen aria-hidden="true" className="size-3.5" />
-              каб. {retake.room}
+              {t(locale, 'session.room.short', { room: retake.room })}
             </p>
             {retake.note ? (
               <p className="text-sm text-muted-foreground">{retake.note}</p>
@@ -44,6 +55,7 @@ export function RetakeList({ retakes }: { retakes: SessionRetakeItem[] }) {
                 requested={retake.requested}
                 requestNumber={retake.requestNumber}
                 signUpAvailable={retake.signUpAvailable}
+                locale={locale}
               />
             </div>
           </li>

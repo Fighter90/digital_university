@@ -7,10 +7,10 @@ import { Illustration } from '@/components/ui/illustration';
 import { cn } from '@/lib/utils';
 import { t, type Locale } from '@/lib/i18n';
 import {
-  NOTIFICATION_FILTERS,
   NOTIFICATIONS_POLL_MS,
   groupNotificationsByDay,
   matchNotificationFilter,
+  notificationFilters,
   type NotificationFeedItem,
   type NotificationFilter,
 } from '@/lib/notification-view';
@@ -61,7 +61,10 @@ export function NotificationsScreen({ initialItems, locale = 'ru' }: Notificatio
     () => items.filter((item) => matchNotificationFilter(item, filter)),
     [items, filter],
   );
-  const groups = useMemo(() => groupNotificationsByDay(filtered, new Date()), [filtered]);
+  const groups = useMemo(
+    () => groupNotificationsByDay(filtered, new Date(), locale),
+    [filtered, locale],
+  );
 
   /** Клик по строке (или её действию): отметка + переход к объекту. */
   const openItem = useCallback(
@@ -93,7 +96,7 @@ export function NotificationsScreen({ initialItems, locale = 'ru' }: Notificatio
         <div className="min-w-0">
           <h1 className="text-xl font-bold sm:text-2xl">{t(locale, 'title.notifications')}</h1>
           <p className="mt-1 text-sm text-neutral-600">
-            События кабинета: пары, заявки, деканат и оплаты. Видны только ваши.
+            {t(locale, 'notif.subtitle')}
           </p>
         </div>
         <Link
@@ -102,17 +105,17 @@ export function NotificationsScreen({ initialItems, locale = 'ru' }: Notificatio
           className="inline-flex shrink-0 items-center gap-1.5 rounded-button px-2 py-1 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
         >
           <Settings2 className="size-4" aria-hidden="true" />
-          Настроить уведомления
+          {t(locale, 'notif.openSettings')}
         </Link>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div
           role="group"
-          aria-label="Фильтры уведомлений"
+          aria-label={t(locale, 'notif.filtersAria')}
           className="-mx-4 flex min-w-0 gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0"
         >
-          {NOTIFICATION_FILTERS.map((option) => {
+          {notificationFilters(locale).map((option) => {
             const selected = option.value === filter;
             return (
               <button
@@ -139,7 +142,7 @@ export function NotificationsScreen({ initialItems, locale = 'ru' }: Notificatio
           disabled={unreadCount === 0}
           className="shrink-0 rounded-button px-3 py-1.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600 disabled:cursor-not-allowed disabled:text-neutral-400 disabled:hover:bg-transparent"
         >
-          Отметить все прочитанными
+          {t(locale, 'notif.markAllRead')}
         </button>
       </div>
 
@@ -150,9 +153,9 @@ export function NotificationsScreen({ initialItems, locale = 'ru' }: Notificatio
         >
           {/* DIG-16: декоративная ИИ-иллюстрация «Нет уведомлений» (alt=""). */}
           <Illustration name="no-notifications" className="h-28 w-28 md:h-32 md:w-32" />
-          <p className="text-sm font-bold text-neutral-900">Новых уведомлений нет</p>
+          <p className="text-sm font-bold text-neutral-900">{t(locale, 'notif.empty.title')}</p>
           <p className="max-w-xs text-sm text-neutral-600">
-            Здесь появятся события: перенос пар, статусы заявок, оценки и дедлайны оплат.
+            {t(locale, 'notif.empty.desc')}
           </p>
         </div>
       ) : groups.length === 0 ? (
@@ -160,7 +163,7 @@ export function NotificationsScreen({ initialItems, locale = 'ru' }: Notificatio
           data-testid="notifications-filter-empty"
           className="rounded-card border border-dashed border-neutral-300 px-6 py-10 text-center text-sm text-neutral-600"
         >
-          Здесь пока пусто
+          {t(locale, 'notif.filterEmpty')}
         </div>
       ) : (
         groups.map((group) => (
@@ -181,6 +184,7 @@ export function NotificationsScreen({ initialItems, locale = 'ru' }: Notificatio
                     actionLabel={item.actionLabel}
                     createdAt={item.createdAt}
                     onOpen={() => openItem(item)}
+                    locale={locale}
                   />
                 </li>
               ))}

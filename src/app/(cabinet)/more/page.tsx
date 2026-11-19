@@ -12,7 +12,7 @@ export default async function MorePage() {
   return (
     <PagePlaceholder
       title={t(locale, 'title.more')}
-      description="Остальные разделы кабинета — уведомления, деканат, AI и профиль."
+      description={t(locale, 'more.description')}
     >
       <ul className="mt-4 grid gap-1">
         {MORE_SECTIONS.map((section) => {

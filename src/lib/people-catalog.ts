@@ -52,6 +52,119 @@ export const PEOPLE_FILTER_LABELS: Record<PeopleFilter, string> = {
   ALL: 'Все',
 };
 
+// DIG-89 — EN-слой справочника: должности/подразделения/часы по id записи
+// (имена — демо-ФИО, остаются как в сиде; дисциплины — через enDisciplineName).
+import { t, type Locale } from '@/lib/i18n';
+import { enDisciplineName } from '@/lib/en-demo-content';
+
+const PEOPLE_EN: Record<
+  string,
+  { position: string; department: string; consultationHours: string | null; program: string | null }
+> = {
+  'teacher-petrov': {
+    position: 'Associate Professor',
+    department: 'Department of Information Technology',
+    consultationHours: 'Tue 14:00–16:00, room 301',
+    program: null,
+  },
+  'teacher-ivanova': {
+    position: 'Senior Lecturer',
+    department: 'Department of Software Engineering',
+    consultationHours: 'Wed 15:00–17:00, room 405',
+    program: null,
+  },
+  'teacher-sokolov': {
+    position: 'Professor',
+    department: 'Department of Information Systems',
+    consultationHours: 'Thu 16:00–18:00, room 212',
+    program: null,
+  },
+  'teacher-orlov': {
+    position: 'Associate Professor',
+    department: 'Department of Humanities and Social Sciences',
+    consultationHours: 'Fri 12:00–14:00, room 118',
+    program: null,
+  },
+  'teacher-kuznetsova': {
+    position: 'Associate Professor',
+    department: 'Department of Applied Mathematics',
+    consultationHours: 'Wed 10:00–12:00, room 207',
+    program: null,
+  },
+  'staff-kovaleva': {
+    position: 'Deanery specialist',
+    department: 'IT Faculty Deanery',
+    consultationHours: 'Mon–Fri 09:00–17:00, room 214',
+    program: null,
+  },
+  'staff-semenov': {
+    position: 'Dean of the IT Faculty',
+    department: 'IT Faculty Deanery',
+    consultationHours: 'Thu 15:00–16:30, room 210 (by appointment)',
+    program: null,
+  },
+  'staff-belova': {
+    position: 'Program manager “Applied Computer Science”',
+    department: 'IT Faculty Deanery',
+    consultationHours: 'Mon, Wed 10:00–12:00, room 214',
+    program: 'Applied Computer Science',
+  },
+  'staff-gavrilov': {
+    position: 'Deputy Dean for Academic Affairs',
+    department: 'Economics Faculty Deanery',
+    consultationHours: 'Tue 11:00–13:00, room 12',
+    program: null,
+  },
+  'staff-romanova': {
+    position: 'Program manager “Economics”',
+    department: 'Economics Faculty Deanery',
+    consultationHours: 'Mon, Thu 14:00–16:00, room 12',
+    program: 'Economics',
+  },
+  'staff-titova': {
+    position: 'Dormitory specialist',
+    department: 'Dormitory Office',
+    consultationHours: 'Mon–Fri 10:00–13:00, room 305',
+    program: null,
+  },
+  'staff-nikitin': {
+    position: 'Study office methodologist',
+    department: 'Study Office',
+    consultationHours: 'Mon–Fri 09:00–12:00, room 216',
+    program: null,
+  },
+};
+
+/** EN-поля записи справочника: должность, подразделение, часы, программа. */
+export function personEnFields(person: PersonEntry): {
+  position: string;
+  department: string;
+  consultationHours: string | null;
+  program: string | null;
+} {
+  const en = PEOPLE_EN[person.id];
+  return en ?? {
+    position: person.position,
+    department: person.department,
+    consultationHours: person.consultationHours,
+    program: person.program,
+  };
+}
+
+/** EN-имена дисциплин преподавателя (по коду/RU-имени сида). */
+export function personDisciplineNames(person: PersonEntry, locale: Locale = 'ru'): string[] {
+  if (locale !== 'en') return person.disciplines.map((discipline) => discipline.name);
+  return person.disciplines.map((discipline) =>
+    enDisciplineName({ code: discipline.code, name: discipline.name }),
+  );
+}
+
+/** Быстрый фильтр: «Мои преподаватели» / «My teachers». */
+export function peopleFilterLabel(filter: PeopleFilter, locale: Locale = 'ru'): string {
+  if (locale === 'en') return t('en', `people.filter.${filter}` as const);
+  return PEOPLE_FILTER_LABELS[filter];
+}
+
 const d = (name: string, code: string | null = null): PersonDiscipline => ({ name, code });
 
 // Порядок записей = порядок по умолчанию в справочнике (персональные связи

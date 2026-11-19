@@ -13,12 +13,21 @@ import { CalendarDays, Clock, MapPin, Users, Video } from 'lucide-react';
 
 import { EventCover } from '@/components/events/event-cover';
 import { EventRegisterButton } from '@/components/events/event-register-button';
-import { EVENT_KIND_LABELS, eventSpotsLabel } from '@/lib/events';
+import { eventKindLabel, spotsLeftLabel } from '@/lib/events';
 import { normalizeEventSlug, openEventView, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
+import { localizedEvent } from '@/lib/en-demo-content';
 import { cn } from 'cn';
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+const dateFormatterEn = new Intl.DateTimeFormat('en-US', {
   weekday: 'long',
   day: 'numeric',
   month: 'long',
@@ -36,12 +45,17 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
     // контрактный 404, что для несуществующего мероприятия, а не 500.
     notFound();
   }
-  const ctx = await requireDataCtx(`/events/${rawSlug}`);
+  const [ctx, locale] = await Promise.all([requireDataCtx(`/events/${rawSlug}`), getLocale()]);
 
   const detail = await openEventView(dataDb, ctx, slug);
   if (!detail) notFound();
 
-  const { event, taken, spotsLeft, registeredByMe } = detail;
+  // DIG-89 — EN-рендер демо-события: титул/описание/место из словаря по id.
+  const event =
+    locale === 'en'
+      ? { ...detail.event, ...localizedEvent('en', detail.event) }
+      : detail.event;
+  const { taken, spotsLeft, registeredByMe } = detail;
   const canRegister = ctx.role === 'STUDENT';
   const full = spotsLeft === 0;
 
@@ -51,7 +65,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
         href="/events"
         className="mb-4 inline-block text-sm text-muted-foreground hover:text-foreground"
       >
-        ← В афишу мероприятий
+        {t(locale, 'events.backToFeed')}
       </Link>
 
       <article
@@ -63,14 +77,14 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
         <div className="flex flex-col gap-3 p-5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-pill bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-ink">
-              {EVENT_KIND_LABELS[event.kind]}
+              {eventKindLabel(event.kind, locale)}
             </span>
             {registeredByMe ? (
               <span
                 data-testid="event-detail-chip"
                 className="rounded-pill border border-emerald-300 bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700"
               >
-                Записан
+                {t(locale, 'events.registered')}
               </span>
             ) : null}
             <span
@@ -80,7 +94,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                 full ? 'text-red-600' : 'text-muted-foreground',
               )}
             >
-              {eventSpotsLabel(event.capacity, taken)}
+              {spotsLeftLabel(spotsLeft, locale)}
             </span>
           </div>
 
@@ -94,7 +108,9 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           <dl className="flex flex-col gap-2 rounded-button bg-muted px-3 py-3 text-sm">
             <div className="flex items-center gap-2">
               <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span className="capitalize">{dateFormatter.format(event.startsAt)}</span>
+              <span className="capitalize">
+                {(locale === 'en' ? dateFormatterEn : dateFormatter).format(event.startsAt)}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -106,7 +122,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
               <div className="flex items-center gap-2">
                 <Video className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span>
-                  Онлайн
+                  {t(locale, 'events.online')}
                   {event.onlineUrl ? (
                     <>
                       {' · '}
@@ -116,7 +132,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
                         rel="noreferrer"
                         className="font-medium text-accent-ink hover:underline"
                       >
-                        ссылка на трансляцию
+                        {t(locale, 'events.streamLink')}
                       </a>
                     </>
                   ) : null}
@@ -131,13 +147,13 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
             <div className="flex items-center gap-2">
               <Users className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               <span data-testid="event-detail-capacity">
-                Вместимость: {event.capacity} · занято {taken}
+                {t(locale, 'events.capacity', { capacity: event.capacity, taken })}
               </span>
             </div>
           </dl>
 
           <div>
-            <h2 className="mb-1 text-sm font-medium text-muted-foreground">О мероприятии</h2>
+            <h2 className="mb-1 text-sm font-medium text-muted-foreground">{t(locale, 'events.about')}</h2>
             <p
               className="whitespace-pre-line text-sm text-foreground"
               data-testid="event-detail-description"
@@ -149,8 +165,8 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
             <p className="text-xs text-muted-foreground">
               {registeredByMe
-                ? 'Повторное нажатие отменяет запись. В расписание пар событие не добавляется (прототип).'
-                : 'Запись бесплатна, место закрепляется сразу.'}
+                ? t(locale, 'events.toggleHint.cancel')
+                : t(locale, 'events.toggleHint.signup')}
             </p>
             <EventRegisterButton
               eventId={event.id}
@@ -158,6 +174,7 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
               registeredByMe={registeredByMe}
               canRegister={canRegister}
               testId="event-detail-register"
+              locale={locale}
             />
           </div>
         </div>
@@ -167,12 +184,12 @@ export default async function EventPage({ params }: { params: Promise<{ slug: st
           мероприятии в концепте не наполняется (см. tasks.md DIG-43). */}
       <section
         data-testid="event-detail-friends"
-        aria-label="Друзья не пойдут"
+        aria-label={t(locale, 'events.friends.title')}
         className="mt-6 rounded-card border border-dashed border-border bg-card p-5"
       >
-        <h2 className="text-base font-semibold">Друзья не пойдут</h2>
+        <h2 className="text-base font-semibold">{t(locale, 'events.friends.title')}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Список друзей, идущих на мероприятие, — заглушка прототипа: в демо он не наполняется.
+          {t(locale, 'events.friends.desc')}
         </p>
       </section>
     </section>

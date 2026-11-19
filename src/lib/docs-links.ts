@@ -56,3 +56,27 @@ export const DOCS_LINKS: readonly DocLink[] = [
 /** Ссылка на справку ассистента — для страницы /ai-assistant и справки MCP. */
 export const ASSISTANT_DOC_URL =
   DOCS_LINKS.find((link) => link.id === 'assistant')?.href ?? `${DOCS_BASE_URL}/docs/assistant.md`;
+
+
+// DIG-89 — EN-слой каталога документации (по id; RU — канон).
+const DOCS_LINKS_EN: Record<string, { title: string; description: string }> = {
+  help: {
+    title: 'Student help',
+    description:
+      'Sign-in, schedule, grades, requests, notifications and verifiable certificates — how it all works.',
+  },
+  assistant: {
+    title: 'Digital assistant',
+    description:
+      'Capabilities, example queries, limitations and MCP integrations (Product Hunt and others).',
+  },
+  architecture: {
+    title: 'Architecture',
+    description: 'Next.js 15, Prisma, data layers and security — how the prototype is built.',
+  },
+};
+
+/** EN-заголовок/описание документа по id. */
+export function docsLinkEn(id: string): { title: string; description: string } | null {
+  return DOCS_LINKS_EN[id] ?? null;
+}

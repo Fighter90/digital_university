@@ -63,6 +63,63 @@ export const FORMAT_LABELS: Record<ServiceFormat, string> = {
   PAPER: 'Бумажная',
 };
 
+// DIG-89 — EN-подписи каталога по локали (RU — канон байт-в-байт).
+import { t, type Locale } from '@/lib/i18n';
+
+/** Категория: «Справки» / «Certificates». */
+export function serviceCategoryLabel(category: ServiceCategory, locale: Locale = 'ru'): string {
+  if (locale === 'en') return t('en', `services.category.${category}` as const);
+  return CATEGORY_LABELS[category];
+}
+
+/** Срок готовности: «Мгновенно» / «Instant». */
+export function serviceEtaLabel(eta: ServiceEta, locale: Locale = 'ru'): string {
+  if (locale === 'en') return t('en', `services.eta.${eta}` as const);
+  return ETA_LABELS[eta];
+}
+
+/** Формат документа: «Бумажная» / «Paper». */
+export function serviceFormatLabel(format: ServiceFormat, locale: Locale = 'ru'): string {
+  if (format === null) return '—';
+  if (locale === 'en') return t('en', `services.format.${format}` as const);
+  return FORMAT_LABELS[format];
+}
+
+/** EN-титулы/польза сервисов по id (демо-каталог прототипа). */
+const SERVICES_EN: Record<string, { title: string; benefit: string }> = {
+  'cert-enrollment': { title: 'Enrollment certificate', benefit: 'For banks, visas and employers' },
+  'cert-grades': { title: 'Grade certificate', benefit: 'Official list of session grades' },
+  'cert-tax': { title: 'Tax deduction certificate', benefit: 'For parents — personal income tax deduction' },
+  'cert-defer': { title: 'Military deferment certificate', benefit: 'For the enlistment office at the place of study' },
+  'transcript-instant': { title: 'Gradebook transcript', benefit: 'All grades at once, no request needed' },
+  'stmt-individual-plan': { title: 'Individual study plan', benefit: 'Your own discipline track' },
+  'stmt-academic-leave': { title: 'Academic leave', benefit: 'A study break of up to one year' },
+  'stmt-transfer': { title: 'Transfer to another program', benefit: 'Change of program or study form' },
+  'study-duplicate-gradebook': { title: 'Duplicate gradebook', benefit: 'If the gradebook is lost or worn out' },
+  'study-schedule': { title: 'Class schedule', benefit: 'Classes and changes for the week' },
+  'study-performance': { title: 'Performance and GPA', benefit: 'Grades, rating and debts' },
+  'fin-scholarship-cert': { title: 'Scholarship certificate', benefit: 'For banks and social services' },
+  'fin-tuition-cert': { title: 'Tuition cost certificate', benefit: 'Contract amounts and payment schedule' },
+  'dorm-residence-cert': { title: 'Residence certificate', benefit: 'For visas, benefits and banks' },
+  'dorm-checkin': { title: 'Dormitory move-in', benefit: 'Application for a dormitory spot' },
+  'help-deanery': { title: 'Ask the deanery', benefit: 'A reply within one business day' },
+  'help-ai': { title: 'AI assistant', benefit: 'Suggests how to order a document' },
+  'app-personal-cabinet': { title: 'Applicant personal cabinet', benefit: 'Document status and admission lists' },
+  'staff-schedule-editor': { title: 'Schedule editor', benefit: 'Editing classes and rooms' },
+};
+
+/** Титул сервиса по локали. */
+export function serviceTitle(service: Pick<ServiceEntry, 'id' | 'title'>, locale: Locale = 'ru'): string {
+  if (locale === 'en') return SERVICES_EN[service.id]?.title ?? service.title;
+  return service.title;
+}
+
+/** Строка пользы сервиса по локали. */
+export function serviceBenefit(service: Pick<ServiceEntry, 'id' | 'benefit'>, locale: Locale = 'ru'): string {
+  if (locale === 'en') return SERVICES_EN[service.id]?.benefit ?? service.benefit;
+  return service.benefit;
+}
+
 /** Лимит закреплённых сервисов в избранном (по задаче — до 6). */
 export const MAX_FAVORITES = 6;
 

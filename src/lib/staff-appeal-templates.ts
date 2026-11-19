@@ -1,5 +1,10 @@
 // DIG-48 — шаблоны ответов сотрудника на обращения (чистый словарь).
 // Кнопка шаблона подставляет текст в поле ответа (клиентский компонент).
+// DIG-89 — строки шаблонов живут в словаре i18n (пары ключей RU/EN):
+// сам модуль без видимых кириллических литералов (скан исходников DIG-89),
+// RU-рендер байт-в-байт прежний.
+
+import { t } from '@/lib/i18n';
 
 export interface AppealTemplate {
   id: string;
@@ -7,30 +12,20 @@ export interface AppealTemplate {
   text: string;
 }
 
-export const APPEAL_TEMPLATES: AppealTemplate[] = [
-  {
-    id: 'received',
-    label: 'Принято в работу',
-    text: 'Ваше обращение принято в работу. Ответим в течение рабочего дня.',
-  },
-  {
-    id: 'invite-office',
-    label: 'Приглашение в деканат',
-    text: 'Пожалуйста, подойдите в деканат (каб. 214) в рабочие часы 10:00–16:00 с зачётной книжкой.',
-  },
-  {
-    id: 'need-docs',
-    label: 'Нужны документы',
-    text: 'Для решения вопроса приложите, пожалуйста, сканы документов в этот чат.',
-  },
-  {
-    id: 'in-progress',
-    label: 'Передано подразделению',
-    text: 'Ваш вопрос передан профильному подразделению. О решении сообщим здесь же.',
-  },
-  {
-    id: 'resolved-note',
-    label: 'Вопрос решён',
-    text: 'Вопрос решён. Если понадобится дополнительная помощь — напишите в этот чат.',
-  },
-];
+/** Порядок шаблонов канона; строки — ключи staff.appealTemplate.<id>.label/.text. */
+const TEMPLATE_IDS = [
+  'received',
+  'invite-office',
+  'need-docs',
+  'in-progress',
+  'resolved-note',
+] as const;
+
+/** Шаблоны ответов сотрудника по локали. RU — канон байт-в-байт. */
+export function appealTemplateList(locale: 'ru' | 'en' = 'ru'): AppealTemplate[] {
+  return TEMPLATE_IDS.map((id) => ({
+    id,
+    label: t(locale, `staff.appealTemplate.${id}.label` as never),
+    text: t(locale, `staff.appealTemplate.${id}.text` as never),
+  }));
+}

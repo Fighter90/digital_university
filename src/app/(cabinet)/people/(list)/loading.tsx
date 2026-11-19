@@ -1,10 +1,17 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
 
 // DIG-37 — скелетон загрузки справочника (агрегат getPeopleDirectory
 // появляется после сессии). Единица сетки совпадает с реальной страницей.
-export default function PeopleLoading() {
+export default async function PeopleLoading() {
+  const locale = await getLocale();
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8" aria-busy="true">
+    <section
+      className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8"
+      aria-busy="true"
+      aria-label={t(locale, 'loading.people')}
+    >
       <Skeleton className="h-7 w-52" />
       <Skeleton className="mt-2 h-4 w-80" />
 

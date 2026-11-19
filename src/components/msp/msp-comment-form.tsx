@@ -8,8 +8,16 @@ import { useActionState } from 'react';
 
 import { addMspCommentAction, type MspActionState } from '@/server/actions/msp';
 import { MAX_MSP_COMMENT_LENGTH } from '@/lib/msp';
+import { t, type Locale } from '@/lib/i18n';
 
-export function MspCommentForm({ projectId }: { projectId: string }) {
+export function MspCommentForm({
+  projectId,
+  locale = 'ru',
+}: {
+  projectId: string;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const [state, formAction, isPending] = useActionState<MspActionState, FormData>(
     addMspCommentAction,
     null,
@@ -24,13 +32,13 @@ export function MspCommentForm({ projectId }: { projectId: string }) {
       {/* projectId уходит в action; скоуп автора проверяет слой данных. */}
       <input type="hidden" name="projectId" value={projectId} />
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Ваш комментарий</span>
+        <span className="font-medium">{t(locale, 'msp.comment.label')}</span>
         <textarea
           name="body"
           rows={3}
           required
           maxLength={MAX_MSP_COMMENT_LENGTH}
-          placeholder="Поддержите запуск, задайте вопрос или предложите идею"
+          placeholder={t(locale, 'msp.comment.placeholder')}
           className="rounded-button border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-coral-600"
         />
       </label>
@@ -39,7 +47,7 @@ export function MspCommentForm({ projectId }: { projectId: string }) {
         disabled={isPending}
         className="inline-flex select-none items-center justify-center self-start gap-2 rounded-button bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-soft transition-colors hover:bg-accent-strong disabled:pointer-events-none disabled:opacity-50"
       >
-        {isPending ? 'Отправляем…' : 'Отправить'}
+        {isPending ? t(locale, 'btn.submitting') : t(locale, 'msp.comment.submit')}
       </button>
       {state?.error ? (
         <p role="alert" className="text-sm font-medium text-error-ink">

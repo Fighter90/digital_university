@@ -3,7 +3,8 @@
 import { useEffect, useRef } from 'react';
 import { cn } from 'cn';
 
-import { NEWS_SCOPE_LABELS, type NewsScope } from '@/lib/news-catalog';
+import { newsScopeLabel, type NewsScope } from '@/lib/news-catalog';
+import { t, type Locale } from '@/lib/i18n';
 
 // DIG-36: NewsScopeTabs — переключатель вкладок скоупа новостей поверх
 // радиогруппы ССЫЛОК (визуал и a11y-контракт ViewSwitcher расписания:
@@ -19,6 +20,8 @@ export interface NewsScopeTabsProps {
   groupDisabled?: boolean;
   /** Query текущего URL без ведущего «?» (например, «topic=dormitory»). */
   currentQuery: string;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 const ORDER: ReadonlyArray<NewsScope> = ['group', 'faculty', 'university'];
@@ -33,7 +36,12 @@ export function buildNewsHref(scope: NewsScope, currentQuery: string): string {
   return query ? `/news?${query}` : '/news';
 }
 
-export function NewsScopeTabs({ scope, groupDisabled = false, currentQuery }: NewsScopeTabsProps) {
+export function NewsScopeTabs({
+  scope,
+  groupDisabled = false,
+  currentQuery,
+  locale = 'ru',
+}: NewsScopeTabsProps) {
   const refs = useRef<Array<HTMLAnchorElement | null>>([]);
 
   const selectedIndex = Math.max(ORDER.indexOf(scope), 0);
@@ -61,7 +69,7 @@ export function NewsScopeTabs({ scope, groupDisabled = false, currentQuery }: Ne
     <div
       ref={rootRef}
       role="radiogroup"
-      aria-label="Вкладки новостей"
+      aria-label={t(locale, 'news.scope.aria')}
       data-testid="news-scope-tabs"
       data-hydrated="false"
       className="inline-flex rounded-pill border border-border bg-card p-1"
@@ -101,7 +109,7 @@ export function NewsScopeTabs({ scope, groupDisabled = false, currentQuery }: Ne
               disabled && 'cursor-not-allowed opacity-50 hover:text-muted-foreground',
             )}
           >
-            {NEWS_SCOPE_LABELS[option]}
+            {newsScopeLabel(option, locale)}
           </a>
         );
       })}

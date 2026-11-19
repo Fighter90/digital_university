@@ -13,13 +13,16 @@ import { notFound } from 'next/navigation';
 import { Paperclip } from 'lucide-react';
 
 import { requireDataCtx, openFeedbackCard, normalizeFeedbackNumber } from '@/server/data';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
+import { enFeedbackText } from '@/lib/en-demo-content';
 import { dataDb } from '@/server/data/db';
 import { FeedbackStatusBadge } from '@/components/feedback/feedback-status-badge';
 import {
-  FEEDBACK_KIND_LABELS,
-  FEEDBACK_TARGET_LABELS,
-  FEEDBACK_RESPONSE_PROMISE,
-  formatFeedbackDueAt,
+  feedbackResponsePromise,
+  feedbackDueLabel,
+  feedbackTargetLabel,
+  feedbackTypeLabel,
 } from '@/lib/feedback';
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -43,10 +46,12 @@ export default async function FeedbackCardPage({
     // что для чужого и несуществующего номера, а не 500.
     notFound();
   }
-  const ctx = await requireDataCtx(`/feedback/${rawNumber}`);
+  const [ctx, locale] = await Promise.all([requireDataCtx(`/feedback/${rawNumber}`), getLocale()]);
 
   const card = await openFeedbackCard(dataDb, ctx, number);
   if (!card) notFound();
+  // DIG-89 — EN-рендер демо-текста обращения по id строки.
+  const text = locale === 'en' ? enFeedbackText(card.id) ?? card.text : card.text;
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
@@ -54,7 +59,7 @@ export default async function FeedbackCardPage({
         href="/feedback"
         className="mb-4 inline-block text-sm text-muted-foreground hover:text-foreground"
       >
-        ← Все обращения
+        {t(locale, 'feedback.backAll')}
       </Link>
 
       <article
@@ -63,9 +68,9 @@ export default async function FeedbackCardPage({
       >
         <header className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold text-foreground">
-            {FEEDBACK_KIND_LABELS[card.kind]} · {FEEDBACK_TARGET_LABELS[card.target]}
+            {feedbackTypeLabel(card.kind, locale)} · {feedbackTargetLabel(card.target, locale)}
           </p>
-          <FeedbackStatusBadge status={card.status} />
+          <FeedbackStatusBadge status={card.status} locale={locale} />
         </header>
 
         <p className="font-mono text-xs text-muted-foreground" data-testid="feedback-card-number">
@@ -74,30 +79,30 @@ export default async function FeedbackCardPage({
 
         <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-muted-foreground">Отправлено</dt>
+            <dt className="text-muted-foreground">{t(locale, 'feedback.detail.sentAt')}</dt>
             <dd className="font-medium text-foreground">{dateFormatter.format(card.createdAt)}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Срок ответа</dt>
+            <dt className="text-muted-foreground">{t(locale, 'feedback.detail.dueAt')}</dt>
             <dd className="font-medium text-foreground" data-testid="feedback-card-due">
-              {formatFeedbackDueAt(card.dueAt)}
+              {feedbackDueLabel(card.dueAt, locale)}
             </dd>
           </div>
         </dl>
 
         <div>
-          <h2 className="mb-1 text-sm font-medium text-muted-foreground">Текст обращения</h2>
+          <h2 className="mb-1 text-sm font-medium text-muted-foreground">{t(locale, 'feedback.detail.textTitle')}</h2>
           <p
             className="whitespace-pre-line text-sm text-foreground"
             data-testid="feedback-card-text"
           >
-            {card.text}
+            {text}
           </p>
         </div>
 
         {card.attachments.length > 0 ? (
           <div>
-            <h2 className="mb-1 text-sm font-medium text-muted-foreground">Вложения</h2>
+            <h2 className="mb-1 text-sm font-medium text-muted-foreground">{t(locale, 'feedback.detail.attachmentsTitle')}</h2>
             <ul className="flex flex-col gap-1">
               {card.attachments.map((name) => (
                 <li key={name} className="flex items-center gap-2 text-sm text-foreground">
@@ -109,7 +114,7 @@ export default async function FeedbackCardPage({
           </div>
         ) : null}
 
-        <p className="text-xs text-muted-foreground">{FEEDBACK_RESPONSE_PROMISE}</p>
+        <p className="text-xs text-muted-foreground">{feedbackResponsePromise(locale)}</p>
       </article>
     </section>
   );

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { formatSessionTime, sessionDeviceLabel } from '@/lib/profile-format';
+import { t, type Locale } from '@/lib/i18n';
 import { signOutAction, signOutAllDevicesAction } from '@/server/actions/auth';
 import { revokeSessionAction } from '@/server/actions/settings';
 import type { AuthSessionRow } from '@/server/auth/types';
@@ -14,15 +15,18 @@ import type { AuthSessionRow } from '@/server/auth/types';
 export function SessionsList({
   sessions,
   currentSessionId,
+  locale = 'ru',
 }: {
   sessions: AuthSessionRow[];
   currentSessionId: string | null;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   if (sessions.length === 0) {
     return (
       <EmptyState
-        title="Нет активных сеансов"
-        description="После входа в кабинет здесь появится устройство."
+        title={t(locale, 'settings.sessions.empty.title')}
+        description={t(locale, 'settings.sessions.empty.desc')}
       />
     );
   }
@@ -42,17 +46,20 @@ export function SessionsList({
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-neutral-900">
                     {sessionDeviceLabel(session.userAgent)}
-                    {isCurrent && <Badge status="accent">Это устройство</Badge>}
+                    {isCurrent && <Badge status="accent">{t(locale, 'settings.sessions.current')}</Badge>}
                   </p>
                   <p className="text-xs text-neutral-500">
-                    Город:{' '}
+                    {t(locale, 'settings.sessions.city')}{' '}
                     <span
                       data-testid="session-city"
-                      title="Определяется по IP — в прототипе недоступно"
+                      title={t(locale, 'settings.sessions.cityStub')}
                     >
                       —
                     </span>
-                    {' · '}Вход: {formatSessionTime(session.createdAt ?? null)}
+                    {' · '}
+                    {t(locale, 'settings.sessions.signIn', {
+                      date: formatSessionTime(session.createdAt ?? null),
+                    })}
                   </p>
                 </div>
               </div>
@@ -60,7 +67,7 @@ export function SessionsList({
                 <form action={revokeSessionAction}>
                   <input type="hidden" name="sessionId" value={session.id} />
                   <Button type="submit" variant="secondary" size="sm">
-                    Завершить
+                    {t(locale, 'settings.sessions.terminate')}
                   </Button>
                 </form>
               )}
@@ -72,12 +79,12 @@ export function SessionsList({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <form action={signOutAction}>
           <Button type="submit" variant="secondary" size="sm">
-            Выйти на этом устройстве
+            {t(locale, 'settings.sessions.signoutHere')}
           </Button>
         </form>
         <form action={signOutAllDevicesAction}>
           <Button type="submit" variant="danger" size="sm">
-            Выйти на всех устройствах
+            {t(locale, 'settings.sessions.signoutAll')}
           </Button>
         </form>
       </div>

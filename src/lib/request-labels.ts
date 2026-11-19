@@ -17,6 +17,7 @@
 // делает зону видимой пользователю.
 
 import { CANONICAL_REQUEST_STATUS_LABELS } from '@/lib/request-machine';
+import { t } from '@/lib/i18n';
 import type { RequestStatus, RequestType } from '@/server/data/types';
 
 /** Пояс пользователя прототипа — единый для всех экранов заявок. */
@@ -24,18 +25,27 @@ export const REQUEST_TIME_ZONE = 'Europe/Moscow';
 
 export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   ...CANONICAL_REQUEST_STATUS_LABELS,
-  // Легаси-значения — только для миров до DIG-32 (prisma-сиды).
-  NEEDS_REVISION: 'Требует правок',
-  COMPLETED: 'Выполнена',
+  // Легаси-значения — только для миров до DIG-32 (prisma-сиды); строки —
+  // из словаря (DIG-89): RU байт-в-байт прежние, EN — английский словарь.
+  NEEDS_REVISION: t('ru', 'request.legacy.NEEDS_REVISION'),
+  COMPLETED: t('ru', 'request.legacy.COMPLETED'),
 };
 
 export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
-  CERTIFICATE: 'Справка',
-  STATEMENT: 'Заявление',
-  PRACTICE: 'Практика',
-  DORMITORY: 'Общежитие',
-  OTHER: 'Другое',
+  CERTIFICATE: t('ru', 'staff.type.CERTIFICATE'),
+  STATEMENT: t('ru', 'staff.type.STATEMENT'),
+  PRACTICE: t('ru', 'staff.type.PRACTICE'),
+  DORMITORY: t('ru', 'staff.type.DORMITORY'),
+  OTHER: t('ru', 'staff.type.OTHER'),
 };
+
+// DIG-89 — EN-подпись типа заявки (очередь сотрудника, карточки).
+
+/** Тип заявки по локали: «Справка» / «Certificate». */
+export function requestTypeLabel(type: RequestType, locale: 'ru' | 'en' = 'ru'): string {
+  if (locale === 'en') return t('en', `staff.type.${type}` as const);
+  return REQUEST_TYPE_LABELS[type];
+}
 
 export const REQUEST_STATUS_TONES: Record<RequestStatus, string> = {
   SUBMITTED: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -74,5 +84,5 @@ const dateTimeFormatterEn = new Intl.DateTimeFormat('en-US', {
 export function formatRequestDate(value: Date, locale: 'ru' | 'en' = 'ru'): string {
   return locale === 'en'
     ? `${dateTimeFormatterEn.format(value)} MSK`
-    : `${dateTimeFormatter.format(value)} МСК`;
+    : `${dateTimeFormatter.format(value)} ${t('ru', 'request.mskSuffix')}`;
 }

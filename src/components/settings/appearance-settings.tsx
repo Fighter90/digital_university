@@ -1,5 +1,7 @@
 'use client';
 
+import { t, type Locale, type TranslationKey } from '@/lib/i18n';
+
 import { useRef, useState, useTransition } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Toggle } from '@/components/ui/toggle';
@@ -12,8 +14,10 @@ import type { FontSizePreference, LanguagePreference } from '@/server/data/types
 
 interface SegmentedOption {
   value: string;
-  label: string;
+  label?: string;
   soon?: boolean;
+  /** DIG-89 — ключ словаря для EN-подписи опции. */
+  labelKey?: TranslationKey;
 }
 
 // Один сегментный переключатель (radiogroup) — собственный компонент, чтобы
@@ -25,6 +29,7 @@ function SegmentedGroup({
   options,
   selected,
   onSelect,
+  locale,
 }: {
   /** Видимая подпись блока. */
   label: string;
@@ -33,6 +38,7 @@ function SegmentedGroup({
   options: SegmentedOption[];
   selected: string;
   onSelect: (value: string) => void;
+  locale: Locale;
 }) {
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectedIndex = options.findIndex((o) => o.value === selected);
@@ -78,8 +84,8 @@ function SegmentedGroup({
               data-selected={active}
               className="flex h-8 items-center gap-1.5 rounded-pill px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 data-[selected=true]:bg-foreground data-[selected=true]:text-background"
             >
-              {option.label}
-              {option.soon && <Badge status="neutral">скоро</Badge>}
+              {option.labelKey ? t(locale, option.labelKey) : option.label}
+              {option.soon && <Badge status="neutral">{t(locale, 'settings.appearance.soon')}</Badge>}
             </button>
           );
         })}
@@ -89,15 +95,17 @@ function SegmentedGroup({
   );
 }
 
-const LANGUAGES: Array<{ value: LanguagePreference; label: string; soon?: boolean }> = [
-  { value: 'RU', label: 'Русский' },
+// DIG-89 — подписи опций берутся из словаря по локали (labelKey); label —
+// только для локально-независимых подписей латиницей («English»).
+const LANGUAGES: Array<{ value: LanguagePreference; label?: string; soon?: boolean; labelKey?: SegmentedOption['labelKey'] }> = [
+  { value: 'RU', labelKey: 'settings.appearance.lang.RU' },
   { value: 'EN', label: 'English', soon: true },
 ];
 
-const FONT_SIZES: Array<{ value: FontSizePreference; label: string }> = [
-  { value: 'NORMAL', label: 'Обычный' },
-  { value: 'LARGE', label: 'Крупный' },
-  { value: 'XLARGE', label: 'Очень крупный' },
+const FONT_SIZES: Array<{ value: FontSizePreference; labelKey: SegmentedOption['labelKey'] }> = [
+  { value: 'NORMAL', labelKey: 'settings.appearance.font.NORMAL' },
+  { value: 'LARGE', labelKey: 'settings.appearance.font.LARGE' },
+  { value: 'XLARGE', labelKey: 'settings.appearance.font.XLARGE' },
 ];
 
 // DIG-44 — вкладка «Вид»: язык (EN — заглушка «скоро»), размер шрифта и
@@ -107,10 +115,13 @@ export function AppearanceSettings({
   language,
   fontSize,
   reduceMotion,
+  locale = 'ru',
 }: {
   language: LanguagePreference;
   fontSize: FontSizePreference;
   reduceMotion: boolean;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale: Locale;
 }) {
   const [selectedLanguage, setSelectedLanguage] = useState<LanguagePreference>(language);
   const [selectedSize, setSelectedSize] = useState<FontSizePreference>(fontSize);
@@ -129,39 +140,41 @@ export function AppearanceSettings({
   return (
     <div className="flex flex-col gap-6">
       <SegmentedGroup
-        label="Язык"
-        groupLabel="Язык интерфейса"
-        hint="Английский появится в отдельном обновлении — выбрать его пока нельзя."
+        label={t(locale, 'settings.appearance.language')}
+        groupLabel={t(locale, 'settings.appearance.languageGroup')}
+        hint={t(locale, 'settings.appearance.languageHint')}
         options={LANGUAGES}
         selected={selectedLanguage}
         onSelect={(value) => {
           setSelectedLanguage(value as LanguagePreference);
           persist(() => saveLanguageAction(value));
         }}
+        locale={locale}
       />
 
       <SegmentedGroup
-        label="Размер шрифта"
-        groupLabel="Размер шрифта"
-        hint="Размер применяется ко всему кабинету."
+        label={t(locale, 'settings.appearance.font')}
+        groupLabel={t(locale, 'settings.appearance.fontGroup')}
+        hint={t(locale, 'settings.appearance.fontHint')}
         options={FONT_SIZES}
         selected={selectedSize}
         onSelect={(value) => {
           setSelectedSize(value as FontSizePreference);
           persist(() => saveFontSizeAction(value));
         }}
+        locale={locale}
       />
 
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-neutral-900">Уменьшить анимацию</p>
+          <p className="text-sm font-semibold text-neutral-900">{t(locale, 'settings.appearance.motion')}</p>
           <p className="text-xs text-neutral-600">
-            Отключает плавные переходы и перемещения интерфейса.
+            {t(locale, 'settings.appearance.motionDesc')}
           </p>
         </div>
         <Toggle
           checked={motion}
-          aria-label="Уменьшить анимацию"
+          aria-label={t(locale, 'settings.appearance.motionAria')}
           onCheckedChange={(next) => {
             setMotion(next);
             persist(() => saveReduceMotionAction(next));
@@ -171,8 +184,8 @@ export function AppearanceSettings({
 
       <p aria-live="polite" role="status" className="text-xs text-neutral-500">
         {saved
-          ? 'Сохранено — настройки вида применены ко всему кабинету.'
-          : 'Изменения сохраняются сразу и применяются ко всему кабинету.'}
+          ? t(locale, 'settings.appearance.saved')
+          : t(locale, 'settings.appearance.idle')}
       </p>
     </div>
   );

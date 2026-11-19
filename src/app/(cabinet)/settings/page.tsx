@@ -35,14 +35,20 @@ import { t } from '@/lib/i18n';
 import { buildMcpServerUrl } from '@/lib/mcp-protocol';
 import {
   MCP_FAQ,
+  MCP_HELP_EN,
   MCP_HELP_HOW,
   MCP_HELP_TOKENS,
   MCP_INSTALL_STEPS,
   MCP_SERVERS,
+  mcpServerEnMeta,
 } from '@/lib/mcp-servers';
-import { ASSISTANT_DOC_URL, DOCS_LINKS } from '@/lib/docs-links';
+import { ASSISTANT_DOC_URL, DOCS_LINKS, docsLinkEn } from '@/lib/docs-links';
 
-export const metadata = { title: 'Настройки — Цифровой деканат' };
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.settings') };
+}
 
 export default async function SettingsPage({
   searchParams,
@@ -62,8 +68,8 @@ export default async function SettingsPage({
       <section className="mx-auto max-w-3xl px-4 py-8">
         <SectionTitle href="/settings" className="mb-1 text-xl font-bold sm:text-2xl" />
         <EmptyState
-          title="Раздел доступен студентам"
-          description="Настройки кабинета сотрудника настраиваются в системе деканата."
+          title={t(locale, 'settings.staffOnly.title')}
+          description={t(locale, 'settings.staffOnly.desc')}
         />
       </section>
     );
@@ -92,8 +98,7 @@ export default async function SettingsPage({
         <div>
           <SectionTitle href="/settings" className="text-xl font-bold sm:text-2xl" />
           <p className="mt-1 text-sm text-neutral-600">
-            Виджеты главной, уведомления, безопасность, вид кабинета, доступность и MCP-интеграции
-            ассистента. Изменения сохраняются и применяются сразу.
+            {t(locale, 'settings.home.desc')}
           </p>
         </div>
         <SettingsTabs active={tab} locale={locale} />
@@ -103,28 +108,28 @@ export default async function SettingsPage({
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Виджеты главной</CardTitle>
+              <CardTitle>{t(locale, 'settings.widgets.title')}</CardTitle>
               <CardDescription>
-                Выберите, какие блоки показывать на главной и в каком порядке. Порядок меняется
-                перетаскиванием или кнопками «вверх/вниз».
+                {t(locale, 'settings.widgets.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-3">
-              {settings && <WidgetsSettings initial={settings.widgets} />}
+              {settings && <WidgetsSettings initial={settings.widgets} locale={locale} />}
             </CardContent>
           </Card>
 
           {/* DIG-59 — перекрёстные ссылки кабинета на документацию проекта. */}
           <Card>
             <CardHeader>
-              <CardTitle>Справка и документация</CardTitle>
+              <CardTitle>{t(locale, 'settings.docs.title')}</CardTitle>
               <CardDescription>
-                Подробные инструкции и устройство прототипа — в документации проекта. Открывается на
-                GitHub в новой вкладке.
+                {t(locale, 'settings.docs.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-1 grid gap-2">
-              {DOCS_LINKS.map((doc) => (
+              {DOCS_LINKS.map((doc) => {
+                const en = locale === 'en' ? docsLinkEn(doc.id) : null;
+                return (
                 <a
                   key={doc.id}
                   href={doc.href}
@@ -135,10 +140,10 @@ export default async function SettingsPage({
                 >
                   <span className="flex-1">
                     <span className="block text-sm font-semibold text-neutral-900">
-                      {doc.title}
+                      {en ? en.title : doc.title}
                     </span>
                     <span className="mt-0.5 block text-xs leading-relaxed text-neutral-600">
-                      {doc.description}
+                      {en ? en.description : doc.description}
                     </span>
                   </span>
                   <ExternalLink
@@ -146,7 +151,8 @@ export default async function SettingsPage({
                     aria-hidden="true"
                   />
                 </a>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         </>
@@ -156,22 +162,21 @@ export default async function SettingsPage({
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Каналы уведомлений</CardTitle>
+              <CardTitle>{t(locale, 'settings.channels.title')}</CardTitle>
               <CardDescription>
-                Матрица «категория × канал»: выключенный канал «в кабинете» убирает тип из ленты
-                уведомлений.
+                {t(locale, 'settings.channels.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-3">
-              {settings && <NotificationSettings settings={settings} />}
+              {settings && <NotificationSettings settings={settings} locale={locale} />}
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Тихие часы</CardTitle>
+              <CardTitle>{t(locale, 'settings.quiet.title')}</CardTitle>
             </CardHeader>
             <CardContent className="mt-3">
-              {settings && <QuietHoursSettings initial={settings.quietHours} />}
+              {settings && <QuietHoursSettings initial={settings.quietHours} locale={locale} />}
             </CardContent>
           </Card>
         </>
@@ -181,26 +186,24 @@ export default async function SettingsPage({
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Смена пароля</CardTitle>
+              <CardTitle>{t(locale, 'settings.password.title')}</CardTitle>
               <CardDescription>
-                Пароль хранится только в виде argon2id-хэша. После смены вход со старым паролем
-                перестанет работать.
+                {t(locale, 'settings.password.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-3">
-              <PasswordForm />
+              <PasswordForm locale={locale} />
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Активные сеансы</CardTitle>
+              <CardTitle>{t(locale, 'settings.sessions.title')}</CardTitle>
               <CardDescription>
-                Устройства, с которых вы входили в кабинет. «Завершить» закрывает выбранный сеанс;
-                «Выйти на всех устройствах» — все, включая текущий.
+                {t(locale, 'settings.sessions.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-3">
-              <SessionsList sessions={sessions} currentSessionId={currentSessionId} />
+              <SessionsList sessions={sessions} currentSessionId={currentSessionId} locale={locale} />
             </CardContent>
           </Card>
         </>
@@ -214,28 +217,27 @@ export default async function SettingsPage({
               ключей; настройка переживает перезагрузку (строка настроек). */}
           <Card>
             <CardHeader>
-              <CardTitle>Голосовой ассистент</CardTitle>
+              <CardTitle>{t(locale, 'settings.voice.title')}</CardTitle>
               <CardDescription>
-                Синтез речи и распознавание выполняет браузер (Web Speech API) — без внешних
-                сервисов. Полезно на мобильном и для доступности.
+                {t(locale, 'settings.voice.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-3">
-              {settings && <VoiceSettings voiceAssistant={settings.voiceAssistant} />}
+              {settings && <VoiceSettings voiceAssistant={settings.voiceAssistant} locale={locale} />}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Тема</CardTitle>
+              <CardTitle>{t(locale, 'settings.theme.title')}</CardTitle>
             </CardHeader>
             <CardContent className="mt-3">
-              {settings && <ThemePicker initial={settings.theme} />}
+              {settings && <ThemePicker initial={settings.theme} locale={locale} />}
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Язык, шрифт и анимация</CardTitle>
+              <CardTitle>{t(locale, 'settings.appearance.title')}</CardTitle>
             </CardHeader>
             <CardContent className="mt-3">
               {settings && (
@@ -243,6 +245,7 @@ export default async function SettingsPage({
                   language={settings.language}
                   fontSize={settings.fontSize}
                   reduceMotion={settings.reduceMotion}
+                  locale={locale}
                 />
               )}
             </CardContent>
@@ -278,42 +281,42 @@ export default async function SettingsPage({
               токен и инструкции подключения к ChatGPT/Claude. */}
           <Card>
             <CardHeader>
-              <CardTitle>MCP-сервер деканата</CardTitle>
+              <CardTitle>{t(locale, 'settings.mcpDeanery.title')}</CardTitle>
               <CardDescription>
-                Подключите кабинет как источник данных к внешнему ассистенту (ChatGPT, Claude): «моё
-                расписание на сегодня», «мои оценки», «мои непрочитанные». Доступ — по персональному
-                токену, сервер отдаёт только ваши данные.
+                {t(locale, 'settings.mcpDeanery.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-3">
-              <McpDeaneryServer url={mcpServerUrl} token={mcpToken} />
+              <McpDeaneryServer url={mcpServerUrl} token={mcpToken} locale={locale} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>MCP-серверы ассистента</CardTitle>
+              <CardTitle>{t(locale, 'settings.mcpServers.title')}</CardTitle>
               <CardDescription>
-                Источники данных цифрового ассистента (Model Context Protocol). Серверы и токены
-                демонстрационные: реальные ключи не используются, подключение не даёт доступа к
-                реальным сервисам.
+                {t(locale, 'settings.mcpServers.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-3">
-              <McpSettings initial={settings.mcpConnections} />
+              <McpSettings initial={settings.mcpConnections} locale={locale} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Что даёт каждый сервер</CardTitle>
+              <CardTitle>{t(locale, 'settings.mcpGive.title')}</CardTitle>
               <CardDescription>
-                Каждый сервер — отдельный источник данных для ассистента: тренды, расписание, API
-                деканата.
+                {t(locale, 'settings.mcpGive.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-1 grid gap-3 sm:grid-cols-3">
-              {MCP_SERVERS.map((server) => (
+              {MCP_SERVERS.map((base) => {
+                const server =
+                  locale === 'en'
+                    ? { ...base, ...(mcpServerEnMeta(base.id) ?? {}) }
+                    : base;
+                return (
                 <div
                   key={server.id}
                   data-testid="mcp-example-card"
@@ -327,25 +330,25 @@ export default async function SettingsPage({
                     ))}
                   </ul>
                 </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Справка: MCP</CardTitle>
+              <CardTitle>{t(locale, 'settings.mcpHelp.title')}</CardTitle>
               <CardDescription>
-                Как работает подключение, как обращаться с токенами и что делать, если что-то не
-                получается.
+                {t(locale, 'settings.mcpHelp.desc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="mt-3 flex flex-col gap-5">
               <section aria-labelledby="mcp-help-how">
                 <h3 id="mcp-help-how" className="text-sm font-semibold text-neutral-900">
-                  Как работает MCP
+                  {t(locale, 'settings.mcpHelp.how')}
                 </h3>
                 <div className="mt-1.5 flex flex-col gap-1.5">
-                  {MCP_HELP_HOW.map((paragraph) => (
+                  {(locale === 'en' ? MCP_HELP_EN.how : MCP_HELP_HOW).map((paragraph) => (
                     <p key={paragraph} className="text-xs leading-relaxed text-neutral-700">
                       {paragraph}
                     </p>
@@ -355,10 +358,10 @@ export default async function SettingsPage({
 
               <section aria-labelledby="mcp-help-tokens">
                 <h3 id="mcp-help-tokens" className="text-sm font-semibold text-neutral-900">
-                  Безопасность токенов
+                  {t(locale, 'settings.mcpHelp.tokens')}
                 </h3>
                 <div className="mt-1.5 flex flex-col gap-1.5">
-                  {MCP_HELP_TOKENS.map((paragraph) => (
+                  {(locale === 'en' ? MCP_HELP_EN.tokens : MCP_HELP_TOKENS).map((paragraph) => (
                     <p key={paragraph} className="text-xs leading-relaxed text-neutral-700">
                       {paragraph}
                     </p>
@@ -368,10 +371,10 @@ export default async function SettingsPage({
 
               <section aria-labelledby="mcp-help-steps">
                 <h3 id="mcp-help-steps" className="text-sm font-semibold text-neutral-900">
-                  Пошаговая установка
+                  {t(locale, 'settings.mcpHelp.install')}
                 </h3>
                 <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-neutral-700">
-                  {MCP_INSTALL_STEPS.map((step) => (
+                  {(locale === 'en' ? MCP_HELP_EN.steps : MCP_INSTALL_STEPS).map((step) => (
                     <li key={step}>{step}</li>
                   ))}
                 </ol>
@@ -379,10 +382,10 @@ export default async function SettingsPage({
 
               <section aria-labelledby="mcp-help-faq">
                 <h3 id="mcp-help-faq" className="text-sm font-semibold text-neutral-900">
-                  Частые ошибки
+                  {t(locale, 'settings.mcpHelp.errors')}
                 </h3>
                 <dl className="mt-1.5 flex flex-col gap-2">
-                  {MCP_FAQ.map((item) => (
+                  {(locale === 'en' ? MCP_HELP_EN.faq : MCP_FAQ).map((item) => (
                     <div
                       key={item.q}
                       className="rounded-card-sm border border-border bg-muted p-2.5"
@@ -402,7 +405,7 @@ export default async function SettingsPage({
                 data-testid="docs-link-assistant-mcp"
                 className="flex items-center gap-2 rounded-card border border-border bg-muted px-3 py-2.5 text-sm font-semibold text-neutral-900 transition-colors hover:border-coral-200 hover:bg-coral-50 focus-visible:outline-2 focus-visible:outline-coral-600"
               >
-                Полная справка: цифровой ассистент и MCP
+                {t(locale, 'settings.mcpHelp.full')}
                 <ExternalLink className="size-4 shrink-0 text-neutral-400" aria-hidden="true" />
               </a>
             </CardContent>

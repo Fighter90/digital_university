@@ -1,14 +1,22 @@
 // DIG-48 — «Объявления» (/staff/announcements): создание для факультета или
 // группы (группа проверяется на принадлежность факультету), живой
 // предпросмотр и список опубликованных. Скоуп — staff-workflow.
+// DIG-89 — интерфейс по локали (cookie du-locale): RU — байт-в-байт прежний.
 import { listFacultyGroups, listStaffAnnouncements, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { formatRequestDate } from '@/lib/request-labels';
+import { t } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 import { AnnouncementForm } from '@/components/staff/announcement-form';
 import { SectionTitle } from '@/components/shell/section-title';
 
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata() {
+  return { title: t(await getLocale(), 'title.staffAnnouncements') };
+}
+
 export default async function StaffAnnouncementsPage() {
-  const ctx = await requireDataCtx('/staff/announcements');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/staff/announcements'), getLocale()]);
   const [groups, announcements] = await Promise.all([
     listFacultyGroups(dataDb, ctx),
     listStaffAnnouncements(dataDb, ctx),
@@ -21,17 +29,21 @@ export default async function StaffAnnouncementsPage() {
         className="text-xl font-bold text-neutral-900 sm:text-2xl"
       />
       <p className="mb-6 mt-1 text-sm text-neutral-600">
-        Объявление уйдёт студентам факультета {ctx.faculty ?? '—'} или выбранной группы.
+        {t(locale, 'staff.announcement.hint', { faculty: ctx.faculty ?? '—' })}
       </p>
 
-      <AnnouncementForm groups={groups} faculty={ctx.faculty ?? ''} />
+      <AnnouncementForm groups={groups} faculty={ctx.faculty ?? ''} locale={locale} />
 
-      <h2 className="mb-3 mt-8 text-base font-semibold text-neutral-900">Опубликованные</h2>
+      <h2 className="mb-3 mt-8 text-base font-semibold text-neutral-900">
+        {t(locale, 'staff.announcement.published')}
+      </h2>
       {announcements.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-neutral-300 p-8 text-center">
-          <p className="text-sm font-medium text-neutral-900">Объявлений пока нет</p>
+          <p className="text-sm font-medium text-neutral-900">
+            {t(locale, 'staff.announcement.empty.title')}
+          </p>
           <p className="mt-1 text-sm text-neutral-600">
-            Опубликуйте первое объявление — оно появится в списке.
+            {t(locale, 'staff.announcement.empty.desc')}
           </p>
         </div>
       ) : (
@@ -41,18 +53,24 @@ export default async function StaffAnnouncementsPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="inline-flex items-center rounded-pill bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-700">
                   {announcement.groupName
-                    ? `группа ${announcement.groupName}`
-                    : `факультет ${announcement.faculty}`}
+                    ? t(locale, 'staff.announcement.audienceGroup', {
+                        group: announcement.groupName,
+                      })
+                    : t(locale, 'staff.announcement.audienceFaculty', {
+                        faculty: announcement.faculty,
+                      })}
                 </span>
                 <span className="text-xs text-neutral-500">
-                  {formatRequestDate(announcement.createdAt)}
+                  {formatRequestDate(announcement.createdAt, locale)}
                 </span>
               </div>
               <p className="mt-1 text-sm font-bold text-neutral-900">{announcement.title}</p>
               <p className="mt-1 whitespace-pre-line text-sm text-neutral-700">
                 {announcement.body}
               </p>
-              <p className="mt-2 text-xs text-neutral-500">Автор: {announcement.authorName}</p>
+              <p className="mt-2 text-xs text-neutral-500">
+                {t(locale, 'staff.announcement.author', { name: announcement.authorName })}
+              </p>
             </li>
           ))}
         </ul>

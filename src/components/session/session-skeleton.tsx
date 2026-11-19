@@ -2,12 +2,13 @@
 // зеркалит структуру экрана (шапка, подсказка AI, таймлайн, блоки),
 // скрыт от скринридеров вместе с заглушками.
 import { Skeleton } from '@/components/ui/skeleton';
+import { t, type Locale } from '@/lib/i18n';
 
-export function SessionSkeleton() {
+export function SessionSkeleton({ label, locale = 'ru' }: { label?: string; locale?: Locale }) {
   return (
     <section
       aria-busy="true"
-      aria-label="Сессия загружается"
+      aria-label={label ?? t(locale, 'session.skeleton.aria')}
       className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8"
       data-testid="session-skeleton"
     >

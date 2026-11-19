@@ -3,14 +3,14 @@
 import { useRef, useState, useTransition } from 'react';
 import { ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
 import { cn } from 'cn';
+import { t, type Locale } from '@/lib/i18n';
+import { dashboardWidgetMeta } from '@/lib/dashboard-widgets';
 import { Toggle } from '@/components/ui/toggle';
 import { saveWidgetsAction } from '@/server/actions/settings';
 import {
   DASHBOARD_WIDGETS,
   moveWidget,
   setWidgetEnabled,
-  widgetDescription,
-  widgetLabel,
   type DashboardWidgetId,
   type WidgetState,
 } from '@/lib/dashboard-widgets';
@@ -22,8 +22,35 @@ import {
 // Каждое изменение сразу сохраняется server action'ом (сохранение
 // сериализовано: на сервер всегда улетает ПОСЛЕДНЕЕ состояние, быстрые
 // нажатия не перезаписывают друг друга устаревшим порядком).
-export function WidgetsSettings({ initial }: { initial: WidgetState[] }) {
-  const [widgets, setWidgets] = useState<WidgetState[]>(initial);
+const widgetMetaLabel = (id: Parameters<typeof dashboardWidgetMeta>[0], locale: Locale): string =>
+  dashboardWidgetMeta(id, locale).label;
+const widgetMetaDescription = (
+  id: Parameters<typeof dashboardWidgetMeta>[0],
+  locale: Locale,
+): string => dashboardWidgetMeta(id, locale).description;
+
+export function WidgetsSettings({
+  initial,
+  order,
+  hidden,
+  locale = 'ru',
+}: {
+  /** Текущее состояние виджетов (страница настроек). */
+  initial?: WidgetState[];
+  /** Имя пропа из приёмочного теста DIG-89: порядок виджетов. */
+  order?: string[];
+  /** Имя пропа из приёмочного теста DIG-89: выключенные виджеты. */
+  hidden?: string[];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  const initialState =
+    initial ??
+    (order ?? []).map((id) => ({
+      id: id as DashboardWidgetId,
+      enabled: !(hidden ?? []).includes(id),
+    }));
+  const [widgets, setWidgets] = useState<WidgetState[]>(initialState);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -78,7 +105,7 @@ export function WidgetsSettings({ initial }: { initial: WidgetState[] }) {
   return (
     <div className="flex flex-col gap-5">
       {/* Список виджетов: drag & drop + клавиатурные кнопки + переключатели */}
-      <ul className="flex flex-col gap-2" aria-label="Виджеты главной">
+      <ul className="flex flex-col gap-2" aria-label={t(locale, 'settings.widgets.aria')}>
         {widgets.map((widget, index) => (
           <li
             key={widget.id}
@@ -97,23 +124,23 @@ export function WidgetsSettings({ initial }: { initial: WidgetState[] }) {
           >
             <span
               aria-hidden="true"
-              title="Перетащите, чтобы изменить порядок"
+              title={t(locale, 'settings.widgets.dragTitle')}
               className="cursor-grab text-neutral-400"
             >
               <GripVertical className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-neutral-900">
-                {widgetLabel(widget.id)}
+                {widgetMetaLabel(widget.id, locale)}
               </p>
-              <p className="truncate text-xs text-neutral-600">{widgetDescription(widget.id)}</p>
+              <p className="truncate text-xs text-neutral-600">{widgetMetaDescription(widget.id, locale)}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={() => move(widget.id, 'up')}
                 disabled={index === 0}
-                aria-label={`Поднять виджет «${widgetLabel(widget.id)}»`}
+                aria-label={t(locale, 'settings.widgets.upAria', { label: widgetMetaLabel(widget.id, locale) })}
                 className="flex size-8 items-center justify-center rounded-pill border border-border text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronUp className="size-4" aria-hidden="true" />
@@ -122,7 +149,7 @@ export function WidgetsSettings({ initial }: { initial: WidgetState[] }) {
                 type="button"
                 onClick={() => move(widget.id, 'down')}
                 disabled={index === widgets.length - 1}
-                aria-label={`Опустить виджет «${widgetLabel(widget.id)}»`}
+                aria-label={t(locale, 'settings.widgets.downAria', { label: widgetMetaLabel(widget.id, locale) })}
                 className="flex size-8 items-center justify-center rounded-pill border border-border text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronDown className="size-4" aria-hidden="true" />
@@ -130,7 +157,7 @@ export function WidgetsSettings({ initial }: { initial: WidgetState[] }) {
               <Toggle
                 checked={widget.enabled}
                 onCheckedChange={(next) => persist(setWidgetEnabled(widgets, widget.id, next))}
-                aria-label={`Показывать виджет «${widgetLabel(widget.id)}»`}
+                aria-label={t(locale, 'settings.widgets.showAria', { label: widgetMetaLabel(widget.id, locale) })}
               />
             </div>
           </li>
@@ -139,13 +166,16 @@ export function WidgetsSettings({ initial }: { initial: WidgetState[] }) {
 
       {/* Предпросмотр главной: включённые виджеты в итоговом порядке */}
       <div className="rounded-card border border-border bg-muted p-4">
-        <p className="text-sm font-semibold text-neutral-900">Предпросмотр главной</p>
+        <p className="text-sm font-semibold text-neutral-900">{t(locale, 'settings.widgets.preview')}</p>
         <p className="mt-0.5 text-xs text-neutral-600">
-          Так виджеты встанут на главной: {enabledWidgets.length} из {DASHBOARD_WIDGETS.length}.
+          {t(locale, 'settings.widgets.previewDesc', {
+            count: enabledWidgets.length,
+            total: DASHBOARD_WIDGETS.length,
+          })}
         </p>
         <ol
           data-testid="widgets-preview"
-          aria-label="Предпросмотр главной"
+          aria-label={t(locale, 'settings.widgets.previewAria')}
           className="mt-3 flex flex-col gap-1.5"
         >
           {enabledWidgets.map((widget, index) => (
@@ -156,7 +186,7 @@ export function WidgetsSettings({ initial }: { initial: WidgetState[] }) {
               <span className="flex size-5 shrink-0 items-center justify-center rounded-pill bg-accent-soft text-xs font-bold text-accent-ink">
                 {index + 1}
               </span>
-              {widgetLabel(widget.id)}
+              {widgetMetaLabel(widget.id, locale)}
             </li>
           ))}
         </ol>
@@ -164,10 +194,10 @@ export function WidgetsSettings({ initial }: { initial: WidgetState[] }) {
 
       <p aria-live="polite" role="status" className="text-xs text-neutral-500">
         {saved && !isPending
-          ? 'Сохранено — главная уже показывает новый порядок.'
+          ? t(locale, 'settings.widgets.saved')
           : isPending
-            ? 'Сохраняем…'
-            : 'Перетащите виджет или нажмите «вверх/вниз». Изменения сохраняются сразу.'}
+            ? t(locale, 'settings.widgets.saving')
+            : t(locale, 'settings.widgets.idle')}
       </p>
     </div>
   );

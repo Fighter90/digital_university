@@ -14,6 +14,9 @@ import { MspLaunchComposer } from '@/components/msp/msp-launch-composer';
 import { MspProjectCard } from '@/components/msp/msp-project-card';
 import { MspSortTabs } from '@/components/msp/msp-sort-tabs';
 import { EmptyState } from '@/components/ui/empty-state';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
+import { localizedMspProject } from '@/lib/en-demo-content';
 
 export default async function MspPage({
   searchParams,
@@ -22,45 +25,58 @@ export default async function MspPage({
 }) {
   const { sort: rawSort } = await searchParams;
   const sort = parseMspSort(rawSort);
-  const ctx = await requireDataCtx('/msp');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/msp'), getLocale()]);
   const page = await getMspPage(dataDb, ctx, sort);
   const canVote = ctx.role === 'STUDENT';
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
       <header>
-        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">
-          МСП — каталог студенческих стартапов
-        </h1>
+        <h1 className="text-xl font-bold tracking-heading sm:text-2xl">{t(locale, 'msp.title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Малое и среднее предпринимательство: запуски студенческих проектов — голосуйте за идеи,
-          обсуждайте и публикуйте свои. Все проекты вымышленные.
+          {t(locale, 'msp.subtitle')}
         </p>
       </header>
 
       <div className="mt-6 flex flex-col gap-6">
         {/* «Запуск дня» — max голосов, при равенстве самый свежий (не random). */}
-        <MspLaunchOfDay view={page.launchOfDay} canVote={canVote} />
+        <MspLaunchOfDay
+          view={
+            page.launchOfDay && locale === 'en'
+              ? { ...page.launchOfDay, project: { ...page.launchOfDay.project, ...localizedMspProject('en', page.launchOfDay.project) } }
+              : page.launchOfDay
+          }
+          canVote={canVote}
+          locale={locale}
+        />
 
         {/* Лента слева, композер запуска — правая панель на десктопе. */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
           <div className="flex min-w-0 flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-base font-semibold">Каталог проектов</h2>
-              <MspSortTabs sort={page.sort} />
+              <h2 className="text-base font-semibold">{t(locale, 'msp.catalog.title')}</h2>
+              <MspSortTabs sort={page.sort} locale={locale} />
             </div>
 
             {page.items.length === 0 ? (
               <EmptyState
                 icon={Rocket}
-                title="Каталог пока пуст"
-                description="Станьте первым: расскажите о своём студенческом проекте с кнопки «Запустить проект»."
+                title={t(locale, 'msp.catalog.emptyTitle')}
+                description={t(locale, 'msp.catalog.emptyDesc')}
               />
             ) : (
               <ul className="flex flex-col gap-3" data-testid="msp-feed">
                 {page.items.map((view) => (
                   <li key={view.project.id}>
-                    <MspProjectCard view={view} canVote={canVote} />
+                    <MspProjectCard
+                      view={
+                        locale === 'en'
+                          ? { ...view, project: { ...view.project, ...localizedMspProject('en', view.project) } }
+                          : view
+                      }
+                      canVote={canVote}
+                      locale={locale}
+                    />
                   </li>
                 ))}
               </ul>
@@ -68,10 +84,9 @@ export default async function MspPage({
           </div>
 
           <div className="flex min-w-0 flex-col gap-3">
-            <MspLaunchComposer />
+            <MspLaunchComposer locale={locale} />
             <p className="text-xs text-muted-foreground">
-              Голос — один на проект: повторный клик по «▲» снимает его. Комментарии и голоса
-              доступны студентам, чтение каталога — всем вошедшим.
+              {t(locale, 'msp.vote.hint')}
             </p>
           </div>
         </div>

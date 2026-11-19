@@ -11,24 +11,35 @@ import {
   type McpServerId,
   type McpServerState,
 } from '@/lib/mcp-servers';
+import { mcpServerEnMeta } from '@/lib/mcp-servers';
+import { t, type Locale } from '@/lib/i18n';
 
 // DIG-58 — вкладка «Настройка MCP»: список демо MCP-серверов цифрового
 // ассистента. «Подключить» раскрывает инструкцию (deep-ссылка + демо-токен),
 // «Подключить сервер» сохраняет статус через server action в демо-хранилище
 // настроек студента. Все токены вымышленные — реальных ключей нет.
-export function McpSettings({ initial }: { initial: McpServerState[] }) {
-  const [servers, setServers] = useState<McpServerState[]>(initial);
+export function McpSettings({
+  initial,
+  servers: serversProp,
+  locale = 'ru',
+}: {
+  /** Текущие статусы демо-серверов (страница настроек). */
+  initial?: McpServerState[];
+  /** Имя пропа из приёмочного теста DIG-89 (тот же список). */
+  servers?: McpServerState[];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  const [servers, setServers] = useState<McpServerState[]>(initial ?? serversProp ?? []);
   const [openId, setOpenId] = useState<McpServerId | null>(null);
   const [copiedId, setCopiedId] = useState<McpServerId | null>(null);
   const [error, setError] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState(
-    'Подключённые серверы сохраняются в настройках вашего кабинета.',
-  );
+  const [message, setMessage] = useState(() => t(locale, 'settings.mcp.savedNote'));
 
   const persist = (id: McpServerId, connected: boolean, done: string) => {
     setError(false);
-    setMessage('Сохраняем…');
+    setMessage(t(locale, 'settings.mcp.saving'));
     startTransition(async () => {
       const ok = await setMcpServerConnectionAction(id, connected);
       if (ok) {
@@ -37,7 +48,7 @@ export function McpSettings({ initial }: { initial: McpServerState[] }) {
         setMessage(done);
       } else {
         setError(true);
-        setMessage('Не удалось сохранить статус. Попробуйте ещё раз.');
+        setMessage(t(locale, 'settings.mcp.saveError'));
       }
     });
   };
@@ -53,9 +64,13 @@ export function McpSettings({ initial }: { initial: McpServerState[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <ul className="flex flex-col gap-2" aria-label="MCP-серверы ассистента">
+      <ul className="flex flex-col gap-2" aria-label={t(locale, 'settings.mcp.listAria')}>
         {servers.map((state) => {
-          const meta = MCP_SERVERS.find((s) => s.id === state.id)!;
+          const baseMeta = MCP_SERVERS.find((s) => s.id === state.id)!;
+          const enMeta = locale === 'en' ? mcpServerEnMeta(state.id) : null;
+          const meta = enMeta
+            ? { ...baseMeta, name: enMeta.name, tagline: enMeta.tagline, benefits: enMeta.benefits }
+            : baseMeta;
           const isOpen = openId === state.id;
           return (
             <li
@@ -72,16 +87,16 @@ export function McpSettings({ initial }: { initial: McpServerState[] }) {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Badge status={state.connected ? 'success' : 'neutral'} variant="soft">
-                    {state.connected ? 'Подключён' : 'Не подключён'}
+                    {state.connected ? t(locale, 'settings.mcp.connected') : t(locale, 'settings.mcp.disconnected')}
                   </Badge>
                   {state.connected ? (
                     <button
                       type="button"
-                      onClick={() => persist(state.id, false, 'Отключено — статус сохранён.')}
+                      onClick={() => persist(state.id, false, t(locale, 'settings.mcp.offSaved'))}
                       disabled={isPending}
                       className="rounded-button border border-border bg-card px-3 py-1.5 text-sm font-semibold text-neutral-700 hover:bg-muted disabled:opacity-50"
                     >
-                      Отключить
+                      {t(locale, 'settings.mcp.disconnect')}
                     </button>
                   ) : (
                     <button
@@ -94,7 +109,7 @@ export function McpSettings({ initial }: { initial: McpServerState[] }) {
                       aria-controls={`mcp-instruction-${state.id}`}
                       className="rounded-button bg-foreground px-3 py-1.5 text-sm font-semibold text-background hover:opacity-90"
                     >
-                      Подключить
+                      {t(locale, 'settings.mcp.connect')}
                     </button>
                   )}
                 </div>
@@ -107,19 +122,19 @@ export function McpSettings({ initial }: { initial: McpServerState[] }) {
                   className="mt-3 rounded-card-sm border border-border bg-muted p-3"
                 >
                   <p className="text-xs font-semibold text-neutral-900">
-                    Установка (демо-инструкция)
+                    {t(locale, 'settings.mcp.installTitle')}
                   </p>
                   <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs text-neutral-700">
                     <li>
-                      Откройте deep-ссылку:{' '}
+                      {t(locale, 'settings.mcp.install.deepLink')}{' '}
                       <code className="break-all font-mono text-[11px]">{meta.deepLink}</code>{' '}
                       <span className="inline-flex items-center gap-1 align-baseline text-neutral-500">
-                        <ExternalLink className="size-3" aria-hidden="true" /> фиктивная ссылка
-                        прототипа
+                        <ExternalLink className="size-3" aria-hidden="true" />{' '}
+                        {t(locale, 'settings.mcp.install.fakeLink')}
                       </span>
                     </li>
                     <li>
-                      Скопируйте демо-токен и вставьте его в клиенте MCP:
+                      {t(locale, 'settings.mcp.install.copyToken')}
                       <span className="mt-1 flex flex-wrap items-center gap-2">
                         <code className="break-all rounded-pill border border-border bg-card px-2 py-1 font-mono text-[11px]">
                           {meta.demoToken}
@@ -131,29 +146,31 @@ export function McpSettings({ initial }: { initial: McpServerState[] }) {
                         >
                           {copiedId === state.id ? (
                             <>
-                              <Check className="size-3" aria-hidden="true" /> Скопировано
+                              <Check className="size-3" aria-hidden="true" />{' '}
+                              {t(locale, 'settings.mcpServer.copied')}
                             </>
                           ) : (
                             <>
-                              <Copy className="size-3" aria-hidden="true" /> Скопировать токен
+                              <Copy className="size-3" aria-hidden="true" />{' '}
+                              {t(locale, 'settings.mcpServer.copyToken')}
                             </>
                           )}
                         </button>
                       </span>
                     </li>
-                    <li>Подтвердите добавление сервера в клиенте MCP.</li>
-                    <li>Вернитесь сюда и нажмите «Подключить сервер».</li>
+                    <li>{t(locale, 'settings.mcp.install.confirm')}</li>
+                    <li>{t(locale, 'settings.mcp.install.return')}</li>
                   </ol>
                   <p className="mt-2 text-[11px] text-neutral-500">
-                    Токен демонстрационный (помечен demo-) и не даёт доступа к реальным сервисам.
+                    {t(locale, 'settings.mcp.install.demoToken')}
                   </p>
                   <button
                     type="button"
-                    onClick={() => persist(state.id, true, 'Подключено — статус сохранён.')}
+                    onClick={() => persist(state.id, true, t(locale, 'settings.mcp.onSaved'))}
                     disabled={isPending}
                     className="mt-2 rounded-button bg-foreground px-3 py-1.5 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50"
                   >
-                    Подключить сервер
+                    {t(locale, 'settings.mcp.connectServer')}
                   </button>
                 </div>
               )}

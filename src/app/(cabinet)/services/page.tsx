@@ -17,26 +17,33 @@ import { ServiceCard } from '@/components/services/service-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/shell/section-title';
 
-export const metadata = { title: 'Каталог сервисов — Цифровой деканат' };
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
+
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.services') };
+}
 
 const gridClasses = 'mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3';
 
 export default async function ServicesPage() {
-  const ctx = await requireDataCtx('/services');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/services'), getLocale()]);
   const data = await getServicesPage(dataDb, ctx);
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
       <SectionTitle href="/services" className="text-xl font-bold sm:text-2xl" />
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        Услуги деканата и вуза в одном месте — только то, что доступно вам как студенту.
+        {t(locale, 'services.subtitle')}
       </p>
 
       {ctx.role === 'STAFF' ? (
         <EmptyState
           className="mt-6"
-          title="Доступно студентам"
-          description="Каталог показывает учебные сервисы студента: справки, заявления и сроки выполнения."
+          title={t(locale, 'services.staffOnly.title')}
+          description={t(locale, 'services.staffOnly.desc')}
         />
       ) : (
         <>
@@ -47,14 +54,14 @@ export default async function ServicesPage() {
             className="mt-6"
           >
             <h2 id="services-favorites-heading" className="text-base font-extrabold">
-              Избранное и часто используемые
+              {t(locale, 'services.favorites.title')}
             </h2>
             {data.favorites.length === 0 ? (
               <EmptyState
                 className="mt-3"
                 icon={Plus}
-                title="В избранном пока пусто"
-                description="Нажмите звёздочку на карточке каталога — сервис закрепится здесь, и заказывать его станет ближе."
+                title={t(locale, 'services.favorites.emptyTitle')}
+                description={t(locale, 'services.favorites.emptyDesc')}
                 action={
                   <Link
                     href="#catalog"
@@ -62,7 +69,7 @@ export default async function ServicesPage() {
                     className="inline-flex items-center gap-1.5 rounded-button border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted"
                   >
                     <Plus aria-hidden="true" className="size-4" />
-                    Добавить
+                    {t(locale, 'services.favorites.add')}
                   </Link>
                 }
               />
@@ -71,7 +78,7 @@ export default async function ServicesPage() {
                 <ul className={gridClasses}>
                   {data.favorites.map((service) => (
                     <li key={service.id}>
-                      <ServiceCard service={service} isFavorite />
+                      <ServiceCard service={service} isFavorite locale={locale} />
                     </li>
                   ))}
                 </ul>
@@ -82,7 +89,7 @@ export default async function ServicesPage() {
                     className="mt-3 inline-flex items-center gap-1.5 rounded-button px-1 text-sm font-semibold text-coral-600 transition-colors hover:text-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
                   >
                     <Plus aria-hidden="true" className="size-4" />
-                    Добавить
+                    {t(locale, 'services.favorites.add')}
                   </Link>
                 ) : null}
               </>
@@ -97,15 +104,15 @@ export default async function ServicesPage() {
               className="mt-8"
             >
               <h2 id="services-picks-heading" className="text-base font-extrabold">
-                Часто нужно на {data.course} курсе
+                {t(locale, 'services.common.title', { course: data.course ?? '' })}
               </h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                Подобрано по вашему курсу и программе — без повторов с избранным.
+                {t(locale, 'services.common.desc')}
               </p>
               <ul className={gridClasses}>
                 {data.picks.map((service) => (
                   <li key={service.id}>
-                    <ServiceCard service={service} isFavorite={false} />
+                    <ServiceCard service={service} isFavorite={false} locale={locale} />
                   </li>
                 ))}
               </ul>
@@ -119,9 +126,9 @@ export default async function ServicesPage() {
             className="mt-8 scroll-mt-20"
           >
             <h2 id="services-catalog-heading" className="mb-3 text-base font-extrabold">
-              Все сервисы
+              {t(locale, 'services.all.title')}
             </h2>
-            <ServicesBrowser favoriteIds={data.favorites.map((s) => s.id)} />
+            <ServicesBrowser favoriteIds={data.favorites.map((s) => s.id)} locale={locale} />
           </section>
         </>
       )}

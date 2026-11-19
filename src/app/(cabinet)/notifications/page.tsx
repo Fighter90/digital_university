@@ -5,6 +5,7 @@
 import { requireDataCtx, listNotifications } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { toNotificationFeedItem } from '@/lib/notification-view';
+import { localizeNotification } from '@/lib/en-demo-content';
 import { getLocale } from '@/lib/i18n/server';
 import { NotificationsScreen } from '@/components/notifications/notifications-screen';
 
@@ -13,7 +14,9 @@ export default async function NotificationsPage() {
   const rows = await listNotifications(dataDb, ctx);
   const items = [...rows]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .map(toNotificationFeedItem);
+    .map(toNotificationFeedItem)
+    // DIG-89 — EN-рендер: seed-строки по id, runtime-строки по шаблонам.
+    .map((item) => (locale === 'en' ? { ...item, ...localizeNotification('en', item) } : item));
 
   return <NotificationsScreen initialItems={items} locale={locale} />;
 }

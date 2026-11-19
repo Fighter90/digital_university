@@ -23,19 +23,23 @@ export type GradeElementKind = 'HOMEWORK' | 'LAB' | 'TEST' | 'PROJECT' | 'EXAM';
 /** Тип контроля дисциплины для зачётки. */
 export type ControlType = 'EXAM' | 'DIFF_CREDIT' | 'CREDIT';
 
-export const CONTROL_TYPE_LABELS: Record<ControlType, string> = {
-  EXAM: 'Экзамен',
-  DIFF_CREDIT: 'Диф. зачёт',
-  CREDIT: 'Зачёт',
-};
-
 /**
- * Метка типа контроля по локали (DIG-84): RU — прежние метки байт-в-байт,
- * EN — по словарю интерфейса (выписка PDF, зачётная книжка).
+ * Метка типа контроля по локали (DIG-84/DIG-89): RU и EN — по словарю
+ * интерфейса (значения RU байт-в-байт равны прежним литералам).
  */
 export function controlTypeLabel(controlType: ControlType, locale: 'ru' | 'en' = 'ru'): string {
   return t(locale, `control.${controlType}` as TranslationKey);
 }
+
+/** Каноническая RU-карта (значения из словаря — байт-в-байт прежние метки). */
+export const CONTROL_TYPE_LABELS: Record<ControlType, string> = {
+  EXAM: controlTypeLabel('EXAM', 'ru'),
+  DIFF_CREDIT: controlTypeLabel('DIFF_CREDIT', 'ru'),
+  CREDIT: controlTypeLabel('CREDIT', 'ru'),
+};
+
+/** Псевдоним для читаемости в рендерах (/grades/*, выписка PDF). */
+export const controlLabel = controlTypeLabel;
 
 /**
  * Тип контроля по набору видов элементов (план контроля, а без плана —
@@ -48,14 +52,27 @@ export function controlTypeOf(kinds: GradeElementKind[]): ControlType | null {
   return 'DIFF_CREDIT';
 }
 
-/** Короткие метки частей формулы оценки («Контрольные 30% · ДЗ 20%»). */
-export const PART_LABELS: Record<GradeElementKind, string> = {
-  TEST: 'Контрольные',
-  HOMEWORK: 'ДЗ',
-  LAB: 'Лабораторные',
-  PROJECT: 'Проект',
-  EXAM: 'Экзамен',
+const PART_LABEL_KEYS: Record<GradeElementKind, TranslationKey> = {
+  TEST: 'gradebook.element.TEST',
+  HOMEWORK: 'gradebook.element.HOMEWORK',
+  LAB: 'gradebook.element.LAB',
+  PROJECT: 'gradebook.element.PROJECT',
+  EXAM: 'gradebook.element.EXAM',
 };
+
+/** Каноническая RU-карта частей формулы (значения из словаря, байт-в-байт). */
+export const PART_LABELS: Record<GradeElementKind, string> = {
+  TEST: elementKindLabel('TEST'),
+  HOMEWORK: elementKindLabel('HOMEWORK'),
+  LAB: elementKindLabel('LAB'),
+  PROJECT: elementKindLabel('PROJECT'),
+  EXAM: elementKindLabel('EXAM'),
+};
+
+/** Метка части формулы по локали: «Контрольные» / «Tests» (DIG-89). */
+export function elementKindLabel(kind: GradeElementKind, locale: 'ru' | 'en' = 'ru'): string {
+  return t(locale, PART_LABEL_KEYS[kind]);
+}
 
 /** Элемент плана контроля (минимальный срез для частей формулы). */
 export interface PlanElementLike {

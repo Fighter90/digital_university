@@ -6,26 +6,33 @@ import { Rocket } from 'lucide-react';
 
 import { MspLetterBadge } from '@/components/msp/msp-letter-badge';
 import { MspVoteButton } from '@/components/msp/msp-vote-button';
+import { t, type Locale } from '@/lib/i18n';
 import type { MspProjectView } from '@/server/data';
+import { localizedMspProject } from '@/lib/en-demo-content';
 
 export function MspLaunchOfDay({
   view,
   canVote = true,
+  locale = 'ru',
 }: {
   view: MspProjectView | null;
   canVote?: boolean;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   if (!view) return null;
-  const { project, votes, votedByMe } = view;
+  const { votes, votedByMe } = view;
+  // DIG-89 — EN-рендер демо-проекта: титул/слоган из словаря по id.
+  const project = { ...view.project, ...localizedMspProject(locale, view.project) };
   return (
     <section
       data-testid="msp-launch-of-day"
-      aria-label="Запуск дня"
+      aria-label={t(locale, 'msp.day.title')}
       className="rounded-card border border-coral-200 bg-gradient-to-br from-coral-50/60 to-accent-soft/40 p-4 shadow-soft"
     >
       <p className="mb-2 inline-flex items-center gap-1.5 rounded-pill bg-coral-500 px-3 py-1 text-xs font-semibold text-white">
         <Rocket className="size-3.5" aria-hidden="true" />
-        Запуск дня
+        {t(locale, 'msp.day.title')}
       </p>
       <div className="flex items-start gap-3">
         <MspVoteButton
@@ -35,6 +42,7 @@ export function MspLaunchOfDay({
           testId="msp-vote-launch"
           compact
           canVote={canVote}
+          locale={locale}
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-3">
@@ -48,7 +56,7 @@ export function MspLaunchOfDay({
                   {project.title}
                 </Link>
               </h2>
-              <p className="text-xs text-muted-foreground">Автор: {project.authorName}</p>
+              <p className="text-xs text-muted-foreground">{t(locale, 'msp.day.author', { name: project.authorName })}</p>
             </div>
           </div>
           <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{project.tagline}</p>

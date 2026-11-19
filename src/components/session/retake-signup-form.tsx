@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CalendarCheck } from 'lucide-react';
 
 import { signUpForRetakeAction, type RetakeSignupState } from '@/server/actions/session';
+import { t, type Locale } from '@/lib/i18n';
 
 // DIG-28 — «Записаться» на пересдачу (экран «Сессия»): server action
 // signUpForRetakeAction создаёт заявку и уведомление (проверка владельца —
@@ -17,11 +18,14 @@ export function RetakeSignupForm({
   requested,
   requestNumber,
   signUpAvailable,
+  locale = 'ru',
 }: {
   examId: string;
   requested: boolean;
   requestNumber: string | null;
   signUpAvailable: boolean;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   const [state, formAction, isPending] = useActionState<RetakeSignupState, FormData>(
     signUpForRetakeAction,
@@ -40,10 +44,10 @@ export function RetakeSignupForm({
           className="inline-flex items-center gap-1.5 rounded-pill border border-success-soft bg-success-soft px-3 py-1.5 text-sm font-semibold text-success-ink transition-colors hover:underline"
         >
           <CalendarCheck aria-hidden="true" className="size-4" />
-          Заявка создана
+          {t(locale, 'session.signup.created')}
         </Link>
         <p className="text-xs text-muted-foreground">
-          Запись передана в деканат — статус виден в «Моих заявках».
+          {t(locale, 'session.signup.createdDesc')}
         </p>
       </div>
     );
@@ -51,7 +55,7 @@ export function RetakeSignupForm({
 
   if (!signUpAvailable) {
     return (
-      <p className="text-sm text-muted-foreground">Пересдача уже состоялась — запись закрыта.</p>
+      <p className="text-sm text-muted-foreground">{t(locale, 'session.signup.past')}</p>
     );
   }
 
@@ -66,7 +70,7 @@ export function RetakeSignupForm({
         className="inline-flex select-none items-center justify-center gap-2 rounded-button border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
       >
         <CalendarCheck aria-hidden="true" className="size-4" />
-        {isPending ? 'Записываем…' : 'Записаться'}
+        {isPending ? t(locale, 'session.signup.submitting') : t(locale, 'session.signup.submit')}
       </button>
       {state && !state.ok ? (
         <p role="alert" className="text-sm font-medium text-error-ink">

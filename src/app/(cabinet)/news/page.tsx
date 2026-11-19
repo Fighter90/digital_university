@@ -21,7 +21,14 @@ import { riseDelayStyle } from '@/lib/motion';
 import { dataDb } from '@/server/data/db';
 import { getNewsPage, requireDataCtx } from '@/server/data';
 
-export const metadata = { title: 'Новости и объявления — Цифровой деканат' };
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
+
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.news') };
+}
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
@@ -38,7 +45,7 @@ function feedQueryString(scope: string, topic: string, scopeIsDefault: boolean):
 
 async function NewsContent({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
-  const ctx = await requireDataCtx('/news');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/news'), getLocale()]);
   const scopeParam = single(params.scope);
   const topicParam = single(params.topic);
   const data = await getNewsPage(dataDb, ctx, { scope: scopeParam, topic: topicParam });
@@ -50,12 +57,11 @@ async function NewsContent({ searchParams }: { searchParams: SearchParams }) {
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
       <SectionTitle href="/news" className="text-xl font-bold sm:text-2xl" />
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        По умолчанию — новости вашей группы и факультета; объявления деканата — в полосе «Важно»
-        сверху.
+        {t(locale, 'news.subtitle')}
       </p>
 
       <div className="mt-5 flex flex-col gap-4">
-        <AnnouncementsStrip announcements={data.announcements} feedQuery={feedQuery} />
+        <AnnouncementsStrip announcements={data.announcements} feedQuery={feedQuery} locale={locale} />
         <NewsScopeTabs
           scope={data.scope}
           groupDisabled={ctx.groupName === null}
@@ -65,16 +71,17 @@ async function NewsContent({ searchParams }: { searchParams: SearchParams }) {
           ]
             .filter(Boolean)
             .join('&')}
+          locale={locale}
         />
-        <NewsTopicPills topic={data.topic} scope={data.scope} scopeIsDefault={scopeIsDefault} />
+        <NewsTopicPills topic={data.topic} scope={data.scope} scopeIsDefault={scopeIsDefault} locale={locale} />
       </div>
 
       {data.items.length === 0 ? (
         <EmptyState
           className="mt-6"
           icon={Newspaper}
-          title="Новостей пока нет"
-          description="Для этой вкладки и темы новостей нет. Попробуйте другую тему или вкладку «Весь вуз»."
+          title={t(locale, 'news.empty.title')}
+          description={t(locale, 'news.empty.desc')}
         />
       ) : (
         <ul
@@ -83,16 +90,16 @@ async function NewsContent({ searchParams }: { searchParams: SearchParams }) {
         >
           {data.items.map((item, index) => (
             <li key={item.id} className="animate-rise min-w-0" style={riseDelayStyle(index)}>
-              <NewsCard item={item} feedQuery={feedQuery} />
+              <NewsCard item={item} feedQuery={feedQuery} locale={locale} />
             </li>
           ))}
         </ul>
       )}
 
       <p className="mt-6 text-xs text-muted-foreground">
-        Ищете уведомления о своих заявках и оценках? Загляните в{' '}
+        {t(locale, 'news.seeNotifications')}{' '}
         <Link href="/notifications" className="font-semibold text-coral-600 hover:underline">
-          «Уведомления»
+          {t(locale, 'news.seeNotifications.link')}
         </Link>
         .
       </p>

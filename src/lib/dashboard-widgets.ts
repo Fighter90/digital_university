@@ -28,23 +28,53 @@ export const DEFAULT_WIDGET_ORDER: DashboardWidgetId[] = [
   'events',
 ];
 
-export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = [
-  { id: 'today', label: 'Сегодня', description: 'Пары и изменения на текущий день' },
-  { id: 'deadlines', label: 'Дедлайны', description: 'Ближайшие зачёты, экзамены и пересдачи' },
-  {
-    id: 'tasks',
-    label: 'Что от меня ждут',
-    description: 'Открытые задачи: доработки, дедлайны, допуски и пересдачи',
-  },
-  { id: 'performance', label: 'Успеваемость', description: 'Средний балл, кредиты и долги' },
-  { id: 'requests', label: 'Заявки', description: 'Заявки в работе и готовые к получению' },
-  { id: 'news', label: 'Новости', description: 'Объявления деканата' },
-  { id: 'events', label: 'Мероприятия', description: 'События и мероприятия вуза' },
-];
+// DIG-89 — мета виджетов из словаря: RU байт-в-байт прежние литералы
+// (widgets.label.* / widgets.desc.*), EN — английский словарь.
+import { t, type Locale } from '@/lib/i18n';
+
+const WIDGET_KEYS: Record<DashboardWidgetId, `widgets.label.${DashboardWidgetId}`> = {
+  today: 'widgets.label.today',
+  deadlines: 'widgets.label.deadlines',
+  tasks: 'widgets.label.tasks',
+  performance: 'widgets.label.performance',
+  requests: 'widgets.label.requests',
+  news: 'widgets.label.news',
+  events: 'widgets.label.events',
+};
+
+const WIDGET_DESC_KEYS: Record<DashboardWidgetId, `widgets.desc.${DashboardWidgetId}`> = {
+  today: 'widgets.desc.today',
+  deadlines: 'widgets.desc.deadlines',
+  tasks: 'widgets.desc.tasks',
+  performance: 'widgets.desc.performance',
+  requests: 'widgets.desc.requests',
+  news: 'widgets.desc.news',
+  events: 'widgets.desc.events',
+};
+
+export const DASHBOARD_WIDGETS: DashboardWidgetMeta[] = DEFAULT_WIDGET_ORDER.map((id) => ({
+  id,
+  label: t('ru', WIDGET_KEYS[id]),
+  description: t('ru', WIDGET_DESC_KEYS[id]),
+}));
 
 const WIDGET_BY_ID = new Map<DashboardWidgetId, DashboardWidgetMeta>(
   DASHBOARD_WIDGETS.map((w) => [w.id, w]),
 );
+
+/** Мета виджета по локали: «Сегодня» / «Today». */
+export function dashboardWidgetMeta(
+  id: DashboardWidgetId,
+  locale: Locale = 'ru',
+): DashboardWidgetMeta {
+  const base = WIDGET_BY_ID.get(id)!;
+  if (locale === 'ru') return base;
+  return {
+    id,
+    label: t('en', WIDGET_KEYS[id]),
+    description: t('en', WIDGET_DESC_KEYS[id]),
+  };
+}
 
 export function isDashboardWidgetId(value: unknown): value is DashboardWidgetId {
   return typeof value === 'string' && WIDGET_BY_ID.has(value as DashboardWidgetId);

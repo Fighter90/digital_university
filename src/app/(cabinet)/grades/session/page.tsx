@@ -13,11 +13,14 @@
 // расписания и подсказка AI по ближайшему несданному экзамену.
 import Link from 'next/link';
 import { headers } from 'next/headers';
+import type { Metadata } from 'next';
 import { Sparkles } from 'lucide-react';
 
 import { requireDataCtx, getSession, getOrCreateCalendarSubscription } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import type { SessionData } from '@/server/data/session';
+import { t, type Locale } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 
 import { buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +32,11 @@ import { ExamTimeline } from '@/components/session/exam-timeline';
 import { RetakeList } from '@/components/session/retake-list';
 import { CalendarSubscribeCard } from '@/components/session/calendar-subscribe-card';
 
-export const metadata = { title: 'Сессия — Цифровой деканат' };
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.session') };
+}
 
 export default function SessionPage() {
   return <SessionContent />;
@@ -37,6 +44,7 @@ export default function SessionPage() {
 
 async function SessionContent() {
   const ctx = await requireDataCtx('/grades/session');
+  const locale = await getLocale();
 
   // Сотрудник деканата без studentId: сессия студента ему не показывается —
   // явная заглушка (тот же контракт, что на «Успеваемости»).
@@ -48,8 +56,8 @@ async function SessionContent() {
           className="text-xl font-bold tracking-heading sm:text-2xl"
         />
         <EmptyState
-          title="Экран доступен студентам"
-          description="Расписание сессии, допуски и пересдачи показываются по учебной группе студента. Кабинет сотрудника с ведомостями — отдельная задача."
+          title={t(locale, 'session.staffOnly.title')}
+          description={t(locale, 'session.staffOnly.desc')}
         />
       </section>
     );
@@ -68,22 +76,22 @@ async function SessionContent() {
           className="text-xl font-bold tracking-heading sm:text-2xl"
         />
         <ErrorState
-          title="Сессия не загрузилась"
-          description="Обновите страницу — если ошибка повторится, сообщите в деканат."
+          title={t(locale, 'session.error.title')}
+          description={t(locale, 'session.error.desc')}
         />
         <div className="flex justify-center">
           <Link
             href="/grades/session"
             className={buttonVariants({ variant: 'secondary', size: 'sm' })}
           >
-            Повторить
+            {t(locale, 'btn.retry')}
           </Link>
         </div>
       </section>
     );
   }
 
-  return <SessionView data={data} feedUrl={await resolveFeedUrl(ctx)} />;
+  return <SessionView data={data} feedUrl={await resolveFeedUrl(ctx)} locale={locale} />;
 }
 
 /**
@@ -118,7 +126,15 @@ function aiHintDiscipline(data: SessionData): SessionData['exams'][number] | nul
   return data.exams.find((exam) => exam.status !== 'PASSED') ?? data.exams[0] ?? null;
 }
 
-function SessionView({ data, feedUrl }: { data: SessionData; feedUrl: string | null }) {
+function SessionView({
+  data,
+  feedUrl,
+  locale,
+}: {
+  data: SessionData;
+  feedUrl: string | null;
+  locale: Locale;
+}) {
   const hint = aiHintDiscipline(data);
   const isEmpty =
     data.exams.length === 0 && data.retakes.length === 0 && data.consultations.length === 0;
@@ -131,8 +147,8 @@ function SessionView({ data, feedUrl }: { data: SessionData; feedUrl: string | n
           className="text-xl font-bold tracking-heading sm:text-2xl"
         />
         <EmptyState
-          title="Сессия не запланирована"
-          description="Экзамены, зачёты и консультации появятся здесь, когда деканат опубликует расписание сессии."
+          title={t(locale, 'session.empty.title')}
+          description={t(locale, 'session.empty.desc')}
         />
       </section>
     );
@@ -157,7 +173,7 @@ function SessionView({ data, feedUrl }: { data: SessionData; feedUrl: string | n
           <Badge
             data-testid="session-countdown"
             status="accent"
-            title="Сколько осталось до первой контрольной сессии"
+            title={t(locale, 'session.countdown.title')}
           >
             {data.countdown.label}
           </Badge>
@@ -165,7 +181,7 @@ function SessionView({ data, feedUrl }: { data: SessionData; feedUrl: string | n
       </header>
 
       {/* ── Живая подписка на календарь (DIG-63) ─────────────────────────── */}
-      {feedUrl ? <CalendarSubscribeCard url={feedUrl} /> : null}
+      {feedUrl ? <CalendarSubscribeCard url={feedUrl} locale={locale} /> : null}
 
       {/* ── Подсказка AI: подготовка к ближайшему несданному экзамену ────── */}
       {hint ? (
@@ -176,18 +192,17 @@ function SessionView({ data, feedUrl }: { data: SessionData; feedUrl: string | n
         >
           <p className="flex items-center gap-2 text-sm font-semibold">
             <Sparkles aria-hidden="true" className="size-4 text-accent-ink" />
-            AI-ассистент
+            {t(locale, 'session.ai.title')}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Составьте план подготовки заранее — ассистент соберёт темы, формулы и материалы по
-            дисциплине.
+            {t(locale, 'session.ai.desc')}
           </p>
           <Link
             data-testid="ai-hint"
             href={`/ai-assistant?intent=exam-prep&discipline=${encodeURIComponent(hint.disciplineCode)}`}
             className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-accent-ink hover:underline"
           >
-            Подготовиться к экзамену по «{hint.disciplineName}»
+            {t(locale, 'session.ai.cta', { discipline: hint.disciplineName })}
           </Link>
         </div>
       ) : null}
@@ -195,17 +210,19 @@ function SessionView({ data, feedUrl }: { data: SessionData; feedUrl: string | n
       {/* ── Таймлайн экзаменов и зачётов ─────────────────────────────────── */}
       {data.exams.length > 0 ? (
         <div className="flex flex-col gap-3">
-          <h2 className="text-base font-extrabold tracking-heading">Экзамены и зачёты</h2>
-          <ExamTimeline exams={data.exams} />
+          <h2 className="text-base font-extrabold tracking-heading">
+            {t(locale, 'session.exams.title')}
+          </h2>
+          <ExamTimeline exams={data.exams} locale={locale} />
         </div>
       ) : null}
 
       {/* ── Пересдачи: запись в один клик ────────────────────────────────── */}
-      {data.retakes.length > 0 ? <RetakeList retakes={data.retakes} /> : null}
+      {data.retakes.length > 0 ? <RetakeList retakes={data.retakes} locale={locale} /> : null}
 
       {/* ── Консультации перед экзаменами ────────────────────────────────── */}
       {data.consultations.length > 0 ? (
-        <ConsultationList consultations={data.consultations} />
+        <ConsultationList consultations={data.consultations} locale={locale} />
       ) : null}
     </section>
   );

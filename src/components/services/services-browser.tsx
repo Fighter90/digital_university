@@ -9,14 +9,23 @@ import { Search } from 'lucide-react';
 import {
   CATEGORY_LABELS,
   matchService,
+  serviceCategoryLabel,
   servicesForRole,
   type ServiceCategory,
 } from '@/lib/services-catalog';
+import { t, type Locale } from '@/lib/i18n';
 import { Chip } from '@/components/ui/chip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ServiceCard } from './service-card';
 
-export function ServicesBrowser({ favoriteIds }: { favoriteIds: string[] }) {
+export function ServicesBrowser({
+  favoriteIds,
+  locale = 'ru',
+}: {
+  favoriteIds: string[];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<ServiceCategory | 'ALL'>('ALL');
 
@@ -37,8 +46,8 @@ export function ServicesBrowser({ favoriteIds }: { favoriteIds: string[] }) {
         <input
           data-testid="services-search"
           type="search"
-          aria-label="Поиск по каталогу"
-          placeholder="Найти сервис: справка, заявление…"
+          aria-label={t(locale, 'services.search.aria')}
+          placeholder={t(locale, 'services.search.placeholder')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="h-11 w-full rounded-button border border-border bg-card pl-10 pr-3 text-sm text-foreground shadow-soft outline-none transition-colors placeholder:text-muted-foreground focus:border-muted-foreground/40"
@@ -48,15 +57,15 @@ export function ServicesBrowser({ favoriteIds }: { favoriteIds: string[] }) {
       <div
         data-testid="services-categories"
         role="group"
-        aria-label="Категории сервисов"
+        aria-label={t(locale, 'services.categories.aria')}
         className="mt-3 flex gap-2 overflow-x-auto pb-1"
       >
         <Chip active={category === 'ALL'} onClick={() => setCategory('ALL')}>
-          Все
+          {t(locale, 'services.category.ALL')}
         </Chip>
         {(Object.keys(CATEGORY_LABELS) as ServiceCategory[]).map((key) => (
           <Chip key={key} active={category === key} onClick={() => setCategory(key)}>
-            {CATEGORY_LABELS[key]}
+            {serviceCategoryLabel(key, locale)}
           </Chip>
         ))}
       </div>
@@ -64,8 +73,8 @@ export function ServicesBrowser({ favoriteIds }: { favoriteIds: string[] }) {
       {visible.length === 0 ? (
         <EmptyState
           className="mt-4"
-          title="Ничего не найдено"
-          description="Попробуйте другой запрос или сбросьте категорию."
+          title={t(locale, 'services.browser.empty.title')}
+          description={t(locale, 'services.browser.empty.desc')}
         />
       ) : (
         <ul
@@ -74,7 +83,7 @@ export function ServicesBrowser({ favoriteIds }: { favoriteIds: string[] }) {
         >
           {visible.map((service) => (
             <li key={service.id}>
-              <ServiceCard service={service} query={query} isFavorite={favorites.has(service.id)} />
+              <ServiceCard service={service} query={query} isFavorite={favorites.has(service.id)} locale={locale} />
             </li>
           ))}
         </ul>

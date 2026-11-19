@@ -1,7 +1,10 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
 
 // DIG-35 — скелетон загрузки центра уведомлений: шапка, фильтры и лента строк.
-export default function NotificationsLoading() {
+export default async function NotificationsLoading() {
+  const locale = await getLocale();
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-8" aria-busy="true">
       <div className="flex items-start justify-between gap-3">

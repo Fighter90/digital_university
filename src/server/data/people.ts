@@ -18,7 +18,9 @@
 //    только у преподавателей — у сотрудника upcoming === null),
 //    null для неизвестного id.
 
-import { LESSON_KIND_LABELS } from '@/lib/dashboard-format';
+import { lessonKindLabel } from '@/lib/dashboard-format';
+import type { Locale } from '@/lib/i18n';
+import { enDisciplineName } from '@/lib/en-demo-content';
 import {
   findPersonById,
   PEOPLE,
@@ -95,8 +97,14 @@ export interface PersonCardData {
 /** ids каталога — стабилизирует контракт тестов и подсказки клиенту. */
 export const PEOPLE_DIRECTORY_IDS = PEOPLE.map((person) => person.id);
 
-const roomLabel = (room: string): string =>
-  room.trim().toLowerCase() === 'онлайн' ? 'онлайн' : `ауд. ${room.trim()}`;
+const roomLabel = (room: string, locale: Locale = 'ru'): string =>
+  room.trim().toLowerCase() === 'онлайн'
+    ? locale === 'en'
+      ? 'online'
+      : 'онлайн'
+    : locale === 'en'
+      ? `room ${room.trim()}`
+      : `ауд. ${room.trim()}`;
 
 /** Сшивка «имя преподавателя → дисциплины группы» + множество имён из пар. */
 function personalLinks(db: DataDb, ctx: DataCtx): Promise<Links> {
@@ -195,6 +203,8 @@ export async function getPersonCard(
   db: DataDb,
   ctx: DataCtx,
   id: string,
+  // DIG-89 — EN-рендер «Ближайших пар» по локали (дефолт ru — прежние строки).
+  locale: Locale = 'ru',
 ): Promise<PersonCardData | null> {
   const person = findPersonById(id);
   if (!person) return null;
@@ -237,12 +247,15 @@ export async function getPersonCard(
       .map((row) => ({
         id: row.id,
         dateKey: moscowDateKey(row.startsAt),
-        dateLabel: formatDayShort(row.startsAt),
+        dateLabel: formatDayShort(row.startsAt, locale),
         timeLabel: `${formatMoscowTime(row.startsAt)}–${formatMoscowTime(row.endsAt)}`,
-        disciplineName: row.disciplineName,
+        disciplineName:
+          locale === 'en'
+            ? enDisciplineName({ code: row.disciplineCode, name: row.disciplineName })
+            : row.disciplineName,
         kind: row.kind,
-        kindLabel: LESSON_KIND_LABELS[row.kind],
-        roomLabel: roomLabel(row.room),
+        kindLabel: lessonKindLabel(row.kind, locale),
+        roomLabel: roomLabel(row.room, locale),
         status: row.status,
       }));
   }

@@ -19,7 +19,7 @@ export function DpoTabs({
 }) {
   return (
     <nav
-      aria-label="Разделы дополнительного образования"
+      aria-label={t(locale, 'dpo.tabs.aria')}
       className="flex flex-wrap gap-2"
       data-testid="dpo-tabs"
     >

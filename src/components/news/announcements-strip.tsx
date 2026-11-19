@@ -7,26 +7,36 @@ import { Megaphone } from 'lucide-react';
 import { cn } from 'cn';
 
 import { formatNewsDate } from '@/lib/news-catalog';
+import { enNewsItem, enNewsSource } from '@/lib/en-demo-content';
 import { riseDelayStyle } from '@/lib/motion';
+import { t, type Locale } from '@/lib/i18n';
 import type { NewsCardView } from '@/server/data/news';
 
 export function AnnouncementsStrip({
   announcements,
   feedQuery,
+  locale = 'ru',
 }: {
   announcements: NewsCardView[];
   feedQuery: string;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
+  const stripLabel = t(locale, 'news.strip.title');
+  const importantLabel = t(locale, 'news.strip.badge');
+  const readLabel = t(locale, 'news.strip.read');
+  const unreadLabel = t(locale, 'news.strip.unreadAria');
+  const newLabel = t(locale, 'news.strip.new');
   if (announcements.length === 0) return null;
   return (
     <section
-      aria-label="Объявления деканата"
+      aria-label={stripLabel}
       data-testid="news-announcements"
       className="rounded-card border border-coral-200 bg-coral-50 p-3"
     >
       <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-extrabold tracking-heading text-coral-600">
         <Megaphone aria-hidden="true" className="size-4" />
-        Важно: объявления деканата
+        {stripLabel}
       </h2>
       <ul className="flex snap-x gap-3 overflow-x-auto pb-1">
         {announcements.map((item, index) => (
@@ -43,7 +53,7 @@ export function AnnouncementsStrip({
             >
               <span className="flex items-center gap-2">
                 <span className="rounded-pill bg-coral-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
-                  Важно
+                  {importantLabel}
                 </span>
                 {item.isRead ? (
                   <span
@@ -53,23 +63,25 @@ export function AnnouncementsStrip({
                       'text-[11px] font-semibold text-neutral-500',
                     )}
                   >
-                    Прочитано
+                    {readLabel}
                   </span>
                 ) : (
                   <span
-                    aria-label="Непрочитанное объявление"
+                    aria-label={unreadLabel}
                     className="flex items-center gap-1 text-[11px] font-semibold text-coral-600"
                   >
                     <span aria-hidden="true" className="size-2 rounded-pill bg-coral-600" />
-                    Новое
+                    {newLabel}
                   </span>
                 )}
               </span>
               <span className="line-clamp-2 text-sm font-semibold text-neutral-900">
-                {item.title}
+                {locale === 'en'
+                  ? enNewsItem(item.id)?.title ?? item.title
+                  : item.title}
               </span>
               <span className="text-[11px] uppercase tracking-wide text-neutral-500">
-                {formatNewsDate(item.publishedAt)} · {item.source}
+                {formatNewsDate(item.publishedAt, locale)} · {locale === 'en' ? enNewsSource(item.source) : item.source}
               </span>
             </Link>
           </li>

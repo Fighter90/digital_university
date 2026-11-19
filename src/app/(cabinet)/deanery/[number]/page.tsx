@@ -23,9 +23,12 @@ import { dataDb } from '@/server/data/db';
 import { NewTicketLink, TicketList } from '@/components/deanery/ticket-list';
 import { TicketChat } from '@/components/deanery/ticket-chat';
 import { TicketReplyForm } from '@/components/deanery/ticket-reply-form';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
 
 export default async function TicketChatPage({ params }: { params: Promise<{ number: string }> }) {
   const { number: rawNumber } = await params;
+  const locale = await getLocale();
   let number: string;
   try {
     number = normalizeTicketNumber(decodeURIComponent(rawNumber));
@@ -50,20 +53,20 @@ export default async function TicketChatPage({ params }: { params: Promise<{ num
         href="/deanery"
         className="mb-4 inline-block text-sm text-muted-foreground hover:text-foreground lg:hidden"
       >
-        ← Все обращения
+        {t(locale, 'deanery.backAll')}
       </Link>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         {/* Левая панель только на десктопе; на мобильном список — на /deanery. */}
         <aside data-testid="deanery-chat-aside" className="hidden flex-col gap-3 lg:flex">
-          <h2 className="text-base font-semibold">Мои обращения</h2>
-          <TicketList tickets={page.tickets} variant="aside" />
-          <NewTicketLink />
+          <h2 className="text-base font-semibold">{t(locale, 'deanery.detail.title')}</h2>
+          <TicketList tickets={page.tickets} variant="aside" locale={locale} />
+          <NewTicketLink locale={locale} />
         </aside>
 
         <div className="min-w-0">
-          <TicketChat chat={chat} />
-          <TicketReplyForm ticketNumber={chat.ticket.number} />
+          <TicketChat chat={chat} locale={locale} />
+          <TicketReplyForm ticketNumber={chat.ticket.number} locale={locale} />
         </div>
       </div>
     </section>

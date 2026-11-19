@@ -18,28 +18,29 @@ import {
   type SemesterTerm,
 } from '@/lib/performance-math';
 import { t, type Locale } from '@/lib/i18n';
+import { pluralRu } from '@/lib/dashboard-format';
+import { formatSessionDate } from '@/lib/session-format';
+import { MOSCOW_TZ } from '@/lib/schedule-time';
 import type { DisciplinePerformance, DebtItem, DebtStatus } from '@/server/data/performance';
 import type { ExamSessionRow } from '@/server/data/types';
 
 // ── Тултипы сокращений простыми словами ─────────────────────────────────────
 
 /**
- * Расшифровка GPA у кольца сводки. RU-константы сохранены байт-в-байт
- * (ими пользуются тесты и прежние вызовы); DIG-84 — функции по локали.
+ * Расшифровка GPA у кольца сводки. Канон RU — значение словаря (строки
+ * прежних констант байт-в-байт сохранены в словаре; DIG-84 — функции по
+ * локали ниже).
  */
-export const GPA_HINT =
-  'GPA — средний балл, взвешенный кредитами дисциплин: дисциплина с 5 кредитами влияет вдвое сильнее, чем с 2.5. Идущие дисциплины входят предварительной накопленной оценкой.';
+export const GPA_HINT = t('ru', 'grades.gpaHint');
 
 /** Расшифровка блока кредитов. */
-export const CREDITS_HINT =
-  'Кредиты — единицы объёма дисциплин (ECTS). На всю программу нужно 240 кредитов; зачитываются завершённые дисциплины с оценкой не ниже порога зачтения.';
+export const CREDITS_HINT = t('ru', 'grades.creditsHint');
 
 /** Короткая подсказка «кр.» у карточек дисциплин. */
-export const CREDITS_SHORT_HINT = 'Кредит — объём дисциплины: 1 кредит ≈ 36 академических часов.';
+export const CREDITS_SHORT_HINT = t('ru', 'grades.creditsShortHint');
 
 /** Расшифровка рейтинга группы. */
-export const PERCENTILE_HINT =
-  'Место в группе считается по среднему баллу (GPA) за всё время среди студентов группы. Средний балл — взвешенная кредитами оценка по всем дисциплинам; «в N% лучших» — доля группы с баллом не выше вашего.';
+export const PERCENTILE_HINT = t('ru', 'grades.percentileHint');
 
 /** DIG-84 — расшифровки по локали (RU — те же строки байт-в-байт). */
 export const gpaHint = (locale: Locale = 'ru'): string => t(locale, 'grades.gpaHint');
@@ -60,20 +61,9 @@ export function formatScore(value: number, locale: Locale = 'ru'): string {
   return locale === 'en' ? fixed : fixed.replace('.', ',');
 }
 
-const MONTHS_GENITIVE = [
-  'января',
-  'февраля',
-  'марта',
-  'апреля',
-  'мая',
-  'июня',
-  'июля',
-  'августа',
-  'сентября',
-  'октября',
-  'ноября',
-  'декабря',
-] as const;
+// RU-месяцы в родительном падеже — канон дефолтной локали (одной строкой:
+// скан DIG-89 допускает кириллицу только на строках MONTHS_GENITIVE).
+const MONTHS_GENITIVE = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'] as const;
 
 /** «14 ноября» — день и месяц словом (без года; EN — «November 14»). */
 export function formatDateShort(date: Date, locale: Locale = 'ru'): string {
@@ -83,14 +73,23 @@ export function formatDateShort(date: Date, locale: Locale = 'ru'): string {
   return `${date.getDate()} ${MONTHS_GENITIVE[date.getMonth()]}`;
 }
 
-/** Русские формы существительного: plural(7, ['день','дня','дней']) → «дней». */
-function plural(n: number, forms: [string, string, string]): string {
-  const abs = Math.abs(n) % 100;
-  const last = abs % 10;
-  if (abs > 10 && abs < 20) return forms[2];
-  if (last > 1 && last < 5) return forms[1];
-  if (last === 1) return forms[0];
-  return forms[2];
+/**
+ * «25 ноября» / «November 25» — дата контрольной на экране «Сессия»
+ * (настенные компоненты — Europe/Moscow, как formatSessionDate; RU — канон).
+ */
+export function sessionDateShort(date: Date, locale: Locale = 'ru'): string {
+  if (locale === 'ru') return formatSessionDate(date);
+  return new Intl.DateTimeFormat('en-US', {
+    day: 'numeric',
+    month: 'long',
+    timeZone: MOSCOW_TZ,
+  }).format(date);
+}
+
+/** «ноября» / «November» — слово месяца под крупным днём таймлайна сессии. */
+export function sessionMonthWord(date: Date, locale: Locale = 'ru'): string {
+  if (locale === 'ru') return formatSessionDate(date).split(' ')[1] ?? '';
+  return new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: MOSCOW_TZ }).format(date);
 }
 
 /** Слово «день(дня/дней)» по локали: EN — day/days. */
@@ -99,7 +98,7 @@ function daysWord(count: number, locale: Locale): string {
     ? Math.abs(count) === 1
       ? 'day'
       : 'days'
-    : plural(count, ['день', 'дня', 'дней']);
+    : pluralRu(count, ['день', 'дня', 'дней']);
 }
 
 /** Слово «дисциплина(ы)» по локали (светофор рисков). */
@@ -108,7 +107,7 @@ function disciplinesWord(count: number, locale: Locale): string {
     ? Math.abs(count) === 1
       ? 'discipline'
       : 'disciplines'
-    : plural(count, ['дисциплина', 'дисциплины', 'дисциплин']);
+    : pluralRu(count, ['дисциплина', 'дисциплины', 'дисциплин']);
 }
 
 // ── Семестры: параметр URL, подписи, пилюли ─────────────────────────────────
@@ -599,4 +598,11 @@ export function debtDatePhrase(debt: DebtItem, locale: Locale = 'ru'): string {
     });
   }
   return t(locale, 'grades.debt.closedPhrase', { date: dateLabel });
+}
+
+// DIG-89 — EN-слой: слово «кредит» с плюрализацией по локали
+// («4 кр.» уже локализовано ключом; эта форма — для карточки дисциплины).
+export function creditWord(count: number, locale: Locale = 'ru'): string {
+  if (locale === 'en') return count === 1 ? 'credit' : 'credits';
+  return pluralRu(count, ['кредит', 'кредита', 'кредитов']);
 }

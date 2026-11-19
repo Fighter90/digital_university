@@ -5,6 +5,7 @@
 // из URL ничего не приходит (IDOR невозможен по построению). Каждая задача
 // ведёт ровно туда, где её выполнить; ручные задачи закрываются отметкой
 // прямо на экране; пустой список — «Все дела сделаны 🎉».
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
@@ -19,7 +20,11 @@ import { ErrorState } from '@/components/ui/error-state';
 import { TasksView } from '@/components/tasks/tasks-view';
 import { SectionTitle } from '@/components/shell/section-title';
 
-export const metadata = { title: 'Задачи — Цифровой деканат' };
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.tasks') };
+}
 
 export default function TasksPage() {
   return <TasksContent />;
@@ -52,8 +57,8 @@ async function TasksContent() {
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6 md:py-8">
         <SectionTitle href="/tasks" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <ErrorState
-          title="Задачи не загрузились"
-          description="Обновите страницу — если ошибка повторится, сообщите в деканат."
+          title={t(locale, 'tasks.errorTitle')}
+          description={t(locale, 'tasks.errorDesc')}
         />
         <div className="flex justify-center">
           <Link href="/tasks" className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
@@ -68,18 +73,15 @@ async function TasksContent() {
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8">
       <header className="flex animate-rise flex-col gap-2">
         <SectionTitle href="/tasks" className="text-xl font-bold tracking-heading sm:text-2xl" />
-        <p className="max-w-prose text-sm text-muted-foreground">
-          Единый список дел из всех разделов: заявки на доработке, дедлайны курсов, допуски и
-          пересдачи, письма деканата. Заявка остаётся объектом в «Заявках» — здесь только действия.
-        </p>
+        <p className="max-w-prose text-sm text-muted-foreground">{t(locale, 'tasks.subtitle')}</p>
         {data.openCount > 0 ? (
           <p data-testid="tasks-header-count" className="text-sm text-muted-foreground">
-            Открытых задач: <span className="font-semibold text-foreground">{data.openCount}</span>
+            {t(locale, 'tasks.openCount', { count: data.openCount })}
           </p>
         ) : null}
       </header>
 
-      <TasksView data={data} />
+      <TasksView data={data} locale={locale} />
     </section>
   );
 }

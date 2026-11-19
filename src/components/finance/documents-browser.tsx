@@ -10,13 +10,17 @@ import { Download, FileSignature, FileText, ReceiptText, ScrollText } from 'luci
 import type { LucideIcon } from 'lucide-react';
 
 import {
-  FINANCE_DOC_FILTER_LABELS,
   FINANCE_DOC_FILTERS,
-  FINANCE_DOC_KIND_PLURAL,
   formatFinanceDateFull,
+  financeDocKindPluralLabel,
+  financeFilterEmptyLabel,
+  financeFilterLabel,
+  financeDocumentTitle,
   type FinanceDocFilter,
   type FinanceDocument,
 } from '@/lib/finance-catalog';
+import { t, type Locale } from '@/lib/i18n';
+import { requestNumberLabel } from '@/lib/requests-view';
 import { Chip } from '@/components/ui/chip';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -28,7 +32,14 @@ const KIND_ICONS: Record<FinanceDocument['kind'], LucideIcon> = {
   INVOICE: FileText,
 };
 
-export function FinanceDocumentsBrowser({ documents }: { documents: FinanceDocument[] }) {
+export function FinanceDocumentsBrowser({
+  documents,
+  locale = 'ru',
+}: {
+  documents: FinanceDocument[];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const [filter, setFilter] = useState<FinanceDocFilter>('ALL');
 
   const visible = useMemo(
@@ -41,12 +52,12 @@ export function FinanceDocumentsBrowser({ documents }: { documents: FinanceDocum
       <div
         data-testid="finance-doc-filter"
         role="group"
-        aria-label="Фильтр документов по виду"
+        aria-label={t(locale, 'finance.filter.aria')}
         className="flex gap-2 overflow-x-auto pb-1"
       >
         {FINANCE_DOC_FILTERS.map((kind) => (
           <Chip key={kind} active={filter === kind} onClick={() => setFilter(kind)}>
-            {FINANCE_DOC_FILTER_LABELS[kind]}
+            {financeFilterLabel(kind, locale)}
           </Chip>
         ))}
       </div>
@@ -55,8 +66,8 @@ export function FinanceDocumentsBrowser({ documents }: { documents: FinanceDocum
         <EmptyState
           className="mt-4"
           icon={FileText}
-          title="Таких документов нет"
-          description={`В вашем наборе нет документов вида «${FINANCE_DOC_FILTER_LABELS[filter]}».`}
+          title={t(locale, 'finance.filter.empty.title')}
+          description={financeFilterEmptyLabel(filter === 'ALL' ? 'CONTRACT' : filter, locale)}
         />
       ) : (
         <ul data-testid="finance-doc-list" className="mt-3 flex flex-col gap-2">
@@ -75,9 +86,11 @@ export function FinanceDocumentsBrowser({ documents }: { documents: FinanceDocum
                   <Icon className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{doc.title}</p>
+                  <p className="truncate text-sm font-semibold">
+                    {financeDocumentTitle(doc, locale)}
+                  </p>
                   <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    № {doc.number}
+                    № {locale === 'en' ? requestNumberLabel(doc.number, 'en') : doc.number}
                     <span aria-hidden="true"> · </span>
                     <time dateTime={doc.date.toISOString()}>{formatFinanceDateFull(doc.date)}</time>
                     <span aria-hidden="true"> · </span>
@@ -91,9 +104,9 @@ export function FinanceDocumentsBrowser({ documents }: { documents: FinanceDocum
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-button border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-soft transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"
                 >
                   <Download aria-hidden="true" className="size-3.5" />
-                  Скачать
+                  {t(locale, 'finance.download')}
                   <span className="sr-only">
-                    {`${FINANCE_DOC_KIND_PLURAL[doc.kind]}: ${doc.title}`}
+                    {`${financeDocKindPluralLabel(doc.kind, locale)}: ${financeDocumentTitle(doc, locale)}`}
                   </span>
                 </a>
               </li>

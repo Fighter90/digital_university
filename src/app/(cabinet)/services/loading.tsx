@@ -1,10 +1,17 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
 
 // DIG-29 — скелетон загрузки каталога сервисов (агрегат getServicesPage
 // появляется после сессии). Единица сетки совпадает с реальной страницей.
-export default function ServicesLoading() {
+export default async function ServicesLoading() {
+  const locale = await getLocale();
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8" aria-busy="true">
+    <section
+      className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8"
+      aria-busy="true"
+      aria-label={t(locale, 'loading.services')}
+    >
       <Skeleton className="h-7 w-56" />
       <Skeleton className="mt-2 h-4 w-72" />
 

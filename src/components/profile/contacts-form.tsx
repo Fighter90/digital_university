@@ -79,7 +79,7 @@ export function ContactsForm({
 
       <div className="flex flex-col gap-1">
         <label htmlFor="contacts-phone" className="text-sm font-medium text-neutral-900">
-          Телефон
+          {t(locale, 'profile.contacts.phone')}
         </label>
         <input
           id="contacts-phone"
@@ -95,14 +95,14 @@ export function ContactsForm({
       <div className="flex flex-col divide-y divide-neutral-100">
         <VisibilityField
           name="emailVisibleToStaff"
-          label="Email виден преподавателям"
+          label={t(locale, 'profile.contacts.emailVisible')}
           defaultChecked={emailVisibleToStaff}
           checked={emailVisible}
           onChange={setEmailVisible}
         />
         <VisibilityField
           name="phoneVisibleToStaff"
-          label="Телефон виден преподавателям"
+          label={t(locale, 'profile.contacts.phoneVisible')}
           defaultChecked={phoneVisibleToStaff}
           checked={phoneVisible}
           onChange={setPhoneVisible}
@@ -115,7 +115,7 @@ export function ContactsForm({
         </Button>
         {state?.ok && (
           <p role="status" className="text-sm font-medium text-success-ink">
-            Контакты сохранены
+            {t(locale, 'profile.contacts.saved')}
           </p>
         )}
         {state && !state.ok && state.error && (

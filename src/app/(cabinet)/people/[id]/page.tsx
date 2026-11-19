@@ -27,7 +27,16 @@ import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-export const metadata = { title: 'Карточка — Справочник — Цифровой деканат' };
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
+import { enDisciplineName } from '@/lib/en-demo-content';
+import { personEnFields } from '@/lib/people-catalog';
+
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.person') };
+}
 
 export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: rawId } = await params;
@@ -39,11 +48,26 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   } catch {
     notFound();
   }
-  const ctx = await requireDataCtx(`/people/${rawId}`);
+  const [ctx, locale] = await Promise.all([requireDataCtx(`/people/${rawId}`), getLocale()]);
 
-  const card = await getPersonCard(dataDb, ctx, id);
+  const card = await getPersonCard(dataDb, ctx, id, locale);
   if (!card) notFound();
-  const { person, upcoming } = card;
+  const { person: basePerson, upcoming } = card;
+  // DIG-89 — EN-рендер: должность/подразделение/часы/программа по id записи.
+  const enFields = locale === 'en' ? personEnFields(basePerson) : null;
+  const person = enFields
+    ? {
+        ...basePerson,
+        position: enFields.position,
+        department: enFields.department,
+        consultationHours: enFields.consultationHours ?? basePerson.consultationHours,
+        program: enFields.program ?? basePerson.program,
+        disciplines: basePerson.disciplines.map((d) => ({
+          ...d,
+          name: enDisciplineName({ code: d.code, name: d.name }),
+        })),
+      }
+    : basePerson;
   const isTeacher = person.kind === 'TEACHER';
 
   return (
@@ -53,7 +77,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
-        Справочник
+        {t(locale, 'people.back')}
       </Link>
 
       {/* ── Шапка: аватар-инициалы, ФИО, должность, подразделение ─────────── */}
@@ -70,17 +94,17 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
               </h1>
               {card.isMyManager ? (
                 <Badge status="accent" data-testid="person-manager-badge">
-                  Ваш менеджер
+                  {t(locale, 'people.myManager')}
                 </Badge>
               ) : null}
-              {card.isMyTeacher ? <Badge status="info">Ведёт у вас</Badge> : null}
+              {card.isMyTeacher ? <Badge status="info">{t(locale, 'people.teachesYou')}</Badge> : null}
             </div>
             <p className="mt-1 text-sm text-neutral-700">{person.position}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{person.department}</p>
             <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <Badge status="neutral">{isTeacher ? 'Преподаватель' : 'Сотрудник деканата'}</Badge>
+              <Badge status="neutral">{isTeacher ? t(locale, 'people.kind.TEACHER') : t(locale, 'people.kind.STAFF')}</Badge>
               {person.isProgramManager && person.program ? (
-                <span>Менеджер программы «{person.program}»</span>
+                <span>{t(locale, 'people.programManagerOf', { program: locale === 'en' && enFields?.program ? enFields.program : person.program })}</span>
               ) : null}
             </p>
           </div>
@@ -94,7 +118,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             className="inline-flex items-center gap-1.5 rounded-button bg-foreground px-4 py-2.5 text-sm font-semibold text-background shadow-soft transition-colors hover:bg-neutral-700"
           >
             <Mail aria-hidden="true" className="size-4" />
-            Написать письмо
+            {t(locale, 'people.writeLetter')}
           </a>
           {isTeacher ? (
             <span className="inline-flex flex-col">
@@ -108,7 +132,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                 className="cursor-not-allowed opacity-60"
               >
                 <CalendarClock aria-hidden="true" className="size-4" />
-                Записаться на консультацию
+                {t(locale, 'people.bookConsultation')}
               </Button>
             </span>
           ) : null}
@@ -119,8 +143,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             className="mt-2 text-xs text-muted-foreground"
             data-testid="consultation-stub-note"
           >
-            Запись на консультацию появится в ближайшем обновлении кабинета — пока напишите
-            преподавателю письмо или приходите в часы консультаций.
+            {t(locale, 'people.consultationStub')}
           </p>
         ) : null}
       </header>
@@ -128,7 +151,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       {/* ── Контакты ──────────────────────────────────────────────────────── */}
       <section aria-labelledby="person-contacts-title">
         <h2 id="person-contacts-title" className="text-lg font-extrabold tracking-heading">
-          Контакты
+          {t(locale, 'people.contacts')}
         </h2>
         <div
           data-testid="person-contacts"
@@ -143,7 +166,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                 <Mail className="size-4" />
               </span>
               <span className="min-w-0">
-                <span className="block text-xs text-muted-foreground">Почта</span>
+                <span className="block text-xs text-muted-foreground">{t(locale, 'people.email')}</span>
                 <a
                   href={`mailto:${person.email}`}
                   className="font-medium text-foreground underline-offset-2 hover:underline"
@@ -161,8 +184,8 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                   <DoorOpen className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">Кабинет</span>
-                  <span className="font-medium text-foreground">ауд. {person.room}</span>
+                  <span className="block text-xs text-muted-foreground">{t(locale, 'people.room')}</span>
+                  <span className="font-medium text-foreground">{t(locale, 'people.roomShort', { room: person.room })}</span>
                 </span>
               </li>
             ) : null}
@@ -175,7 +198,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                   <Phone className="size-4" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-xs text-muted-foreground">Телефон</span>
+                  <span className="block text-xs text-muted-foreground">{t(locale, 'people.phone')}</span>
                   <a
                     href={`tel:${person.phone.replace(/[^\d+]/g, '')}`}
                     className="font-medium text-foreground underline-offset-2 hover:underline"
@@ -193,7 +216,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       {person.consultationHours ? (
         <section aria-labelledby="person-consultation-title">
           <h2 id="person-consultation-title" className="text-lg font-extrabold tracking-heading">
-            Часы консультаций
+            {t(locale, 'people.consultationHours')}
           </h2>
           <div
             data-testid="person-consultation"
@@ -214,7 +237,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       {person.disciplines.length > 0 ? (
         <section aria-labelledby="person-disciplines-title">
           <h2 id="person-disciplines-title" className="text-lg font-extrabold tracking-heading">
-            Дисциплины
+            {t(locale, 'people.disciplines')}
           </h2>
           <ul data-testid="person-disciplines" className="mt-3 flex flex-wrap gap-2">
             {person.disciplines.map((discipline) => {
@@ -228,7 +251,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
                   <span className="font-medium text-foreground">{discipline.name}</span>
                   {isMine ? (
                     <span className="rounded-pill bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent-ink">
-                      ваша
+                      {t(locale, 'people.disciplineYours')}
                     </span>
                   ) : null}
                 </li>
@@ -249,14 +272,14 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             data-testid="person-upcoming-title"
             className="text-lg font-extrabold tracking-heading"
           >
-            Ближайшие пары
+            {t(locale, 'people.upcoming')}
           </h2>
           {upcoming.length === 0 ? (
             <p
               data-testid="person-upcoming-empty"
               className="mt-3 rounded-card border border-dashed border-border bg-card p-5 text-sm text-muted-foreground shadow-soft"
             >
-              Ближайших пар с этим преподавателем в расписании вашей группы нет.
+              {t(locale, 'people.upcoming.empty')}
             </p>
           ) : (
             <ul data-testid="person-upcoming" className="mt-3 flex flex-col gap-2">
@@ -289,12 +312,12 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
         <span>
-          Данные справочника вымышленные. Если контакты изменились, сообщите в деканат —{' '}
+          {t(locale, 'people.disclaimer')}{' '}
           <Link
             href="/deanery"
             className="inline-flex items-center gap-0.5 font-semibold text-coral-600 hover:text-coral-500"
           >
-            через обращение
+            {t(locale, 'people.disclaimer.link')}
             <ArrowUpRight aria-hidden="true" className="size-3.5" />
           </Link>
           .

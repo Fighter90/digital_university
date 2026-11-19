@@ -11,10 +11,12 @@ import { Search } from 'lucide-react';
 
 import {
   matchPerson,
-  PEOPLE_FILTER_LABELS,
+  peopleFilterLabel,
+  personEnFields,
   splitHighlight,
   type PeopleFilter,
 } from '@/lib/people-catalog';
+import { t, type Locale } from '@/lib/i18n';
 import type { PersonListEntry } from '@/server/data/people';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -26,11 +28,13 @@ export interface PeopleBrowserProps {
   people: PersonListEntry[];
   /** Студенту — персональные пометки; сотруднику — нет. */
   showPersonal: boolean;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 const FILTER_ORDER: PeopleFilter[] = ['MY_TEACHERS', 'MY_DEANERY', 'ALL'];
 
-export function PeopleBrowser({ people, showPersonal }: PeopleBrowserProps) {
+export function PeopleBrowser({ people, showPersonal, locale = 'ru' }: PeopleBrowserProps) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PeopleFilter>('ALL');
 
@@ -56,8 +60,8 @@ export function PeopleBrowser({ people, showPersonal }: PeopleBrowserProps) {
         <input
           data-testid="people-search"
           type="search"
-          aria-label="Поиск по справочнику"
-          placeholder="ФИО, дисциплина или подразделение…"
+          aria-label={t(locale, 'people.search.aria')}
+          placeholder={t(locale, 'people.search.placeholder')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="h-11 w-full rounded-button border border-border bg-card pl-10 pr-3 text-sm text-foreground shadow-soft outline-none transition-colors placeholder:text-muted-foreground focus:border-muted-foreground/40"
@@ -67,7 +71,7 @@ export function PeopleBrowser({ people, showPersonal }: PeopleBrowserProps) {
       <div
         data-testid="people-filters"
         role="group"
-        aria-label="Быстрые фильтры справочника"
+        aria-label={t(locale, 'people.filters.aria')}
         className="mt-3 flex gap-2 overflow-x-auto pb-1"
       >
         {FILTER_ORDER.map((key) => (
@@ -75,9 +79,9 @@ export function PeopleBrowser({ people, showPersonal }: PeopleBrowserProps) {
             key={key}
             active={filter === key}
             onClick={() => setFilter(key)}
-            aria-label={PEOPLE_FILTER_LABELS[key]}
+            aria-label={peopleFilterLabel(key, locale)}
           >
-            {PEOPLE_FILTER_LABELS[key]}
+            {peopleFilterLabel(key, locale)}
           </Chip>
         ))}
       </div>
@@ -85,8 +89,8 @@ export function PeopleBrowser({ people, showPersonal }: PeopleBrowserProps) {
       {visible.length === 0 ? (
         <EmptyState
           className="mt-4"
-          title="Никого не нашлось"
-          description="Попробуйте другое имя, дисциплину или сбросьте фильтр."
+          title={t(locale, 'people.browser.empty.title')}
+          description={t(locale, 'people.browser.empty.desc')}
         />
       ) : (
         <ul data-testid="people-list" className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -97,7 +101,7 @@ export function PeopleBrowser({ people, showPersonal }: PeopleBrowserProps) {
               className="animate-rise"
               style={riseDelayStyle(index)}
             >
-              <PersonListItem person={person} query={query} showPersonal={showPersonal} />
+              <PersonListItem person={person} query={query} showPersonal={showPersonal} locale={locale} />
             </li>
           ))}
         </ul>
@@ -110,11 +114,24 @@ function PersonListItem({
   person,
   query,
   showPersonal,
+  locale = 'ru',
 }: {
   person: PersonListEntry;
   query: string;
   showPersonal: boolean;
+  locale?: Locale;
 }) {
+  // DIG-89 — EN-рендер: должность/подразделение по id записи справочника.
+  const enFields =
+    locale === 'en'
+      ? personEnFields({
+          id: person.id,
+          position: person.position,
+          department: person.department,
+          consultationHours: null,
+          program: null,
+        } as never)
+      : null;
   const nameChunks = splitHighlight(person.fullName, query);
   const myDisciplines = showPersonal ? person.myDisciplines : [];
 
@@ -126,14 +143,14 @@ function PersonListItem({
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <LinkName personId={person.id} chunks={nameChunks} />
             {showPersonal && person.isMyManager ? (
-              <Badge status="accent">Ваш менеджер</Badge>
+              <Badge status="accent">{t(locale, 'people.myManager')}</Badge>
             ) : null}
           </div>
-          <p className="mt-0.5 text-sm text-neutral-700">{person.position}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{person.department}</p>
+          <p className="mt-0.5 text-sm text-neutral-700">{enFields ? enFields.position : person.position}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{enFields ? enFields.department : person.department}</p>
           {myDisciplines.length > 0 ? (
             <p className="mt-2 text-xs text-muted-foreground" data-testid="person-my-disciplines">
-              <span className="font-semibold text-foreground">Ваши дисциплины:</span>{' '}
+              <span className="font-semibold text-foreground">{t(locale, 'people.yourDisciplines')}</span>{' '}
               {myDisciplines.join(', ')}
             </p>
           ) : null}

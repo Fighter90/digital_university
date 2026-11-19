@@ -13,15 +13,14 @@ import { t, type Locale } from '@/lib/i18n';
 
 import { createFeedbackAction, type FeedbackActionState } from '@/server/actions/feedback';
 import {
-  ANONYMOUS_EXPLANATION_OFF,
-  ANONYMOUS_EXPLANATION_ON,
   FEEDBACK_KINDS,
-  FEEDBACK_KIND_LABELS,
-  FEEDBACK_RESPONSE_PROMISE,
   FEEDBACK_TARGETS,
-  FEEDBACK_TARGET_LABELS,
   MAX_FEEDBACK_ATTACHMENT_BYTES,
   MAX_FEEDBACK_ATTACHMENTS,
+  feedbackAnonymousHint,
+  feedbackResponsePromise,
+  feedbackTargetLabel,
+  feedbackTypeLabel,
 } from '@/lib/feedback';
 import type { FeedbackKind, FeedbackTarget } from '@/server/data/types';
 
@@ -38,13 +37,13 @@ export function FeedbackComposer({ locale = 'ru' }: { locale?: Locale }) {
   return (
     <section
       data-testid="feedback-composer"
-      aria-label="Новое обращение"
+      aria-label={t(locale, 'feedback.compose.aria')}
       className="flex min-w-0 flex-col gap-3"
     >
       <h2 id="new-feedback" className="text-base font-semibold">
-        Новое обращение
+        {t(locale, 'feedback.compose.title')}
       </h2>
-      <p className="text-xs text-muted-foreground">{FEEDBACK_RESPONSE_PROMISE}</p>
+      <p className="text-xs text-muted-foreground">{feedbackResponsePromise(locale)}</p>
 
       <form
         action={formAction}
@@ -52,7 +51,7 @@ export function FeedbackComposer({ locale = 'ru' }: { locale?: Locale }) {
         className="flex flex-col gap-3 rounded-card border border-border bg-card p-4 shadow-soft"
       >
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Тип обращения</span>
+          <span className="font-medium">{t(locale, 'feedback.compose.type')}</span>
           <select
             name="kind"
             data-testid="feedback-kind"
@@ -61,14 +60,14 @@ export function FeedbackComposer({ locale = 'ru' }: { locale?: Locale }) {
           >
             {FEEDBACK_KINDS.map((value: FeedbackKind) => (
               <option key={value} value={value}>
-                {FEEDBACK_KIND_LABELS[value]}
+                {feedbackTypeLabel(value, locale)}
               </option>
             ))}
           </select>
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Кому</span>
+          <span className="font-medium">{t(locale, 'feedback.compose.target')}</span>
           <select
             name="target"
             data-testid="feedback-target"
@@ -77,29 +76,31 @@ export function FeedbackComposer({ locale = 'ru' }: { locale?: Locale }) {
           >
             {FEEDBACK_TARGETS.map((value: FeedbackTarget) => (
               <option key={value} value={value}>
-                {FEEDBACK_TARGET_LABELS[value]}
+                {feedbackTargetLabel(value, locale)}
               </option>
             ))}
           </select>
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Текст обращения</span>
+          <span className="font-medium">{t(locale, 'feedback.compose.text')}</span>
           <textarea
             name="text"
             data-testid="feedback-text"
             rows={4}
             required
             maxLength={2000}
-            placeholder="Что предложить, что исправить или за что поблагодарить — чем конкретнее, тем быстрее решение"
+            placeholder={t(locale, 'feedback.compose.placeholder')}
             className="rounded-button border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-coral-600"
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">
-            Вложения (до {MAX_FEEDBACK_ATTACHMENTS} файлов, каждый до{' '}
-            {Math.round(MAX_FEEDBACK_ATTACHMENT_BYTES / (1024 * 1024))} МБ)
+            {t(locale, 'feedback.compose.attachments', {
+              files: MAX_FEEDBACK_ATTACHMENTS,
+              size: Math.round(MAX_FEEDBACK_ATTACHMENT_BYTES / (1024 * 1024)),
+            })}
           </span>
           <input
             type="file"
@@ -138,10 +139,10 @@ export function FeedbackComposer({ locale = 'ru' }: { locale?: Locale }) {
                 }`}
               />
             </span>
-            Анонимно
+            {t(locale, 'feedback.anon.label')}
           </label>
           <p data-testid="feedback-anonymous-note" className="text-xs text-muted-foreground">
-            {anonymous ? ANONYMOUS_EXPLANATION_ON : ANONYMOUS_EXPLANATION_OFF}
+            {feedbackAnonymousHint(anonymous, locale)}
           </p>
         </div>
 
