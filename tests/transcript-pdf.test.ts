@@ -110,6 +110,74 @@ describe('transcript-pdf: модель строк', () => {
   });
 });
 
+describe('DIG-84 — transcript-pdf: EN-локаль', () => {
+  const enData: TranscriptData = {
+    ...data,
+    semesters: [
+      {
+        ...data.semesters[0]!,
+        label: 'Fall semester 2026/27',
+        disciplines: data.semesters[0]!.disciplines.map((discipline) => ({
+          ...discipline,
+          controlType: 'Exam',
+        })),
+      },
+    ],
+  };
+
+  it('строки EN-выписки: заголовок, итоги и проверка по-английски', () => {
+    const lines = transcriptLines(enData, {
+      now: NOW,
+      code: 'ABCD-EFGH-JKLM-NPQR',
+      verifyUrl: VERIFY_URL,
+      locale: 'en',
+    });
+    const text = lines.join('\n');
+    expect(text).toContain('Academic transcript');
+    expect(text).toContain('Digital Deanery (demonstration university)');
+    expect(text).toContain('Concept entry for the hackathon. All data is fictional.');
+    expect(text).toContain('Student: Анна Ковалёва');
+    expect(text).toContain('Group: ПИ-21');
+    expect(text).toContain('Gradebook number: 20231234');
+    expect(text).toContain('Issue date: 12.11.2026');
+    expect(text).toContain('Discipline');
+    expect(text).toContain('Fall semester 2026/27');
+    expect(text).toContain('Exam');
+    expect(text).toContain('Semester average: 30.82   Credits: 0 of 18');
+    expect(text).toContain('Overall GPA: 81.22');
+    expect(text).toContain('Credits earned: 9 of 240');
+    expect(text).toContain('Verification code: ABCD-EFGH-JKLM-NPQR');
+    expect(text).toContain('Verify via the link or QR code');
+    expect(text).toContain('Document authenticity verification');
+  });
+
+  it('каждый символ EN-строк покрыт глифами векторного шрифта', () => {
+    const lines = transcriptLines(enData, {
+      now: NOW,
+      code: newVerificationCode(() => 0.5),
+      verifyUrl: VERIFY_URL,
+      locale: 'en',
+    });
+    const missing = new Set<string>();
+    for (const line of lines) {
+      for (const ch of line) {
+        if (!hasGlyphFor(ch)) missing.add(ch);
+      }
+    }
+    expect([...missing]).toEqual([]);
+  });
+
+  it('локаль по умолчанию — ru: прежние строки байт-в-байт', () => {
+    const lines = transcriptLines(data, {
+      now: NOW,
+      code: 'ABCD-EFGH-JKLM-NPQR',
+      verifyUrl: VERIFY_URL,
+    });
+    expect(lines[0]).toBe('Выписка из зачётной книжки');
+    expect(lines.join('\n')).toContain('Проверка подлинности документа');
+  });
+});
+
 describe('transcript-pdf: код проверки', () => {
   it('128 бит энтропии: 32 символа base32 в группах по 4', () => {
     const code = newVerificationCode(() => 0.123);

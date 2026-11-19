@@ -6,6 +6,7 @@
 // внутри нет, клиентский JS не нужен.
 import { formatRequestDate } from '@/lib/request-labels';
 import { timelineEventText, type RequestTimelineEvent } from '@/lib/request-card-view';
+import type { Locale } from '@/lib/i18n';
 
 function dotClass(role: RequestTimelineEvent['actorRole']): string {
   if (role === 'STAFF') return 'border-coral-600 bg-coral-100';
@@ -13,7 +14,14 @@ function dotClass(role: RequestTimelineEvent['actorRole']): string {
   return 'border-border bg-muted'; // автоматика (создание мгновенной заявки)
 }
 
-export function RequestHistoryTimeline({ events }: { events: readonly RequestTimelineEvent[] }) {
+export function RequestHistoryTimeline({
+  events,
+  locale = 'ru',
+}: {
+  events: readonly RequestTimelineEvent[];
+  /** DIG-84 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   return (
     <ol
       data-testid="request-history"
@@ -28,11 +36,11 @@ export function RequestHistoryTimeline({ events }: { events: readonly RequestTim
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
             <span className="text-sm font-medium text-foreground">{event.actorName}</span>
             <span data-testid="request-timestamp" className="text-xs text-muted-foreground">
-              {formatRequestDate(event.createdAt)}
+              {formatRequestDate(event.createdAt, locale)}
             </span>
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {timelineEventText(event)}
+            {timelineEventText(event, locale)}
             {event.comment ? ` — ${event.comment}` : ''}
           </p>
         </li>

@@ -16,6 +16,7 @@ import { Sparkles } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { formatDateShort, formatScore } from '@/lib/performance-format';
+import { t, type Locale } from '@/lib/i18n';
 import type { GradeInsight, InsightPoint } from '@/lib/grade-insight';
 import { cn } from '@/lib/utils';
 
@@ -36,7 +37,14 @@ function pointGeometry(points: InsightPoint[], index: number): { x: number; y: n
   return { x, y };
 }
 
-export function GradeInsightCard({ insight }: { insight: GradeInsight }) {
+export function GradeInsightCard({
+  insight,
+  locale = 'ru',
+}: {
+  insight: GradeInsight;
+  /** DIG-84 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   // По умолчанию раскрыта последняя точка — актуальный разбор без действий.
   const [active, setActive] = useState(insight.points.length - 1);
   const points = insight.points;
@@ -46,6 +54,7 @@ export function GradeInsightCard({ insight }: { insight: GradeInsight }) {
 
   const currentDate = new Date(currentPoint.dateISO);
   const activeIndex = points.indexOf(currentPoint);
+  const outOf100 = t(locale, 'insight.outOf100');
 
   return (
     <section
@@ -56,12 +65,12 @@ export function GradeInsightCard({ insight }: { insight: GradeInsight }) {
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-1.5 text-base font-extrabold tracking-heading">
           <Sparkles aria-hidden="true" className="size-4 text-accent-ink" />
-          Что изменилось
+          {t(locale, 'insight.title')}
         </h2>
-        <Badge status="accent">AI-анализ</Badge>
+        <Badge status="accent">{t(locale, 'insight.badge')}</Badge>
       </div>
       <p className="mt-1 text-[11px] text-muted-foreground">
-        Демо-анализ по вашим оценкам {insight.semesterLabel.toLowerCase()}, без внешних сервисов.
+        {t(locale, 'insight.subtitle', { semester: insight.semesterLabel.toLowerCase() })}
       </p>
 
       <p data-testid="grade-insight-headline" className="mt-3 text-sm font-semibold leading-snug">
@@ -70,7 +79,7 @@ export function GradeInsightCard({ insight }: { insight: GradeInsight }) {
       <p className="mt-1 text-xs text-muted-foreground">{insight.detail}</p>
 
       {/* График: SVG-линия как фон, точки — кнопки поверх (focus/hover/click). */}
-      <div className="relative mt-4 h-28" role="group" aria-label="График среднего балла">
+      <div className="relative mt-4 h-28" role="group" aria-label={t(locale, 'insight.chartAria')}>
         <svg
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
@@ -108,7 +117,10 @@ export function GradeInsightCard({ insight }: { insight: GradeInsight }) {
               type="button"
               data-testid="insight-point"
               aria-pressed={i === activeIndex}
-              aria-label={`${formatDateShort(date)} — средний балл ${formatScore(point.average)} из 100`}
+              aria-label={t(locale, 'insight.pointAria', {
+                date: formatDateShort(date, locale),
+                average: formatScore(point.average, locale),
+              })}
               onMouseEnter={() => setActive(i)}
               onFocus={() => setActive(i)}
               onClick={() => setActive(i)}
@@ -135,9 +147,11 @@ export function GradeInsightCard({ insight }: { insight: GradeInsight }) {
       >
         <p className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs">
           <span className="font-semibold">
-            {formatDateShort(currentDate)} — средний балл{' '}
-            <span data-testid="grade-insight-current">{formatScore(currentPoint.average)}</span> из
-            100
+            {t(locale, 'insight.currentPrefix', { date: formatDateShort(currentDate, locale) })}{' '}
+            <span data-testid="grade-insight-current">
+              {formatScore(currentPoint.average, locale)}
+            </span>{' '}
+            {outOf100}
           </span>
           {currentPoint.delta !== null ? (
             <span
@@ -151,14 +165,14 @@ export function GradeInsightCard({ insight }: { insight: GradeInsight }) {
               )}
             >
               {currentPoint.delta > 0 ? '+' : currentPoint.delta < 0 ? '−' : ''}
-              {formatScore(Math.abs(currentPoint.delta))} к предыдущей
+              {formatScore(Math.abs(currentPoint.delta), locale)} {t(locale, 'insight.deltaToPrev')}
             </span>
           ) : (
-            <span className="text-muted-foreground">первая работа семестра</span>
+            <span className="text-muted-foreground">{t(locale, 'insight.firstWork')}</span>
           )}
         </p>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Работы в среднем ({currentPoint.works.length}):
+          {t(locale, 'insight.worksTitle', { count: currentPoint.works.length })}
         </p>
         <ul className="mt-1 flex flex-col gap-1">
           {currentPoint.works.map((work) => (
@@ -173,7 +187,7 @@ export function GradeInsightCard({ insight }: { insight: GradeInsight }) {
                 <span className="text-muted-foreground">{work.disciplineName}</span>
               </span>
               <span className="shrink-0 font-semibold">
-                {work.score} из {work.maxScore}
+                {t(locale, 'insight.scoreOf', { score: work.score, max: work.maxScore })}
               </span>
             </li>
           ))}

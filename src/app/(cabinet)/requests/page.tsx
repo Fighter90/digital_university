@@ -97,8 +97,7 @@ export default async function RequestsPage({
           <div className="min-w-0">
             <SectionTitle href="/requests" className="text-xl font-bold sm:text-2xl" />
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-              Справки и заявления в одном месте: видно, на каком шаге каждая заявка и что от вас
-              ждут дальше.
+              {t(locale, 'requests.subtitle')}
             </p>
           </div>
           {ctx.role === 'STUDENT' && cards.length > 0 ? orderCta('requests-order-cta') : null}

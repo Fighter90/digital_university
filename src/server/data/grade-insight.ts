@@ -11,6 +11,7 @@
 // с успеваемостью»).
 
 import { buildGradeInsight, type GradeInsight } from '@/lib/grade-insight';
+import type { Locale } from '@/lib/i18n';
 import { denyAccess } from './access';
 import type { DataDb } from './port';
 import type { DataCtx } from './types';
@@ -21,11 +22,13 @@ const RESOURCE = 'grade-insight';
  * Инсайт динамики оценок для экрана «Успеваемость»: тренд среднего балла
  * семестра последней оценки с разбором работ месяца. Без оценок — null
  * (карточка не рендерится); сотрудник — null + аудит.
+ * DIG-84: locale — язык готовых текстов (RU-дефолт прежний).
  */
 export async function getGradeInsight(
   db: DataDb,
   ctx: DataCtx,
   now: Date = new Date(),
+  locale: Locale = 'ru',
 ): Promise<GradeInsight | null> {
   if (ctx.studentId === null || ctx.groupName === null) {
     await denyAccess(db, {
@@ -43,5 +46,5 @@ export async function getGradeInsight(
     db.listDisciplineElementsByGroup(ctx.groupName),
   ]);
 
-  return buildGradeInsight({ grades, disciplines, plan: elements, now });
+  return buildGradeInsight({ grades, disciplines, plan: elements, now }, locale);
 }

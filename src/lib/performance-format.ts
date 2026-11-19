@@ -17,12 +17,16 @@ import {
   type SemesterKey,
   type SemesterTerm,
 } from '@/lib/performance-math';
+import { t, type Locale } from '@/lib/i18n';
 import type { DisciplinePerformance, DebtItem, DebtStatus } from '@/server/data/performance';
 import type { ExamSessionRow } from '@/server/data/types';
 
 // ── Тултипы сокращений простыми словами ─────────────────────────────────────
 
-/** Расшифровка GPA у кольца сводки. */
+/**
+ * Расшифровка GPA у кольца сводки. RU-константы сохранены байт-в-байт
+ * (ими пользуются тесты и прежние вызовы); DIG-84 — функции по локали.
+ */
 export const GPA_HINT =
   'GPA — средний балл, взвешенный кредитами дисциплин: дисциплина с 5 кредитами влияет вдвое сильнее, чем с 2.5. Идущие дисциплины входят предварительной накопленной оценкой.';
 
@@ -37,14 +41,23 @@ export const CREDITS_SHORT_HINT = 'Кредит — объём дисципли�
 export const PERCENTILE_HINT =
   'Место в группе считается по среднему баллу (GPA) за всё время среди студентов группы. Средний балл — взвешенная кредитами оценка по всем дисциплинам; «в N% лучших» — доля группы с баллом не выше вашего.';
 
+/** DIG-84 — расшифровки по локали (RU — те же строки байт-в-байт). */
+export const gpaHint = (locale: Locale = 'ru'): string => t(locale, 'grades.gpaHint');
+export const creditsHint = (locale: Locale = 'ru'): string => t(locale, 'grades.creditsHint');
+export const creditsShortHint = (locale: Locale = 'ru'): string =>
+  t(locale, 'grades.creditsShortHint');
+export const percentileHint = (locale: Locale = 'ru'): string => t(locale, 'grades.percentileHint');
+
 // ── Числа и даты ────────────────────────────────────────────────────────────
 
 /**
  * Оценка для человека: целая — без дробной части, иначе одна десятичная
- * с запятой (48.9 → «48,9», 27.14 → «27,1»).
+ * с запятой (48.9 → «48,9»; EN — с точкой «48.9»).
  */
-export function formatScore(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1).replace('.', ',');
+export function formatScore(value: number, locale: Locale = 'ru'): string {
+  if (Number.isInteger(value)) return String(value);
+  const fixed = value.toFixed(1);
+  return locale === 'en' ? fixed : fixed.replace('.', ',');
 }
 
 const MONTHS_GENITIVE = [
@@ -62,8 +75,11 @@ const MONTHS_GENITIVE = [
   'декабря',
 ] as const;
 
-/** «14 ноября» — день и месяц словом (без года; год не нужен в сводке). */
-export function formatDateShort(date: Date): string {
+/** «14 ноября» — день и месяц словом (без года; EN — «November 14»). */
+export function formatDateShort(date: Date, locale: Locale = 'ru'): string {
+  if (locale === 'en') {
+    return new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'long' }).format(date);
+  }
   return `${date.getDate()} ${MONTHS_GENITIVE[date.getMonth()]}`;
 }
 
@@ -75,6 +91,24 @@ function plural(n: number, forms: [string, string, string]): string {
   if (last > 1 && last < 5) return forms[1];
   if (last === 1) return forms[0];
   return forms[2];
+}
+
+/** Слово «день(дня/дней)» по локали: EN — day/days. */
+function daysWord(count: number, locale: Locale): string {
+  return locale === 'en'
+    ? Math.abs(count) === 1
+      ? 'day'
+      : 'days'
+    : plural(count, ['день', 'дня', 'дней']);
+}
+
+/** Слово «дисциплина(ы)» по локали (светофор рисков). */
+function disciplinesWord(count: number, locale: Locale): string {
+  return locale === 'en'
+    ? Math.abs(count) === 1
+      ? 'discipline'
+      : 'disciplines'
+    : plural(count, ['дисциплина', 'дисциплины', 'дисциплин']);
 }
 
 // ── Семестры: параметр URL, подписи, пилюли ─────────────────────────────────
@@ -97,12 +131,14 @@ export function parseSemesterParam(raw: string | undefined): SemesterKey | null 
   return { startYear, term };
 }
 
-/** Короткая подпись пилюли: «Осень 26/27», «Весна 25/26». */
-export function semesterShortLabel(key: SemesterKey): string {
+/** Короткая подпись пилюли: «Осень 26/27», «Весна 25/26» (EN — Fall/Spring). */
+export function semesterShortLabel(key: SemesterKey, locale: Locale = 'ru'): string {
   const short = (y: number) => String(y % 100).padStart(2, '0');
-  return key.term === 'FALL'
-    ? `Осень ${short(key.startYear)}/${short(key.startYear + 1)}`
-    : `Весна ${short(key.startYear)}/${short(key.startYear + 1)}`;
+  const term =
+    key.term === 'FALL'
+      ? t(locale, 'grades.term.fall.short')
+      : t(locale, 'grades.term.spring.short');
+  return `${term} ${short(key.startYear)}/${short(key.startYear + 1)}`;
 }
 
 const sameSemester = (a: SemesterKey, b: SemesterKey): boolean =>
@@ -130,6 +166,7 @@ export interface SemesterPill {
 export function buildSemesterPills(
   disciplines: DisciplinePerformance[],
   current: SemesterKey,
+  locale: Locale = 'ru',
 ): SemesterPill[] {
   const keys = new Map<string, SemesterKey>();
   keys.set(semesterParam(current), current);
@@ -140,8 +177,8 @@ export function buildSemesterPills(
     .sort((a, b) => semesterSortNumber(b) - semesterSortNumber(a))
     .map((semester) => ({
       key: semesterParam(semester),
-      label: semesterKeyLabel(semester),
-      short: semesterShortLabel(semester),
+      label: semesterKeyLabel(semester, locale),
+      short: semesterShortLabel(semester, locale),
       semester,
     }));
 }
@@ -192,6 +229,7 @@ export interface SemesterDeltaView {
 export function semesterDelta(
   disciplines: DisciplinePerformance[],
   semester: SemesterKey,
+  locale: Locale = 'ru',
 ): SemesterDeltaView | null {
   const currentGpa = semesterGpaOf(disciplinesForSemester(disciplines, semester, semester));
   const prevKey = previousSemesterKey(semester);
@@ -199,7 +237,7 @@ export function semesterDelta(
   if (currentGpa === null || prevGpa === null) return null;
   return {
     value: Math.round((currentGpa - prevGpa) * 100) / 100,
-    prevLabel: semesterShortLabel(prevKey),
+    prevLabel: semesterShortLabel(prevKey, locale),
   };
 }
 
@@ -232,11 +270,13 @@ export function levelBarClass(level: DisciplineLevel): string {
 }
 
 /** Словесный уровень итоговой оценки (шкала прототипа, docs/grading.md). */
-function finalLevelOf(grade: number): { level: DisciplineLevel; word: string } {
-  if (grade >= 85) return { level: 'good', word: 'Отлично' };
-  if (grade >= 70) return { level: 'good', word: 'Хорошо' };
-  if (grade >= CREDIT_PASS_PERCENT) return { level: 'medium', word: 'Удовлетворительно' };
-  return { level: 'risk', word: 'Ниже порога' };
+function finalLevelOf(grade: number, locale: Locale): { level: DisciplineLevel; word: string } {
+  if (grade >= 85) return { level: 'good', word: t(locale, 'grades.level.excellent') };
+  if (grade >= 70) return { level: 'good', word: t(locale, 'grades.level.good') };
+  if (grade >= CREDIT_PASS_PERCENT) {
+    return { level: 'medium', word: t(locale, 'grades.level.satisfactory') };
+  }
+  return { level: 'risk', word: t(locale, 'grades.level.belowPass') };
 }
 
 // ── Карточки дисциплин ──────────────────────────────────────────────────────
@@ -274,13 +314,16 @@ export interface DisciplineCard {
  *  - есть и другие несданные элементы → «Допуска к экзамену нет»;
  *  - экзамена в плане нет → бейджа нет вовсе.
  */
-export function toDisciplineCards(disciplines: DisciplinePerformance[]): DisciplineCard[] {
+export function toDisciplineCards(
+  disciplines: DisciplinePerformance[],
+  locale: Locale = 'ru',
+): DisciplineCard[] {
   return disciplines.map((d) => {
-    const creditsLabel = `${d.credits} кр.`;
+    const creditsLabel = t(locale, 'grades.creditsShort', { credits: d.credits });
     const href = `/grades/gradebook?discipline=${encodeURIComponent(d.disciplineCode)}`;
 
     if (d.finalGrade !== null) {
-      const { level, word } = finalLevelOf(d.finalGrade);
+      const { level, word } = finalLevelOf(d.finalGrade, locale);
       return {
         disciplineCode: d.disciplineCode,
         disciplineName: d.disciplineName,
@@ -292,27 +335,29 @@ export function toDisciplineCards(disciplines: DisciplinePerformance[]): Discipl
         levelWord: word,
         maxPossibleLabel: null,
         admission: admissionOf(d),
-        admissionLabel: admissionLabelOf(admissionOf(d)),
+        admissionLabel: admissionLabelOf(admissionOf(d), locale),
         progress: d.finalGrade,
         href,
       };
     }
 
     if (d.accumulated !== null) {
-      const level = inProgressLevelOf(d.accumulated, d.maxPossible);
+      const level = inProgressLevelOf(d.accumulated, d.maxPossible, locale);
       return {
         disciplineCode: d.disciplineCode,
         disciplineName: d.disciplineName,
         teacher: d.teacherName,
         creditsLabel,
-        scoreLabel: formatScore(d.accumulated),
+        scoreLabel: formatScore(d.accumulated, locale),
         isFinal: false,
         level: level.level,
         levelWord: level.word,
         maxPossibleLabel:
-          d.maxPossible === null ? null : `из возможных ${formatScore(d.maxPossible)}`,
+          d.maxPossible === null
+            ? null
+            : t(locale, 'grades.maxPossible', { score: formatScore(d.maxPossible, locale) }),
         admission: admissionOf(d),
-        admissionLabel: admissionLabelOf(admissionOf(d)),
+        admissionLabel: admissionLabelOf(admissionOf(d), locale),
         progress: Math.min(100, Math.max(0, d.accumulated)),
         href,
       };
@@ -327,7 +372,7 @@ export function toDisciplineCards(disciplines: DisciplinePerformance[]): Discipl
       scoreLabel: '—',
       isFinal: false,
       level: null,
-      levelWord: 'Оценок ещё нет',
+      levelWord: t(locale, 'grades.level.noGrades'),
       maxPossibleLabel: null,
       admission: null,
       admissionLabel: null,
@@ -341,14 +386,15 @@ export function toDisciplineCards(disciplines: DisciplinePerformance[]): Discipl
 function inProgressLevelOf(
   accumulated: number,
   maxPossible: number | null,
+  locale: Locale,
 ): { level: DisciplineLevel; word: string } {
   if (maxPossible !== null && maxPossible < CREDIT_PASS_PERCENT) {
-    return { level: 'risk', word: 'Не дотянуть до порога' };
+    return { level: 'risk', word: t(locale, 'grades.level.riskUnreachable') };
   }
   if (accumulated >= CREDIT_PASS_PERCENT) {
-    return { level: 'good', word: 'Порог уже набран' };
+    return { level: 'good', word: t(locale, 'grades.level.passSecured') };
   }
-  return { level: 'medium', word: 'Порог ещё не гарантирован' };
+  return { level: 'medium', word: t(locale, 'grades.level.passNotGuaranteed') };
 }
 
 function admissionOf(d: DisciplinePerformance): AdmissionStatus | null {
@@ -358,14 +404,14 @@ function admissionOf(d: DisciplinePerformance): AdmissionStatus | null {
   return d.gradedElements >= d.totalElements - 1 ? 'admitted' : 'not-admitted';
 }
 
-function admissionLabelOf(admission: AdmissionStatus | null): string | null {
+function admissionLabelOf(admission: AdmissionStatus | null, locale: Locale): string | null {
   switch (admission) {
     case 'graded':
-      return 'Экзамен сдан';
+      return t(locale, 'grades.admission.graded');
     case 'admitted':
-      return 'Допуск к экзамену есть';
+      return t(locale, 'grades.admission.admitted');
     case 'not-admitted':
-      return 'Допуска к экзамену нет';
+      return t(locale, 'grades.admission.notAdmitted');
     default:
       return null;
   }
@@ -410,16 +456,20 @@ export function trafficBadgeStatus(tone: TrafficTone): 'success' | 'warning' | '
 export function trafficLight(
   disciplines: DisciplinePerformance[],
   debts: DebtItem[],
+  locale: Locale = 'ru',
 ): TrafficLightView {
   const active = activeDebts(debts);
   if (active.length > 0) {
     const nearest = active[0]!;
     return {
       tone: 'debts',
-      title: 'Есть долги',
-      phrase: `Активных долгов: ${active.length}. Ближайшая пересдача — ${nearest.disciplineName}`,
+      title: t(locale, 'grades.tl.debtsTitle'),
+      phrase: t(locale, 'grades.tl.debtsPhrase', {
+        count: active.length,
+        discipline: nearest.disciplineName,
+      }),
       actionHref: '#debts',
-      actionLabel: 'К долгам',
+      actionLabel: t(locale, 'grades.tl.toDebts'),
     };
   }
 
@@ -431,27 +481,32 @@ export function trafficLight(
     const first = riskItems[0]!;
     return {
       tone: 'risk',
-      title: 'Есть риски',
-      phrase: `${riskItems.length} ${plural(riskItems.length, ['дисциплина', 'дисциплины', 'дисциплин'])} в зоне риска: в ${first.disciplineName} порог ${CREDIT_PASS_PERCENT} уже не дотянуть — обсудите с преподавателем`,
+      title: t(locale, 'grades.tl.riskTitle'),
+      phrase: t(locale, 'grades.tl.riskPhrase', {
+        count: riskItems.length,
+        word: disciplinesWord(riskItems.length, locale),
+        discipline: first.disciplineName,
+        threshold: CREDIT_PASS_PERCENT,
+      }),
       actionHref: '/grades/session',
-      actionLabel: 'К сессии',
+      actionLabel: t(locale, 'grades.tl.toSession'),
     };
   }
 
   if (disciplines.some((d) => d.accumulated !== null || d.finalGrade !== null)) {
     return {
       tone: 'ok',
-      title: 'Всё хорошо',
-      phrase: 'Все текущие оценки выше порога зачтения — продолжайте в том же духе',
+      title: t(locale, 'grades.tl.okTitle'),
+      phrase: t(locale, 'grades.tl.okPhrase'),
       actionHref: '/grades/session',
-      actionLabel: 'К сессии',
+      actionLabel: t(locale, 'grades.tl.toSession'),
     };
   }
 
   return {
     tone: 'idle',
-    title: 'Оценок пока нет',
-    phrase: 'В этом семестре ещё нет ни одной оценки',
+    title: t(locale, 'grades.tl.idleTitle'),
+    phrase: t(locale, 'grades.tl.idlePhrase'),
     actionHref: null,
     actionLabel: null,
   };
@@ -467,14 +522,19 @@ export interface NextAssessmentView {
 }
 
 /** Ближайшая будущая контрольная (не пересдача): null — не запланировано. */
-export function nextAssessment(exams: ExamSessionRow[], now: Date): NextAssessmentView | null {
+export function nextAssessment(
+  exams: ExamSessionRow[],
+  now: Date,
+  locale: Locale = 'ru',
+): NextAssessmentView | null {
   const upcoming = exams
     .filter((exam) => exam.kind !== 'RETAKE' && exam.date.getTime() > now.getTime())
     .sort((a, b) => a.date.getTime() - b.date.getTime());
   const nearest = upcoming[0];
   if (!nearest) return null;
   return {
-    kindLabel: nearest.kind === 'EXAM' ? 'Экзамен' : 'Зачёт',
+    kindLabel:
+      nearest.kind === 'EXAM' ? t(locale, 'grades.kind.exam') : t(locale, 'grades.kind.credit'),
     disciplineName: nearest.disciplineName,
     date: nearest.date,
   };
@@ -487,13 +547,16 @@ export function nextAssessment(exams: ExamSessionRow[], now: Date): NextAssessme
 export function emptySemesterNote(
   assessment: NextAssessmentView | null,
   isCurrent: boolean,
+  locale: Locale = 'ru',
 ): string {
   if (assessment) {
-    return `Первая контрольная — ${assessment.kindLabel.toLowerCase()} по «${assessment.disciplineName}» ${formatDateShort(assessment.date)}. Оценки появятся после неё.`;
+    return t(locale, 'grades.emptyNote.assessment', {
+      kind: assessment.kindLabel.toLowerCase(),
+      discipline: assessment.disciplineName,
+      date: formatDateShort(assessment.date, locale),
+    });
   }
-  return isCurrent
-    ? 'В этом семестре оценок пока нет — они появятся после первой контрольной.'
-    : 'За этот семестр оценок не выставлено — они появятся после первой контрольной.';
+  return isCurrent ? t(locale, 'grades.emptyNote.current') : t(locale, 'grades.emptyNote.past');
 }
 
 // ── Долги ───────────────────────────────────────────────────────────────────
@@ -504,29 +567,36 @@ export function activeDebts(debts: DebtItem[]): DebtItem[] {
 }
 
 /** Бейдж статуса пересдачи: цвет + текст (словарь бейджей). */
-export function debtBadge(status: DebtStatus): {
+export function debtBadge(
+  status: DebtStatus,
+  locale: Locale = 'ru',
+): {
   label: string;
   badge: 'info' | 'error' | 'success';
 } {
   switch (status) {
     case 'ASSIGNED':
-      return { label: 'Назначена', badge: 'info' };
+      return { label: t(locale, 'grades.debt.assigned'), badge: 'info' };
     case 'OVERDUE':
-      return { label: 'Просрочена', badge: 'error' };
+      return { label: t(locale, 'grades.debt.overdue'), badge: 'error' };
     case 'CLOSED':
-      return { label: 'Закрыта', badge: 'success' };
+      return { label: t(locale, 'grades.debt.closed'), badge: 'success' };
   }
 }
 
 /** Фраза даты пересдачи: назначена на… / была …, долг не закрыт. */
-export function debtDatePhrase(debt: DebtItem): string {
-  const dateLabel = formatDateShort(debt.retakeDate);
+export function debtDatePhrase(debt: DebtItem, locale: Locale = 'ru'): string {
+  const dateLabel = formatDateShort(debt.retakeDate, locale);
   if (debt.status === 'OVERDUE') {
-    return `Пересдача была ${dateLabel} — долг не закрыт`;
+    return t(locale, 'grades.debt.overduePhrase', { date: dateLabel });
   }
   if (debt.status === 'ASSIGNED') {
-    if (debt.daysLeft <= 0) return `Пересдача назначена на ${dateLabel} — сегодня`;
-    return `Пересдача назначена на ${dateLabel} (осталось ${debt.daysLeft} ${plural(debt.daysLeft, ['день', 'дня', 'дней'])})`;
+    if (debt.daysLeft <= 0) return t(locale, 'grades.debt.assignedToday', { date: dateLabel });
+    return t(locale, 'grades.debt.assignedIn', {
+      date: dateLabel,
+      days: debt.daysLeft,
+      word: daysWord(debt.daysLeft, locale),
+    });
   }
-  return `Долг закрыт — пересдача ${dateLabel} зачтена`;
+  return t(locale, 'grades.debt.closedPhrase', { date: dateLabel });
 }

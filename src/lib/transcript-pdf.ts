@@ -14,6 +14,7 @@
 
 import { PdfWriter, type PdfColor } from './pdf/pdf-writer';
 import { qrMatrix } from './pdf/qr';
+import { t, type Locale } from '@/lib/i18n';
 
 export interface TranscriptStudent {
   fullName: string;
@@ -60,6 +61,12 @@ export interface TranscriptOptions {
    * (`${origin}/verify/${code}`; origin роут берёт из запроса).
    */
   verifyUrl: string;
+  /**
+   * DIG-84 — язык документа (cookie локали сессии; дефолт 'ru' — прежний
+   * документ байт-в-байт). Демо-контент (ФИО, дисциплины) не переводится,
+   * семестры и типы контроля локализует вызывающий роут.
+   */
+  locale?: Locale;
 }
 
 const INK: PdfColor = [0.09, 0.09, 0.1]; // neutral-900
@@ -132,6 +139,9 @@ export function transcriptLines(data: TranscriptData, options: TranscriptOptions
 }
 
 function transcriptStyledLines(data: TranscriptData, options: TranscriptOptions): StyledLine[] {
+  const locale = options.locale ?? 'ru';
+  const tr = (key: Parameters<typeof t>[1], vars?: Record<string, string | number>): string =>
+    t(locale, key, vars);
   const lines: StyledLine[] = [];
   const push = (text: string, style: LineStyle = 'body'): void => {
     lines.push({ text, style });
@@ -140,30 +150,32 @@ function transcriptStyledLines(data: TranscriptData, options: TranscriptOptions)
     lines.push({ text: '', style: 'small' });
   };
 
-  push('Выписка из зачётной книжки', 'title');
-  push('Цифровой деканат (демонстрационный вуз)', 'small');
-  push('Концепт для конкурса. Все данные вымышленные.', 'small');
+  push(tr('transcript.title'), 'title');
+  push(tr('transcript.university'), 'small');
+  push(tr('transcript.concept'), 'small');
   blank();
 
   if (data.student) {
-    push(`Студент: ${data.student.fullName}`);
-    push(`Группа: ${data.student.groupName}   Курс: ${data.student.course}`);
-    push(`Программа: ${data.student.program}`);
-    push(`Номер зачётной книжки: ${data.student.gradebookNumber}`);
+    push(tr('transcript.student', { name: data.student.fullName }));
+    push(
+      tr('transcript.groupCourse', { group: data.student.groupName, course: data.student.course }),
+    );
+    push(tr('transcript.program', { program: data.student.program }));
+    push(tr('transcript.gradebookNo', { number: data.student.gradebookNumber }));
   } else {
-    push('Студент: —');
+    push(tr('transcript.studentMissing'));
   }
-  push(`Дата выдачи: ${formatDate(options.now)}`);
+  push(tr('transcript.issueDate', { date: formatDate(options.now) }));
   blank();
 
   for (const semester of data.semesters) {
     push(semester.label, 'heading');
     push(
-      pad('Дисциплина', COL_NAME) +
-        pad('Контроль', COL_CONTROL) +
-        pad('Кр', COL_CREDITS) +
-        pad('Итог', COL_GRADE) +
-        'Дата',
+      pad(tr('transcript.col.discipline'), COL_NAME) +
+        pad(tr('transcript.col.control'), COL_CONTROL) +
+        pad(tr('transcript.col.credits'), COL_CREDITS) +
+        pad(tr('transcript.col.final'), COL_GRADE) +
+        tr('transcript.col.date'),
       'small',
     );
     for (const discipline of semester.disciplines) {
@@ -176,19 +188,28 @@ function transcriptStyledLines(data: TranscriptData, options: TranscriptOptions)
       );
     }
     push(
-      `Средний балл семестра: ${fmt2(semester.average)}   Кредиты: ${semester.creditsEarned} из ${semester.creditsTotal}`,
+      tr('transcript.semesterLine', {
+        average: fmt2(semester.average),
+        earned: semester.creditsEarned,
+        total: semester.creditsTotal,
+      }),
       'accent',
     );
     blank();
   }
 
   if (data.semesters.length === 0) {
-    push('Оценки в зачётной книжке отсутствуют.', 'accent');
+    push(tr('transcript.noGrades'), 'accent');
     blank();
   }
 
-  push(`Средний балл за всё время: ${fmt2(data.overallAverage)}`);
-  push(`Кредиты набрано: ${data.creditsEarned} из ${data.creditsRequired}`);
+  push(tr('transcript.overallAverage', { average: fmt2(data.overallAverage) }));
+  push(
+    tr('transcript.creditsEarned', {
+      earned: data.creditsEarned,
+      required: data.creditsRequired,
+    }),
+  );
   blank();
 
   // ── Подпись документа: код, ссылка и QR (DIG-82) ──────────────────────────
@@ -197,13 +218,11 @@ function transcriptStyledLines(data: TranscriptData, options: TranscriptOptions)
   const pushWrapped = (text: string, style: LineStyle = 'body'): void => {
     for (const chunk of wrapLine(text, BLOCK_WRAP_CHARS)) lines.push({ text: chunk, style });
   };
-  push('Проверка подлинности документа', 'heading');
-  pushWrapped(`Код проверки: ${options.code}`, 'accent');
-  pushWrapped(`Проверить по ссылке или QR-коду: ${options.verifyUrl}`, 'small');
-  pushWrapped(
-    `Электронный документ прототипа. Сформировано: ${formatDateTime(options.now)}`,
-    'small',
-  );
+  const verifyTitle = tr('transcript.verifyTitle');
+  push(verifyTitle, 'heading');
+  pushWrapped(tr('transcript.verifyCode', { code: options.code }), 'accent');
+  pushWrapped(tr('transcript.verifyLink', { url: options.verifyUrl }), 'small');
+  pushWrapped(tr('transcript.generated', { datetime: formatDateTime(options.now) }), 'small');
 
   return lines;
 }
@@ -256,7 +275,9 @@ export function buildTranscriptPdf(data: TranscriptData, options: TranscriptOpti
   const lines = transcriptStyledLines(data, options);
   const maxWidth = writer.width - MARGIN * 2;
 
-  const headingIndex = lines.findIndex((line) => line.text === 'Проверка подлинности документа');
+  // Заголовок блока проверки ищется по локализованной строке (DIG-84).
+  const locale = options.locale ?? 'ru';
+  const headingIndex = lines.findIndex((line) => line.text === t(locale, 'transcript.verifyTitle'));
   let qrTop: number | null = null;
 
   // Верх каждой строки; блок проверки с QR целиком живёт на одной странице.

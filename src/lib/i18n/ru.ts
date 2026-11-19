@@ -249,6 +249,207 @@ export const ru = {
   'dpo.doc.certificate': 'Сертификат',
   'dpo.download': 'Скачать',
   'dpo.doc.downloadHint': 'Доступно после выпуска',
+
+  // ── DIG-84 — /grades: сводка успеваемости ─────────────────────────────────
+  // RU-значения байт-в-байт равны прежним захардкоженным строкам экрана.
+  'grades.semestersAria': 'Семестры',
+  'grades.term.fall.short': 'Осень',
+  'grades.term.spring.short': 'Весна',
+  'grades.term.fall.full': 'Осенний семестр',
+  'grades.term.spring.full': 'Весенний семестр',
+  'grades.gpaRingLabel': 'Средний балл семестра',
+  'grades.gpaTitle': 'Средний балл',
+  'grades.overallPrefix': 'За всё время:',
+  'grades.deltaTo': 'к {semester}',
+  'grades.credits': 'Кредиты',
+  'grades.creditsSuffix': 'из {required}',
+  'grades.groupRating': 'Рейтинг в группе',
+  'grades.rankOf': '{rank} из {total}',
+  'grades.howCalculated': 'Как считается',
+  'grades.bestPercent': 'Вы входите в {percent}% лучших в группе',
+  'grades.soleStudent': 'Вы — единственный студент в группе',
+  'grades.errorTitle': 'Успеваемость не загрузилась',
+  'grades.errorDesc': 'Обновите страницу — если ошибка повторится, сообщите в деканат.',
+  'grades.emptyTitle': 'Оценок пока нет',
+  'grades.sessionLink': 'Сессия — расписание консультаций и экзаменов',
+  'grades.appealLink': 'Нашли ошибку в оценке? Написать в деканат',
+
+  // подсказки сокращений простыми словами
+  'grades.gpaHint':
+    'GPA — средний балл, взвешенный кредитами дисциплин: дисциплина с 5 кредитами влияет вдвое сильнее, чем с 2.5. Идущие дисциплины входят предварительной накопленной оценкой.',
+  'grades.creditsHint':
+    'Кредиты — единицы объёма дисциплин (ECTS). На всю программу нужно 240 кредитов; зачитываются завершённые дисциплины с оценкой не ниже порога зачтения.',
+  'grades.creditsShortHint': 'Кредит — объём дисциплины: 1 кредит ≈ 36 академических часов.',
+  'grades.percentileHint':
+    'Место в группе считается по среднему баллу (GPA) за всё время среди студентов группы. Средний балл — взвешенная кредитами оценка по всем дисциплинам; «в N% лучших» — доля группы с баллом не выше вашего.',
+
+  // карточки дисциплин: пороги и допуск
+  'grades.creditsShort': '{credits} кр.',
+  'grades.level.excellent': 'Отлично',
+  'grades.level.good': 'Хорошо',
+  'grades.level.satisfactory': 'Удовлетворительно',
+  'grades.level.belowPass': 'Ниже порога',
+  'grades.level.noGrades': 'Оценок ещё нет',
+  'grades.level.riskUnreachable': 'Не дотянуть до порога',
+  'grades.level.passSecured': 'Порог уже набран',
+  'grades.level.passNotGuaranteed': 'Порог ещё не гарантирован',
+  'grades.maxPossible': 'из возможных {score}',
+  'grades.noTeacher': 'Преподаватель не указан',
+  'grades.admission.graded': 'Экзамен сдан',
+  'grades.admission.admitted': 'Допуск к экзамену есть',
+  'grades.admission.notAdmitted': 'Допуска к экзамену нет',
+
+  // светофор состояния
+  'grades.tl.debtsTitle': 'Есть долги',
+  'grades.tl.debtsPhrase': 'Активных долгов: {count}. Ближайшая пересдача — {discipline}',
+  'grades.tl.toDebts': 'К долгам',
+  'grades.tl.riskTitle': 'Есть риски',
+  'grades.tl.riskPhrase':
+    '{count} {word} в зоне риска: в {discipline} порог {threshold} уже не дотянуть — обсудите с преподавателем',
+  'grades.tl.toSession': 'К сессии',
+  'grades.tl.okTitle': 'Всё хорошо',
+  'grades.tl.okPhrase': 'Все текущие оценки выше порога зачтения — продолжайте в том же духе',
+  'grades.tl.idleTitle': 'Оценок пока нет',
+  'grades.tl.idlePhrase': 'В этом семестре ещё нет ни одной оценки',
+
+  // пустой семестр и «первая контрольная»
+  'grades.kind.exam': 'Экзамен',
+  'grades.kind.credit': 'Зачёт',
+  'grades.emptyNote.assessment':
+    'Первая контрольная — {kind} по «{discipline}» {date}. Оценки появятся после неё.',
+  'grades.emptyNote.current':
+    'В этом семестре оценок пока нет — они появятся после первой контрольной.',
+  'grades.emptyNote.past':
+    'За этот семестр оценок не выставлено — они появятся после первой контрольной.',
+
+  // долги
+  'grades.debtsTitle': 'Долги',
+  'grades.debt.assigned': 'Назначена',
+  'grades.debt.overdue': 'Просрочена',
+  'grades.debt.closed': 'Закрыта',
+  'grades.debt.overduePhrase': 'Пересдача была {date} — долг не закрыт',
+  'grades.debt.assignedToday': 'Пересдача назначена на {date} — сегодня',
+  'grades.debt.assignedIn': 'Пересдача назначена на {date} (осталось {days} {word})',
+  'grades.debt.closedPhrase': 'Долг закрыт — пересдача {date} зачтена',
+  'grades.retakeSignup': 'Записаться на пересдачу',
+
+  // ── DIG-84 — зачётная книжка и выписка ────────────────────────────────────
+  'gradebook.studentsOnlyDesc':
+    'Зачётная книжка показывает оценки студента — у сотрудника деканата этот раздел пуст.',
+  'gradebook.downloadTranscript': 'Скачать выписку PDF',
+  'gradebook.subtitle':
+    'Оценки по семестрам с итогами. Выписка скачивается сразу — без заявки и очереди.',
+  'gradebook.overallAverage': 'Средний балл за всё время',
+  'gradebook.creditsEarned': 'Кредиты набрано',
+  'gradebook.creditsOf': '{earned} из {required}',
+  'gradebook.emptyTitle': 'Оценок пока нет',
+  'gradebook.emptyDesc':
+    'Как только деканат выставит первые оценки, они появятся здесь по семестрам. Выписку можно скачать уже сейчас — она будет пустой.',
+  'gradebook.averageOf': 'Средний балл: {average}',
+  'gradebook.creditsLabel': 'Кредиты: {earned} из {total}',
+  'gradebook.col.discipline': 'Дисциплина',
+  'gradebook.col.control': 'Контроль',
+  'gradebook.col.credits': 'Кредиты',
+  'gradebook.col.final': 'Итог',
+  'gradebook.col.date': 'Дата',
+  'gradebook.noFinalYet': 'Итог ещё не выставлен',
+  'gradebook.semesterEmpty':
+    'Оценок в семестре ещё нет — итог появится, когда деканат выставит оценки.',
+  'control.EXAM': 'Экзамен',
+  'control.DIFF_CREDIT': 'Диф. зачёт',
+  'control.CREDIT': 'Зачёт',
+
+  // выписка PDF (документ)
+  'transcript.title': 'Выписка из зачётной книжки',
+  'transcript.university': 'Цифровой деканат (демонстрационный вуз)',
+  'transcript.concept': 'Концепт для конкурса. Все данные вымышленные.',
+  'transcript.student': 'Студент: {name}',
+  'transcript.studentMissing': 'Студент: —',
+  'transcript.groupCourse': 'Группа: {group}   Курс: {course}',
+  'transcript.program': 'Программа: {program}',
+  'transcript.gradebookNo': 'Номер зачётной книжки: {number}',
+  'transcript.issueDate': 'Дата выдачи: {date}',
+  'transcript.col.discipline': 'Дисциплина',
+  'transcript.col.control': 'Контроль',
+  'transcript.col.credits': 'Кр',
+  'transcript.col.final': 'Итог',
+  'transcript.col.date': 'Дата',
+  'transcript.semesterLine': 'Средний балл семестра: {average}   Кредиты: {earned} из {total}',
+  'transcript.noGrades': 'Оценки в зачётной книжке отсутствуют.',
+  'transcript.overallAverage': 'Средний балл за всё время: {average}',
+  'transcript.creditsEarned': 'Кредиты набрано: {earned} из {required}',
+  'transcript.verifyTitle': 'Проверка подлинности документа',
+  'transcript.verifyCode': 'Код проверки: {code}',
+  'transcript.verifyLink': 'Проверить по ссылке или QR-коду: {url}',
+  'transcript.generated': 'Электронный документ прототипа. Сформировано: {datetime}',
+
+  // ── DIG-84 — карточка заявки (/requests/[номер]) ──────────────────────────
+  'requests.subtitle':
+    'Справки и заявления в одном месте: видно, на каком шаге каждая заявка и что от вас ждут дальше.',
+  'requests.backAll': '← Все заявки',
+  'requests.submittedPrefix': 'подана',
+  'requests.resultTitle': 'Результат',
+  'requests.certificateReady': 'Справка готова',
+  'requests.certificateDesc':
+    'Скачайте PDF или проверьте подлинность по коду — страница проверки открывается без входа (для банка, военкомата, работодателя).',
+  'requests.downloadCertificate': 'Скачать справку (PDF)',
+  'requests.verifyAuthenticity': 'Проверить подлинность',
+  'requests.historyTitle': 'История заявки',
+  'requests.expectedAfterFix': 'Срок — после исправления',
+  'requests.readyBy': 'Готовность до {date}',
+  'requests.ledBy': 'Ведёт: {name}',
+  'requests.ledByUnassigned': 'сотрудник деканата',
+  'requests.fixAlert': 'Нужна доработка. Что исправить: {reason}',
+  'requests.rejectedAlert': 'Отклонено: {reason}',
+  'requests.documentReady': 'Документ готов',
+  'requests.documentDesc':
+    'PDF с QR-кодом проверки. Скачать можно сколько угодно раз — документ формируется при скачивании.',
+  'requests.previewAria': 'Превью документа {number}',
+  'requests.previewFallback': 'Превью не поддерживается браузером — скачайте PDF ниже.',
+  'requests.cancelRequest': 'Отменить заявку',
+  'requests.paramsTitle': 'Параметры заявки',
+  'requests.attachments': 'Вложения',
+  'requests.param.language': 'Язык',
+  'requests.param.destination': 'Куда предоставляется',
+  'requests.param.copies': 'Экземпляров',
+  'requests.param.delivery': 'Способ получения',
+  'requests.param.comment': 'Комментарий',
+  'requests.fix.label': 'Что исправлено',
+  'requests.fix.placeholder': 'Например: исправил ФИО латиницей, приложил скан',
+  'requests.fix.success': 'Заявка отправлена повторно',
+  'requests.email.send': 'Отправить на email',
+  'requests.email.sending': 'Отправляем…',
+  'requests.email.sentTo': 'Отправлено на {email}',
+  'requests.copy': 'Копировать',
+  'requests.copied': 'Скопировано',
+  'requests.copyAria': 'Скопировать номер заявки {number}',
+
+  // ── DIG-84 — AI-инсайт «Что изменилось» ───────────────────────────────────
+  'insight.title': 'Что изменилось',
+  'insight.badge': 'AI-анализ',
+  'insight.subtitle': 'Демо-анализ по вашим оценкам {semester}, без внешних сервисов.',
+  'insight.chartAria': 'График среднего балла',
+  'insight.pointAria': '{date} — средний балл {average} из 100',
+  'insight.currentPrefix': '{date} — средний балл',
+  'insight.outOf100': 'из 100',
+  'insight.deltaToPrev': 'к предыдущей',
+  'insight.firstWork': 'первая работа семестра',
+  'insight.worksTitle': 'Работы в среднем ({count}):',
+  'insight.scoreOf': '{score} из {max}',
+  'insight.h.none': 'За месяц новых оценок не было',
+  'insight.d.none': 'Средний балл держится на {current} из 100.',
+  'insight.h.new.one': 'За месяц появилась новая работа — средний балл достиг {current} из 100',
+  'insight.h.new.many': 'За месяц появились {count} {word} — средний балл достиг {current} из 100',
+  'insight.d.new.first': 'Средний балл задаёт работа «{work}» ({discipline}, {score} из {max}).',
+  'insight.h.up': 'Средний балл за месяц вырос на {delta} {word}: было {baseline}, стало {current}',
+  'insight.h.down':
+    'Средний балл за месяц снизился на {delta} {word}: было {baseline}, стало {current}',
+  'insight.h.flat': 'Средний балл за месяц не изменился: {current} из 100',
+  'insight.d.flat': 'Свежие работы ({count}) не сдвинули средний.',
+  'insight.d.topWork':
+    'Сильнее всего средний {verb} «{work}» ({discipline}, {score} из {max}): {value} {word}.',
+  'insight.verb.up': 'подняла',
+  'insight.verb.down': 'снизила',
 } as const;
 
 export type RuDictionary = typeof ru;

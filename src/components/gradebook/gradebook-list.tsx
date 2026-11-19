@@ -1,8 +1,9 @@
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
-import { formatScoreDate } from '@/lib/gradebook';
+import { controlTypeLabel, formatScoreDate } from '@/lib/gradebook';
 import { pluralRu } from '@/lib/dashboard-format';
+import { t, type Locale } from '@/lib/i18n';
 import type { GradebookData, GradebookSemesterView } from '@/server/data';
 
 // DIG-27 — список зачётной книжки: аккордеон семестров (<details open={focus || undefined}>), внутри
@@ -12,6 +13,12 @@ import type { GradebookData, GradebookSemesterView } from '@/server/data';
 
 const CREDIT_FORMS = ['кредит', 'кредита', 'кредитов'] as const;
 
+/** «кредит/кредита/кредитов» (RU) или «credit/credits» (EN). */
+function creditsWord(count: number, locale: Locale): string {
+  if (locale === 'en') return Math.abs(count) === 1 ? 'credit' : 'credits';
+  return pluralRu(count, CREDIT_FORMS);
+}
+
 /** «81,22» — точность до сотой (правила хранения — docs/grading.md). */
 export function formatAverage2(average: number | null): string {
   return average === null ? '—' : average.toFixed(2).replace('.', ',');
@@ -20,10 +27,13 @@ export function formatAverage2(average: number | null): string {
 const semesterTestId = (semester: GradebookSemesterView): string =>
   `semester-accordion-${semester.key.startYear}-${semester.key.term.toLowerCase()}`;
 
-function GradeBadge({ grade }: { grade: number | null }) {
+function GradeBadge({ grade, locale }: { grade: number | null; locale: Locale }) {
   if (grade === null) {
     return (
-      <span className="text-sm font-medium text-foreground-muted" title="Итог ещё не выставлен">
+      <span
+        className="text-sm font-medium text-foreground-muted"
+        title={t(locale, 'gradebook.noFinalYet')}
+      >
         —
       </span>
     );
@@ -44,10 +54,13 @@ function GradeBadge({ grade }: { grade: number | null }) {
 export function GradebookList({
   data,
   focusSemesterKey,
+  locale = 'ru',
 }: {
   data: GradebookData;
   /** ?discipline= из карточек главной — раскрыть семестр с этой дисциплиной. */
   focusSemesterKey?: GradebookSemesterView['key'];
+  /** DIG-84 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -94,13 +107,16 @@ export function GradebookList({
                   data-testid={`${testId}-average`}
                   className="rounded-pill bg-muted px-2.5 py-1 font-semibold text-foreground"
                 >
-                  Средний балл: {formatAverage2(semester.average)}
+                  {t(locale, 'gradebook.averageOf', { average: formatAverage2(semester.average) })}
                 </span>
                 <span
                   data-testid={`${testId}-credits`}
                   className="rounded-pill bg-accent-soft px-2.5 py-1 font-semibold text-accent-ink"
                 >
-                  Кредиты: {semester.creditsEarned} из {semester.creditsTotal}
+                  {t(locale, 'gradebook.creditsLabel', {
+                    earned: semester.creditsEarned,
+                    total: semester.creditsTotal,
+                  })}
                 </span>
               </span>
             </summary>
@@ -118,19 +134,19 @@ export function GradebookList({
                     <thead>
                       <tr className="text-left text-xs uppercase text-muted-foreground">
                         <th scope="col" className="pb-2 pr-3 font-semibold">
-                          Дисциплина
+                          {t(locale, 'gradebook.col.discipline')}
                         </th>
                         <th scope="col" className="pb-2 pr-3 font-semibold">
-                          Контроль
+                          {t(locale, 'gradebook.col.control')}
                         </th>
                         <th scope="col" className="pb-2 pr-3 text-right font-semibold">
-                          Кредиты
+                          {t(locale, 'gradebook.col.credits')}
                         </th>
                         <th scope="col" className="pb-2 pr-3 text-right font-semibold">
-                          Итог
+                          {t(locale, 'gradebook.col.final')}
                         </th>
                         <th scope="col" className="pb-2 text-right font-semibold">
-                          Дата
+                          {t(locale, 'gradebook.col.date')}
                         </th>
                       </tr>
                     </thead>
@@ -150,13 +166,15 @@ export function GradebookList({
                             </Link>
                           </td>
                           <td className="py-2.5 pr-3 text-muted-foreground">
-                            {discipline.controlTypeLabel}
+                            {discipline.controlType
+                              ? controlTypeLabel(discipline.controlType, locale)
+                              : '—'}
                           </td>
                           <td className="py-2.5 pr-3 text-right text-muted-foreground">
                             {discipline.credits}
                           </td>
                           <td className="py-2.5 pr-3 text-right">
-                            <GradeBadge grade={discipline.finalGrade} />
+                            <GradeBadge grade={discipline.finalGrade} locale={locale} />
                           </td>
                           <td className="py-2.5 text-right font-mono text-xs text-muted-foreground">
                             {discipline.completedAt ? formatScoreDate(discipline.completedAt) : '—'}
@@ -185,10 +203,12 @@ export function GradebookList({
                           </span>
                           <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                             <span className="rounded-pill bg-muted px-2 py-0.5 font-medium">
-                              {discipline.controlTypeLabel}
+                              {discipline.controlType
+                                ? controlTypeLabel(discipline.controlType, locale)
+                                : '—'}
                             </span>
                             <span>
-                              {discipline.credits} {pluralRu(discipline.credits, CREDIT_FORMS)}
+                              {discipline.credits} {creditsWord(discipline.credits, locale)}
                             </span>
                             <span className="font-mono text-[11px] text-muted-foreground">
                               {discipline.completedAt
@@ -197,7 +217,7 @@ export function GradebookList({
                             </span>
                           </span>
                         </span>
-                        <GradeBadge grade={discipline.finalGrade} />
+                        <GradeBadge grade={discipline.finalGrade} locale={locale} />
                       </Link>
                     </li>
                   ))}
@@ -205,7 +225,7 @@ export function GradebookList({
 
                 {hasGrades ? null : (
                   <p className="mt-3 text-xs text-muted-foreground">
-                    Оценок в семестре ещё нет — итог появится, когда деканат выставит оценки.
+                    {t(locale, 'gradebook.semesterEmpty')}
                   </p>
                 )}
               </div>

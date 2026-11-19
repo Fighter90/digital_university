@@ -15,6 +15,8 @@
 //
 // Модуль покрыт юнит-тестами напрямую (tests/gradebook.test.ts).
 
+import { t, type TranslationKey } from '@/lib/i18n';
+
 /** Виды элементов контроля (структурно совпадает с types.ts слоя данных). */
 export type GradeElementKind = 'HOMEWORK' | 'LAB' | 'TEST' | 'PROJECT' | 'EXAM';
 
@@ -26,6 +28,14 @@ export const CONTROL_TYPE_LABELS: Record<ControlType, string> = {
   DIFF_CREDIT: 'Диф. зачёт',
   CREDIT: 'Зачёт',
 };
+
+/**
+ * Метка типа контроля по локали (DIG-84): RU — прежние метки байт-в-байт,
+ * EN — по словарю интерфейса (выписка PDF, зачётная книжка).
+ */
+export function controlTypeLabel(controlType: ControlType, locale: 'ru' | 'en' = 'ru'): string {
+  return t(locale, `control.${controlType}` as TranslationKey);
+}
 
 /**
  * Тип контроля по набору видов элементов (план контроля, а без плана —
@@ -81,10 +91,7 @@ const round1 = (x: number): number => Math.round(x * 10) / 10;
  * Части формулы оценки: группировка плана по виду контроля в порядке
  * первого появления. Пересдачи дедуплицируются (последняя по дате).
  */
-export function gradeParts(
-  plan: PlanElementLike[],
-  graded: GradedScoreLike[],
-): GradePart[] {
+export function gradeParts(plan: PlanElementLike[], graded: GradedScoreLike[]): GradePart[] {
   const latest = new Map<string, GradedScoreLike>();
   for (const row of graded) {
     const prev = latest.get(row.elementCode);

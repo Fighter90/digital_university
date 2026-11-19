@@ -577,6 +577,24 @@ describe('performance-math: рейтинг и перцентиль', () => {
   });
 });
 
+describe('DIG-84: EN-подписи performance-math', () => {
+  it('semesterKeyLabel: EN Fall/Spring semester, RU прежние байт-в-байт', () => {
+    expect(semesterKeyLabel({ startYear: 2026, term: 'FALL' }, 'en')).toBe('Fall semester 2026/27');
+    expect(semesterKeyLabel({ startYear: 2025, term: 'SPRING' }, 'en')).toBe(
+      'Spring semester 2025/26',
+    );
+    expect(semesterKeyLabel({ startYear: 2026, term: 'FALL' })).toBe('Осенний семестр 2026/27');
+    expect(semesterKeyLabel({ startYear: 2025, term: 'SPRING' })).toBe('Весенний семестр 2025/26');
+  });
+
+  it('bestPercentLabel: EN «top X%» и единственный студент', () => {
+    expect(bestPercentLabel(2, 5, 'en')).toBe('You are in the top 40% of your group');
+    expect(bestPercentLabel(1, 1, 'en')).toBe('You are the only student in the group');
+    // RU без параметра — прежние строки.
+    expect(bestPercentLabel(2, 5)).toBe('Вы входите в 40% лучших в группе');
+  });
+});
+
 // ── Агрегат getPerformance ──────────────────────────────────────────────────
 
 describe('getPerformance: накопленные оценки по дисциплинам', () => {

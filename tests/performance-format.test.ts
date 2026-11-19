@@ -26,14 +26,20 @@ import {
   activeDebts,
   admissionBadgeStatus,
   buildSemesterPills,
+  creditsHint,
+  creditsShortHint,
   debtBadge,
   debtDatePhrase,
   disciplinesForSemester,
   emptySemesterNote,
+  formatDateShort,
+  formatScore,
+  gpaHint,
   levelBarClass,
   levelTextClass,
   nextAssessment,
   parseSemesterParam,
+  percentileHint,
   semesterDelta,
   semesterGpaOf,
   semesterParam,
@@ -257,8 +263,18 @@ describe('DIG-26 — карточки дисциплин', () => {
 
   it('дисциплина без экзамена в плане — без бейджа допуска; без оценок — «Оценок ещё нет» и прочерк', () => {
     const cards = toDisciplineCards([
-      disc({ disciplineCode: 'PI21-PROG', hasExamElement: false, accumulated: 14, maxPossible: 54 }),
-      disc({ disciplineCode: 'PI21-HIST', hasExamElement: false, accumulated: null, semester: null }),
+      disc({
+        disciplineCode: 'PI21-PROG',
+        hasExamElement: false,
+        accumulated: 14,
+        maxPossible: 54,
+      }),
+      disc({
+        disciplineCode: 'PI21-HIST',
+        hasExamElement: false,
+        accumulated: null,
+        semester: null,
+      }),
     ]);
     expect(cards[0]?.admission).toBeNull();
     expect(cards[0]?.admissionLabel).toBeNull();
@@ -282,10 +298,13 @@ describe('DIG-26 — светофор состояния', () => {
   const noGrades = disc({ accumulated: null, semester: null });
 
   it('активные долги — высший приоритет: «Есть долги», фраза с ближайшей пересдачей, действие к долгам', () => {
-    const light = trafficLight([fine], [
-      debt({ disciplineName: 'Программирование', status: 'OVERDUE', daysLeft: -3 }),
-      debt({ disciplineName: 'Информатика', status: 'ASSIGNED' }),
-    ]);
+    const light = trafficLight(
+      [fine],
+      [
+        debt({ disciplineName: 'Программирование', status: 'OVERDUE', daysLeft: -3 }),
+        debt({ disciplineName: 'Информатика', status: 'ASSIGNED' }),
+      ],
+    );
     expect(light.tone).toBe('debts');
     expect(light.title).toBe('Есть долги');
     expect(light.phrase).toContain('2');
@@ -400,5 +419,130 @@ describe('DIG-26 — тултипы сокращений простыми сло
     expect(CREDITS_SHORT_HINT).toContain('Кредит');
     expect(PERCENTILE_HINT).toContain('группы');
     expect(PERCENTILE_HINT.toLowerCase()).toContain('средний балл');
+  });
+});
+
+describe('DIG-84 — EN-локализация presentation-слоя успеваемости', () => {
+  it('пилюли семестров: EN «Fall 26/27», RU прежние байт-в-байт', () => {
+    expect(semesterShortLabel(FALL_26, 'en')).toBe('Fall 26/27');
+    expect(semesterShortLabel(SPRING_25, 'en')).toBe('Spring 25/26');
+    expect(semesterShortLabel(FALL_26)).toBe('Осень 26/27');
+    const pills = buildSemesterPills(
+      [disc({ semester: SPRING_25, accumulated: 80, finalGrade: 80 })],
+      FALL_26,
+      'en',
+    );
+    expect(pills.map((p) => p.short)).toEqual(['Fall 26/27', 'Spring 25/26']);
+    expect(pills[0]!.label).toBe('Fall semester 2026/27');
+  });
+
+  it('карточки дисциплин: EN словесные пороги и бейджи допуска', () => {
+    const cards = toDisciplineCards(
+      [
+        disc({
+          disciplineCode: 'A',
+          accumulated: 90,
+          maxPossible: 100,
+          finalGrade: 92,
+          isComplete: true,
+          creditEarned: true,
+          gradedElements: 2,
+          totalElements: 2,
+          examGraded: true,
+        }),
+        disc({
+          disciplineCode: 'B',
+          accumulated: 48.9,
+          maxPossible: 88.9,
+          gradedElements: 2,
+          totalElements: 3,
+        }),
+        disc({ disciplineCode: 'C', accumulated: 14, maxPossible: 54 }),
+      ],
+      'en',
+    );
+    expect(cards[0]!.levelWord).toBe('Excellent');
+    expect(cards[0]!.admissionLabel).toBe('Exam passed');
+    expect(cards[1]!.levelWord).toBe('Threshold not guaranteed yet');
+    expect(cards[1]!.maxPossibleLabel).toBe('of a possible 88.9');
+    expect(cards[1]!.creditsLabel).toBe('4 cr.');
+    expect(cards[1]!.admissionLabel).toBe('Admitted to the exam');
+    expect(cards[2]!.levelWord).toBe('Threshold out of reach');
+    // RU — прежние строки.
+    const ruCards = toDisciplineCards([
+      disc({
+        accumulated: 90,
+        maxPossible: 100,
+        finalGrade: 92,
+        isComplete: true,
+        creditEarned: true,
+        gradedElements: 2,
+        totalElements: 2,
+        examGraded: true,
+      }),
+    ]);
+    expect(ruCards[0]!.levelWord).toBe('Отлично');
+  });
+
+  it('светофор: EN заголовки, фразы и действия', () => {
+    const fine = disc({ accumulated: 90, maxPossible: 100 });
+    const risky = disc({ accumulated: 14, maxPossible: 54 });
+    const noGrades = disc({ accumulated: null, semester: null });
+    const ok = trafficLight([fine], [], 'en');
+    expect(ok.title).toBe('All good');
+    expect(ok.actionLabel).toBe('To exams');
+    const debts = trafficLight([fine], [debt({ status: 'OVERDUE', daysLeft: -3 })], 'en');
+    expect(debts.title).toBe('Debts pending');
+    expect(debts.actionLabel).toBe('To debts');
+    const risk = trafficLight([risky, fine], [], 'en');
+    expect(risk.title).toBe('At risk');
+    expect(risk.phrase).toContain('1 discipline');
+    expect(risk.phrase).toContain('out of reach');
+    const idle = trafficLight([noGrades], [], 'en');
+    expect(idle.title).toBe('No grades yet');
+  });
+
+  it('пустой семестр и долги: EN фразы', () => {
+    const note = emptySemesterNote(null, true, 'en');
+    expect(note).toContain('first assessment');
+    const withExam = emptySemesterNote(
+      { kindLabel: 'Credit test', disciplineName: 'Databases', date: new Date(2026, 10, 14, 10) },
+      true,
+      'en',
+    );
+    expect(withExam).toContain('First assessment');
+    expect(withExam).toContain('November 14');
+    expect(
+      nextAssessment([exam('EXAM', new Date(2026, 11, 24, 10))], new Date(2026, 10, 12, 9), 'en')
+        ?.kindLabel,
+    ).toBe('Exam');
+    expect(
+      nextAssessment([exam('CREDIT', new Date(2026, 11, 24, 10))], new Date(2026, 10, 12, 9), 'en')
+        ?.kindLabel,
+    ).toBe('Credit test');
+
+    const assigned = debtDatePhrase(debt({ status: 'ASSIGNED', daysLeft: 7 }), 'en');
+    expect(assigned).toContain('scheduled for');
+    expect(assigned).toContain('7 days left');
+    expect(debtBadge('OVERDUE', 'en')).toEqual({ label: 'Overdue', badge: 'error' });
+    expect(debtBadge('ASSIGNED')).toEqual({ label: 'Назначена', badge: 'info' });
+  });
+
+  it('подсказки сокращений: EN-функции, RU-константы прежние', () => {
+    expect(gpaHint('en')).toContain('weighted by discipline credits');
+    expect(creditsHint('en')).toContain('240');
+    expect(creditsShortHint('en')).toContain('credit');
+    expect(percentileHint('en')).toContain('top');
+    expect(GPA_HINT).toBe(gpaHint('ru'));
+    expect(CREDITS_HINT).toBe(creditsHint('ru'));
+    expect(CREDITS_SHORT_HINT).toBe(creditsShortHint('ru'));
+    expect(PERCENTILE_HINT).toBe(percentileHint('ru'));
+  });
+
+  it('formatScore/formatDateShort: EN точка и «November 14», RU запятая и «14 ноября»', () => {
+    expect(formatScore(48.9, 'en')).toBe('48.9');
+    expect(formatScore(48.9)).toBe('48,9');
+    expect(formatDateShort(new Date(2026, 10, 14, 10), 'en')).toBe('November 14');
+    expect(formatDateShort(new Date(2026, 10, 14, 10))).toBe('14 ноября');
   });
 });

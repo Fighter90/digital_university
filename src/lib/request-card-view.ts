@@ -20,9 +20,11 @@ import { formatReadyBy, slaReadyDate } from '@/lib/request-sla';
 import { parseRequestFormSchema } from '@/lib/request-form-schema';
 import {
   WIZARD_DELIVERY_LABELS,
+  WIZARD_DELIVERY_LABELS_EN,
   WIZARD_LANGUAGE_LABELS,
   validateWizardMeta,
 } from '@/lib/request-wizard-schema';
+import { requestStatusLabel, t, type Locale } from '@/lib/i18n';
 
 /** Событие истории, необходимое таймлайну (строка слоя данных уже «плоская»). */
 export interface RequestTimelineEvent {
@@ -59,6 +61,7 @@ const PIPELINE_STATUSES: readonly CanonicalRequestStatus[] = [
 export function expectedReadyLabelFromEvents(
   events: readonly RequestTimelineEvent[],
   etaDays: number | null | undefined,
+  locale: Locale = 'ru',
 ): string | null {
   if (etaDays === null || etaDays === undefined) return null;
   // Текущий статус = статус последнего события (каждый переход пишет
@@ -71,11 +74,15 @@ export function expectedReadyLabelFromEvents(
   }
   if (!transitionedAt) return null;
   const readyBy = slaReadyDate(transitionedAt, etaDays);
-  return readyBy ? `Готовность до ${formatReadyBy(readyBy)}` : null;
+  return readyBy ? t(locale, 'requests.readyBy', { date: formatReadyBy(readyBy, locale) }) : null;
 }
 
 /** Текст события таймлайна: «Подана → Нужна доработка» или просто статус. */
-export function timelineEventText(event: RequestTimelineEvent): string {
+export function timelineEventText(event: RequestTimelineEvent, locale: Locale = 'ru'): string {
+  if (locale === 'en') {
+    const to = requestStatusLabel('en', event.toStatus);
+    return event.fromStatus ? `${requestStatusLabel('en', event.fromStatus)} → ${to}` : to;
+  }
   return event.fromStatus
     ? formatStatusTransition(event.fromStatus, event.toStatus)
     : CANONICAL_REQUEST_STATUS_LABELS[event.toStatus];
@@ -115,7 +122,10 @@ export interface RequestWizardView {
  * виде. null — мастера не было (или мета не прошла валидацию): секция
  * не показывается, никаких «дефолтных» строк-заглушек.
  */
-export function requestWizardView(params: Record<string, string>): RequestWizardView | null {
+export function requestWizardView(
+  params: Record<string, string>,
+  locale: Locale = 'ru',
+): RequestWizardView | null {
   const raw = params[WIZARD_PARAM_KEY];
   if (typeof raw !== 'string' || raw.trim() === '') return null;
   let parsed: unknown;
@@ -127,16 +137,25 @@ export function requestWizardView(params: Record<string, string>): RequestWizard
   const meta = validateWizardMeta(parsed);
   if (!meta.ok) return null;
 
+  // DIG-84 — подписи полей мастера по локали (RU — прежние байт-в-байт);
+  // язык — имя языка (демо-контент), способ получения — интерфейс.
+  const deliveryLabel =
+    locale === 'en'
+      ? WIZARD_DELIVERY_LABELS_EN[meta.data.delivery]
+      : WIZARD_DELIVERY_LABELS[meta.data.delivery];
   const rows: RequestParamRow[] = [
-    { label: 'Язык', value: WIZARD_LANGUAGE_LABELS[meta.data.language] },
+    {
+      label: t(locale, 'requests.param.language'),
+      value: WIZARD_LANGUAGE_LABELS[meta.data.language],
+    },
   ];
   if (meta.data.destination) {
-    rows.push({ label: 'Куда предоставляется', value: meta.data.destination });
+    rows.push({ label: t(locale, 'requests.param.destination'), value: meta.data.destination });
   }
-  rows.push({ label: 'Экземпляров', value: String(meta.data.copies) });
-  rows.push({ label: 'Способ получения', value: WIZARD_DELIVERY_LABELS[meta.data.delivery] });
+  rows.push({ label: t(locale, 'requests.param.copies'), value: String(meta.data.copies) });
+  rows.push({ label: t(locale, 'requests.param.delivery'), value: deliveryLabel });
   if (meta.data.comment) {
-    rows.push({ label: 'Комментарий', value: meta.data.comment });
+    rows.push({ label: t(locale, 'requests.param.comment'), value: meta.data.comment });
   }
   return {
     rows,

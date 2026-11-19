@@ -34,7 +34,6 @@ import {
   listCanonicalRequestEvents,
   listCanonicalRequestTypes,
   isValidCanonicalRequestNumber,
-  CANONICAL_REQUEST_STATUS_LABELS,
 } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import {
@@ -46,6 +45,7 @@ import {
 import { RequestStatusBadge } from '@/components/request-status-badge';
 import { REQUEST_TYPE_LABELS, formatRequestDate } from '@/lib/request-labels';
 import { RequestStepper } from '@/components/requests/request-stepper';
+import { t, requestStatusLabel, type Locale } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 import { RequestTransitionButton } from '@/components/requests/request-transition-button';
 import { CopyRequestNumber } from '@/components/requests/copy-request-number';
@@ -93,7 +93,7 @@ export default async function RequestDetailPage({
         href="/requests"
         className="mb-4 inline-block text-sm text-neutral-600 hover:text-neutral-900"
       >
-        ← Все заявки
+        {t(locale, 'requests.backAll')}
       </Link>
 
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -102,12 +102,13 @@ export default async function RequestDetailPage({
       </div>
       <h1 className="mb-1 text-xl font-bold sm:text-2xl">{request.title}</h1>
       <p className="mb-6 text-sm text-neutral-600">
-        {REQUEST_TYPE_LABELS[request.type]} · подана {formatRequestDate(request.createdAt)}
+        {REQUEST_TYPE_LABELS[request.type]} · {t(locale, 'requests.submittedPrefix')}{' '}
+        {formatRequestDate(request.createdAt, locale)}
       </p>
 
       {request.resultNote ? (
         <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4">
-          <p className="text-sm font-medium text-green-800">Результат</p>
+          <p className="text-sm font-medium text-green-800">{t(locale, 'requests.resultTitle')}</p>
           <p className="mt-1 text-sm text-green-900">{request.resultNote}</p>
         </div>
       ) : null}
@@ -117,11 +118,10 @@ export default async function RequestDetailPage({
           data-testid="certificate-block"
           className="mb-6 rounded-2xl border border-neutral-200 bg-card p-4"
         >
-          <p className="text-sm font-bold text-neutral-900">Справка готова</p>
-          <p className="mt-1 text-xs text-neutral-600">
-            Скачайте PDF или проверьте подлинность по коду — страница проверки открывается без входа
-            (для банка, военкомата, работодателя).
+          <p className="text-sm font-bold text-neutral-900">
+            {t(locale, 'requests.certificateReady')}
           </p>
+          <p className="mt-1 text-xs text-neutral-600">{t(locale, 'requests.certificateDesc')}</p>
           <p
             className="mt-2 font-mono text-xs break-all text-neutral-500"
             data-testid="certificate-code"
@@ -134,7 +134,7 @@ export default async function RequestDetailPage({
               data-testid="certificate-pdf"
               className="rounded-button bg-coral-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
             >
-              Скачать справку (PDF)
+              {t(locale, 'requests.downloadCertificate')}
             </a>
             <Link
               href={`/verify/${certificate.verificationCode}`}
@@ -143,13 +143,13 @@ export default async function RequestDetailPage({
               data-testid="certificate-verify"
               className="rounded-button border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-800 transition-colors hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-coral-600"
             >
-              Проверить подлинность
+              {t(locale, 'requests.verifyAuthenticity')}
             </Link>
           </div>
         </div>
       ) : null}
 
-      <h2 className="mb-3 text-base font-semibold">История заявки</h2>
+      <h2 className="mb-3 text-base font-semibold">{t(locale, 'requests.historyTitle')}</h2>
       <ol className="flex flex-col gap-3">
         {events.map((event) => {
           // DIG-37 — имя сотрудника деканата ведёт на карточку человека в
@@ -188,7 +188,7 @@ export default async function RequestDetailPage({
 async function renderCanonical(
   number: string,
   ctx: Awaited<ReturnType<typeof requireDataCtx>>,
-  locale: 'ru' | 'en',
+  locale: Locale,
 ) {
   // Чтение owner-scoped: чужой и несуществующий номер → одинаковый 404,
   // попытка чужой — в аудите (контракт canonical-requests, DIG-30).
@@ -223,9 +223,9 @@ async function renderCanonical(
   }
 
   const manager = lastStaffActorName(events);
-  const expectedReady = expectedReadyLabelFromEvents(events, type?.etaDays ?? null);
+  const expectedReady = expectedReadyLabelFromEvents(events, type?.etaDays ?? null, locale);
   const paramRows = requestParamsRows(request.params, type?.formSchema ?? null);
-  const wizard = requestWizardView(request.params);
+  const wizard = requestWizardView(request.params, locale);
   const documentHref = `/api/requests/${encodeURIComponent(request.number)}/document`;
 
   return (
@@ -234,7 +234,7 @@ async function renderCanonical(
         href="/requests"
         className="mb-4 inline-block text-sm text-muted-foreground hover:text-foreground"
       >
-        ← Все заявки
+        {t(locale, 'requests.backAll')}
       </Link>
 
       <div
@@ -246,33 +246,41 @@ async function renderCanonical(
         <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <span className="inline-flex items-center gap-1">
             <span className="font-mono text-xs text-muted-foreground">{request.number}</span>
-            {isStudent ? <CopyRequestNumber number={request.number} /> : null}
+            {isStudent ? <CopyRequestNumber number={request.number} locale={locale} /> : null}
           </span>
           <span
             data-testid="request-status-pill"
             className="inline-block rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground"
           >
-            {CANONICAL_REQUEST_STATUS_LABELS[request.status]}
+            {requestStatusLabel(locale, request.status)}
           </span>
         </div>
         <h1 className="text-xl font-bold sm:text-2xl">{request.title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {request.typeName} · подана{' '}
-          <span data-testid="request-timestamp">{formatRequestDate(request.createdAt)}</span>
+          {request.typeName} · {t(locale, 'requests.submittedPrefix')}{' '}
+          <span data-testid="request-timestamp">
+            {formatRequestDate(request.createdAt, locale)}
+          </span>
         </p>
 
         <div className="mt-5">
           <RequestStepper status={request.status} locale={locale} />
         </div>
 
-        {/* Ожидаемая дата и менеджер заявки (DIG-33). */}
+        {/* Ожидаемая дата и менеджер заявки (DIG-33); подписи по локали — DIG-84. */}
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {isFix ? (
-            <span data-testid="request-expected-ready">Срок — после исправления</span>
+            <span data-testid="request-expected-ready">
+              {t(locale, 'requests.expectedAfterFix')}
+            </span>
           ) : expectedReady ? (
             <span data-testid="request-expected-ready">{expectedReady}</span>
           ) : null}
-          <span data-testid="request-manager">Ведёт: {manager ?? 'сотрудник деканата'}</span>
+          <span data-testid="request-manager">
+            {t(locale, 'requests.ledBy', {
+              name: manager ?? t(locale, 'requests.ledByUnassigned'),
+            })}
+          </span>
         </div>
 
         {isFix && reason ? (
@@ -282,13 +290,15 @@ async function renderCanonical(
           >
             <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning-ink" />
             <p className="text-sm font-medium text-warning-ink">
-              Нужна доработка. Что исправить: {reason}
+              {t(locale, 'requests.fixAlert', { reason })}
             </p>
           </div>
         ) : null}
         {request.status === 'REJECTED' && reason ? (
           <div className="mt-4 rounded-button border border-error/40 bg-error-soft p-3">
-            <p className="text-sm font-medium text-error-ink">Отклонено: {reason}</p>
+            <p className="text-sm font-medium text-error-ink">
+              {t(locale, 'requests.rejectedAlert', { reason })}
+            </p>
           </div>
         ) : null}
 
@@ -303,10 +313,11 @@ async function renderCanonical(
             data-testid="request-document-block"
             className="mt-4 rounded-button border border-border bg-background p-3"
           >
-            <p className="text-sm font-bold text-foreground">Документ готов</p>
+            <p className="text-sm font-bold text-foreground">
+              {t(locale, 'requests.documentReady')}
+            </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              PDF с QR-кодом проверки. Скачать можно сколько угодно раз — документ формируется при
-              скачивании.
+              {t(locale, 'requests.documentDesc')}
             </p>
             {/* Превью PDF: inline-отдача того же документа; на 360 px скрыто. */}
             <object
@@ -314,10 +325,10 @@ async function renderCanonical(
               type="application/pdf"
               data-testid="request-document-preview"
               className="mt-3 hidden h-80 w-full rounded-button border border-border sm:block"
-              aria-label={`Превью документа ${request.number}`}
+              aria-label={t(locale, 'requests.previewAria', { number: request.number })}
             >
               <p className="p-3 text-xs text-muted-foreground">
-                Превью не поддерживается браузером — скачайте PDF ниже.
+                {t(locale, 'requests.previewFallback')}
               </p>
             </object>
             <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -327,7 +338,7 @@ async function renderCanonical(
                 className="inline-flex items-center gap-1.5 rounded-button bg-coral-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
               >
                 <Download aria-hidden="true" className="size-4" />
-                Скачать PDF
+                {t(locale, 'card.downloadPdf')}
               </a>
               <Link
                 href="/verify"
@@ -335,11 +346,12 @@ async function renderCanonical(
                 className="inline-flex items-center gap-1.5 rounded-button border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-coral-600"
               >
                 <ShieldCheck aria-hidden="true" className="size-4" />
-                Проверить подлинность
+                {t(locale, 'requests.verifyAuthenticity')}
               </Link>
               <RequestEmailButton
                 number={request.number}
                 action={sendRequestDocumentByEmailAction}
+                locale={locale}
               />
             </div>
           </div>
@@ -351,9 +363,9 @@ async function renderCanonical(
             <RequestTransitionButton
               action={cancelRequestAction}
               requestId={request.id}
-              label="Отменить заявку"
-              pendingLabel="Отменяем…"
-              confirmText="Отменить заявку? Действие нельзя отменить."
+              label={t(locale, 'requests.cancelRequest')}
+              pendingLabel={t(locale, 'card.cancelPending')}
+              confirmText={t(locale, 'card.cancelConfirm')}
               testid="request-cancel"
             />
           </div>
@@ -375,7 +387,7 @@ async function renderCanonical(
           data-testid="request-params"
           className="mt-6 rounded-card border border-border bg-card p-4 shadow-soft"
         >
-          <h2 className="text-base font-semibold">Параметры заявки</h2>
+          <h2 className="text-base font-semibold">{t(locale, 'requests.paramsTitle')}</h2>
           <dl className="mt-2 flex flex-col divide-y divide-border">
             {paramRows.map((row) => (
               <div key={row.label} className="flex flex-wrap justify-between gap-x-4 py-2">
@@ -395,7 +407,9 @@ async function renderCanonical(
           </dl>
           {wizard && wizard.attachments.length > 0 ? (
             <div data-testid="request-attachments" className="mt-3">
-              <p className="text-xs font-semibold text-muted-foreground">Вложения</p>
+              <p className="text-xs font-semibold text-muted-foreground">
+                {t(locale, 'requests.attachments')}
+              </p>
               <ul className="mt-1 flex flex-col gap-1">
                 {wizard.attachments.map((file) => (
                   <li
@@ -412,8 +426,8 @@ async function renderCanonical(
         </div>
       ) : null}
 
-      <h2 className="mb-3 mt-6 text-base font-semibold">История заявки</h2>
-      <RequestHistoryTimeline events={events} />
+      <h2 className="mb-3 mt-6 text-base font-semibold">{t(locale, 'requests.historyTitle')}</h2>
+      <RequestHistoryTimeline events={events} locale={locale} />
     </section>
   );
 }

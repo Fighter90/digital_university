@@ -49,7 +49,16 @@ const readyByFormatter = new Intl.DateTimeFormat('ru-RU', {
   timeZone: 'Europe/Moscow',
 });
 
-/** «до 14 ноября» — часть уведомления о статусе заявки (без года). */
-export function formatReadyBy(date: Date): string {
-  return readyByFormatter.format(date);
+const readyByFormatterEn = new Intl.DateTimeFormat('en-US', {
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'Europe/Moscow',
+});
+
+/**
+ * «до 14 ноября» — часть уведомления о статусе заявки (без года).
+ * DIG-84: locale='en' → «November 20»; RU — прежний формат байт-в-байт.
+ */
+export function formatReadyBy(date: Date, locale: 'ru' | 'en' = 'ru'): string {
+  return locale === 'en' ? readyByFormatterEn.format(date) : readyByFormatter.format(date);
 }

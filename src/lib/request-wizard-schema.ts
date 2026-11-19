@@ -33,6 +33,13 @@ export const WIZARD_DELIVERY_LABELS: Record<WizardDelivery, string> = {
   MAIL: 'Почтой',
 };
 
+/** DIG-84 — EN-метки способа получения (значения формы не локализуются). */
+export const WIZARD_DELIVERY_LABELS_EN: Record<WizardDelivery, string> = {
+  PDF_ONLINE: 'PDF in the cabinet',
+  PICKUP: 'Pick up at the deanery',
+  MAIL: 'By mail',
+};
+
 export const WIZARD_DELIVERIES: WizardDelivery[] = ['PDF_ONLINE', 'PICKUP', 'MAIL'];
 export const WIZARD_LANGUAGES: WizardLanguage[] = ['RU', 'EN'];
 

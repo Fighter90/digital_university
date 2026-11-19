@@ -57,12 +57,14 @@ function moscowMonth(date: Date): number {
   );
 }
 
-/** «Осенний семестр 2026/27» / «Весенний семестр 2025/26». */
-export function semesterKeyLabel(key: SemesterKey): string {
+/** «Осенний семестр 2026/27» / «Весенний семестр 2025/26»; EN — Fall/Spring semester. */
+export function semesterKeyLabel(key: SemesterKey, locale: 'ru' | 'en' = 'ru'): string {
   const short = (y: number) => String(y % 100).padStart(2, '0');
-  return key.term === 'FALL'
-    ? `Осенний семестр ${key.startYear}/${short(key.startYear + 1)}`
-    : `Весенний семестр ${key.startYear}/${short(key.startYear + 1)}`;
+  return locale === 'en'
+    ? `${key.term === 'FALL' ? 'Fall semester' : 'Spring semester'} ${key.startYear}/${short(key.startYear + 1)}`
+    : key.term === 'FALL'
+      ? `Осенний семестр ${key.startYear}/${short(key.startYear + 1)}`
+      : `Весенний семестр ${key.startYear}/${short(key.startYear + 1)}`;
 }
 
 /** Монотонное число для сортировки семестров по возрастанию. */
@@ -329,8 +331,20 @@ export function bestPercentFromRank(rank: number, groupSize: number): number {
 /**
  * Готовая формулировка для экрана: «Вы входите в 27% лучших в группе»,
  * а не «перцентиль 32». Одиночная группа — особая честная формулировка.
+ * DIG-84: EN-вариант по локали, RU — прежние строки байт-в-байт.
  */
-export function bestPercentLabel(rank: number, groupSize: number): string {
-  if (groupSize <= 1) return 'Вы — единственный студент в группе';
-  return `Вы входите в ${bestPercentFromRank(rank, groupSize)}% лучших в группе`;
+export function bestPercentLabel(
+  rank: number,
+  groupSize: number,
+  locale: 'ru' | 'en' = 'ru',
+): string {
+  if (groupSize <= 1) {
+    return locale === 'en'
+      ? 'You are the only student in the group'
+      : 'Вы — единственный студент в группе';
+  }
+  const percent = bestPercentFromRank(rank, groupSize);
+  return locale === 'en'
+    ? `You are in the top ${percent}% of your group`
+    : `Вы входите в ${percent}% лучших в группе`;
 }
