@@ -25,6 +25,7 @@ import {
 
 import { needForTargetPure } from '@/lib/performance-math';
 import type { AssistantCard } from '@/lib/assistant-engine';
+import { t, type Locale } from '@/lib/i18n';
 import { Icon } from '@/components/ui/icon';
 import {
   reportAssistantAnswerAction,
@@ -35,28 +36,43 @@ import {
 export interface AssistantCardListProps {
   cards: AssistantCard[];
   onNavigate?: () => void;
+  /** DIG-88 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 const TARGET_CHIPS = [60, 70, 80, 90] as const;
 
-export function AssistantCardList({ cards, onNavigate }: AssistantCardListProps) {
+export function AssistantCardList({ cards, onNavigate, locale = 'ru' }: AssistantCardListProps) {
   return (
     <div className="mt-2.5 flex flex-col gap-2.5">
       {cards.map((card, index) => (
-        <AssistantCardView key={`${card.type}-${index}`} card={card} onNavigate={onNavigate} />
+        <AssistantCardView
+          key={`${card.type}-${index}`}
+          card={card}
+          onNavigate={onNavigate}
+          locale={locale}
+        />
       ))}
     </div>
   );
 }
 
-function AssistantCardView({ card, onNavigate }: { card: AssistantCard; onNavigate?: () => void }) {
+function AssistantCardView({
+  card,
+  onNavigate,
+  locale,
+}: {
+  card: AssistantCard;
+  onNavigate?: () => void;
+  locale: Locale;
+}) {
   switch (card.type) {
     case 'schedule':
-      return <ScheduleCard card={card} onNavigate={onNavigate} />;
+      return <ScheduleCard card={card} onNavigate={onNavigate} locale={locale} />;
     case 'calculator':
-      return <CalculatorCard card={card} />;
+      return <CalculatorCard card={card} locale={locale} />;
     case 'order':
-      return <OrderCard card={card} />;
+      return <OrderCard card={card} locale={locale} />;
     case 'faq':
       return <FaqCard card={card} onNavigate={onNavigate} />;
   }
@@ -67,9 +83,11 @@ function AssistantCardView({ card, onNavigate }: { card: AssistantCard; onNaviga
 function ScheduleCard({
   card,
   onNavigate,
+  locale,
 }: {
   card: Extract<AssistantCard, { type: 'schedule' }>;
   onNavigate?: () => void;
+  locale: Locale;
 }) {
   return (
     <div
@@ -98,12 +116,12 @@ function ScheduleCard({
                 {event.isMoved && event.previousRoomLabel ? (
                   <p className="mt-1 inline-flex items-center gap-1 rounded-pill bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning-ink">
                     <ShieldAlert className="size-3" aria-hidden="true" />
-                    Перенос · {event.previousRoomLabel}
+                    {t(locale, 'assistant.card.moved', { was: event.previousRoomLabel })}
                   </p>
                 ) : null}
                 {event.isCancelled ? (
                   <p className="mt-1 inline-flex items-center rounded-pill bg-error-soft px-2 py-0.5 text-[11px] font-semibold text-error-ink">
-                    Отменена
+                    {t(locale, 'assistant.card.cancelled')}
                   </p>
                 ) : null}
               </div>
@@ -111,7 +129,9 @@ function ScheduleCard({
           ))}
         </ul>
       ) : (
-        <p className="px-4 py-3 text-sm text-muted-foreground">{card.note ?? 'Пар нет'}</p>
+        <p className="px-4 py-3 text-sm text-muted-foreground">
+          {card.note ?? t(locale, 'assistant.card.noClasses')}
+        </p>
       )}
       <div className="px-4 pb-3 pt-1">
         <Link
@@ -119,7 +139,7 @@ function ScheduleCard({
           onClick={onNavigate}
           className="inline-flex items-center gap-1 text-sm font-semibold text-accent-ink hover:text-accent-strong"
         >
-          Открыть расписание
+          {t(locale, 'assistant.card.openSchedule')}
           <ExternalLink className="size-3.5" aria-hidden="true" />
         </Link>
       </div>
@@ -129,7 +149,7 @@ function ScheduleCard({
 
 // ── Калькулятор цели ────────────────────────────────────────────────────────
 
-function CalculatorCard({ card }: { card: Extract<AssistantCard, { type: 'calculator' }> }) {
+function CalculatorCard({ card, locale }: { card: Extract<AssistantCard, { type: 'calculator' }>; locale: Locale }) {
   const [target, setTarget] = useState<number>(card.initialTarget);
   const clamped = Number.isFinite(target) ? Math.min(100, Math.max(1, Math.round(target))) : 80;
 
@@ -165,15 +185,31 @@ function CalculatorCard({ card }: { card: Extract<AssistantCard, { type: 'calcul
   const conclusion = (() => {
     switch (outcome.status) {
       case 'OK':
-        return `На экзамене нужно набрать не меньше ${outcome.neededScore} из ${outcome.maxScore} — тогда итог будет не ниже ${clamped}.`;
+        return t(locale, 'assistant.calc.ok', {
+          score: outcome.neededScore,
+          max: outcome.maxScore,
+          target: clamped,
+        });
       case 'UNREACHABLE':
-        return `Итог ${clamped} из 100 недостижим: даже идеальный экзамен даст итог ${Math.round(outcome.bestPossible)}. Попробуйте цель пониже.`;
+        return t(locale, 'assistant.calc.unreachable', {
+          target: clamped,
+          best: Math.round(outcome.bestPossible),
+        });
       case 'ALREADY_SECURED':
-        return `Цель уже достигнута: итог не ниже ${Math.round(outcome.finalPercent)}.`;
+        return t(locale, 'assistant.calc.secured', { final: Math.round(outcome.finalPercent) });
       case 'EXAM_ALREADY_GRADED':
-        return `Экзамен уже сдан на ${outcome.examScore} из ${outcome.examMaxScore}, итог ${Math.round(outcome.finalPercent)} — цель ${clamped} ${outcome.finalPercent >= clamped ? 'выполнена' : 'не достигнута'}.`;
+        return t(locale, 'assistant.calc.examGraded', {
+          score: outcome.examScore,
+          max: outcome.examMaxScore,
+          final: Math.round(outcome.finalPercent),
+          target: clamped,
+          verdict: t(
+            locale,
+            outcome.finalPercent >= clamped ? 'assistant.calc.verdict.met' : 'assistant.calc.verdict.missed',
+          ),
+        });
       default:
-        return 'В плане дисциплины нет экзаменационного элемента — считаю по накопленной.';
+        return t(locale, 'assistant.calc.noExam');
     }
   })();
 
@@ -195,8 +231,10 @@ function CalculatorCard({ card }: { card: Extract<AssistantCard, { type: 'calcul
           {card.teacherName ? ` · ${card.teacherName}` : ''}
         </p>
         <p className="text-xs text-muted-foreground">
-          Накоплено: {card.accumulatedLabel}
-          {card.maxPossibleLabel ? ` · максимум возможного ${card.maxPossibleLabel}` : ''}
+          {t(locale, 'assistant.calc.accumulated', { value: card.accumulatedLabel })}
+          {card.maxPossibleLabel
+            ? ` · ${t(locale, 'assistant.calc.maxPossible', { value: card.maxPossibleLabel })}`
+            : ''}
         </p>
 
         <ul className="flex flex-col gap-1.5">
@@ -208,7 +246,7 @@ function CalculatorCard({ card }: { card: Extract<AssistantCard, { type: 'calcul
                 {el.graded && el.score !== null ? (
                   <span className="font-semibold text-success-ink">· {el.score}</span>
                 ) : (
-                  <span className="text-muted-foreground">· не сдано</span>
+                  <span className="text-muted-foreground">{t(locale, 'assistant.calc.notSubmitted')}</span>
                 )}
               </span>
             </li>
@@ -223,14 +261,18 @@ function CalculatorCard({ card }: { card: Extract<AssistantCard, { type: 'calcul
                 {card.exam.graded && card.exam.score !== null ? (
                   <span className="font-semibold text-success-ink">· {card.exam.score}</span>
                 ) : (
-                  <span className="text-muted-foreground">· впереди</span>
+                  <span className="text-muted-foreground">{t(locale, 'assistant.calc.ahead')}</span>
                 )}
               </span>
             </li>
           ) : null}
         </ul>
 
-        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Целевой итог">
+        <div
+          className="flex flex-wrap items-center gap-1.5"
+          role="group"
+          aria-label={t(locale, 'assistant.calc.targetAria')}
+        >
           {TARGET_CHIPS.map((chip) => (
             <button
               key={chip}
@@ -248,14 +290,14 @@ function CalculatorCard({ card }: { card: Extract<AssistantCard, { type: 'calcul
             </button>
           ))}
           <label className="ml-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-            Своя цель
+            {t(locale, 'assistant.calc.custom')}
             <input
               type="number"
               min={1}
               max={100}
               value={Number.isFinite(target) ? target : ''}
               onChange={(event) => setTarget(Number(event.target.value))}
-              aria-label="Свой целевой итог от 1 до 100"
+              aria-label={t(locale, 'assistant.calc.customAria')}
               data-testid="assistant-target-custom"
               className="w-16 rounded-button border border-input bg-background px-2 py-1 text-xs font-semibold text-foreground focus-visible:outline-2 focus-visible:outline-coral-600"
             />
@@ -275,7 +317,7 @@ function CalculatorCard({ card }: { card: Extract<AssistantCard, { type: 'calcul
 
 // ── Предзаполненная заявка ──────────────────────────────────────────────────
 
-function OrderCard({ card }: { card: Extract<AssistantCard, { type: 'order' }> }) {
+function OrderCard({ card, locale }: { card: Extract<AssistantCard, { type: 'order' }>; locale: Locale }) {
   const [state, formAction, pending] = useActionState(submitAssistantRequestAction, null);
   // Успешная отправка (state.ok) главнее локального шага подтверждения:
   // рендер ветвится по state — отдельный эффект на сброс не нужен.
@@ -294,8 +336,12 @@ function OrderCard({ card }: { card: Extract<AssistantCard, { type: 'order' }> }
       <div className="flex flex-col gap-2 px-4 py-3">
         <p className="text-sm font-semibold text-foreground">{card.serviceTitle}</p>
         <p className="text-xs text-muted-foreground">
-          {card.benefit} · готовность: {card.etaLabel} · формат: {card.formatLabel} · тип:{' '}
-          {card.requestTypeLabel}
+          {t(locale, 'assistant.order.meta', {
+            benefit: card.benefit,
+            eta: card.etaLabel,
+            format: card.formatLabel,
+            type: card.requestTypeLabel,
+          })}
         </p>
         <p className="rounded-button bg-info-soft px-3 py-2 text-xs text-info-ink">{card.notice}</p>
 
@@ -306,14 +352,16 @@ function OrderCard({ card }: { card: Extract<AssistantCard, { type: 'order' }> }
           >
             <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <span>
-              Заявка {state.created ? 'подана' : 'уже была подана ранее'} —{' '}
+              {t(locale, 'assistant.order.lead')}{' '}
+              {t(locale, state.created ? 'assistant.order.submitted' : 'assistant.order.already')}{' '}
+              —{' '}
               <Link
                 href={`/requests/${state.requestNumber}`}
                 className="font-bold underline underline-offset-2"
               >
                 {state.requestNumber}
               </Link>
-              . Статус — в «Заявках и справках».
+              {t(locale, 'assistant.order.statusHint')}
             </span>
           </div>
         ) : (
@@ -322,7 +370,7 @@ function OrderCard({ card }: { card: Extract<AssistantCard, { type: 'order' }> }
             {confirming ? (
               <div className="flex flex-wrap items-center gap-2 rounded-button border border-border bg-neutral-50 px-3 py-2">
                 <span className="text-sm font-semibold text-foreground">
-                  Отправить заявку в деканат?
+                  {t(locale, 'assistant.order.confirmQ')}
                 </span>
                 <button
                   type="submit"
@@ -331,7 +379,7 @@ function OrderCard({ card }: { card: Extract<AssistantCard, { type: 'order' }> }
                   className="inline-flex items-center gap-1.5 rounded-button bg-coral-500 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-coral-600 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
                 >
                   <Send className="size-3.5" aria-hidden="true" />
-                  {pending ? 'Отправляем…' : 'Да, отправить'}
+                  {pending ? t(locale, 'assistant.order.sending') : t(locale, 'assistant.order.sendYes')}
                 </button>
                 <button
                   type="button"
@@ -339,7 +387,7 @@ function OrderCard({ card }: { card: Extract<AssistantCard, { type: 'order' }> }
                   disabled={pending}
                   className="rounded-button px-2 py-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground disabled:opacity-60"
                 >
-                  Отмена
+                  {t(locale, 'assistant.cancel')}
                 </button>
               </div>
             ) : (
@@ -413,7 +461,15 @@ function FaqCard({
 
 // ── Сообщить о неверном ответе ──────────────────────────────────────────────
 
-export function ReportWrongAnswer({ question, excerpt }: { question: string; excerpt: string }) {
+export function ReportWrongAnswer({
+  question,
+  excerpt,
+  locale = 'ru',
+}: {
+  question: string;
+  excerpt: string;
+  locale?: Locale;
+}) {
   const [state, formAction, pending] = useActionState(reportAssistantAnswerAction, null);
   // Успех (state.ok) главнее локального шага подтверждения — без эффекта.
   const [confirming, setConfirming] = useState(false);
@@ -425,7 +481,7 @@ export function ReportWrongAnswer({ question, excerpt }: { question: string; exc
         data-testid="assistant-report-done"
         className="mt-1.5 rounded-button bg-success-soft px-2.5 py-1.5 text-xs text-success-ink"
       >
-        Спасибо! Обращение создано — ответ появится в «Связи с деканатом».
+        {t(locale, 'assistant.report.thanks')}
       </p>
     );
   }
@@ -437,14 +493,14 @@ export function ReportWrongAnswer({ question, excerpt }: { question: string; exc
         <input type="hidden" name="answerExcerpt" value={excerpt} />
         {confirming ? (
           <>
-            <span className="text-xs text-muted-foreground">Ответ действительно неверный?</span>
+            <span className="text-xs text-muted-foreground">{t(locale, 'assistant.report.confirmQ')}</span>
             <button
               type="submit"
               disabled={pending}
               data-testid="assistant-report-confirm"
               className="rounded-button bg-warning-soft px-2 py-1 text-xs font-semibold text-warning-ink transition-colors hover:bg-warning-soft/70 disabled:opacity-60"
             >
-              {pending ? 'Отправляем…' : 'Да, сообщить'}
+              {pending ? t(locale, 'assistant.report.sending') : t(locale, 'assistant.report.confirm')}
             </button>
             <button
               type="button"
@@ -452,7 +508,7 @@ export function ReportWrongAnswer({ question, excerpt }: { question: string; exc
               disabled={pending}
               className="rounded-button px-1.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground disabled:opacity-60"
             >
-              Отмена
+              {t(locale, 'assistant.cancel')}
             </button>
           </>
         ) : (
@@ -463,7 +519,7 @@ export function ReportWrongAnswer({ question, excerpt }: { question: string; exc
             aria-expanded={confirming}
             className="rounded-button px-0 py-0.5 text-xs text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
           >
-            Сообщить о неверном ответе
+            {t(locale, 'assistant.report.trigger')}
           </button>
         )}
       </form>

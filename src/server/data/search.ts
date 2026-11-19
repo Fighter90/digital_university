@@ -18,7 +18,8 @@
 // аудитится (это подсказки, а не запрос карточки — NOT_FOUND пишет маршрут
 // /api/requests/[number]). Частичный набор по буквам не аудитится.
 
-import { FAQ_ENTRIES } from '@/lib/faq-catalog';
+import { faqEntries } from '@/lib/faq-catalog';
+import type { Locale } from '@/lib/i18n';
 import {
   MIN_QUERY_LENGTH,
   buildGroups,
@@ -63,6 +64,7 @@ export async function searchCabinet(
   db: DataDb,
   ctx: DataCtx,
   rawQuery: string,
+  locale: Locale = 'ru',
 ): Promise<SearchResponse> {
   const query = normalizeSearchQuery(rawQuery);
   if (query.length < MIN_QUERY_LENGTH) return { query: rawQuery, groups: [] };
@@ -168,8 +170,8 @@ export async function searchCabinet(
     hits.push(...people.values());
   }
 
-  // ── Вопросы и ответы (вымышленный FAQ, экран — DIG-38) ────────────────────
-  for (const entry of FAQ_ENTRIES) {
+  // ── Вопросы и ответы (вымышленный FAQ, экран — DIG-38; локаль — DIG-88) ───
+  for (const entry of faqEntries(locale)) {
     if (
       !matchesSearchQuery(entry.question, query) &&
       !matchesSearchQuery(entry.answer, query) &&

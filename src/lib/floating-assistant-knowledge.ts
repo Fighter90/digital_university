@@ -9,8 +9,16 @@
 // частота слов запроса по чанку, буст совпадения в заголовке.
 // Сборка индекса ленивая и одноразовая — каталог статический.
 import { faqStems } from '@/lib/faq-kb-catalog';
-import { GUIDE_SECTIONS } from '@/lib/help-content';
-import { FAQ_ARTICLES } from '@/lib/faq-kb-catalog';
+import {
+  guideSections,
+  type HelpSection,
+} from '@/lib/help-content';
+import {
+  faqArticles,
+  FAQ_ARTICLES,
+  type FaqArticle,
+} from '@/lib/faq-kb-catalog';
+import type { Locale } from '@/lib/i18n';
 
 /** Один чанк индекса: заголовок, текст и ссылка-источник для ответа. */
 export interface KnowledgeChunk {
@@ -43,10 +51,17 @@ interface IndexedChunk extends KnowledgeChunk {
   bodyTokens: Map<string, number>;
 }
 
-// Каталог справки и FAQ статический — индекс собирается один раз на процесс.
-let cache: IndexedChunk[] | null = null;
+// Каталог справки и FAQ статический — индекс собирается один раз на процесс
+// И на локаль (DIG-88: EN-чанки для locale=en).
+const cache = new Map<Locale, IndexedChunk[]>();
 // Публичный срез чанка (без индексных множеств) для ответов и тестов.
-let publicChunks: KnowledgeChunk[] | null = null;
+const publicCache = new Map<Locale, KnowledgeChunk[]>();
+
+/** Подпись источника по локали: «Справка · …» / «Вопросы и ответы» — канон. */
+function sourceLabelFor(kind: 'guide' | 'faq', title: string, locale: Locale): string {
+  if (locale === 'en') return kind === 'guide' ? `Guide · ${title}` : 'FAQ';
+  return kind === 'guide' ? `Справка · ${title}` : 'Вопросы и ответы';
+}
 
 function stripIndex(chunk: IndexedChunk): KnowledgeChunk {
   return {
@@ -60,24 +75,26 @@ function stripIndex(chunk: IndexedChunk): KnowledgeChunk {
 }
 
 /**
- * Индекс чанков справки и FAQ (ленивая одноразовая сборка).
+ * Индекс чанков справки и FAQ (ленивая одноразовая сборка на локаль).
  */
-export function buildKnowledgeChunks(): KnowledgeChunk[] {
-  if (!publicChunks) {
-    publicChunks = getIndexedChunks().map(stripIndex);
+export function buildKnowledgeChunks(locale: Locale = 'ru'): KnowledgeChunk[] {
+  if (!publicCache.has(locale)) {
+    publicCache.set(locale, getIndexedChunks(locale).map(stripIndex));
   }
-  return publicChunks;
+  return publicCache.get(locale)!;
 }
 
-function getIndexedChunks(): IndexedChunk[] {
-  if (!cache) indexChunks();
-  return cache!;
+function getIndexedChunks(locale: Locale): IndexedChunk[] {
+  if (!cache.has(locale)) indexChunks(locale);
+  return cache.get(locale)!;
 }
 
-function indexChunks(): void {
+function indexChunks(locale: Locale): void {
   const chunks: IndexedChunk[] = [];
+  const sections: HelpSection[] = guideSections(locale);
+  const articles: FaqArticle[] = locale === 'en' ? faqArticles('en') : FAQ_ARTICLES;
 
-  for (const section of GUIDE_SECTIONS) {
+  for (const section of sections) {
     const title = section.title;
     const parts: string[] = [title, section.summary];
     for (const step of section.steps) parts.push(step.text);
@@ -88,13 +105,13 @@ function indexChunks(): void {
       title,
       text: parts.join(' '),
       href: section.href,
-      sourceLabel: `Справка · ${title}`,
+      sourceLabel: sourceLabelFor('guide', title, locale),
       titleTokens: new Set(faqStems(title)),
       bodyTokens: tokenFrequencies(parts.join(' ')),
     });
   }
 
-  for (const article of FAQ_ARTICLES) {
+  for (const article of articles) {
     const title = article.question;
     chunks.push({
       id: article.id,
@@ -102,14 +119,14 @@ function indexChunks(): void {
       title,
       text: `${title} ${article.answer}`,
       href: article.cta?.href ?? '/help',
-      sourceLabel: 'Вопросы и ответы',
+      sourceLabel: sourceLabelFor('faq', title, locale),
       titleTokens: new Set(faqStems(title)),
       bodyTokens: tokenFrequencies(`${title} ${article.answer}`),
     });
   }
 
-  cache = chunks;
-  publicChunks = null;
+  cache.set(locale, chunks);
+  publicCache.delete(locale);
 }
 
 /** Частоты стемов в тексте чанка (для частотного скоринга запроса). */
@@ -134,17 +151,20 @@ function prefixHit(tokens: Iterable<string>, stem: string): boolean {
  * Лексический retrieval: скор по уникальным токенам запроса (стемминг,
  * стоп-слова и ё→е — общий токенизатор DIG-38), частота в теле чанка и
  * буст заголовка. Чанки без ни одного попадания не возвращаются; порядок
- * при равном скорe — каталоговый (справка, затем FAQ).
+ * при равном скорe — каталоговый (справка, затем FAQ). Локаль выбирает
+ * индекс (RU — канон, EN — англоязычные чанки).
  */
 export function retrieveKnowledgeChunks(
   query: string,
   limit = RETRIEVAL_TOP_K,
+  locale: Locale = 'ru',
 ): ScoredKnowledgeChunk[] {
   const queryTokens = [...new Set(faqStems(query))];
   if (queryTokens.length === 0 || limit <= 0) return [];
 
+  const indexed = getIndexedChunks(locale);
   const scored: { chunk: IndexedChunk; score: number }[] = [];
-  for (const chunk of getIndexedChunks()) {
+  for (const chunk of indexed) {
     let score = 0;
     for (const token of queryTokens) {
       if (chunk.titleTokens.has(token)) score += TITLE_HIT_SCORE;
@@ -157,7 +177,7 @@ export function retrieveKnowledgeChunks(
     if (score > 0) scored.push({ chunk, score });
   }
 
-  const order = new Map(getIndexedChunks().map((chunk, index) => [chunk.id, index]));
+  const order = new Map(indexed.map((chunk, index) => [chunk.id, index]));
   return scored
     .sort((a, b) => b.score - a.score || order.get(a.chunk.id)! - order.get(b.chunk.id)!)
     .slice(0, limit)
@@ -174,6 +194,21 @@ export const FLOATING_SYSTEM_PROMPT =
   'обращение в деканат. Отвечай коротко и по-русски, простым текстом без markdown. ' +
   'Данные кабинета вымышленные — это концепт для конкурса.';
 
+/** EN-системный промпт (DIG-88): тот же контракт, английский язык ответа. */
+export const FLOATING_SYSTEM_PROMPT_EN =
+  'You are the AI assistant of the digital deanery inside a student cabinet. ' +
+  'Answer ONLY from the cabinet guide (the given context): how to use the sections, ' +
+  'study rules, certificates, requests. Never invent rules or numbers. ' +
+  'If the answer is not in the context — say honestly that the guide does not cover it, ' +
+  'and suggest opening the “Guide” (/guide) or the “FAQ” (/help), or creating a ticket ' +
+  'to the deanery. Answer briefly, in English, as plain text without markdown. ' +
+  'All cabinet data is fictional — this is a contest concept.';
+
+/** Системный промпт по локали (RU — канон, прежняя строка). */
+export function floatingSystemPrompt(locale: Locale = 'ru'): string {
+  return locale === 'en' ? FLOATING_SYSTEM_PROMPT_EN : FLOATING_SYSTEM_PROMPT;
+}
+
 /** Сообщение chat-completions. */
 export interface AssistantChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -183,19 +218,26 @@ export interface AssistantChatMessage {
 /**
  * Сообщения для OpenRouter: системный промпт + топ-чанки контекстом
  * (одним пользовательским сообщением) + сам вопрос последним сообщением.
+ * Локаль выбирает язык системного промпта и языка запроса контекста.
  */
 export function buildOpenRouterMessages(
   question: string,
   chunks: readonly KnowledgeChunk[],
+  locale: Locale = 'ru',
 ): AssistantChatMessage[] {
-  const messages: AssistantChatMessage[] = [{ role: 'system', content: FLOATING_SYSTEM_PROMPT }];
+  const messages: AssistantChatMessage[] = [
+    { role: 'system', content: floatingSystemPrompt(locale) },
+  ];
   if (chunks.length > 0) {
     const context = chunks.map((chunk) => `— ${chunk.title}\n${chunk.text}`).join('\n\n');
     messages.push({
       role: 'user',
       content:
-        `Контекст из справки кабинета (используй только его):\n\n${context}\n\n` +
-        'Ответь на вопрос студента по этому контексту.',
+        locale === 'en'
+          ? `Context from the cabinet guide (use only it):\n\n${context}\n\n` +
+            'Answer the student’s question using this context.'
+          : `Контекст из справки кабинета (используй только его):\n\n${context}\n\n` +
+            'Ответь на вопрос студента по этому контексту.',
     });
   }
   messages.push({ role: 'user', content: question });

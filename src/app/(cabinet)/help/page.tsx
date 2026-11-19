@@ -3,23 +3,27 @@
 // студента и сотрудника — owner-scoped данных нет, IDOR-поверхности нет;
 // доступ гарантирует requireUser каркаса кабинета (layout). Поиск и фильтры
 // клиентские, каталог — статический вымышленный контент из lib/faq-kb-catalog.
+// DIG-88 — интро и каталог статей по локали cookie du-locale; RU — байт-в-байт.
 import type { Metadata } from 'next';
 
 import { HelpBrowser } from '@/components/help/help-browser';
+import { t } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 import { SectionTitle } from '@/components/shell/section-title';
 
-export const metadata: Metadata = { title: 'Вопросы и ответы — Цифровой деканат' };
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.help') };
+}
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  const locale = await getLocale();
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
       <SectionTitle href="/help" className="text-xl font-bold sm:text-2xl" />
-      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        База знаний деканата: поиск понимает словоформы — стипендия, стипендии, стипендиальный
-        найдут одно и то же.
-      </p>
+      <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t(locale, 'help.intro')}</p>
 
-      <HelpBrowser />
+      <HelpBrowser locale={locale} />
     </section>
   );
 }

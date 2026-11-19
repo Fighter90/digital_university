@@ -19,6 +19,7 @@ import {
 } from '@/lib/floating-assistant-knowledge';
 import { askOpenRouterChat, readOpenRouterKey } from '@/server/ai/openrouter';
 import { createVerifyRateLimiter, type VerifyRateLimiter } from '@/server/verify/rate-limit';
+import type { Locale } from '@/lib/i18n';
 
 /** Окно лимита: 10 вопросов в минуту на сессию. */
 export const FLOATING_ASSISTANT_RATE_WINDOW_MS = 60 * 1000;
@@ -43,9 +44,32 @@ export const floatingAssistantRateLimiter: VerifyRateLimiter =
 
 export const FALLBACK_NOTICE = 'Демо-режим: показываю подсказку из справки';
 
+/** EN-пометка демо-режима (DIG-88, locale=en). */
+export const FALLBACK_NOTICE_EN = 'Demo mode: showing a hint from the guide';
+
 const NO_DATA_ANSWER =
   'Об этом в справке кабинета пока нет. Откройте «Справку» (/guide) или ' +
   '«Вопросы и ответы» (/help), либо создайте обращение в деканат — там подскажут.';
+
+const NO_DATA_ANSWER_EN =
+  'There is nothing about this in the cabinet guide yet. Open the “Guide” (/guide) ' +
+  'or the “FAQ” (/help), or create a ticket to the deanery — they will help there.';
+
+const RATE_LIMIT_ERROR = 'Слишком много вопросов. Подождите минуту и попробуйте снова.';
+const RATE_LIMIT_ERROR_EN = 'Too many questions. Wait a minute and try again.';
+
+const EMPTY_QUESTION_ERROR = 'Введите вопрос — ассистент отвечает по справке кабинета.';
+const EMPTY_QUESTION_ERROR_EN = 'Enter a question — the assistant answers from the cabinet guide.';
+
+/** Пометка демо-режима по локали (RU — канон). */
+export function fallbackNotice(locale: Locale = 'ru'): string {
+  return locale === 'en' ? FALLBACK_NOTICE_EN : FALLBACK_NOTICE;
+}
+
+/** Подсказка ответа по локали. */
+export function fallbackAnswer(locale: Locale = 'ru'): string {
+  return locale === 'en' ? NO_DATA_ANSWER_EN : NO_DATA_ANSWER;
+}
 
 /** Ответ action'а попап-чату. */
 export type FloatingAssistantReply =
@@ -70,6 +94,11 @@ export interface FloatingAssistantDeps {
   fetchImpl?: typeof fetch;
   /** Лимитер; по умолчанию — экземпляр приложения. */
   rateLimiter?: VerifyRateLimiter;
+  /**
+   * DIG-88 — локаль интерфейса (cookie du-locale): язык видимых строк
+   * ответа (fallback-подсказка, ошибки) и RAG-чанков. RU — канон.
+   */
+  locale?: Locale;
 }
 
 /**
@@ -80,9 +109,13 @@ export async function answerFloatingQuestion(
   input: { question: string },
   deps: FloatingAssistantDeps,
 ): Promise<FloatingAssistantReply> {
+  const locale: Locale = deps.locale ?? 'ru';
   const question = (input?.question ?? '').trim();
   if (question.length === 0) {
-    return { ok: false, error: 'Введите вопрос — ассистент отвечает по справке кабинета.' };
+    return {
+      ok: false,
+      error: locale === 'en' ? EMPTY_QUESTION_ERROR_EN : EMPTY_QUESTION_ERROR,
+    };
   }
 
   const now =
@@ -92,17 +125,17 @@ export async function answerFloatingQuestion(
   if (hit.limited) {
     return {
       ok: false,
-      error: 'Слишком много вопросов. Подождите минуту и попробуйте снова.',
+      error: locale === 'en' ? RATE_LIMIT_ERROR_EN : RATE_LIMIT_ERROR,
     };
   }
 
   const clipped = question.slice(0, QUESTION_MAX_LENGTH);
-  const chunks = retrieveKnowledgeChunks(clipped, 3);
+  const chunks = retrieveKnowledgeChunks(clipped, 3, locale);
   const readKey = deps.apiKey ?? readOpenRouterKey;
 
   const key = readKey();
   if (key) {
-    const result = await askOpenRouterChat(buildOpenRouterMessages(clipped, chunks), {
+    const result = await askOpenRouterChat(buildOpenRouterMessages(clipped, chunks, locale), {
       apiKey: key,
       fetchImpl: deps.fetchImpl,
     });
@@ -118,8 +151,8 @@ export async function answerFloatingQuestion(
     return {
       ok: true,
       mode: 'fallback',
-      answer: NO_DATA_ANSWER,
-      notice: FALLBACK_NOTICE,
+      answer: fallbackAnswer(locale),
+      notice: fallbackNotice(locale),
       source: null,
     };
   }
@@ -129,7 +162,7 @@ export async function answerFloatingQuestion(
     ok: true,
     mode: 'fallback',
     answer: hint,
-    notice: FALLBACK_NOTICE,
+    notice: fallbackNotice(locale),
     source: { title: top.sourceLabel, href: top.href },
   };
 }

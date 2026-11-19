@@ -10,19 +10,22 @@ import { CircleHelp, MessagesSquare, Search, Sparkles } from 'lucide-react';
 
 import {
   FAQ_ARTICLES,
-  FAQ_CATEGORY_LABELS,
   FAQ_CATEGORY_ORDER,
-  POPULAR_QUERIES,
+  faqArticles,
+  faqCategoryLabel,
+  popularQueries,
   searchFaqArticles,
   type FaqArticle,
   type FaqCategory,
 } from '@/lib/faq-kb-catalog';
+import { t, type Locale } from '@/lib/i18n';
 
 const linkButtonClasses =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-button px-4 py-2.5 text-sm font-semibold shadow-soft transition-colors focus-visible:outline-2';
 
-/** Русская плюрализация: 1 статья, 2–4 статьи, 5–20 статей, 21 статья… */
-function articlesLabel(n: number): string {
+/** Плюрализация статей: RU — 1 статья/2–4 статьи/5–20 статей; EN — article(s). */
+function articlesLabel(n: number, locale: Locale): string {
+  if (locale === 'en') return n === 1 ? 'article' : 'articles';
   const mod10 = n % 10;
   const mod100 = n % 100;
   if (mod10 === 1 && mod100 !== 11) return 'статью';
@@ -30,7 +33,7 @@ function articlesLabel(n: number): string {
   return 'статей';
 }
 
-function ArticleLink({ article }: { article: FaqArticle }) {
+function ArticleLink({ article, locale }: { article: FaqArticle; locale: Locale }) {
   return (
     <li>
       <Link
@@ -39,7 +42,7 @@ function ArticleLink({ article }: { article: FaqArticle }) {
         className="block rounded-card border border-border bg-card p-4 shadow-soft transition-colors hover:bg-muted focus-visible:outline-2"
       >
         <span className="text-xs font-semibold uppercase tracking-wide text-coral-600">
-          {FAQ_CATEGORY_LABELS[article.category]}
+          {faqCategoryLabel(locale, article.category)}
         </span>
         <span className="mt-1 block text-sm font-bold leading-snug">{article.question}</span>
         <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground">
@@ -50,12 +53,15 @@ function ArticleLink({ article }: { article: FaqArticle }) {
   );
 }
 
-export function HelpBrowser() {
+export function HelpBrowser({ locale = 'ru' }: { locale?: Locale }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<FaqCategory | null>(null);
 
   const trimmed = query.trim();
-  const results = useMemo(() => (trimmed ? searchFaqArticles(trimmed) : FAQ_ARTICLES), [trimmed]);
+  const results = useMemo(
+    () => (trimmed ? searchFaqArticles(trimmed, locale) : faqArticles(locale)),
+    [trimmed, locale],
+  );
   const visible = useMemo(
     () => (category ? results.filter((a) => a.category === category) : results),
     [results, category],
@@ -65,7 +71,7 @@ export function HelpBrowser() {
     <div data-testid="help-browser" className="mt-5">
       {/* Большое поле «Найдите ответ» — ввод сразу фильтрует статьи. */}
       <label htmlFor="help-search" className="block text-base font-extrabold tracking-heading">
-        Найдите ответ
+        {t(locale, 'help.findAnswer')}
       </label>
       <div className="relative mt-2">
         <Search
@@ -76,7 +82,7 @@ export function HelpBrowser() {
           id="help-search"
           data-testid="help-search"
           type="search"
-          placeholder="Например: стипендия, справка, общежитие…"
+          placeholder={t(locale, 'help.search.placeholder')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="h-14 w-full rounded-card border border-border bg-card pl-12 pr-4 text-base text-foreground shadow-soft outline-none transition-colors placeholder:text-muted-foreground focus:border-muted-foreground/40"
@@ -84,8 +90,12 @@ export function HelpBrowser() {
       </div>
 
       {/* Популярные запросы — каждая подсказка реально что-то находит. */}
-      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Популярные запросы">
-        {POPULAR_QUERIES.map((popular) => (
+      <div
+        className="mt-3 flex flex-wrap gap-2"
+        role="group"
+        aria-label={t(locale, 'help.popularAria')}
+      >
+        {popularQueries(locale).map((popular) => (
           <button
             key={popular}
             type="button"
@@ -103,7 +113,7 @@ export function HelpBrowser() {
       <div
         data-testid="help-categories"
         role="group"
-        aria-label="Категории вопросов"
+        aria-label={t(locale, 'help.categoriesAria')}
         className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3"
       >
         {FAQ_CATEGORY_ORDER.map((key) => {
@@ -123,7 +133,7 @@ export function HelpBrowser() {
                   aria-hidden="true"
                   className="size-3.5 shrink-0 text-coral-600 group-aria-pressed:text-background"
                 />
-                {FAQ_CATEGORY_LABELS[key]}
+                {faqCategoryLabel(locale, key)}
               </span>
               <span className="text-xs text-muted-foreground group-aria-pressed:text-background/70">
                 {count}
@@ -142,9 +152,12 @@ export function HelpBrowser() {
           className="mt-6 flex flex-col items-center gap-3 rounded-card border border-dashed border-border bg-card px-6 py-8 text-center"
         >
           <p className="text-sm text-muted-foreground">
-            В категории «{category ? FAQ_CATEGORY_LABELS[category] : ''}» по запросу «{trimmed}»
-            статей нет. Сбросьте фильтр — поиск нашёл {results.length}{' '}
-            {articlesLabel(results.length)}.
+            {t(locale, 'help.filterEmpty', {
+              category: category ? faqCategoryLabel(locale, category) : '',
+              query: trimmed,
+              count: results.length,
+              label: articlesLabel(results.length, locale),
+            })}
           </p>
           <button
             type="button"
@@ -152,7 +165,7 @@ export function HelpBrowser() {
             onClick={() => setCategory(null)}
             className="inline-flex min-h-10 items-center justify-center rounded-button border border-border bg-card px-4 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-muted"
           >
-            Показать все результаты
+            {t(locale, 'help.filterReset')}
           </button>
         </div>
       ) : visible.length === 0 ? (
@@ -164,10 +177,9 @@ export function HelpBrowser() {
             >
               <Search aria-hidden="true" className="size-6" />
             </span>
-            <h2 className="text-base font-extrabold tracking-heading">Ничего не нашлось</h2>
+            <h2 className="text-base font-extrabold tracking-heading">{t(locale, 'help.empty.title')}</h2>
             <p className="max-w-xs text-sm text-muted-foreground">
-              По запросу «{trimmed}» ответа в базе пока нет. Спросите ассистента или напишите в
-              деканат — текст запроса перенесётся вместе с вами.
+              {t(locale, 'help.empty.hint', { query: trimmed })}
             </p>
             <div className="mt-1 flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <Link
@@ -176,7 +188,7 @@ export function HelpBrowser() {
                 className={`${linkButtonClasses} bg-foreground text-background hover:bg-muted-foreground/90`}
               >
                 <Sparkles aria-hidden="true" className="size-4" />
-                Спросить AI-ассистента
+                {t(locale, 'help.empty.askAi')}
               </Link>
               <Link
                 data-testid="help-empty-deanery"
@@ -184,7 +196,7 @@ export function HelpBrowser() {
                 className={`${linkButtonClasses} border border-border bg-card text-foreground hover:bg-muted`}
               >
                 <MessagesSquare aria-hidden="true" className="size-4" />
-                Написать в деканат
+                {t(locale, 'help.empty.writeDeanery')}
               </Link>
             </div>
           </div>
@@ -192,11 +204,11 @@ export function HelpBrowser() {
       ) : (
         <ul
           data-testid="help-articles"
-          aria-label="Статьи"
+          aria-label={t(locale, 'help.articlesAria')}
           className="mt-6 grid grid-cols-1 gap-2.5"
         >
           {visible.map((article) => (
-            <ArticleLink key={article.id} article={article} />
+            <ArticleLink key={article.id} article={article} locale={locale} />
           ))}
         </ul>
       )}

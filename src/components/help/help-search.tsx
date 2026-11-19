@@ -24,11 +24,13 @@ import {
 
 import { Callout } from '@/components/help/callout';
 import {
-  EMPTY_SEARCH_HINT,
-  EMPTY_SEARCH_MESSAGE,
+  emptySearchHint,
+  emptySearchMessage,
   filterHelpSections,
+  guideStepCountLabel,
   type HelpSection,
 } from '@/lib/help-content';
+import { t, type Locale } from '@/lib/i18n';
 
 // Иконки разделов гайда по id (lucide напрямую — данные в lib без React).
 // Расписание, заявки, деканат и остальные повторяют иконки тех же разделов
@@ -48,15 +50,6 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
 
 function sectionIconFor(id: string): LucideIcon {
   return SECTION_ICONS[id] ?? KeyRound;
-}
-
-/** Русская плюрализация: 1 раздел, 2–4 раздела, 5–20 разделов. */
-function sectionsLabel(n: number): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return 'раздел';
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'раздела';
-  return 'разделов';
 }
 
 /** Оглавление (якорная навигация) по отфильтрованным разделам. */
@@ -82,7 +75,13 @@ function Toc({ sections }: { sections: HelpSection[] }) {
   );
 }
 
-export function HelpSearch({ sections }: { sections: HelpSection[] }) {
+export function HelpSearch({
+  sections,
+  locale = 'ru',
+}: {
+  sections: HelpSection[];
+  locale?: Locale;
+}) {
   const [query, setQuery] = useState('');
   const trimmed = query.trim();
   // Чистый фильтр живёт в lib/help-content — его покрывают юнит-тесты напрямую.
@@ -93,7 +92,7 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
     <div data-testid="guide-browser" className="mt-5">
       {/* Поле поиска: ввод сразу фильтрует разделы по заголовкам и тексту. */}
       <label htmlFor="guide-search" className="block text-base font-extrabold tracking-heading">
-        Поиск по справке
+        {t(locale, 'guide.search.label')}
       </label>
       <div className="relative mt-2">
         <Search
@@ -104,7 +103,7 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
           id="guide-search"
           data-testid="guide-search"
           type="search"
-          placeholder="Например: статус, пароль, календарь…"
+          placeholder={t(locale, 'guide.search.placeholder')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="h-12 w-full rounded-card border border-input bg-card pl-11 pr-4 text-sm shadow-soft placeholder:text-muted-foreground focus-visible:outline-2"
@@ -112,7 +111,10 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
       </div>
       {searching ? (
         <p data-testid="guide-count" className="mt-2 text-xs text-muted-foreground" role="status">
-          Найдено: {results.length} {sectionsLabel(results.length)}
+          {t(locale, 'guide.search.count', {
+            count: results.length,
+            label: guideStepCountLabel(results.length, locale),
+          })}
         </p>
       ) : null}
 
@@ -122,7 +124,7 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
           {/* Мобильный: свёрнутое оглавление. */}
           <details className="rounded-card border border-border bg-card p-3 shadow-soft lg:hidden">
             <summary className="cursor-pointer select-none text-sm font-extrabold tracking-heading">
-              Содержание
+              {t(locale, 'guide.toc')}
             </summary>
             <div className="mt-1">
               <Toc sections={results} />
@@ -130,10 +132,10 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
           </details>
           {/* Десктоп ≥1024: постоянная колонка оглавления. */}
           <nav
-            aria-label="Содержание справки"
+            aria-label={t(locale, 'guide.tocAria')}
             className="hidden rounded-card border border-border bg-card p-3 shadow-soft lg:block"
           >
-            <p className="text-sm font-extrabold tracking-heading">Содержание</p>
+            <p className="text-sm font-extrabold tracking-heading">{t(locale, 'guide.toc')}</p>
             <div className="mt-2">
               <Toc sections={results} />
             </div>
@@ -174,7 +176,7 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
                 {section.callouts && section.callouts.length > 0 ? (
                   <div className="mt-3 grid gap-2">
                     {section.callouts.map((callout) => (
-                      <Callout key={callout.kind} callout={callout} />
+                      <Callout key={callout.kind} callout={callout} locale={locale} />
                     ))}
                   </div>
                 ) : null}
@@ -184,7 +186,7 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
                     data-testid={`guide-open-${section.id}`}
                     className="inline-flex min-h-9 items-center rounded-pill border border-border px-3.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-soft focus-visible:outline-2"
                   >
-                    Открыть раздел
+                    {t(locale, 'guide.openSection')}
                   </Link>
                 </div>
               </section>
@@ -198,8 +200,10 @@ export function HelpSearch({ sections }: { sections: HelpSection[] }) {
               role="status"
               className="rounded-card border border-dashed border-border bg-card p-6 text-center shadow-soft"
             >
-              <p className="text-sm font-extrabold tracking-heading">{EMPTY_SEARCH_MESSAGE}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{EMPTY_SEARCH_HINT}</p>
+              <p className="text-sm font-extrabold tracking-heading">
+                {emptySearchMessage(locale)}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{emptySearchHint(locale)}</p>
             </div>
           ) : null}
         </div>
