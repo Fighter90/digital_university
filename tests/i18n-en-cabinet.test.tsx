@@ -38,6 +38,7 @@ vi.mock('@/lib/i18n/server', () => ({
 // ставит свою фикстуру; функции-прокси читают её в момент вызова).
 const dataState = vi.hoisted(() => {
   return {
+    favorites: null as unknown,
     ctx: null as unknown,
     dashboard: null as unknown,
     ownSettings: null as unknown,
@@ -91,6 +92,7 @@ vi.mock('@/server/data', async (importOriginal) => {
     getOwnProfile: vi.fn(async () => dataState.profile),
     getFeedbackPage: vi.fn(async () => dataState.feedbackPage),
     getPeopleDirectory: vi.fn(async () => dataState.peopleDirectory),
+    listFavoritePersons: vi.fn(async () => dataState.favorites ?? { favorites: [], hasPersonalScope: true }),
     getDeaneryPage: vi.fn(async () => dataState.deaneryPage),
     getMspPage: vi.fn(async () => dataState.mspPage),
     getDpoCatalog: vi.fn(async () => dataState.dpoCatalog),
@@ -1048,6 +1050,8 @@ describe('DIG-93: /people при locale=en — без кириллицы', () =>
     render(
       createElement(PeopleBrowser, {
         people: [person()],
+        groupmates: [],
+        favorites: [],
         showPersonal: true,
         locale: 'en',
       }),
@@ -1071,7 +1075,8 @@ describe('DIG-93: /people при locale=en — без кириллицы', () =>
           isMyDeanery: true,
         }),
       ],
-      hasPersonalScope: true,
+      groupmates: [],
+      favorites: { favorites: [], hasPersonalScope: true },
       totalCount: 2,
     };
     const html = await renderPage(PeoplePage);
