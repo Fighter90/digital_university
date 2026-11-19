@@ -8,13 +8,14 @@ export { listRequests, getRequestByNumber, listRequestEvents } from './requests'
 export { listGrades } from './grades';
 export { getGradeInsight } from './grade-insight';
 export type { GradeInsight } from '@/lib/grade-insight';
-export { getPerformance, needForTarget } from './performance';
+export { getGroupRating, getPerformance, needForTarget } from './performance';
 export type {
   CreditsView,
   DebtItem,
   DebtStatus,
   DisciplinePerformance,
   GpaView,
+  GroupRatingView,
   PerformanceData,
   RatingView,
 } from './performance';

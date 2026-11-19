@@ -34,6 +34,7 @@ import {
   type SemesterKey,
 } from '@/lib/performance-math';
 import { denyAccess } from './access';
+import { buildGroupRatingRows, type GroupRatingRow } from '@/lib/group-rating';
 import type { DataDb } from './port';
 import type {
   DataCtx,
@@ -460,6 +461,82 @@ function buildRating(
 }
 
 // ── Публичные функции (контракт слоя данных) ────────────────────────────────
+
+/**
+ * DIG-103 — полный «Рейтинг группы» (/grades/rating): таблица студентов
+ * СВОЕЙ группы (группа только из ctx.groupName — из сессии, из URL не
+ * приходит) по среднему баллу. Средний считает тот же gpaOfStudent, что и
+ * агрегат DIG-80 (getPerformance) — единый источник: средний и место
+ * студента на странице рейтинга совпадают с кольцом GPA и «N из M» сводки.
+ *
+ * Приватность: в строках только ФИО и средний балл — чужие оценки по
+ * дисциплинам не раскрываются (это вход агрегата, не его результат).
+ * Сотрудник (без studentId) — null + аудит (ROLE_MISMATCH).
+ */
+export interface GroupRatingView {
+  groupName: string;
+  /** Строки таблицы: ранжированные, затем студенты без оценок. */
+  rows: GroupRatingRow[];
+  /** Есть ли в группе хоть одна оценка (false → на экране empty-state). */
+  hasAnyGrades: boolean;
+}
+
+export async function getGroupRating(
+  db: DataDb,
+  ctx: DataCtx,
+): Promise<GroupRatingView | null> {
+  if (ctx.studentId === null || ctx.groupName === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: 'group-rating',
+      reason: 'ROLE_MISMATCH',
+    });
+    return null;
+  }
+
+  const groupName = ctx.groupName;
+  const [students, groupGrades, disciplines, elements] = await Promise.all([
+    db.listStudentsByGroup(groupName),
+    db.listGradesByGroup(groupName),
+    db.listDisciplinesByGroup(groupName),
+    db.listDisciplineElementsByGroup(groupName),
+  ]);
+
+  // Оценки группы группируются по студенту (вход агрегата): средний каждого
+  // сокурсника считается той же функцией, что и у владельца ctx.
+  const gradesByStudent = new Map<string, GradeRow[]>();
+  for (const row of groupGrades) {
+    const bucket = gradesByStudent.get(row.studentId) ?? [];
+    bucket.push(row);
+    gradesByStudent.set(row.studentId, bucket);
+  }
+
+  const entries = students
+    .map((student) => {
+      const average = gpaOfStudent(
+        gradesByStudent.get(student.id) ?? [],
+        disciplines,
+        elements,
+      );
+      return average === null
+        ? null
+        : { studentId: student.id, fullName: student.fullName, average };
+    })
+    .filter((entry): entry is { studentId: string; fullName: string; average: number } =>
+      Boolean(entry),
+    );
+
+  return {
+    groupName,
+    rows: buildGroupRatingRows(
+      entries,
+      students.map(({ id, fullName }) => ({ studentId: id, fullName })),
+      ctx.studentId,
+    ),
+    hasAnyGrades: entries.length > 0,
+  };
+}
 
 /**
  * Полный агрегат успеваемости текущего студента: накопленные оценки по

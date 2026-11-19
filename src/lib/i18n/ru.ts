@@ -41,6 +41,8 @@ export const ru = {
   'title.tasks': 'Задачи',
   'title.schedule': 'Расписание',
   'title.grades': 'Успеваемость',
+  // DIG-103 — подстраница рейтинга группы.
+  'title.gradesRating': 'Рейтинг группы',
   'title.gradebook': 'Зачётная книжка',
   'title.session': 'Сессия',
   'title.requests': 'Мои заявки',
@@ -354,6 +356,17 @@ export const ru = {
   'grades.debt.assignedIn': 'Пересдача назначена на {date} (осталось {days} {word})',
   'grades.debt.closedPhrase': 'Долг закрыт — пересдача {date} зачтена',
   'grades.retakeSignup': 'Записаться на пересдачу',
+
+  // ── DIG-103 — рейтинг группы (/grades/rating) ─────────────────────────────
+  'grades.rating.link': 'Весь рейтинг группы',
+  'grades.rating.caption': 'Студенты группы по среднему баллу',
+  'grades.rating.place': 'Место',
+  'grades.rating.student': 'Студент',
+  'grades.rating.average': 'Средний балл',
+  'grades.rating.you': 'вы',
+  'grades.rating.emptyTitle': 'В группе пока нет оценок',
+  'grades.rating.emptyDesc': 'Рейтинг появится, когда преподаватели выставят первые оценки.',
+  'grades.rating.backToSummary': '← К успеваемости',
 
   // ── DIG-84 — зачётная книжка и выписка ────────────────────────────────────
   'gradebook.studentsOnlyDesc':
@@ -850,6 +863,8 @@ export const ru = {
   'meta.tasks': 'Задачи — Цифровой деканат',
   'meta.finance': 'Финансы — Цифровой деканат',
   'meta.grades': 'Успеваемость — Цифровой деканат',
+  // DIG-103
+  'meta.gradesRating': 'Рейтинг группы — Цифровой деканат',
   'meta.gradebook': 'Зачётная книжка — Цифровой деканат',
   'meta.session': 'Сессия — Цифровой деканат',
   'meta.discipline': 'Дисциплина — Цифровой деканат',
@@ -872,6 +887,8 @@ export const ru = {
   'loading.people': 'Загрузка справочника',
   'loading.services': 'Загрузка сервисов',
   'loading.grades': 'Успеваемость загружается',
+  // DIG-103
+  'loading.gradesRating': 'Рейтинг группы загружается',
   'loading.session': 'Сессия загружается',
   'loading.notifications': 'Загрузка уведомлений',
 
