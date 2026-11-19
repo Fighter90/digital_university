@@ -552,3 +552,141 @@ html.a11y-no-effects .lift-hover:hover:not(:disabled),
 html.a11y-no-effects .press-scale:active:not(:disabled) {
   transform: none !important;
 }
+
+/* ============================================================
+   DIG-100 — «Версия для слабовидящих» (plain-режим).
+   Класс a11y-plain на <html> ставит root layout из cookie
+   du-a11y-version (server action toggleA11yVersion, скоуплен
+   сессией — как setA11y DIG-86). Слой стоит В САМОМ КОНЦЕ файла:
+   перекрывает тему и размер шрифта (DIG-44), режимы a11y-large-text /
+   a11y-no-effects (DIG-86) и системный prefers-reduced-motion —
+   plain ВКЛЮЧАЕТ их поведение (без анимаций/теней/переходов,
+   базовый текст ≥ 125%). Никаких декоративных стилей: белый фон,
+   чёрный текст, синие подчёркнутые ссылки, шрифт с засечками ≥20px,
+   линейная колонка вместо сеток, border-разделители вместо теней.
+   Правила вне media-запросов — действуют и на мобайле 360px
+   (см. media-блок в конце слоя). Токены дизайн-системы (DIG-13)
+   здесь намеренно не соблюдаются: plain-режим их заменяет.
+   ============================================================ */
+
+/* базовый текст = ровно 20px (≥ 125% от 16px: крупнее режима
+   a11y-large-text DIG-86); селекторы с дополнительными классами
+   приоритетнее html.font-lg / html.font-xl (dark.css) и
+   html.a11y-large-text — plain перекрывает их при любых комбинациях */
+html.a11y-plain,
+html.a11y-plain.font-lg,
+html.a11y-plain.font-xl,
+html.a11y-plain.a11y-large-text,
+html.a11y-plain.a11y-large-text.font-lg,
+html.a11y-plain.a11y-large-text.font-xl,
+html.a11y-plain.reduce-motion {
+  font-size: 20px;
+  background: #fff !important;
+  color: #000 !important;
+}
+/* шрифт с засечками на всём интерфейсе; поля форм тоже наследуют.
+   !important — чтобы перекрыть собственное правило «*» ниже (inherit) */
+html.a11y-plain body {
+  background: #fff !important;
+  color: #000 !important;
+  font-family: Georgia, 'Times New Roman', Times, serif !important;
+}
+html.a11y-plain *,
+html.a11y-plain *::before,
+html.a11y-plain *::after {
+  color: #000 !important;
+  font-family: inherit !important;
+  /* декорации выключены: plain включает поведение a11y-no-effects
+     (DIG-86) — контент никогда не скрыт (animation снимает и fill) */
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  /* любые фоновые заливки — белый лист; разделители — чёрные рамки */
+  background-color: transparent !important;
+  border-color: #000 !important;
+}
+/* ссылки — синие подчёркнутые; иконки внутри ссылок наследуют
+   currentColor и остаются синими (svg без собственного цвета) */
+html.a11y-plain a,
+html.a11y-plain a * {
+  color: #0000ee !important;
+  text-decoration: underline !important;
+}
+/* мелкие подписи (text-xs/sm и частые произвольные размеры) —
+   не меньше базы: 1rem = 20px при корне 20px */
+html.a11y-plain .text-xs,
+html.a11y-plain .text-sm,
+html.a11y-plain .text-\[10px\],
+html.a11y-plain .text-\[11px\],
+html.a11y-plain .text-\[15px\] {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+/* поля форм и кнопки: белый фон, чёрная рамка 2px, без скруглений —
+   управление остаётся заметным на белом листе */
+html.a11y-plain button,
+html.a11y-plain input,
+html.a11y-plain textarea,
+html.a11y-plain select {
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid #000 !important;
+  border-radius: 0 !important;
+}
+/* reveal-секции лендинга (DIG-57) видимы сразу, без IntersectionObserver */
+html.a11y-plain .reveal {
+  opacity: 1 !important;
+  transform: none !important;
+}
+/* hover-подъёмы и press-сжатия — тоже эффекты */
+html.a11y-plain .lift-hover:hover:not(:disabled),
+html.a11y-plain .press-scale:active:not(:disabled) {
+  transform: none !important;
+}
+
+/* ── линейная колонка вместо сеток ──────────────────────────────────────
+   Контентные раскладки складываются вертикально: сетки — в один столбец,
+   flex-строки контента — в колонку. Каркас-хром (шапка, фиксированные
+   панели, футер) остаётся компактной строкой: это навигация и управление,
+   а не контентная раскладка; sticky-шапка с h-14 при линейке дала бы
+   перекрытие контента. Элементы со скрытием (hidden … grid) не раскрываем. */
+html.a11y-plain .grid:not(.hidden),
+html.a11y-plain [class*='grid-cols']:not(.hidden) {
+  display: block !important;
+}
+html.a11y-plain .flex {
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+/* хром-исключения: внутри шапки, футера и фиксированных панелей строка */
+html.a11y-plain header .flex,
+html.a11y-plain footer .flex,
+html.a11y-plain .fixed .flex {
+  flex-direction: row !important;
+  align-items: center !important;
+}
+/* сетки в хроме (например, кнопка поиска-иконка) остаются сетками —
+   правило ниже, чем block-правило выше: специфичность :is равна,
+   источник решает */
+html.a11y-plain :is(header, footer, .fixed) .grid:not(.hidden) {
+  display: grid !important;
+}
+
+/* ── мобайл 360px ───────────────────────────────────────────────────────
+   На узком экране plain-режим действует так же (правила выше вне media);
+   дополнительно — удобные цели нажатия и без горизонтальных «хвостов». */
+@media (max-width: 360px) {
+  html.a11y-plain button,
+  html.a11y-plain input,
+  html.a11y-plain [data-testid='a11y-version-link'] {
+    min-height: 44px;
+  }
+  html.a11y-plain [data-testid='a11y-version-strip'] > div {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

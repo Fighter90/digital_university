@@ -24,6 +24,7 @@ import {
 import { Reveal } from '@/components/landing/reveal';
 import { LocaleSwitch } from '@/components/shell/locale-switch';
 import { LandingContent } from '@/components/landing/landing-content';
+import { isA11yPlain } from '@/lib/a11y/server';
 import type { Locale } from '@/lib/i18n';
 
 async function getLandingLocale(): Promise<Locale> {
@@ -37,5 +38,8 @@ export const metadata = {
 
 export default async function LandingPage() {
   const locale = await getLandingLocale();
-  return <LandingContent locale={locale} />;
+  // DIG-100 — plain-версия для слабовидящих: полоска над шапкой и ссылка
+  // в футере лендинга («Обычная версия», если cookie du-a11y-version=plain).
+  const plain = await isA11yPlain();
+  return <LandingContent locale={locale} plain={plain} />;
 }

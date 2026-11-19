@@ -225,6 +225,10 @@ export const en: Record<keyof RuDictionary, string> = {
   'settings.a11ySaved': 'Saved — accessibility mode applied across the whole cabinet.',
   'settings.a11yIdle': 'Changes are saved instantly and applied across the whole cabinet.',
 
+  // ── DIG-100 — accessibility version: strip above the header and footer ───
+  'a11y.version.plain': 'Accessibility version',
+  'a11y.version.standard': 'Standard version',
+
   // ── toasts ───────────────────────────────────────────────────────────────
   'toast.saved': 'Saved',
   'toast.savedDesc': 'Your changes have been applied',
