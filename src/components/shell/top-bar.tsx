@@ -93,7 +93,11 @@ export function TopBar({
 
           {/* DIG-35: колокольчик с панелью уведомлений (SSR-данные). Якорь
               e2e-проверки позиции бейджа (DIG-54) — data-testid на кнопке. */}
-          <NotificationsBell initialItems={recentNotifications} initialCount={unreadCount} />
+          <NotificationsBell
+            initialItems={recentNotifications}
+            initialCount={unreadCount}
+            locale={locale}
+          />
 
           <UserMenu user={user} locale={locale} />
         </div>

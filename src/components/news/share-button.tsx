@@ -2,12 +2,13 @@
 
 import { useRef, useState } from 'react';
 import { Check, Share2 } from 'lucide-react';
+import { t, type Locale } from '@/lib/i18n';
 
 // DIG-36 — «Поделиться ссылкой» на странице новости: копирует текущий URL
 // через clipboard API; без разрешения/доступа — фолбэк на execCommand
 // (кнопка работает без подтверждений и не требует серверного action).
 // Статус — aria-live (role=status), чтобы скринридер озвучил результат.
-export function ShareButton() {
+export function ShareButton({ locale = 'ru' }: { locale?: Locale }) {
   const [copied, setCopied] = useState(false);
   const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -51,7 +52,7 @@ export function ShareButton() {
         ) : (
           <Share2 aria-hidden="true" className="size-4" />
         )}
-        Поделиться ссылкой
+        {t(locale, 'news.share')}
       </button>
       <span
         role="status"
@@ -59,7 +60,7 @@ export function ShareButton() {
         data-testid="news-share-status"
         className="text-sm text-muted-foreground"
       >
-        {copied ? 'Ссылка скопирована' : ''}
+        {copied ? t(locale, 'news.share.copied') : ''}
       </span>
     </div>
   );

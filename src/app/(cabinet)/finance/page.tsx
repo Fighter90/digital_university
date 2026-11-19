@@ -26,32 +26,46 @@ import { requireDataCtx, getFinancePage } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import {
   FINANCE_ACTIONS,
-  PAYMENT_STATUS_LABELS,
-  PAYOUT_KIND_LABELS,
+  financeActionDesc,
+  financeActionLabel,
+  financeFundingLabel,
+  financePayStatusLabel,
+  financePaymentLabel,
+  financePaymentPeriod,
+  financePayoutKindLabel,
+  financePayoutTitle,
+  financeScholarshipKind,
+  financeSemesterLabel,
   formatFinanceDate,
   formatFinanceDateFull,
   formatMoney,
 } from '@/lib/finance-catalog';
+import { t, type Locale } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n/server';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FinanceDocumentsBrowser } from '@/components/finance/documents-browser';
 
-export const metadata = { title: 'Финансы — Цифровой деканат' };
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.finance') };
+}
 
 /** Бейдж статуса платежа (мягкие тона словаря DIG-13). */
-function paymentBadge(status: 'PAID' | 'DUE' | 'UPCOMING') {
+function paymentBadge(status: 'PAID' | 'DUE' | 'UPCOMING', locale: Locale) {
   switch (status) {
     case 'PAID':
-      return <Badge status="success">{PAYMENT_STATUS_LABELS.PAID}</Badge>;
+      return <Badge status="success">{financePayStatusLabel('PAID', locale)}</Badge>;
     case 'DUE':
-      return <Badge status="error">{PAYMENT_STATUS_LABELS.DUE}</Badge>;
+      return <Badge status="error">{financePayStatusLabel('DUE', locale)}</Badge>;
     default:
-      return <Badge status="neutral">{PAYMENT_STATUS_LABELS.UPCOMING}</Badge>;
+      return <Badge status="neutral">{financePayStatusLabel('UPCOMING', locale)}</Badge>;
   }
 }
 
 export default async function FinancePage() {
-  const ctx = await requireDataCtx('/finance');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/finance'), getLocale()]);
   const data = await getFinancePage(dataDb, ctx);
 
   // Сотруднику деканата студенческие финансы не показываются (агрегат
@@ -59,12 +73,12 @@ export default async function FinancePage() {
   if (!data.student || !data.bundle) {
     return (
       <section className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
-        <h1 className="text-xl font-bold sm:text-2xl">Финансы</h1>
+        <h1 className="text-xl font-bold sm:text-2xl">{t(locale, 'finance.title')}</h1>
         <EmptyState
           className="mt-6"
           icon={Wallet}
-          title="Экран доступен студентам"
-          description="Договоры, стипендии и выплаты показываются в кабинете студента."
+          title={t(locale, 'finance.staffOnly.title')}
+          description={t(locale, 'finance.staffOnlyDesc')}
         />
       </section>
     );
@@ -78,10 +92,9 @@ export default async function FinancePage() {
 
   return (
     <section className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
-      <h1 className="text-xl font-bold sm:text-2xl">Финансы</h1>
+      <h1 className="text-xl font-bold sm:text-2xl">{t(locale, 'finance.title')}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Договоры, стипендии и документы — демонстрационные данные, оплата через кабинет не
-        проводится.
+        {t(locale, 'finance.subtitle')}
       </p>
 
       {/* ── Сводка: форма обучения, стипендия, задолженность ─────────────── */}
@@ -92,40 +105,45 @@ export default async function FinancePage() {
         <div className="flex items-center justify-between gap-2">
           <p className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
             <GraduationCap aria-hidden="true" className="size-4" />
-            Форма обучения
+            {t(locale, 'finance.studyForm')}
           </p>
           {summary.isContract ? (
-            <Badge status="accent">{summary.fundingLabel}</Badge>
+            <Badge status="accent">{financeFundingLabel(summary.isContract, locale)}</Badge>
           ) : (
-            <Badge status="success">{summary.fundingLabel}</Badge>
+            <Badge status="success">{financeFundingLabel(summary.isContract, locale)}</Badge>
           )}
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-4">
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Стипендия</p>
-            <p className="mt-0.5 text-sm font-semibold">{summary.scholarship.kindLabel}</p>
+            <p className="text-sm font-medium text-muted-foreground">{t(locale, 'finance.scholarship')}</p>
+            <p className="mt-0.5 text-sm font-semibold">{financeScholarshipKind(locale)}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Ближайшая выплата — {formatFinanceDate(summary.scholarship.nextPayoutAt)}
+              {t(locale, 'finance.nextPayout', {
+                date: formatFinanceDate(summary.scholarship.nextPayoutAt, locale),
+              })}
             </p>
           </div>
           <p className="shrink-0 text-lg font-extrabold tracking-heading">
             {formatMoney(summary.scholarship.monthlyAmount)}
-            <span className="ml-1 text-xs font-medium text-muted-foreground">в месяц</span>
+            <span className="ml-1 text-xs font-medium text-muted-foreground">{t(locale, 'finance.perMonth')}</span>
           </p>
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-4">
-          <p className="text-sm font-medium text-muted-foreground">Задолженность</p>
+          <p className="text-sm font-medium text-muted-foreground">{t(locale, 'finance.debt')}</p>
           {summary.debt ? (
             <Badge status="error">
-              <CalendarClock aria-hidden="true" className="size-3.5" />К оплате{' '}
-              {formatMoney(summary.debt.amount)} до {formatFinanceDate(summary.debt.dueAt)}
+              <CalendarClock aria-hidden="true" className="size-3.5" />
+              {t(locale, 'finance.dueBy', {
+                amount: formatMoney(summary.debt.amount),
+                date: formatFinanceDate(summary.debt.dueAt, locale),
+              })}
             </Badge>
           ) : (
             <Badge status="success">
               <BadgeCheck aria-hidden="true" className="size-3.5" />
-              Задолженности нет
+              {t(locale, 'finance.noDebt')}
             </Badge>
           )}
         </div>
@@ -139,15 +157,17 @@ export default async function FinancePage() {
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
-              <h2 className="text-base font-extrabold tracking-heading">Договор на обучение</h2>
+              <h2 className="text-base font-extrabold tracking-heading">{t(locale, 'finance.contract.title')}</h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 № {contract.number}
                 <span aria-hidden="true"> · </span>
-                подписан {formatFinanceDateFull(contract.signedAt)}
+                {t(locale, 'finance.contract.signedAt', {
+                  date: formatFinanceDateFull(contract.signedAt),
+                })}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm font-medium text-muted-foreground">{contract.semesterLabel}</p>
+              <p className="text-sm font-medium text-muted-foreground">{financeSemesterLabel(contract.signedAt.getFullYear() + 1, locale)}</p>
               <p className="text-base font-extrabold tracking-heading">
                 {formatMoney(contract.semesterCost)}
               </p>
@@ -156,15 +176,15 @@ export default async function FinancePage() {
 
           <div className="mt-4 border-t border-border pt-4">
             <div className="flex items-baseline justify-between gap-2 text-sm">
-              <span className="font-medium text-muted-foreground">Оплачено</span>
+              <span className="font-medium text-muted-foreground">{t(locale, 'finance.contract.paid')}</span>
               <span className="text-muted-foreground">
                 <span className="font-bold text-foreground">{formatMoney(paidAmount)}</span>
-                {` из ${formatMoney(contract.semesterCost)}`}
+                {t(locale, 'finance.contract.of', { amount: formatMoney(contract.semesterCost) })}
               </span>
             </div>
             <div
               role="progressbar"
-              aria-label="Оплачено по договору"
+              aria-label={t(locale, 'finance.contract.progressAria')}
               aria-valuemin={0}
               aria-valuemax={contract.semesterCost}
               aria-valuenow={paidAmount}
@@ -201,15 +221,17 @@ export default async function FinancePage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                    <p className="text-sm font-semibold">{payment.label}</p>
+                    <p className="text-sm font-semibold">{financePaymentLabel(payment, locale)}</p>
                     <p className="text-sm font-bold">{formatMoney(payment.amount)}</p>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{payment.periodLabel}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{financePaymentPeriod(payment.dueAt, locale)}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    {paymentBadge(payment.status)}
+                    {paymentBadge(payment.status, locale)}
                     {payment.status === 'DUE' ? (
                       <span className="text-xs text-muted-foreground">
-                        до {formatFinanceDate(payment.dueAt)}
+                        {t(locale, 'finance.payment.duePrefix', {
+                          date: formatFinanceDate(payment.dueAt, locale),
+                        })}
                       </span>
                     ) : null}
                     {payment.status === 'PAID' && payment.receiptId ? (
@@ -220,7 +242,7 @@ export default async function FinancePage() {
                         className="inline-flex items-center gap-1 text-xs font-semibold text-accent-ink hover:underline focus-visible:outline-2 focus-visible:outline-coral-600"
                       >
                         <Download aria-hidden="true" className="size-3.5" />
-                        Скачать квитанцию
+                        {t(locale, 'finance.downloadReceipt')}
                       </a>
                     ) : null}
                   </div>
@@ -234,27 +256,27 @@ export default async function FinancePage() {
       {/* ── Документы: договоры, допсоглашения, акты, квитанции, счета ────── */}
       <section aria-labelledby="finance-documents-heading" className="mt-8">
         <h2 id="finance-documents-heading" className="text-base font-extrabold tracking-heading">
-          Документы
+          {t(locale, 'finance.documents.title')}
         </h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Демонстрационные копии: договоры, допсоглашения, акты, квитанции и счета.
+          {t(locale, 'finance.documents.desc')}
         </p>
         <div className="mt-3">
-          <FinanceDocumentsBrowser documents={bundle.documents} />
+          <FinanceDocumentsBrowser documents={bundle.documents} locale={locale} />
         </div>
       </section>
 
       {/* ── Выплаты: история стипендий и материальной помощи ──────────────── */}
       <section aria-labelledby="finance-payouts-heading" className="mt-8">
         <h2 id="finance-payouts-heading" className="text-base font-extrabold tracking-heading">
-          Выплаты
+          {t(locale, 'finance.payouts.title')}
         </h2>
         {bundle.payouts.length === 0 ? (
           <EmptyState
             className="mt-3"
             icon={ReceiptText}
-            title="Выплат пока нет"
-            description="Когда стипендия или материальная помощь будут назначены, они появятся здесь."
+            title={t(locale, 'finance.payouts.emptyTitle')}
+            description={t(locale, 'finance.payouts.emptyDesc')}
           />
         ) : (
           <ul data-testid="finance-payouts" className="mt-3 flex flex-col divide-y divide-border">
@@ -262,9 +284,9 @@ export default async function FinancePage() {
               <li key={payout.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-semibold">{payout.title}</p>
+                    <p className="truncate text-sm font-semibold">{financePayoutTitle(payout, locale)}</p>
                     <Badge status={payout.kind === 'SCHOLARSHIP' ? 'success' : 'accent'}>
-                      {PAYOUT_KIND_LABELS[payout.kind]}
+                      {financePayoutKindLabel(payout.kind, locale)}
                     </Badge>
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -281,7 +303,7 @@ export default async function FinancePage() {
       {/* ── Действия → мастер заявки ──────────────────────────────────────── */}
       <section aria-labelledby="finance-actions-heading" className="mt-8">
         <h2 id="finance-actions-heading" className="text-base font-extrabold tracking-heading">
-          Действия
+          {t(locale, 'finance.actions.title')}
         </h2>
         <div data-testid="finance-actions" className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {FINANCE_ACTIONS.map((action) => (
@@ -302,9 +324,9 @@ export default async function FinancePage() {
                 )}
               </span>
               <span className="min-w-0">
-                <span className="block text-sm font-semibold text-foreground">{action.label}</span>
+                <span className="block text-sm font-semibold text-foreground">{financeActionLabel(action, locale)}</span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {action.description}
+                  {financeActionDesc(action, locale)}
                 </span>
               </span>
             </Link>

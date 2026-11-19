@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
 import { controlTypeLabel, formatScoreDate } from '@/lib/gradebook';
-import { pluralRu } from '@/lib/dashboard-format';
+import { creditWord } from '@/lib/performance-format';
 import { t, type Locale } from '@/lib/i18n';
 import type { GradebookData, GradebookSemesterView } from '@/server/data';
 
@@ -10,14 +10,6 @@ import type { GradebookData, GradebookSemesterView } from '@/server/data';
 // — десктопная таблица (md+) и мобильные карточки (до md): на 360 px
 // таблица превращается в карточки (приёмка задачи). Строки ведут в
 // карточку дисциплины /grades/<disciplineId>.
-
-const CREDIT_FORMS = ['кредит', 'кредита', 'кредитов'] as const;
-
-/** «кредит/кредита/кредитов» (RU) или «credit/credits» (EN). */
-function creditsWord(count: number, locale: Locale): string {
-  if (locale === 'en') return Math.abs(count) === 1 ? 'credit' : 'credits';
-  return pluralRu(count, CREDIT_FORMS);
-}
 
 /** «81,22» — точность до сотой (правила хранения — docs/grading.md). */
 export function formatAverage2(average: number | null): string {
@@ -208,7 +200,7 @@ export function GradebookList({
                                 : '—'}
                             </span>
                             <span>
-                              {discipline.credits} {creditsWord(discipline.credits, locale)}
+                              {discipline.credits} {creditWord(discipline.credits, locale)}
                             </span>
                             <span className="font-mono text-[11px] text-muted-foreground">
                               {discipline.completedAt

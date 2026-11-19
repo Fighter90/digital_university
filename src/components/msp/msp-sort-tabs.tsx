@@ -4,15 +4,16 @@
 import Link from 'next/link';
 
 import type { MspSort } from '@/server/data';
+import { t, type Locale } from '@/lib/i18n';
 
-const TABS: Array<{ value: MspSort; label: string }> = [
-  { value: 'new', label: 'Новые' },
-  { value: 'top', label: 'Топ' },
+const TABS: Array<{ value: MspSort; labelKey: 'msp.sort.new' | 'msp.sort.top' }> = [
+  { value: 'new', labelKey: 'msp.sort.new' },
+  { value: 'top', labelKey: 'msp.sort.top' },
 ];
 
-export function MspSortTabs({ sort }: { sort: MspSort }) {
+export function MspSortTabs({ sort, locale = 'ru' }: { sort: MspSort; locale?: Locale }) {
   return (
-    <nav aria-label="Сортировка каталога" className="flex items-center gap-2">
+    <nav aria-label={t(locale, 'msp.sort.aria')} className="flex items-center gap-2">
       {TABS.map((tab) => {
         const active = tab.value === sort;
         return (
@@ -27,7 +28,7 @@ export function MspSortTabs({ sort }: { sort: MspSort }) {
                 : 'inline-flex h-9 items-center rounded-pill border border-border bg-card px-4 text-sm font-medium text-foreground hover:border-muted-foreground/40'
             }
           >
-            {tab.label}
+            {t(locale, tab.labelKey)}
           </Link>
         );
       })}

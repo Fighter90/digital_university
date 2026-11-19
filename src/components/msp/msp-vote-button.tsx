@@ -6,6 +6,7 @@ import { ChevronUp } from 'lucide-react';
 
 import { toggleMspVoteAction } from '@/server/actions/msp';
 import { cn } from 'cn';
+import { t, type Locale } from '@/lib/i18n';
 
 export function MspVoteButton({
   projectId,
@@ -14,6 +15,7 @@ export function MspVoteButton({
   testId,
   compact = false,
   canVote = true,
+  locale = 'ru',
 }: {
   projectId: string;
   votes: number;
@@ -22,12 +24,14 @@ export function MspVoteButton({
   compact?: boolean;
   /** false — сотрудник: каталог читает, но не голосует (мутации студентов). */
   canVote?: boolean;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   if (!canVote) {
     return (
       <span
         data-testid={testId}
-        title="Голосование доступно студентам"
+        title={t(locale, 'msp.vote.studentsOnly.title')}
         className={cn(
           'flex select-none flex-col items-center justify-center gap-0.5 rounded-button border border-border bg-muted px-3 text-muted-foreground',
           compact ? 'min-w-14 py-1.5 text-sm' : 'min-w-16 py-2',
@@ -40,7 +44,7 @@ export function MspVoteButton({
         >
           {votes}
         </span>
-        <span className="sr-only">Голосов: {votes}</span>
+        <span className="sr-only">{t(locale, 'msp.vote.aria', { votes })}</span>
       </span>
     );
   }
@@ -50,7 +54,7 @@ export function MspVoteButton({
       <button
         type="submit"
         aria-pressed={votedByMe}
-        title={votedByMe ? 'Убрать голос' : 'Голосовать за проект'}
+        title={votedByMe ? t(locale, 'msp.vote.removeTitle') : t(locale, 'msp.vote.title')}
         className={cn(
           'flex select-none flex-col items-center justify-center gap-0.5 rounded-button border px-3 shadow-soft transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600',
           compact ? 'min-w-14 py-1.5 text-sm' : 'min-w-16 py-2',
@@ -67,7 +71,7 @@ export function MspVoteButton({
           {votes}
         </span>
         <span className="sr-only">
-          {votedByMe ? 'Голос учтён, нажмите, чтобы убрать' : 'Голосовать'}
+          {votedByMe ? t(locale, 'msp.vote.voted') : t(locale, 'msp.vote.cta')}
         </span>
       </button>
     </form>

@@ -23,7 +23,9 @@ export function DpoFormatChips({
 }) {
   return (
     <nav
-      aria-label="Фильтр по формату обучения"
+      aria-label={
+        t(locale, 'dpo.format.aria')
+      }
       className="flex flex-wrap items-center gap-2"
       data-testid="dpo-format-chips"
     >

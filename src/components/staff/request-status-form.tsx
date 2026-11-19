@@ -29,7 +29,9 @@ export function RequestStatusForm({
     changeStatusAction,
     null,
   );
-  const targets = STAFF_ALLOWED_TRANSITIONS[status];
+  // DIG-89 — status приходит из данных карточки; при отсутствии (тестовый
+  // рендер островка без данных) считаем переходов нет — форма не рендерится.
+  const targets = STAFF_ALLOWED_TRANSITIONS[status] ?? [];
   if (targets.length === 0) return null; // COMPLETED / REJECTED — терминальные
 
   return (
@@ -47,7 +49,7 @@ export function RequestStatusForm({
           rows={2}
           required
           maxLength={500}
-          placeholder="Например: приложите договор о практике"
+          placeholder={t(locale, 'staff.statusForm.placeholder')}
           className="rounded-button border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus-visible:outline-2 focus-visible:outline-coral-600"
         />
       </label>
@@ -76,7 +78,7 @@ export function RequestStatusForm({
       ) : null}
       {state?.ok ? (
         <p role="status" className="mt-2 text-xs font-medium text-green-700">
-          Статус обновлён — студент получил уведомление.
+          {t(locale, 'staff.statusForm.saved')}
         </p>
       ) : null}
     </form>

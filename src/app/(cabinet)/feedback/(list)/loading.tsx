@@ -1,15 +1,18 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
 
 // DIG-40 — скелетон загрузки экрана «Обратная связь». Живёт в route-group
 // (list): сегменты [number] и sent/[number] соседние, Suspense над
 // notFound() не создаётся — контракт единого 404 не ломается
 // (см. requests/[number]/page.tsx и deanery/(list)/loading.tsx).
-export default function FeedbackLoading() {
+export default async function FeedbackLoading() {
+  const locale = await getLocale();
   return (
     <section
       className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8"
       aria-busy="true"
-      aria-label="Загрузка обратной связи"
+      aria-label={t(locale, 'loading.feedback')}
     >
       <Skeleton className="h-7 w-64" />
       <Skeleton className="mt-2 h-4 w-72" />

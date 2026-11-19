@@ -1,9 +1,12 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
 
 // DIG-27 — скелетон загрузки зачётки (аккордеон семестров появляется
 // после агрегата getGradebook). Сегмент /grades/[disciplineId] сознательно
 // без loading.tsx — контракт единого 404 (см. requests/[number]/page.tsx).
-export default function GradebookLoading() {
+export default async function GradebookLoading() {
+  const locale = await getLocale();
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 md:py-8" aria-busy="true">
       <div className="flex flex-wrap items-start justify-between gap-3">

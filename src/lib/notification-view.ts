@@ -5,6 +5,7 @@
 // DIG-79 (BUG-02/12): HH:MM и календарные дни считаются в явной зоне
 // Europe/Moscow — SSR и гидрация рендерят одинаковые строки (React #418).
 import { moscowParts } from '@/lib/schedule-time';
+import { t, type Locale } from '@/lib/i18n';
 import type { NotificationRow, NotificationType } from '@/server/data/types';
 
 /** Панель колокольчика показывает последние 5 уведомлений (задача DIG-35). */
@@ -20,15 +21,40 @@ export interface NotificationFilterOption {
   label: string;
 }
 
-/** Фильтры из задачи: Все, Непрочитанные, Учёба, Заявки, Деканат, Финансы. */
-export const NOTIFICATION_FILTERS: readonly NotificationFilterOption[] = [
-  { value: 'ALL', label: 'Все' },
-  { value: 'UNREAD', label: 'Непрочитанные' },
-  { value: 'STUDY', label: 'Учёба' },
-  { value: 'REQUESTS', label: 'Заявки' },
-  { value: 'DEANERY', label: 'Деканат' },
-  { value: 'FINANCE', label: 'Финансы' },
+/**
+ * Фильтры из задачи: Все, Непрочитанные, Учёба, Заявки, Деканат, Финансы.
+ * DIG-89 — RU-подписи берутся из словаря (ключи notif.filter.*, значения
+ * байт-в-байт равны прежним литералам).
+ */
+const FILTER_VALUES = ['ALL', 'UNREAD', 'STUDY', 'REQUESTS', 'DEANERY', 'FINANCE'] as const;
+
+export const NOTIFICATION_FILTERS: readonly NotificationFilterOption[] = FILTER_VALUES.map(
+  (value) => ({ value, label: t('ru', `notif.filter.${value}`) }),
+);
+
+// DIG-89 — EN-подписи фильтров и групп «Сегодня / Вчера / Ранее».
+
+/** EN-набор фильтров (тесты и клиентский рендер). */
+export const NOTIFICATION_FILTERS_EN: readonly NotificationFilterOption[] = [
+  { value: 'ALL', label: 'All' },
+  { value: 'UNREAD', label: 'Unread' },
+  { value: 'STUDY', label: 'Studies' },
+  { value: 'REQUESTS', label: 'Requests' },
+  { value: 'DEANERY', label: 'Deanery' },
+  { value: 'FINANCE', label: 'Finance' },
 ];
+
+/** Фильтры по локали: RU — канон, EN — словарь. */
+export function notificationFilters(locale: Locale = 'ru'): readonly NotificationFilterOption[] {
+  return locale === 'en' ? NOTIFICATION_FILTERS_EN : NOTIFICATION_FILTERS;
+}
+
+/** Подпись одного фильтра: «Непрочитанные» / «Unread». */
+export function notificationFilterLabel(value: NotificationFilter, locale: Locale = 'ru'): string {
+  return locale === 'en'
+    ? NOTIFICATION_FILTERS_EN.find((f) => f.value === value)!.label
+    : NOTIFICATION_FILTERS.find((f) => f.value === value)!.label;
+}
 
 /**
  * Строка ленты на клиенте: даты сериализованы в ISO (RSC-пропсы и JSON
@@ -104,11 +130,15 @@ function calendarDaysBetween(from: Date, to: Date): number {
 /**
  * Группировка «Сегодня / Вчера / Ранее» по локальному календарю. Пустые
  * группы не попадают в результат; внутри группы строки идут от новых к старым.
+ * DIG-89: подписи групп по локали (RU — канон байт-в-байт).
  */
 export function groupNotificationsByDay(
   items: NotificationFeedItem[],
   now: Date,
+  locale: Locale = 'ru',
 ): NotificationDayGroup[] {
+  const dayLabel = (key: 'today' | 'yesterday' | 'earlier'): string =>
+    t(locale, `notif.group.${key}` as const);
   const buckets: Record<'today' | 'yesterday' | 'earlier', NotificationFeedItem[]> = {
     today: [],
     yesterday: [],
@@ -125,9 +155,9 @@ export function groupNotificationsByDay(
   const byNewestFirst = (a: NotificationFeedItem, b: NotificationFeedItem) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   const groups: NotificationDayGroup[] = [
-    { key: 'today', label: 'Сегодня', items: buckets.today.sort(byNewestFirst) },
-    { key: 'yesterday', label: 'Вчера', items: buckets.yesterday.sort(byNewestFirst) },
-    { key: 'earlier', label: 'Ранее', items: buckets.earlier.sort(byNewestFirst) },
+    { key: 'today', label: dayLabel('today'), items: buckets.today.sort(byNewestFirst) },
+    { key: 'yesterday', label: dayLabel('yesterday'), items: buckets.yesterday.sort(byNewestFirst) },
+    { key: 'earlier', label: dayLabel('earlier'), items: buckets.earlier.sort(byNewestFirst) },
   ];
   return groups.filter((g) => g.items.length > 0);
 }

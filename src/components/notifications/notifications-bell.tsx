@@ -10,6 +10,8 @@ import {
 } from '@/lib/notification-view';
 import { markNotificationReadAction } from '@/server/actions/notifications';
 import { cn } from '@/lib/utils';
+import { t, type Locale } from '@/lib/i18n';
+import { localizeNotification } from '@/lib/en-demo-content';
 import { useSafeRouter } from './use-safe-router';
 import { UnreadBadge } from '@/components/shell/unread-badge';
 import { NotificationItemRow } from './notification-item-row';
@@ -17,6 +19,8 @@ import { NotificationItemRow } from './notification-item-row';
 type NotificationsBellProps = {
   initialItems: NotificationFeedItem[];
   initialCount: number;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 };
 
 // DIG-35 — колокольчик в шапке с панелью последних 5 уведомлений.
@@ -25,7 +29,11 @@ type NotificationsBellProps = {
 // клик мимо панели закрывает её. Счётчик ведёт UnreadBadge (polling
 // /api/notifications/count раз в 60 с, DIG-14); лента панели перечитывается
 // из /api/notifications/recent (скоуп владельца сессии — на сервере).
-export function NotificationsBell({ initialItems, initialCount }: NotificationsBellProps) {
+export function NotificationsBell({
+  initialItems,
+  initialCount,
+  locale = 'ru',
+}: NotificationsBellProps) {
   const router = useSafeRouter();
   const [items, setItems] = useState(initialItems);
   const [open, setOpen] = useState(false);
@@ -137,7 +145,7 @@ export function NotificationsBell({ initialItems, initialCount }: NotificationsB
         aria-expanded={open}
         aria-controls="notifications-panel"
         aria-haspopup="dialog"
-        aria-label="Уведомления"
+        aria-label={t(locale, 'notif.bell.aria')}
         onClick={() => setOpen((value) => !value)}
         className="relative grid size-8 place-items-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600 md:size-9"
       >
@@ -151,46 +159,52 @@ export function NotificationsBell({ initialItems, initialCount }: NotificationsB
           id="notifications-panel"
           role="dialog"
           aria-modal="true"
-          aria-label="Уведомления"
+          aria-label={t(locale, 'notif.bell.aria')}
           tabIndex={-1}
           data-testid="notifications-panel"
           onKeyDown={trapFocus}
           className="absolute right-0 top-full z-50 mt-2 flex max-h-[80dvh] w-[340px] max-w-[calc(100vw-24px)] flex-col overflow-hidden rounded-card border border-neutral-200/80 bg-card shadow-hover focus:outline-none"
         >
           <div className="flex items-center justify-between gap-2 border-b border-neutral-100 px-4 py-3">
-            <p className="text-sm font-bold text-neutral-900">Последние уведомления</p>
+            <p className="text-sm font-bold text-neutral-900">{t(locale, 'notif.bell.latest')}</p>
             <Link
               href="/notifications"
               data-testid="panel-all"
               className="shrink-0 rounded-button px-1.5 py-0.5 text-xs font-semibold text-accent-ink hover:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
             >
-              Все уведомления
+              {t(locale, 'notif.bell.all')}
             </Link>
           </div>
 
           <div className="flex-1 overflow-y-auto p-1.5">
             {items.length === 0 ? (
               <p className="px-3 py-8 text-center text-sm text-neutral-600">
-                Новых уведомлений нет
+                {t(locale, 'notif.bell.empty')}
               </p>
             ) : (
               <ul className="flex flex-col">
-                {items.slice(0, NOTIFICATION_FEED_LIMIT).map((item) => (
-                  <li key={item.id}>
-                    <NotificationItemRow
-                      variant="compact"
-                      itemId={item.id}
-                      type={item.type}
-                      title={item.title}
-                      body={item.body}
-                      isRead={item.isRead}
-                      important={item.important}
-                      actionLabel={item.actionLabel}
-                      createdAt={item.createdAt}
-                      onOpen={() => openItem(item)}
-                    />
-                  </li>
-                ))}
+                {items.slice(0, NOTIFICATION_FEED_LIMIT).map((item) => {
+                  // DIG-89 — EN-рендер seed/шаблонных строк локализуется чтением.
+                  const view =
+                    locale === 'en' ? localizeNotification('en', item) : item;
+                  return (
+                    <li key={item.id}>
+                      <NotificationItemRow
+                        variant="compact"
+                        itemId={item.id}
+                        type={item.type}
+                        title={view.title}
+                        body={view.body}
+                        isRead={item.isRead}
+                        important={item.important}
+                        actionLabel={view.actionLabel}
+                        createdAt={item.createdAt}
+                        onOpen={() => openItem(item)}
+                        locale={locale}
+                      />
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -202,7 +216,7 @@ export function NotificationsBell({ initialItems, initialCount }: NotificationsB
               className="inline-flex items-center gap-1.5 rounded-button px-1 py-0.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
             >
               <Settings2 className="size-3.5" aria-hidden="true" />
-              Настроить уведомления
+              {t(locale, 'notif.bell.settings')}
             </Link>
           </div>
         </div>

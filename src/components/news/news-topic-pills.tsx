@@ -5,7 +5,8 @@
 import Link from 'next/link';
 import { cn } from 'cn';
 
-import { NEWS_TOPIC_LABELS, type NewsTopicFilter, type NewsScope } from '@/lib/news-catalog';
+import { newsTopicLabel, type NewsTopicFilter, type NewsScope } from '@/lib/news-catalog';
+import { t, type Locale } from '@/lib/i18n';
 
 const ORDER: ReadonlyArray<NewsTopicFilter> = [
   'all',
@@ -14,11 +15,6 @@ const ORDER: ReadonlyArray<NewsTopicFilter> = [
   'scholarship',
   'dormitory',
 ];
-
-const LABELS: Record<NewsTopicFilter, string> = {
-  all: 'Все',
-  ...NEWS_TOPIC_LABELS,
-};
 
 export function buildTopicHref(
   topic: NewsTopicFilter,
@@ -36,14 +32,17 @@ export function NewsTopicPills({
   topic,
   scope,
   scopeIsDefault,
+  locale = 'ru',
 }: {
   topic: NewsTopicFilter;
   scope: NewsScope;
   scopeIsDefault: boolean;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   return (
     <nav
-      aria-label="Темы новостей"
+      aria-label={t(locale, 'news.topic.aria')}
       data-testid="news-topics"
       className="flex w-full gap-2 overflow-x-auto pb-1"
     >
@@ -61,7 +60,7 @@ export function NewsTopicPills({
                 : 'border-border bg-card text-muted-foreground hover:text-foreground',
             )}
           >
-            {LABELS[option]}
+            {newsTopicLabel(option, locale)}
           </Link>
         );
       })}

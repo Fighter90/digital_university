@@ -16,12 +16,15 @@ import {
 import { cn } from 'cn';
 
 import {
-  CATEGORY_LABELS,
-  ETA_LABELS,
-  FORMAT_LABELS,
+  serviceBenefit,
+  serviceCategoryLabel,
+  serviceEtaLabel,
+  serviceFormatLabel,
+  serviceTitle,
   splitHighlight,
   type ServiceEntry,
 } from '@/lib/services-catalog';
+import { t, type Locale } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { FavoriteStar } from './favorite-star';
@@ -40,6 +43,8 @@ export interface ServiceCardProps {
   isFavorite: boolean;
   /** Запрос поиска: подсвечивает совпадения в названии и пользе. */
   query?: string;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }
 
 function Highlighted({ text, query }: { text: string; query?: string }) {
@@ -59,8 +64,9 @@ function Highlighted({ text, query }: { text: string; query?: string }) {
   );
 }
 
-export function ServiceCard({ service, isFavorite, query }: ServiceCardProps) {
-  const Icon = CATEGORY_ICONS[service.category];
+export function ServiceCard({ service, isFavorite, query, locale = 'ru' }: ServiceCardProps) {
+  // Неизвестная категория (вне каталога) — дефолтная иконка, карточка не падает.
+  const Icon = CATEGORY_ICONS[service.category] ?? FileText;
   return (
     <article
       data-testid={`service-card-${service.id}`}
@@ -75,23 +81,23 @@ export function ServiceCard({ service, isFavorite, query }: ServiceCardProps) {
         </span>
         <div className="min-w-0">
           <h3 className="text-sm font-bold leading-snug">
-            <Highlighted text={service.title} query={query} />
+            <Highlighted text={serviceTitle(service, locale)} query={locale === 'ru' ? query : ''} />
           </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {CATEGORY_LABELS[service.category]}
+            {serviceCategoryLabel(service.category, locale)}
           </p>
         </div>
       </div>
 
-      <FavoriteStar serviceId={service.id} serviceTitle={service.title} isFavorite={isFavorite} />
+      <FavoriteStar serviceId={service.id} serviceTitle={serviceTitle(service, locale)} isFavorite={isFavorite} locale={locale} />
 
       <p className="mb-3 text-sm text-muted-foreground">
-        <Highlighted text={service.benefit} query={query} />
+        <Highlighted text={serviceBenefit(service, locale)} query={locale === 'ru' ? query : ''} />
       </p>
 
       <div className="mt-auto flex flex-wrap items-center gap-1.5">
-        <Badge status="info">{ETA_LABELS[service.eta]}</Badge>
-        {service.format ? <Badge>{FORMAT_LABELS[service.format]}</Badge> : null}
+        <Badge status="info">{serviceEtaLabel(service.eta, locale)}</Badge>
+        {service.format ? <Badge>{serviceFormatLabel(service.format, locale)}</Badge> : null}
       </div>
 
       <Link
@@ -104,7 +110,7 @@ export function ServiceCard({ service, isFavorite, query }: ServiceCardProps) {
           'mt-3 w-full',
         )}
       >
-        {service.action === 'ORDER' ? 'Заказать' : 'Открыть'}
+        {service.action === 'ORDER' ? t(locale, 'services.card.order') : t(locale, 'services.card.open')}
       </Link>
     </article>
   );

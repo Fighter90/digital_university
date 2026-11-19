@@ -13,6 +13,11 @@ const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   month: 'long',
   year: 'numeric',
 });
+const dateFormatterEn = new Intl.DateTimeFormat('en-US', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
 
 /** Ключ словаря по виду документа (типизированный индекс). */
 const DOC_KIND_KEY: Record<DpoDocumentKind, TranslationKey> = {
@@ -49,7 +54,7 @@ export function DpoDocumentList({
               <p className="text-sm font-semibold leading-snug">{doc.title}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {t(locale, DOC_KIND_KEY[doc.kind])} · {doc.number} ·{' '}
-                {dateFormatter.format(doc.issuedAt)}
+                {(locale === 'en' ? dateFormatterEn : dateFormatter).format(doc.issuedAt)}
               </p>
             </div>
 

@@ -106,10 +106,13 @@ export function SideNav({
             {t(locale, 'shell.deadlineTitle')}
           </h2>
           <p className="mt-1 text-sm font-medium text-neutral-900">
-            Курсовая работа по базам данных
+            {t(locale, 'shell.deadline.course')}
           </p>
           <p className="mt-0.5 text-xs text-neutral-600">
-            до {formatLongDate(DEADLINE_DUE)} · {daysLeftLabel(deadlineDaysLeft(new Date()))}
+            {t(locale, 'shell.deadline.due', {
+              date: formatLongDate(DEADLINE_DUE, locale),
+              days: daysLeftLabel(deadlineDaysLeft(new Date()), locale),
+            })}
           </p>
         </div>
       )}

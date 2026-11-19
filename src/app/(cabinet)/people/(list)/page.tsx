@@ -9,28 +9,35 @@ import { PeopleBrowser } from '@/components/people/people-browser';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/shell/section-title';
 
-export const metadata = { title: 'Справочник — Цифровой деканат' };
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
+
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.people') };
+}
 
 export default async function PeoplePage() {
-  const ctx = await requireDataCtx('/people');
+  const [ctx, locale] = await Promise.all([requireDataCtx('/people'), getLocale()]);
   const data = await getPeopleDirectory(dataDb, ctx);
 
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
       <SectionTitle href="/people" className="text-xl font-bold sm:text-2xl" />
       <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-        Преподаватели и сотрудники вуза: контакты, кабинеты, часы консультаций.
+        {t(locale, 'people.subtitle')}
       </p>
 
       {data.people.length === 0 ? (
         <EmptyState
           className="mt-6"
-          title="Справочник пуст"
-          description="Данные сотрудников появятся, когда деканат заведёт их в систему."
+          title={t(locale, 'people.empty.title')}
+          description={t(locale, 'people.empty.desc')}
         />
       ) : (
         <div className="mt-5">
-          <PeopleBrowser people={data.people} showPersonal={data.hasPersonalScope} />
+          <PeopleBrowser people={data.people} showPersonal={data.hasPersonalScope} locale={locale} />
         </div>
       )}
     </section>

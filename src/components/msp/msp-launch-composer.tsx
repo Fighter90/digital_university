@@ -19,6 +19,7 @@ import {
   MIN_MSP_TAGLINE_LENGTH,
   MIN_MSP_TITLE_LENGTH,
 } from '@/lib/msp';
+import { t, type Locale } from '@/lib/i18n';
 
 const buttonClass =
   'inline-flex select-none items-center justify-center gap-2 rounded-button bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-soft transition-colors hover:bg-accent-strong disabled:pointer-events-none disabled:opacity-50';
@@ -26,7 +27,7 @@ const buttonClass =
 const inputClass =
   'rounded-button border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-coral-600';
 
-export function MspLaunchComposer() {
+export function MspLaunchComposer({ locale = 'ru' }: { locale?: Locale }) {
   const [state, formAction, isPending] = useActionState<MspActionState, FormData>(
     createMspProjectAction,
     null,
@@ -42,7 +43,7 @@ export function MspLaunchComposer() {
         className={buttonClass}
       >
         <Rocket className="size-4" aria-hidden="true" />
-        Запустить проект
+        {t(locale, 'msp.launch.cta')}
       </button>
     );
   }
@@ -50,13 +51,12 @@ export function MspLaunchComposer() {
   return (
     <section
       data-testid="msp-composer"
-      aria-label="Новый запуск проекта"
+      aria-label={t(locale, 'msp.launch.aria')}
       className="flex min-w-0 flex-col gap-3"
     >
-      <h2 className="text-base font-semibold">Запустить проект</h2>
+      <h2 className="text-base font-semibold">{t(locale, 'msp.launch.title')}</h2>
       <p className="text-xs text-muted-foreground">
-        Расскажите о студенческом стартапе: что это, для кого и какая польза. Только вымышленные
-        проекты и никаких реальных компаний — каталог концепта для конкурса.
+        {t(locale, 'msp.launch.desc')}
       </p>
 
       <form
@@ -65,7 +65,7 @@ export function MspLaunchComposer() {
         className="flex flex-col gap-3 rounded-card border border-border bg-card p-4 shadow-soft"
       >
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Название</span>
+          <span className="font-medium">{t(locale, 'msp.launch.name')}</span>
           <input
             type="text"
             name="title"
@@ -73,13 +73,13 @@ export function MspLaunchComposer() {
             required
             minLength={MIN_MSP_TITLE_LENGTH}
             maxLength={MAX_MSP_TITLE_LENGTH}
-            placeholder="Конспект-бот"
+            placeholder={t(locale, 'msp.namePlaceholder')}
             className={inputClass}
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">Краткое описание (слоган)</span>
+          <span className="font-medium">{t(locale, 'msp.launch.tagline')}</span>
           <input
             type="text"
             name="tagline"
@@ -87,13 +87,13 @@ export function MspLaunchComposer() {
             required
             minLength={MIN_MSP_TAGLINE_LENGTH}
             maxLength={MAX_MSP_TAGLINE_LENGTH}
-            placeholder="ИИ-конспекты лекций за минуту"
+            placeholder={t(locale, 'msp.launch.taglinePlaceholder')}
             className={inputClass}
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium">О проекте</span>
+          <span className="font-medium">{t(locale, 'msp.launch.about')}</span>
           <textarea
             name="description"
             data-testid="msp-launch-description"
@@ -101,34 +101,34 @@ export function MspLaunchComposer() {
             required
             minLength={MIN_MSP_DESCRIPTION_LENGTH}
             maxLength={MAX_MSP_DESCRIPTION_LENGTH}
-            placeholder="Что умеет проект, для кого он и какая проблема решается — чем конкретнее, тем интереснее каталогу"
+            placeholder={t(locale, 'msp.launch.aboutPlaceholder')}
             className={inputClass}
           />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium">
-            Теги (через запятую, до {MAX_MSP_TAGS} по {MAX_MSP_TAG_LENGTH} символов)
+            {t(locale, 'msp.launch.tags', { max: MAX_MSP_TAGS, length: MAX_MSP_TAG_LENGTH })}
           </span>
           <input
             type="text"
             name="tags"
             data-testid="msp-launch-tags"
-            placeholder="ai, учёба, конспекты"
+            placeholder={t(locale, 'msp.launch.tagsPlaceholder')}
             className={inputClass}
           />
         </label>
 
         <div className="flex items-center gap-2">
           <button type="submit" disabled={isPending} className={buttonClass}>
-            {isPending ? 'Публикуем…' : 'Опубликовать запуск'}
+            {isPending ? t(locale, 'msp.launch.submitting') : t(locale, 'msp.launch.submit')}
           </button>
           <button
             type="button"
             onClick={() => setOpen(false)}
             className="inline-flex select-none items-center rounded-button border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
-            Отмена
+            {t(locale, 'msp.launch.cancel')}
           </button>
         </div>
         {state?.error ? (

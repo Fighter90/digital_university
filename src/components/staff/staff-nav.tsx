@@ -5,17 +5,18 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { STAFF_SECTIONS, resolveActiveSection } from '@/components/shell/nav-items';
 import { sectionIcon } from '@/components/shell/nav-icons';
+import { navLabel, t, type Locale } from '@/lib/i18n';
 
 // DIG-48 — поднавигация кабинета сотрудника внутри Shell: пилюли-разделы
 // над содержимым (Сводка / Заявки / Обращения / Объявления). Активный
 // раздел синхронизирован с боковым меню через resolveActiveSection.
-export function StaffNav() {
+export function StaffNav({ locale = 'ru' }: { locale?: Locale }) {
   const pathname = usePathname();
   const active = resolveActiveSection(pathname, STAFF_SECTIONS);
 
   return (
     <nav
-      aria-label="Разделы деканата"
+      aria-label={t(locale, 'staff.nav.aria')}
       data-testid="staff-nav"
       className="mb-5 flex gap-1.5 overflow-x-auto pb-1"
     >
@@ -35,7 +36,7 @@ export function StaffNav() {
             )}
           >
             <Icon className="size-4" aria-hidden="true" />
-            {section.label}
+            {navLabel(locale, section.href, section.label)}
           </Link>
         );
       })}

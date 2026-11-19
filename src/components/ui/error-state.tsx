@@ -3,6 +3,7 @@ import { cn } from 'cn';
 import { Icon } from './icon';
 import { Illustration } from './illustration';
 import { buttonVariants } from './button';
+import { t, type Locale } from '@/lib/i18n';
 import type { IllustrationName } from '@/lib/illustrations';
 
 // DIG-13: ErrorState — состояние ошибки с кнопкой «Повторить».
@@ -13,15 +14,20 @@ export interface ErrorStateProps {
   onRetry?: () => void;
   illustration?: IllustrationName;
   className?: string;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru): подпись «Повторить». */
+  locale?: Locale;
 }
 
 export function ErrorState({
-  title = 'Что-то пошло не так',
-  description = 'Попробуйте повторить запрос или вернуться позже.',
+  title,
+  description,
   onRetry,
   illustration,
   className,
+  locale = 'ru',
 }: ErrorStateProps) {
+  const resolvedTitle = title ?? t(locale, 'error.title');
+  const resolvedDescription = description ?? t(locale, 'error.desc');
   return (
     <div
       role="alert"
@@ -40,15 +46,15 @@ export function ErrorState({
           <Icon icon={TriangleAlert} size={26} />
         </span>
       )}
-      <h3 className="text-base font-extrabold tracking-heading">{title}</h3>
-      <p className="max-w-xs text-sm text-muted-foreground">{description}</p>
+      <h3 className="text-base font-extrabold tracking-heading">{resolvedTitle}</h3>
+      <p className="max-w-xs text-sm text-muted-foreground">{resolvedDescription}</p>
       {onRetry ? (
         <button
           type="button"
           onClick={onRetry}
           className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'mt-2')}
         >
-          Повторить
+          {t(locale, 'btn.retry')}
         </button>
       ) : null}
     </div>

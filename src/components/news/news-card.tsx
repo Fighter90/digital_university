@@ -7,11 +7,33 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { NEWS_COVERS, formatNewsDate } from '@/lib/news-catalog';
+import { NEWS_COVERS, formatNewsDate, newsCoverAlt } from '@/lib/news-catalog';
+import { enNewsItem, enNewsSource } from '@/lib/en-demo-content';
+import type { Locale } from '@/lib/i18n';
 import type { NewsCardView } from '@/server/data/news';
 
-export function NewsCard({ item, feedQuery }: { item: NewsCardView; feedQuery: string }) {
+export function NewsCard({
+  item,
+  feedQuery,
+  locale = 'ru',
+}: {
+  item: NewsCardView;
+  feedQuery: string;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const cover = NEWS_COVERS[item.topic];
+  // DIG-89 — EN-рендер демо-новости: титул/лид из словаря по id.
+  const view =
+    locale === 'en'
+      ? {
+          ...item,
+          ...(() => {
+            const en = enNewsItem(item.id);
+            return en ? { title: en.title, excerpt: en.excerpt } : {};
+          })(),
+        }
+      : item;
   const href = `/news/${item.id}${feedQuery ? `?${feedQuery}` : ''}`;
   return (
     <Link
@@ -21,7 +43,7 @@ export function NewsCard({ item, feedQuery }: { item: NewsCardView; feedQuery: s
     >
       <Image
         src={cover.src}
-        alt={cover.alt}
+        alt={newsCoverAlt(cover, locale)}
         loading="lazy"
         decoding="async"
         unoptimized
@@ -31,12 +53,12 @@ export function NewsCard({ item, feedQuery }: { item: NewsCardView; feedQuery: s
       />
       <span className="flex flex-1 flex-col gap-1.5 p-4">
         <span className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-neutral-500">
-          <span>{formatNewsDate(item.publishedAt)}</span>
+          <span>{formatNewsDate(item.publishedAt, locale)}</span>
           <span aria-hidden="true">·</span>
-          <span className="truncate">{item.source}</span>
+          <span className="truncate">{locale === 'en' ? enNewsSource(item.source) : item.source}</span>
         </span>
-        <span className="line-clamp-2 text-sm font-semibold text-neutral-900">{item.title}</span>
-        <span className="line-clamp-2 text-xs text-neutral-600">{item.excerpt}</span>
+        <span className="line-clamp-2 text-sm font-semibold text-neutral-900">{view.title}</span>
+        <span className="line-clamp-2 text-xs text-neutral-600">{view.excerpt}</span>
       </span>
     </Link>
   );

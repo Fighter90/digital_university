@@ -41,7 +41,9 @@ const anna: StudentRow = {
 };
 
 function request(overrides: Partial<ServiceRequestRow> = {}): ServiceRequestRow {
-  const createdAt = new Date('2026-11-10T10:15:00');
+  // Относительная дата: тест «overdue-фильтр» не должен ломаться от
+  // календаря (10 дней назад + SLA 3 дня — просрочена в любой день прогона).
+  const createdAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
   return {
     id: 'req-anna-4',
     studentId: 'st-anna',
@@ -239,7 +241,8 @@ function queueFixture() {
     title: 'Заявление на перезачёт',
     status: 'IN_PROGRESS',
     assignee: 'Мария Петрова',
-    createdAt: new Date('2026-11-14T09:40:00'),
+    // Свежая заявка: создана «сейчас» — не просрочена ни в какой день прогона.
+    createdAt: new Date(),
   });
   return [
     { request: overdue, student: anna },

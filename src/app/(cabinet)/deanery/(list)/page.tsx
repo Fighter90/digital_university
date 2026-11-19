@@ -13,7 +13,7 @@ import { t } from '@/lib/i18n';
 import { dataDb } from '@/server/data/db';
 import { TicketList } from '@/components/deanery/ticket-list';
 import { TicketComposer } from '@/components/deanery/ticket-composer';
-import { RESPONSE_PROMISE } from '@/lib/tickets';
+import { responsePromise } from '@/lib/tickets';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/shell/section-title';
 import { MessagesSquare } from 'lucide-react';
@@ -52,13 +52,13 @@ export default async function DeaneryPage({
       <header>
         <SectionTitle href="/deanery" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <p data-testid="deanery-sla" className="mt-1 text-sm text-muted-foreground">
-          {RESPONSE_PROMISE}
+          {responsePromise(locale)}
         </p>
       </header>
 
       {/* Две панели на десктопе; на мобильном — список, затем композер. */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <TicketList tickets={page.tickets} />
+        <TicketList tickets={page.tickets} locale={locale} />
         <TicketComposer
           requests={page.requests}
           disciplines={page.disciplines}

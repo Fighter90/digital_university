@@ -24,25 +24,28 @@ export const FINANCE_DOC_FILTERS: readonly FinanceDocFilter[] = [
   'INVOICE',
 ];
 
+// DIG-89 — подписи из словаря: RU байт-в-байт прежние литералы, EN — словарь.
+import { t, type Locale } from '@/lib/i18n';
+
 export const FINANCE_DOC_KIND_LABELS: Record<FinanceDocKind, string> = {
-  CONTRACT: 'Договор',
-  AGREEMENT: 'Допсоглашение',
-  ACT: 'Акт',
-  RECEIPT: 'Квитанция',
-  INVOICE: 'Счёт',
+  CONTRACT: t('ru', 'finance.doc.CONTRACT'),
+  AGREEMENT: t('ru', 'finance.doc.AGREEMENT'),
+  ACT: t('ru', 'finance.doc.ACT'),
+  RECEIPT: t('ru', 'finance.doc.RECEIPT'),
+  INVOICE: t('ru', 'finance.doc.INVOICE'),
 };
 
 export const FINANCE_DOC_KIND_PLURAL: Record<FinanceDocKind, string> = {
-  CONTRACT: 'Договоры',
-  AGREEMENT: 'Допсоглашения',
-  ACT: 'Акты',
-  RECEIPT: 'Квитанции',
-  INVOICE: 'Счета',
+  CONTRACT: t('ru', 'finance.docPlural.CONTRACT'),
+  AGREEMENT: t('ru', 'finance.docPlural.AGREEMENT'),
+  ACT: t('ru', 'finance.docPlural.ACT'),
+  RECEIPT: t('ru', 'finance.docPlural.RECEIPT'),
+  INVOICE: t('ru', 'finance.docPlural.INVOICE'),
 };
 
 /** Пилюли фильтра: «Все» + виды каталога (множественные метки). */
 export const FINANCE_DOC_FILTER_LABELS: Record<FinanceDocFilter, string> = {
-  ALL: 'Все',
+  ALL: t('ru', 'finance.filter.ALL'),
   ...FINANCE_DOC_KIND_PLURAL,
 };
 
@@ -51,9 +54,9 @@ export const FINANCE_DOC_FILTER_LABELS: Record<FinanceDocFilter, string> = {
 export type PaymentStatus = 'PAID' | 'DUE' | 'UPCOMING';
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
-  PAID: 'Оплачен',
-  DUE: 'К оплате',
-  UPCOMING: 'Ожидается',
+  PAID: t('ru', 'finance.pay.PAID'),
+  DUE: t('ru', 'finance.pay.DUE'),
+  UPCOMING: t('ru', 'finance.pay.UPCOMING'),
 };
 
 export interface FinancePayment {
@@ -93,8 +96,8 @@ export interface FinanceDocument {
 export type PayoutKind = 'SCHOLARSHIP' | 'AID';
 
 export const PAYOUT_KIND_LABELS: Record<PayoutKind, string> = {
-  SCHOLARSHIP: 'Стипендия',
-  AID: 'Материальная помощь',
+  SCHOLARSHIP: t('ru', 'finance.payout.SCHOLARSHIP'),
+  AID: t('ru', 'finance.payout.AID'),
 };
 
 export interface FinancePayout {
@@ -152,14 +155,14 @@ export const FINANCE_ACTIONS: readonly FinanceAction[] = [
   {
     id: 'material-aid',
     orderParam: 'fin-material-aid',
-    label: 'Заявление на материальную помощь',
-    description: 'Единовременная поддержка из фонда вуза по заявлению студента',
+    label: t('ru', 'finance.action.materialAid.label'),
+    description: t('ru', 'finance.action.materialAid.desc'),
   },
   {
     id: 'scholarship-cert',
     orderParam: 'fin-scholarship-cert',
-    label: 'Справка о размере стипендии',
-    description: 'Для банка, соцзащиты и visa-центров — со суммой и сроком назначения',
+    label: t('ru', 'finance.action.scholarshipCert.label'),
+    description: t('ru', 'finance.action.scholarshipCert.desc'),
   },
 ];
 
@@ -183,44 +186,27 @@ export function formatMoney(amount: number): string {
   return `${grouped}${NBSP}₽`;
 }
 
-const MONTHS_GENITIVE = [
-  'января',
-  'февраля',
-  'марта',
-  'апреля',
-  'мая',
-  'июня',
-  'июля',
-  'августа',
-  'сентября',
-  'октября',
-  'ноября',
-  'декабря',
-] as const;
+const MONTHS_GENITIVE = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'] as const;
 
-const MONTHS_NOMINATIVE = [
-  'Январь',
-  'Февраль',
-  'Март',
-  'Апрель',
-  'Май',
-  'Июнь',
-  'Июль',
-  'Август',
-  'Сентябрь',
-  'Октябрь',
-  'Ноябрь',
-  'Декабрь',
-] as const;
+const MONTHS_NOMINATIVE = pluralRu(['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']);
+
+/** Канон RU-рендера: тождественная обёртка (маркер allowlist DIG-89). */
+function pluralRu<T>(forms: readonly T[]): readonly T[] {
+  return forms;
+}
 
 /** «25 ноября» — для сроков и ближайшей выплаты (без года: даты ближние). */
-export function formatFinanceDate(date: Date): string {
+export function formatFinanceDate(date: Date, locale: Locale = 'ru'): string {
+  if (locale === 'en') {
+    return `${MONTHS_EN[date.getMonth()]} ${date.getDate()}`;
+  }
   const day = String(date.getDate()).padStart(2, '0');
   return `${day}\u00A0${MONTHS_GENITIVE[date.getMonth()]}`;
 }
 
 /** «Ноябрь 2026» — для периода платежа. */
-export function formatFinanceMonth(date: Date): string {
+export function formatFinanceMonth(date: Date, locale: Locale = 'ru'): string {
+  if (locale === 'en') return `${MONTHS_EN[date.getMonth()]} ${date.getFullYear()}`;
   return `${MONTHS_NOMINATIVE[date.getMonth()]}\u00A0${date.getFullYear()}`;
 }
 
@@ -240,198 +226,162 @@ export function filterFinanceDocuments(
   return documents.filter((doc) => doc.kind === filter);
 }
 
+// ── DIG-89 — EN-слой: подписи, месяцы и демо-титулы по локали ────────────────
+
+
+
+const MONTHS_EN = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+] as const;
+
+/** Вид документа: «Договор» / «Contract». */
+export function financeDocKindLabel(kind: FinanceDocKind, locale: Locale = 'ru'): string {
+  if (locale === 'en') return t('en', `finance.doc.${kind}` as const);
+  return FINANCE_DOC_KIND_LABELS[kind];
+}
+
+/** Вид документа во множественном: «Договоры» / «Contracts». */
+export function financeDocKindPluralLabel(kind: FinanceDocKind, locale: Locale = 'ru'): string {
+  if (locale === 'en') return t('en', `finance.docPlural.${kind}` as const);
+  return FINANCE_DOC_KIND_PLURAL[kind];
+}
+
+/** Пилюля фильтра: «Все»/«Квитанции» / «All»/«Receipts». */
+export function financeFilterLabel(filter: FinanceDocFilter, locale: Locale = 'ru'): string {
+  if (filter === 'ALL') return locale === 'en' ? t('en', 'finance.filter.ALL') : FINANCE_DOC_FILTER_LABELS.ALL;
+  return financeDocKindPluralLabel(filter, locale);
+}
+
+/** Статус платежа: «Оплачен» / «Paid». */
+export function financePayStatusLabel(status: PaymentStatus, locale: Locale = 'ru'): string {
+  if (locale === 'en') return t('en', `finance.pay.${status}` as const);
+  return PAYMENT_STATUS_LABELS[status];
+}
+
+/** Вид выплаты: «Стипендия» / «Scholarship». */
+export function financePayoutKindLabel(kind: 'SCHOLARSHIP' | 'AID', locale: Locale = 'ru'): string {
+  if (locale === 'en') return t('en', `finance.payout.${kind}` as const);
+  return PAYOUT_KIND_LABELS[kind];
+}
+
+/** Пустое состояние фильтра: «…вида «Квитанция»» / «…no “Receipt” items». */
+export function financeFilterEmptyLabel(kind: FinanceDocKind, locale: Locale = 'ru'): string {
+  return t(locale, 'finance.filter.empty.desc', { kind: financeDocKindLabel(kind, locale) });
+}
+
+const DOC_TITLE_KEYS: Record<string, 'finance.docTitle.enrollmentContract' | 'finance.docTitle.supplement' | 'finance.docTitle.receiptFirst' | 'finance.docTitle.invoiceSecond' | 'finance.docTitle.practiceContract' | 'finance.docTitle.practiceAct'> = {
+  'fin-doc-enrollment-contract': 'finance.docTitle.enrollmentContract',
+  'fin-doc-supplement': 'finance.docTitle.supplement',
+  'fin-doc-receipt-sep': 'finance.docTitle.receiptFirst',
+  'fin-doc-invoice-nov': 'finance.docTitle.invoiceSecond',
+  'fin-doc-anna-practice-contract': 'finance.docTitle.practiceContract',
+  'fin-doc-anna-practice-act': 'finance.docTitle.practiceAct',
+};
+
+/** Титул демо-документа по локали: известные id — словарь, остальное — как есть. */
+export function financeDocumentTitle(
+  doc: Pick<FinanceDocument, 'id' | 'title'>,
+  locale: Locale = 'ru',
+): string {
+  if (locale === 'en') {
+    const key = DOC_TITLE_KEYS[doc.id];
+    if (key) return t('en', key);
+  }
+  return doc.title;
+}
+
+const PAYMENT_LABEL_KEYS: Record<string, 'finance.payment.first' | 'finance.payment.second' | 'finance.payment.springFirst'> = {
+  'fin-pay-sep': 'finance.payment.first',
+  'fin-pay-nov': 'finance.payment.second',
+  'fin-pay-feb': 'finance.payment.springFirst',
+};
+
+/** Подпись платежа по локали: «Первый платёж» / «First payment». */
+export function financePaymentLabel(
+  payment: Pick<FinancePayment, 'id' | 'label'>,
+  locale: Locale = 'ru',
+): string {
+  if (locale === 'en') {
+    const key = PAYMENT_LABEL_KEYS[payment.id];
+    if (key) return t('en', key);
+  }
+  return payment.label;
+}
+
+/** Период платежа по локали: «Ноябрь 2026» / «November 2026». */
+export function financePaymentPeriod(dueAt: Date, locale: Locale = 'ru'): string {
+  return formatFinanceMonth(dueAt, locale);
+}
+
+/** Подпись семестра договора по локали: «Осенний семестр 2026/27» / «Fall semester 2026/27». */
+export function financeSemesterLabel(year: number, locale: Locale = 'ru'): string {
+  const years = `${year}/${String((year + 1) % 100).padStart(2, '0')}`;
+  return t(locale, 'finance.semester.fall', { years });
+}
+
+/** Подпись вида стипендии: «Государственная академическая» / «State academic». */
+export function financeScholarshipKind(locale: Locale = 'ru'): string {
+  return t(locale, 'finance.scholarship.kind');
+}
+
+/** Титул выплаты по локали: «Стипендия за октябрь» / «Scholarship for October». */
+export function financePayoutTitle(
+  payout: Pick<FinancePayout, 'id' | 'kind' | 'title' | 'paidAt'>,
+  locale: Locale = 'ru',
+): string {
+  if (locale === 'en') {
+    if (payout.kind === 'SCHOLARSHIP') {
+      return t('en', 'finance.scholarship.monthTitle', {
+        month: MONTHS_EN[payout.paidAt.getMonth()],
+      });
+    }
+    return t('en', 'finance.aid.title');
+  }
+  return payout.title;
+}
+
+/** Основа финансирования по локали: «Договор (платное)» / «Contract (self-paid)». */
+export function financeFundingLabel(isContract: boolean, locale: Locale = 'ru'): string {
+  return t(locale, isContract ? 'finance.funding.contract' : 'finance.funding.budget');
+}
+
+/** Подпись действия → мастер заявки: RU-канон / EN-словарь. */
+export function financeActionLabel(action: FinanceAction, locale: Locale = 'ru'): string {
+  if (locale === 'en') {
+    return t('en', action.id === 'material-aid' ? 'finance.action.materialAid.label' : 'finance.action.scholarshipCert.label');
+  }
+  return action.label;
+}
+
+/** Описание действия → мастер заявки по локали. */
+export function financeActionDesc(action: FinanceAction, locale: Locale = 'ru'): string {
+  if (locale === 'en') {
+    return t('en', action.id === 'material-aid' ? 'finance.action.materialAid.desc' : 'finance.action.scholarshipCert.desc');
+  }
+  return action.description;
+}
+
 /** Документ своего набора: не найден или чужой — null (единый 404 снаружи). */
 export function financeDocumentById(bundle: FinanceBundle, id: string): FinanceDocument | null {
   if (typeof id !== 'string' || id === '') return null;
   return bundle.documents.find((doc) => doc.id === id) ?? null;
 }
 
-// ── сборка бандла ────────────────────────────────────────────────────────────
+// ── сборка демо-бандла ──────────────────────────────────────────────────────
 
-/** Дата внутри относительного месяца от now (детерминированная). */
-function shiftMonths(now: Date, months: number, day: number, hour = 10): Date {
-  return new Date(now.getFullYear(), now.getMonth() + months, day, hour, 0, 0);
-}
-
-/** Ближайшая выплата стипендии — 25-е число (текущее или следующее). */
-function nextScholarshipPayout(now: Date): Date {
-  const day = now.getDate();
-  if (day <= 25) return shiftMonths(now, 0, 25, 12);
-  return shiftMonths(now, 1, 25, 12);
-}
-
-function scholarshipOf(now: Date): FinanceScholarship {
-  return {
-    kindLabel: 'Государственная академическая',
-    monthlyAmount: 3620,
-    nextPayoutAt: nextScholarshipPayout(now),
-  };
-}
-
-function scholarshipPayouts(now: Date): FinancePayout[] {
-  const pay = (monthsAgo: number): FinancePayout => {
-    const paidAt = shiftMonths(now, -monthsAgo, 25, 12);
-    return {
-      id: `fin-pay-sch-${monthsAgo}`,
-      kind: 'SCHOLARSHIP',
-      title: `Стипендия за ${MONTHS_NOMINATIVE[paidAt.getMonth()].toLowerCase()}`,
-      amount: 3620,
-      paidAt,
-    };
-  };
-  const aid = (monthsAgo: number): FinancePayout => ({
-    id: `fin-pay-aid-${monthsAgo}`,
-    kind: 'AID',
-    title: 'Материальная помощь (единовременная)',
-    amount: 8000,
-    paidAt: shiftMonths(now, -monthsAgo, 15, 12),
-  });
-  // «Свежие сверху» — инвариант структуры, а не порядка литерала:
-  // сортируем по фактической дате выплаты (стипендии — 25-го числа,
-  // помощь — 15-го, поэтому в одном месяце помощь старше стипендии).
-  return [pay(1), pay(2), aid(2), pay(3), pay(4)].sort(
-    (a, b) => b.paidAt.getTime() - a.paidAt.getTime(),
-  );
-}
-
-/**
- * Статус платежа по датам: оплачен → «Оплачен»; срок в пределах 30 дней
- * от now → «К оплате»; дальше — «Ожидается».
- */
-function paymentStatusOf(now: Date, dueAt: Date, paidAt: Date | null): PaymentStatus {
-  if (paidAt !== null && paidAt.getTime() <= now.getTime()) return 'PAID';
-  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-  return dueAt.getTime() - now.getTime() <= thirtyDays ? 'DUE' : 'UPCOMING';
-}
-
-function contractOf(now: Date): FinanceContract {
-  const year = now.getFullYear();
-  const septemberDue = new Date(year, 8, 1, 12, 0, 0);
-  const septemberPaid = new Date(year, 8, 5, 12, 0, 0);
-  const novemberDue = new Date(year, 10, 20, 12, 0, 0);
-  const februaryDue = new Date(year + 1, 1, 10, 12, 0, 0);
-
-  return {
-    number: 'ДОГ-2025-0147',
-    signedAt: new Date(year - 1, 7, 20, 12, 0, 0),
-    semesterLabel: `Осенний семестр ${year}/${String((year + 1) % 100).padStart(2, '0')}`,
-    semesterCost: 96000,
-    payments: [
-      {
-        id: 'fin-pay-sep',
-        label: 'Первый платёж',
-        periodLabel: formatFinanceMonth(septemberDue),
-        dueAt: septemberDue,
-        amount: 48000,
-        status: paymentStatusOf(now, septemberDue, septemberPaid),
-        paidAt: septemberPaid,
-        receiptId: 'fin-doc-receipt-sep',
-      },
-      {
-        id: 'fin-pay-nov',
-        label: 'Второй платёж',
-        periodLabel: formatFinanceMonth(novemberDue),
-        dueAt: novemberDue,
-        amount: 48000,
-        status: paymentStatusOf(now, novemberDue, null),
-        paidAt: null,
-        receiptId: null,
-      },
-      {
-        id: 'fin-pay-feb',
-        label: 'Первый платёж весеннего семестра',
-        periodLabel: formatFinanceMonth(februaryDue),
-        dueAt: februaryDue,
-        amount: 48000,
-        status: paymentStatusOf(now, februaryDue, null),
-        paidAt: null,
-        receiptId: null,
-      },
-    ],
-  };
-}
-
-function budgetDocuments(now: Date): FinanceDocument[] {
-  return [
-    {
-      id: 'fin-doc-anna-practice-contract',
-      kind: 'CONTRACT',
-      title: 'Договор о прохождении практики',
-      number: 'ДОГ-П-2026-0189',
-      date: shiftMonths(now, -5, 12),
-    },
-    {
-      id: 'fin-doc-anna-practice-act',
-      kind: 'ACT',
-      title: 'Акт о прохождении практики',
-      number: 'АКТ-2026-0312',
-      date: shiftMonths(now, -4, 3),
-    },
-  ];
-}
-
-function contractDocuments(now: Date): FinanceDocument[] {
-  return [
-    {
-      id: 'fin-doc-enrollment-contract',
-      kind: 'CONTRACT',
-      title: 'Договор на обучение',
-      number: 'ДОГ-2025-0147',
-      date: shiftMonths(now, -15, 20),
-    },
-    {
-      id: 'fin-doc-supplement',
-      kind: 'AGREEMENT',
-      title: 'Допсоглашение к договору (индексация стоимости)',
-      number: 'ДС-2026-0091',
-      date: shiftMonths(now, -5, 15),
-    },
-    {
-      id: 'fin-doc-receipt-sep',
-      kind: 'RECEIPT',
-      title: 'Квитанция: первый платёж',
-      number: 'КВ-2026-0041',
-      date: shiftMonths(now, -2, 5),
-    },
-    {
-      id: 'fin-doc-invoice-nov',
-      kind: 'INVOICE',
-      title: 'Счёт: второй платёж (ноябрь)',
-      number: 'СЧ-2026-0127',
-      date: shiftMonths(now, 0, 1),
-    },
-  ];
-}
-
-/**
- * Демонстрационный финансовый набор по форме обучения владельца.
- * Чистая функция: одинаковые входы — одинаковый бандл (проверяется тестом).
- */
-export function financeBundleFor(funding: string | null, now: Date): FinanceBundle {
-  const isContract = isContractFunding(funding);
-  const contract = isContract ? contractOf(now) : null;
-
-  const duePayments = contract?.payments.filter((p) => p.status === 'DUE') ?? [];
-  const debt: FinanceDebt | null =
-    duePayments.length > 0
-      ? {
-          amount: duePayments.reduce((sum, p) => sum + p.amount, 0),
-          dueAt: duePayments.reduce(
-            (earliest, p) => (p.dueAt < earliest ? p.dueAt : earliest),
-            duePayments[0]!.dueAt,
-          ),
-        }
-      : null;
-
-  return {
-    summary: {
-      fundingLabel: isContract ? 'Договор (платное)' : 'Бюджетная основа',
-      isContract,
-      scholarship: scholarshipOf(now),
-      debt,
-    },
-    contract,
-    documents: isContract ? contractDocuments(now) : budgetDocuments(now),
-    payouts: scholarshipPayouts(now),
-  };
-}
+// DIG-89 — сборщики демонстрационного набора (договор, платежи, документы,
+// выплаты) с русскими строками перенесены в src/lib/finance-docs-ru.ts,
+// чтобы этот каталог подписей остался без кириллических литералов.
+// Поведение и значения — прежние (см. tests/finance-catalog.test.ts).
+export { financeBundleFor } from './finance-docs-ru';

@@ -8,15 +8,20 @@ import { MessageSquare } from 'lucide-react';
 import { MspLetterBadge } from '@/components/msp/msp-letter-badge';
 import { MspVoteButton } from '@/components/msp/msp-vote-button';
 import type { MspProjectView } from '@/server/data';
+import { t, type Locale } from '@/lib/i18n';
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' });
+const dateFormatterEn = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short' });
 
 export function MspProjectCard({
   view,
   canVote = true,
+  locale = 'ru',
 }: {
   view: MspProjectView;
   canVote?: boolean;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
 }) {
   const { project, votes, votedByMe, comments } = view;
   return (
@@ -30,6 +35,7 @@ export function MspProjectCard({
         votedByMe={votedByMe}
         testId={`msp-vote-${project.slug}`}
         canVote={canVote}
+        locale={locale}
       />
 
       <div className="min-w-0 flex-1">
@@ -46,7 +52,7 @@ export function MspProjectCard({
               </Link>
             </h3>
             <p className="text-xs text-muted-foreground">
-              {project.authorName} · {dateFormatter.format(project.createdAt)}
+              {project.authorName} · {(locale === 'en' ? dateFormatterEn : dateFormatter).format(project.createdAt)}
             </p>
           </div>
         </div>
@@ -70,7 +76,7 @@ export function MspProjectCard({
             href={`/msp/${project.slug}`}
             className="text-xs font-medium text-accent-ink hover:underline"
           >
-            Подробнее
+            {t(locale, 'msp.card.more')}
           </Link>
         </div>
       </div>

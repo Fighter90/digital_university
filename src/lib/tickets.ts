@@ -21,6 +21,31 @@ export const TICKET_SUBJECT_LABELS: Record<TicketSubject, string> = {
   OTHER: 'Другое',
 };
 
+// DIG-89 — EN-подписи тем/статусов обращений по локали (RU — канон).
+import { t, type Locale } from '@/lib/i18n';
+
+/** Тема обращения: «Оценки» / «Grades». */
+export function ticketSubjectLabel(subject: TicketSubject, locale: Locale = 'ru'): string {
+  if (locale === 'en') return t('en', `deanery.subject.${subject}` as const);
+  return TICKET_SUBJECT_LABELS[subject];
+}
+
+/** Видимый статус обращения: «Ждём вас» / «Waiting for you». */
+export function ticketViewStatusLabel(status: TicketViewStatus, locale: Locale = 'ru'): string {
+  if (locale === 'en') return t('en', `deanery.status.${status}` as const);
+  return TICKET_VIEW_STATUS_LABELS[status];
+}
+
+/** Подпись роли сотрудника по локали: «Менеджер программы» / «Program manager». */
+export function managerRoleLabel(locale: Locale = 'ru'): string {
+  return locale === 'en' ? t('en', 'deanery.managerRole') : MANAGER_ROLE_LABEL;
+}
+
+/** Обещание срока ответа по локали. */
+export function responsePromise(locale: Locale = 'ru'): string {
+  return locale === 'en' ? t('en', 'deanery.responsePromise') : RESPONSE_PROMISE;
+}
+
 /**
  * Видимые статусы обращения — ровно три из задачи. Внутренние статусы
  * канонической схемы (OPEN/IN_PROGRESS/ANSWERED/RESOLVED/CLOSED) маппятся

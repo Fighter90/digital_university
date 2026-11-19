@@ -17,8 +17,13 @@ import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 import { dataDb } from '@/server/data/db';
 import { getGradebook, requireDataCtx } from '@/server/data';
+import type { Metadata } from 'next';
 
-export const metadata = { title: 'Зачётная книжка — Цифровой деканат' };
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.gradebook') };
+}
 
 // DIG-26: ?discipline=CODE из карточек главной — раскрываем семестр,
 // в котором читается эта дисциплина (карточка ссылается сюда по спеке).

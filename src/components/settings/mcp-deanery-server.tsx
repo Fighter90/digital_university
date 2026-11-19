@@ -5,6 +5,7 @@ import { Check, Copy, KeyRound, Link2 } from 'lucide-react';
 import { cn } from 'cn';
 import { rotateMcpTokenAction } from '@/server/actions/settings';
 import { MCP_ENDPOINT_PATH } from '@/lib/mcp-protocol';
+import { t, type Locale } from '@/lib/i18n';
 
 // DIG-64 — карточка «MCP-сервер деканата» на вкладке «Настройка MCP»:
 // URL демо-сервера, персональный токен (создать / перевыпустить; plaintext
@@ -31,12 +32,14 @@ function CopyButton({
   copied,
   onCopy,
   className,
+  copiedLabel,
 }: {
   value: string;
   label: string;
   copied: boolean;
   onCopy: (value: string) => void;
   className?: string;
+  copiedLabel: string;
 }) {
   return (
     <button
@@ -49,7 +52,7 @@ function CopyButton({
     >
       {copied ? (
         <>
-          <Check className="size-3" aria-hidden="true" /> Скопировано
+          <Check className="size-3" aria-hidden="true" /> {copiedLabel}
         </>
       ) : (
         <>
@@ -60,7 +63,16 @@ function CopyButton({
   );
 }
 
-export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenViewProps | null }) {
+export function McpDeaneryServer({
+  url,
+  token,
+  locale = 'ru',
+}: {
+  url: string;
+  token: McpTokenViewProps | null;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   const [fresh, setFresh] = useState<{ token: string; preview: string } | null>(null);
   const [failed, setFailed] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -93,7 +105,7 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
       mcpServers: {
         'digital-deanery': {
           command: 'npx',
-          args: ['-y', 'mcp-remote', url, '--header', 'Authorization: Bearer <ВАШ_ТОКЕН>'],
+          args: ['-y', 'mcp-remote', url, '--header', `Authorization: ${t(locale, 'settings.mcpServer.argsToken')}`],
         },
       },
     },
@@ -106,7 +118,7 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
       {/* URL сервера */}
       <div className="flex flex-col gap-1.5">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-neutral-900">
-          <Link2 className="size-4 text-neutral-500" aria-hidden="true" /> URL сервера
+          <Link2 className="size-4 text-neutral-500" aria-hidden="true" /> {t(locale, 'settings.mcpServer.url')}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <code
@@ -117,7 +129,8 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
           </code>
           <CopyButton
             value={url}
-            label="Скопировать URL"
+            label={t(locale, 'settings.mcpServer.copyUrl')}
+            copiedLabel={t(locale, 'settings.mcpServer.copied')}
             copied={copiedKind === 'url'}
             onCopy={(value) => copy(value, 'url')}
           />
@@ -128,7 +141,7 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
       <div className="flex flex-col gap-1.5">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-neutral-900">
           <KeyRound className="size-4 text-neutral-500" aria-hidden="true" />
-          Персональный токен доступа
+          {t(locale, 'settings.mcpServer.tokenTitle')}
         </p>
 
         {fresh ? (
@@ -145,7 +158,8 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
             <div className="flex flex-wrap items-center gap-2">
               <CopyButton
                 value={fresh.token}
-                label="Скопировать токен"
+                label={t(locale, 'settings.mcpServer.copyToken')}
+                copiedLabel={t(locale, 'settings.mcpServer.copied')}
                 copied={copiedKind === 'token'}
                 onCopy={(value) => copy(value, 'token')}
               />
@@ -155,18 +169,17 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
                 disabled={isPending}
                 className="rounded-pill border border-border bg-card px-2.5 py-1 text-xs font-semibold text-neutral-700 hover:bg-muted disabled:opacity-50"
               >
-                Перевыпустить токен
+                {t(locale, 'settings.mcpServer.rotate')}
               </button>
             </div>
             <p className="text-[11px] leading-relaxed text-neutral-600">
-              Токен показывается только один раз — скопируйте его прямо сейчас и вставьте в
-              ассистент. Прежний токен отозван.
+              {t(locale, 'settings.mcpServer.rotateNote')}
             </p>
           </div>
         ) : token ? (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-neutral-600">
-              Токен создан,{' '}
+              {t(locale, 'settings.mcpServer.created')}{' '}
               <code
                 data-testid="mcp-token-preview"
                 className="rounded-pill border border-border bg-muted px-2 py-0.5 font-mono text-[11px] text-neutral-900"
@@ -182,12 +195,12 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
               disabled={isPending}
               className="rounded-button border border-border bg-card px-3 py-1.5 text-sm font-semibold text-neutral-700 hover:bg-muted disabled:opacity-50"
             >
-              Перевыпустить токен
+              {t(locale, 'settings.mcpServer.rotate')}
             </button>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-neutral-600">Токен ещё не создан.</span>
+            <span className="text-xs text-neutral-600">{t(locale, 'settings.mcpServer.none')}</span>
             <button
               type="button"
               data-testid="mcp-token-rotate"
@@ -195,18 +208,18 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
               disabled={isPending}
               className="rounded-button bg-foreground px-3 py-1.5 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50"
             >
-              Создать токен
+              {t(locale, 'settings.mcpServer.create')}
             </button>
           </div>
         )}
 
         {failed ? (
           <p role="alert" className="text-xs text-error-ink">
-            Не удалось выпустить токен. Попробуйте ещё раз.
+            {t(locale, 'settings.mcpServer.createError')}
           </p>
         ) : (
           <p className="text-xs text-neutral-500">
-            В хранилище остаётся только хэш токена; полный токен виден один раз при выпуске.
+            {t(locale, 'settings.mcpServer.hashNote')}
           </p>
         )}
       </div>
@@ -218,18 +231,18 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
           className="rounded-card-sm border border-border bg-muted p-3"
         >
           <h3 id="mcp-chatgpt" className="text-xs font-semibold text-neutral-900">
-            Подключение к ChatGPT
+            {t(locale, 'settings.mcpServer.chatgpt.title')}
           </h3>
           <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-neutral-700">
-            <li>Настройки → Подключения (Connectors) → Создать.</li>
+            <li>{t(locale, 'settings.mcpServer.chatgpt.step1')}</li>
             <li>
-              Вставьте URL сервера: <span className="font-mono">{url}</span>
+              {t(locale, 'settings.mcpServer.chatgpt.paste')} <span className="font-mono">{url}</span>
             </li>
             <li>
-              В поле авторизации укажите заголовок:{' '}
-              <span className="font-mono">Authorization: Bearer &lt;токен&gt;</span>
+              {t(locale, 'settings.mcpServer.chatgpt.header')}{' '}
+              <span className="font-mono">{t(locale, 'settings.mcpServer.chatgpt.authHeader')}</span>
             </li>
-            <li>Спросите ассистента: «моё расписание на сегодня».</li>
+            <li>{t(locale, 'settings.mcpServer.chatgpt.ask')}</li>
           </ol>
         </section>
 
@@ -238,14 +251,14 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
           className="rounded-card-sm border border-border bg-muted p-3"
         >
           <h3 id="mcp-claude" className="text-xs font-semibold text-neutral-900">
-            Подключение к Claude
+            {t(locale, 'settings.mcpServer.claude.title')}
           </h3>
           <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-neutral-700">
-            <li>Settings → Connectors → Add custom connector (или через конфиг ниже).</li>
+            <li>{t(locale, 'settings.mcpServer.claude.step1')}</li>
             <li>
-              Вставьте URL: <span className="font-mono">{url}</span>
+              {t(locale, 'settings.mcpServer.claude.paste')} <span className="font-mono">{url}</span>
             </li>
-            <li>Перезапустите клиент и спросите: «мои оценки».</li>
+            <li>{t(locale, 'settings.mcpServer.claude.ask')}</li>
           </ol>
           <pre
             data-testid="mcp-config-claude"
@@ -257,9 +270,7 @@ export function McpDeaneryServer({ url, token }: { url: string; token: McpTokenV
       </div>
 
       <p className="text-[11px] leading-relaxed text-neutral-500">
-        Сервер отвечает на {MCP_ENDPOINT_PATH} и отдаёт только ваши данные (вымышленный демо-набор):
-        расписание на сегодня, оценки, непрочитанные. Реальных сервисов и ключей за ним нет — это
-        концепт для конкурса.
+        {t(locale, 'settings.mcpServer.note', { path: MCP_ENDPOINT_PATH })}
       </p>
     </div>
   );

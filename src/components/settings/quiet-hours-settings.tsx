@@ -1,5 +1,7 @@
 'use client';
 
+import { t, type Locale } from '@/lib/i18n';
+
 import { useState, useTransition } from 'react';
 import { Toggle } from '@/components/ui/toggle';
 import { saveQuietHoursAction } from '@/server/actions/settings';
@@ -8,10 +10,22 @@ import type { QuietHoursSettings } from '@/server/data/types';
 // DIG-44 — тихие часы: окно времени, когда уведомления в кабинете не
 // генерируются. Окно поддерживает переход через полночь (22:00 → 08:00).
 // Сохранение — server action при каждом изменении (применяется сразу).
-export function QuietHoursSettings({ initial }: { initial: QuietHoursSettings }) {
-  const [enabled, setEnabled] = useState(initial.enabled);
-  const [from, setFrom] = useState(initial.from);
-  const [to, setTo] = useState(initial.to);
+export function QuietHoursSettings({
+  quietHours,
+  initial,
+  locale = 'ru',
+}: {
+  /** Текущее окно тихих часов. */
+  quietHours?: QuietHoursSettings;
+  /** Прежнее имя пропа (страница настроек) — оставлено для совместимости. */
+  initial?: QuietHoursSettings;
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  const prefs = quietHours ?? initial;
+  const [enabled, setEnabled] = useState(prefs?.enabled ?? false);
+  const [from, setFrom] = useState(prefs?.from ?? '22:00');
+  const [to, setTo] = useState(prefs?.to ?? '08:00');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -23,7 +37,7 @@ export function QuietHoursSettings({ initial }: { initial: QuietHoursSettings })
       const ok = await saveQuietHoursAction(next);
       if (ok) setSaved(true);
       else {
-        setError('Проверьте окно: «от» и «до» должны быть разным временем в формате ЧЧ:ММ.');
+        setError(t(locale, 'settings.quiet.error'));
       }
     });
   };
@@ -32,14 +46,14 @@ export function QuietHoursSettings({ initial }: { initial: QuietHoursSettings })
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-neutral-900">Тихие часы</p>
+          <p className="text-sm font-semibold text-neutral-900">{t(locale, 'settings.quiet.title')}</p>
           <p className="text-xs text-neutral-600">
-            В выбранное окно уведомления не попадают в ленту кабинета.
+            {t(locale, 'settings.quiet.desc')}
           </p>
         </div>
         <Toggle
           checked={enabled}
-          aria-label="Тихие часы включены"
+          aria-label={t(locale, 'settings.quiet.enabledAria')}
           onCheckedChange={(next) => {
             const nextValue = { ...{ enabled, from, to }, enabled: next };
             setEnabled(next);
@@ -50,7 +64,7 @@ export function QuietHoursSettings({ initial }: { initial: QuietHoursSettings })
 
       <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-700">
         <label htmlFor="quiet-from" className="text-xs font-medium text-neutral-600">
-          с
+          {t(locale, 'settings.quiet.from')}
         </label>
         <input
           id="quiet-from"
@@ -64,7 +78,7 @@ export function QuietHoursSettings({ initial }: { initial: QuietHoursSettings })
           className="rounded-button border border-border bg-card px-2.5 py-1.5 font-mono text-sm"
         />
         <label htmlFor="quiet-to" className="text-xs font-medium text-neutral-600">
-          до
+          {t(locale, 'settings.quiet.to')}
         </label>
         <input
           id="quiet-to"
@@ -83,9 +97,13 @@ export function QuietHoursSettings({ initial }: { initial: QuietHoursSettings })
         {error ? (
           <span className="text-error-ink">{error}</span>
         ) : saved && !isPending ? (
-          'Сохранено — тихие часы уже действуют.'
+          t(locale, 'settings.quiet.saved')
         ) : (
-          `Окно ${from}–${to} ${enabled ? 'активно' : 'выключено'}. Изменения сохраняются сразу.`
+          t(locale, 'settings.quiet.idle', {
+            from,
+            to,
+            state: enabled ? t(locale, 'settings.quiet.stateOn') : t(locale, 'settings.quiet.stateOff'),
+          })
         )}
       </p>
     </div>

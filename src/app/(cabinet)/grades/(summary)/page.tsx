@@ -36,6 +36,7 @@ import {
   trafficLight,
   type DisciplineCard,
 } from '@/lib/performance-format';
+import type { Metadata } from 'next';
 import { bestPercentLabel } from '@/lib/performance-math';
 import { t, type Locale } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
@@ -53,7 +54,11 @@ import type { GradeInsight } from '@/lib/grade-insight';
 import type { PerformanceData } from '@/server/data/performance';
 import type { SemesterKey } from '@/lib/performance-math';
 
-export const metadata = { title: 'Успеваемость — Цифровой деканат' };
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.grades') };
+}
 
 /** Дельта со знаком для человека: −54,1 / +3,2 (EN — с точкой). */
 function formatDelta(value: number, locale: Locale): string {

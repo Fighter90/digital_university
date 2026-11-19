@@ -13,7 +13,7 @@ export function SettingsTabs({
   locale?: Locale;
 }) {
   return (
-    <nav aria-label="Разделы настроек" className="flex flex-wrap gap-2" data-testid="settings-tabs">
+    <nav aria-label={t(locale, 'settings.tabs.aria')} className="flex flex-wrap gap-2" data-testid="settings-tabs">
       {SETTINGS_TABS.map((tab) => {
         const selected = tab.id === active;
         return (

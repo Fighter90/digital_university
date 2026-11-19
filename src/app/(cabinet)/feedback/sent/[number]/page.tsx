@@ -12,15 +12,15 @@ import { notFound } from 'next/navigation';
 import { CheckCircle2, ShieldCheck } from 'lucide-react';
 
 import { requireDataCtx, getFeedbackSentView, normalizeFeedbackNumber } from '@/server/data';
+import { getLocale } from '@/lib/i18n/server';
+import { t } from '@/lib/i18n';
 import { dataDb } from '@/server/data/db';
 import { FeedbackStatusBadge } from '@/components/feedback/feedback-status-badge';
 import {
-  ANONYMOUS_SENT_NOTE,
-  FEEDBACK_KIND_LABELS,
-  FEEDBACK_RESPONSE_PROMISE,
-  FEEDBACK_TARGET_LABELS,
-  SENT_PRIVACY_NOTE,
-  formatFeedbackDueAt,
+  feedbackDueLabel,
+  feedbackResponsePromise,
+  feedbackTargetLabel,
+  feedbackTypeLabel,
 } from '@/lib/feedback';
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -43,7 +43,7 @@ export default async function FeedbackSentPage({
     // Некорректный percent-encoding — тот же контрактный 404 (см. карточку).
     notFound();
   }
-  await requireDataCtx(`/feedback/sent/${rawNumber}`);
+  const [, locale] = await Promise.all([requireDataCtx(`/feedback/sent/${rawNumber}`), getLocale()]);
 
   const view = await getFeedbackSentView(dataDb, number);
   if (!view) notFound();
@@ -54,7 +54,7 @@ export default async function FeedbackSentPage({
         href="/feedback"
         className="mb-4 inline-block text-sm text-muted-foreground hover:text-foreground"
       >
-        ← К обратной связи
+        {t(locale, 'feedback.backAll')}
       </Link>
 
       <article
@@ -63,16 +63,16 @@ export default async function FeedbackSentPage({
       >
         <p className="flex items-center gap-2 text-base font-bold tracking-heading text-foreground">
           <CheckCircle2 className="size-5 shrink-0 text-green-600" aria-hidden="true" />
-          Обращение отправлено
+          {t(locale, 'feedback.sent.title')}
         </p>
 
         <p className="text-sm text-foreground">
-          {FEEDBACK_KIND_LABELS[view.kind]} · {FEEDBACK_TARGET_LABELS[view.target]}
+          {feedbackTypeLabel(view.kind, locale)} · {feedbackTargetLabel(view.target, locale)}
         </p>
 
         <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-muted-foreground">Номер обращения</dt>
+            <dt className="text-muted-foreground">{t(locale, 'feedback.sent.number')}</dt>
             <dd
               className="font-mono font-medium text-foreground"
               data-testid="feedback-sent-number"
@@ -81,24 +81,24 @@ export default async function FeedbackSentPage({
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Срок ответа</dt>
+            <dt className="text-muted-foreground">{t(locale, 'feedback.sent.dueAt')}</dt>
             <dd className="font-medium text-foreground" data-testid="feedback-sent-due">
-              {formatFeedbackDueAt(view.dueAt)}
+              {feedbackDueLabel(view.dueAt, locale)}
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Статус</dt>
+            <dt className="text-muted-foreground">{t(locale, 'feedback.sent.status')}</dt>
             <dd className="mt-0.5">
-              <FeedbackStatusBadge status={view.status} />
+              <FeedbackStatusBadge status={view.status} locale={locale} />
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Отправлено</dt>
+            <dt className="text-muted-foreground">{t(locale, 'feedback.sent.sentAt')}</dt>
             <dd className="font-medium text-foreground">{dateFormatter.format(view.createdAt)}</dd>
           </div>
         </dl>
 
-        <p className="text-xs text-muted-foreground">{FEEDBACK_RESPONSE_PROMISE}</p>
+        <p className="text-xs text-muted-foreground">{feedbackResponsePromise(locale)}</p>
 
         {view.isAnonymous ? (
           <p
@@ -106,19 +106,19 @@ export default async function FeedbackSentPage({
             className="flex items-start gap-2 rounded-card border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
           >
             <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <span>{ANONYMOUS_SENT_NOTE}</span>
+            <span>{t(locale, 'feedback.anon.notTrackable')}</span>
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Обращение доступно в списке «Мои обращения» на странице{' '}
+            {t(locale, 'feedback.sent.seeList')}{' '}
             <Link href="/feedback" className="font-medium text-accent-ink hover:underline">
-              Обратная связь
+              {t(locale, 'feedback.sent.listLink')}
             </Link>
             .
           </p>
         )}
 
-        <p className="text-xs text-muted-foreground">{SENT_PRIVACY_NOTE}</p>
+        <p className="text-xs text-muted-foreground">{t(locale, 'feedback.sent.previewNote')}</p>
       </article>
     </section>
   );

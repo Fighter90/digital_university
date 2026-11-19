@@ -16,6 +16,7 @@ import { DpoProgramCard } from '@/components/dpo/dpo-program-card';
 import { DpoTabs } from '@/components/dpo/dpo-tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { resolveDpoTab } from '@/lib/dpo-tabs';
+import { enDpoDocTitle, enDpoProgram } from '@/lib/en-demo-content';
 import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 import {
@@ -28,7 +29,27 @@ import {
 } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 
-export const metadata = { title: 'Доп. образование — Цифровой деканат' };
+/** DIG-89 — <title> страницы по локали (RU байт-в-байт прежний). */
+export async function generateMetadata() {
+  const locale = await getLocale();
+  return { title: t(locale, 'meta.dpo') };
+}
+
+/**
+ * DIG-89 — EN-рендер демо-контента ДПО: титул/описание/теги программы и
+ * названия документов — из словаря en-demo-content по id. RU — как в сиде
+ * (байт-в-байт), маппинг не применяется.
+ */
+function localizeProgram<T extends { program: { id: string } }>(view: T, locale: 'ru' | 'en'): T {
+  if (locale !== 'en') return view;
+  const en = enDpoProgram(view.program.id);
+  return en ? { ...view, program: { ...view.program, ...en } } : view;
+}
+
+function localizeDocTitle(doc: { id: string; title: string }, locale: 'ru' | 'en'): string {
+  if (locale !== 'en') return doc.title;
+  return enDpoDocTitle(doc.id) ?? doc.title;
+}
 
 export default async function DpoPage({
   searchParams,
@@ -75,7 +96,11 @@ export default async function DpoPage({
             <ul className="flex flex-col gap-3" data-testid="dpo-catalog">
               {views.map((view) => (
                 <li key={view.program.id}>
-                  <DpoProgramCard view={view} canEnroll={canEnroll} locale={locale} />
+                  <DpoProgramCard
+                    view={localizeProgram(view, locale)}
+                    canEnroll={canEnroll}
+                    locale={locale}
+                  />
                 </li>
               ))}
             </ul>
@@ -94,7 +119,7 @@ export default async function DpoPage({
           <ul className="flex flex-col gap-3" data-testid="dpo-my-programs">
             {myPrograms.map((view) => (
               <li key={view.program.id}>
-                <DpoMyProgramCard view={view} locale={locale} />
+                <DpoMyProgramCard view={localizeProgram(view, locale)} locale={locale} />
               </li>
             ))}
           </ul>
@@ -108,7 +133,10 @@ export default async function DpoPage({
             description={t(locale, 'dpo.docs.emptyDesc')}
           />
         ) : (
-          <DpoDocumentList documents={documents} locale={locale} />
+          <DpoDocumentList
+            documents={documents.map((doc) => ({ ...doc, title: localizeDocTitle(doc, locale) }))}
+            locale={locale}
+          />
         ))}
     </section>
   );

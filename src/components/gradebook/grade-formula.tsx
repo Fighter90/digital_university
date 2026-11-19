@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { formatScoreDate } from '@/lib/gradebook';
+import { t, type Locale } from '@/lib/i18n';
 import type { DisciplineCardPart, DisciplineGradeRowView } from '@/server/data';
 
 // DIG-27 — части карточки дисциплины: формула оценки полосами («Контрольные
@@ -12,13 +13,17 @@ const fillTone = (earned: number): string => {
   return 'bg-error';
 };
 
-export function GradeFormula({ parts }: { parts: DisciplineCardPart[] }) {
+export function GradeFormula({
+  parts,
+  locale = 'ru',
+}: {
+  parts: DisciplineCardPart[];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   if (parts.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        План контроля ещё не задан — формула оценки появится, когда деканат опубликует состав
-        дисциплины.
-      </p>
+      <p className="text-sm text-muted-foreground">{t(locale, 'gradebook.formula.empty')}</p>
     );
   }
 
@@ -32,10 +37,12 @@ export function GradeFormula({ parts }: { parts: DisciplineCardPart[] }) {
               <span className="font-normal text-muted-foreground">{part.weightPercent}%</span>
             </span>
             {part.earnedPercent === null ? (
-              <span className="text-xs font-medium text-muted-foreground">не оценено</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                {t(locale, 'gradebook.formula.notGraded')}
+              </span>
             ) : (
               <span className="font-mono text-xs text-muted-foreground">
-                {part.earnedPercent} из 100
+                {t(locale, 'gradebook.formula.of100', { value: part.earnedPercent })}
               </span>
             )}
           </div>
@@ -54,11 +61,18 @@ export function GradeFormula({ parts }: { parts: DisciplineCardPart[] }) {
   );
 }
 
-export function GradeRows({ grades }: { grades: DisciplineGradeRowView[] }) {
+export function GradeRows({
+  grades,
+  locale = 'ru',
+}: {
+  grades: DisciplineGradeRowView[];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
   if (grades.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Оценок пока нет — здесь появятся отдельные работы, тесты и экзамен.
+        {t(locale, 'gradebook.formula.emptyGrades')}
       </p>
     );
   }
@@ -87,11 +101,11 @@ export function GradeRows({ grades }: { grades: DisciplineGradeRowView[] }) {
             </span>
             <span className="flex shrink-0 flex-col items-end gap-1">
               <span className="font-mono text-sm font-bold text-foreground">
-                {row.score} из {row.maxScore}
+                {t(locale, 'insight.scoreOf', { score: row.score, max: row.maxScore })}
               </span>
               {!row.isLatest ? (
                 <span className="rounded-pill bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning-ink">
-                  пересдача, не учитывается
+                  {t(locale, 'gradebook.formula.retakeNote')}
                 </span>
               ) : null}
             </span>

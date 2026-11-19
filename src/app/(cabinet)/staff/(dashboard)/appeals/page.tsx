@@ -1,12 +1,19 @@
 // DIG-48 — «Обращения студентов» (/staff/appeals): входящие обращения
 // студентов факультета, новые сверху, с профилем владельца и активностью.
+// DIG-89 — интерфейс по локали (cookie du-locale): RU — байт-в-байт прежний.
 import Link from 'next/link';
 import { getStaffAppeals, requireDataCtx } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { formatRequestDate } from '@/lib/request-labels';
 import { appealStatusBadge } from '@/lib/appeal-status';
+import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 import { SectionTitle } from '@/components/shell/section-title';
+
+/** DIG-89 — <title> страницы по локали. */
+export async function generateMetadata() {
+  return { title: t(await getLocale(), 'title.staffAppeals') };
+}
 
 export default async function StaffAppealsPage() {
   const [ctx, locale] = await Promise.all([requireDataCtx('/staff/appeals'), getLocale()]);
@@ -19,15 +26,15 @@ export default async function StaffAppealsPage() {
         className="text-xl font-bold text-neutral-900 sm:text-2xl"
       />
       <p className="mb-6 mt-1 text-sm text-neutral-600">
-        Факультет {ctx.faculty ?? '—'} · новые обращения сверху. Ответ виден студенту сразу.
+        {t(locale, 'staff.appeals.subtitle', { faculty: ctx.faculty ?? '—' })}
       </p>
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-neutral-300 p-8 text-center">
-          <p className="text-sm font-medium text-neutral-900">Обращений нет</p>
-          <p className="mt-1 text-sm text-neutral-600">
-            Обращения студентов вашего факультета появятся здесь.
+          <p className="text-sm font-medium text-neutral-900">
+            {t(locale, 'staff.appeals.empty.title')}
           </p>
+          <p className="mt-1 text-sm text-neutral-600">{t(locale, 'staff.appeals.empty.desc')}</p>
         </div>
       ) : (
         <ul className="flex flex-col gap-2" data-testid="staff-appeals-list">
@@ -46,13 +53,16 @@ export default async function StaffAppealsPage() {
                       {badge.label}
                     </span>
                     <span className="text-xs text-neutral-500">
-                      активность {formatRequestDate(lastAt)}
+                      {t(locale, 'staff.appeals.lastActivity', {
+                        date: formatRequestDate(lastAt, locale),
+                      })}
                     </span>
                   </div>
                   <p className="mt-1 text-sm font-semibold text-neutral-900">{appeal.subject}</p>
                   <p className="mt-0.5 text-xs text-neutral-600">
-                    {student.fullName} · {student.groupName} · поступило{' '}
-                    {formatRequestDate(appeal.createdAt)}
+                    {student.fullName} · {student.groupName} ·{' '}
+                    {t(locale, 'staff.appeals.received')}{' '}
+                    {formatRequestDate(appeal.createdAt, locale)}
                   </p>
                 </Link>
               </li>

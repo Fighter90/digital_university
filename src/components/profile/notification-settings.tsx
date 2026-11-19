@@ -4,10 +4,11 @@ import { useState, useTransition } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Toggle } from '@/components/ui/toggle';
 import {
-  NOTIFICATION_CHANNEL_LABELS,
   NOTIFICATION_SETTING_TYPES,
-  NOTIFICATION_TYPE_LABELS,
+  notificationChannelLabel,
+  notificationTypeLabel,
 } from '@/lib/notification-labels';
+import { t, type Locale } from '@/lib/i18n';
 import { saveNotificationChannelAction } from '@/server/actions/profile';
 import type {
   NotificationChannel,
@@ -20,14 +21,28 @@ import type {
 // выключены на сервере и в интерфейсе. Изменение сохраняется сразу
 // (server action) и влияет на генерацию уведомлений: тип с выключенным
 // каналом «в кабинете» не попадает в ленту.
-export function NotificationSettings({ settings }: { settings: StudentSettingsRow }) {
-  const [channels, setChannels] = useState(settings.notificationChannels);
+export function NotificationSettings({
+  settings,
+  channels,
+  locale = 'ru',
+}: {
+  /** Строка настроек студента (основной сценарий экрана /settings). */
+  settings?: StudentSettingsRow;
+  /** Каналы напрямую, без полной строки настроек (EN-рендер поверхностей). */
+  channels?: StudentSettingsRow['notificationChannels'];
+  /** DIG-89 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  type Channels = Record<NotificationType, Record<NotificationChannel, boolean>>;
+  const [current, setCurrent] = useState<Channels>(
+    (channels ?? settings?.notificationChannels ?? {}) as Channels,
+  );
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
   const toggle = (type: NotificationType, channel: NotificationChannel, next: boolean) => {
     setSaved(false);
-    setChannels((prev) => ({
+    setCurrent((prev) => ({
       ...prev,
       [type]: { ...prev[type], [channel]: next },
     }));
@@ -40,13 +55,13 @@ export function NotificationSettings({ settings }: { settings: StudentSettingsRo
   };
 
   return (
-    <div role="table" aria-label="Каналы уведомлений" className="flex flex-col gap-2">
+    <div role="table" aria-label={t(locale, 'profile.notif.aria')} className="flex flex-col gap-2">
       <div
         role="row"
         className="grid grid-cols-[minmax(0,1fr)_repeat(3,auto)] items-center gap-x-2 pb-1"
       >
         <span role="columnheader" className="sr-only">
-          Тип уведомлений
+          {t(locale, 'profile.notif.typeColumn')}
         </span>
         {(['PUSH', 'EMAIL', 'TELEGRAM'] as NotificationChannel[]).map((channel) => (
           <span
@@ -54,8 +69,8 @@ export function NotificationSettings({ settings }: { settings: StudentSettingsRo
             role="columnheader"
             className="flex items-center justify-center gap-1 text-xs font-medium text-neutral-500"
           >
-            {NOTIFICATION_CHANNEL_LABELS[channel]}
-            {channel === 'TELEGRAM' && <Badge status="neutral">скоро</Badge>}
+            {notificationChannelLabel(channel, locale)}
+            {channel === 'TELEGRAM' && <Badge status="neutral">{t(locale, 'profile.notif.soon')}</Badge>}
           </span>
         ))}
       </div>
@@ -67,17 +82,17 @@ export function NotificationSettings({ settings }: { settings: StudentSettingsRo
           className="grid grid-cols-[minmax(0,1fr)_repeat(3,auto)] items-center gap-x-2 rounded-card-sm border border-border px-3 py-2"
         >
           <span role="cell" className="min-w-0 truncate text-sm font-medium text-neutral-900">
-            {NOTIFICATION_TYPE_LABELS[type]}
+            {notificationTypeLabel(type, locale)}
           </span>
           {(['PUSH', 'EMAIL', 'TELEGRAM'] as NotificationChannel[]).map((channel) => {
             const disabled = channel === 'TELEGRAM';
             return (
               <span key={channel} role="cell" className="flex justify-center">
                 <Toggle
-                  checked={channels[type]?.[channel] ?? false}
+                  checked={current[type]?.[channel] ?? false}
                   disabled={disabled || isPending}
                   onCheckedChange={(next) => toggle(type, channel, next)}
-                  aria-label={`${NOTIFICATION_TYPE_LABELS[type]} — ${NOTIFICATION_CHANNEL_LABELS[channel]}`}
+                  aria-label={`${notificationTypeLabel(type, locale)} — ${notificationChannelLabel(channel, locale)}`}
                 />
               </span>
             );
@@ -86,8 +101,8 @@ export function NotificationSettings({ settings }: { settings: StudentSettingsRo
       ))}
       <p aria-live="polite" role="status" className="text-xs text-neutral-500">
         {saved && !isPending
-          ? 'Сохранено — настройка уже влияет на генерацию уведомлений.'
-          : 'Push — лента уведомлений в кабинете. Изменения сохраняются сразу.'}
+          ? t(locale, 'profile.notif.saved')
+          : t(locale, 'profile.notif.idle')}
       </p>
     </div>
   );

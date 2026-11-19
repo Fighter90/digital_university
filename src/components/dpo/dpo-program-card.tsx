@@ -10,6 +10,7 @@ import { enrollDpoAction } from '@/server/actions/dpo';
 import type { DpoCatalogView, DpoFormat } from '@/server/data';
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' });
+const dateFormatterEn = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'long' });
 
 const FORMAT_BADGE: Record<DpoFormat, 'info' | 'neutral' | 'accent'> = {
   ONLINE: 'info',
@@ -28,7 +29,9 @@ const FORMAT_KEY: Record<DpoFormat, TranslationKey> = {
 export function dpoPriceLabel(price: number, locale: Locale): string {
   return price === 0
     ? t(locale, 'dpo.price.free')
-    : t(locale, 'dpo.price.rub', { price: price.toLocaleString('ru-RU') });
+    : t(locale, 'dpo.price.rub', {
+        price: price.toLocaleString(locale === 'en' ? 'en-US' : 'ru-RU'),
+      });
 }
 
 export function DpoProgramCard({
@@ -62,8 +65,10 @@ export function DpoProgramCard({
       <p className="line-clamp-2 text-sm text-muted-foreground">{program.description}</p>
 
       <p className="text-xs text-muted-foreground">
-        {t(locale, 'dpo.card.startsAt', { date: dateFormatter.format(program.startsAt) })} ·{' '}
-        {program.facultyTag}
+        {t(locale, 'dpo.card.startsAt', {
+          date: (locale === 'en' ? dateFormatterEn : dateFormatter).format(program.startsAt),
+        })}{' '}
+        · {program.facultyTag}
       </p>
 
       <div className="mt-1 flex flex-wrap items-center gap-1.5">
