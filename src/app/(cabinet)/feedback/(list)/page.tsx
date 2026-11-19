@@ -15,7 +15,7 @@ import { dataDb } from '@/server/data/db';
 import { FeedbackList } from '@/components/feedback/feedback-list';
 import { FeedbackComposer } from '@/components/feedback/feedback-composer';
 import { FeedbackOutcomes } from '@/components/feedback/feedback-outcomes';
-import { FEEDBACK_OUTCOMES_TITLE, FEEDBACK_RESPONSE_PROMISE } from '@/lib/feedback';
+import { feedbackOutcome, feedbackResponsePromise } from '@/lib/feedback';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SectionTitle } from '@/components/shell/section-title';
 import { MessageSquareHeart } from 'lucide-react';
@@ -45,18 +45,18 @@ export default async function FeedbackPage() {
       <header>
         <SectionTitle href="/feedback" className="text-xl font-bold tracking-heading sm:text-2xl" />
         <p data-testid="feedback-sla" className="mt-1 text-sm text-muted-foreground">
-          {FEEDBACK_RESPONSE_PROMISE}
+          {feedbackResponsePromise(locale)}
         </p>
       </header>
 
       {/* Две панели на десктопе; на мобильном — список, затем композер. */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <FeedbackList items={page.items} />
+        <FeedbackList items={page.items} locale={locale} />
         <FeedbackComposer locale={locale} />
       </div>
 
       {/* Публичная лента решённых предложений (без авторов). */}
-      <FeedbackOutcomes title={FEEDBACK_OUTCOMES_TITLE} items={page.feed} />
+      <FeedbackOutcomes title={feedbackOutcome(locale)} items={page.feed} locale={locale} />
     </section>
   );
 }

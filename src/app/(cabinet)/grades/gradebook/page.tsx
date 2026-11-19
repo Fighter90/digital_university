@@ -17,6 +17,7 @@ import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 import { dataDb } from '@/server/data/db';
 import { getGradebook, requireDataCtx } from '@/server/data';
+import { localizePersonName, localizedGroup } from '@/lib/en-demo-content';
 import type { Metadata } from 'next';
 
 /** DIG-89 — <title> страницы по локали. */
@@ -34,7 +35,8 @@ export default async function GradebookPage({
 }) {
   const { discipline: disciplineParam } = (await searchParams) ?? {};
   const [ctx, locale] = await Promise.all([requireDataCtx('/grades/gradebook'), getLocale()]);
-  const data = await getGradebook(dataDb, ctx);
+  // DIG-93 — подписи семестров агрегата по локали.
+  const data = await getGradebook(dataDb, ctx, new Date(), locale);
   // Код дисциплины → семестр с этой дисциплиной (для начального details open)
   const focusSemester = disciplineParam
     ? data.semesters.find((sem) =>
@@ -81,8 +83,11 @@ export default async function GradebookPage({
               className="text-xl font-extrabold tracking-heading sm:text-2xl"
             />
             {data.student ? (
+              // DIG-93 — шапка владельца по локали (имя — транслит, группа —
+              // EN-словарь сида); канонические значения в данных не меняются.
               <p className="mt-1 text-sm text-muted-foreground">
-                {data.student.fullName} · {data.student.groupName} · №{' '}
+                {localizePersonName(locale, data.student.fullName)} ·{' '}
+                {localizedGroup(locale, data.student.groupName)} · №{' '}
                 {data.student.gradebookNumber}
               </p>
             ) : null}

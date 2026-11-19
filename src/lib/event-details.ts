@@ -20,6 +20,11 @@ import { formatMoscowTime } from '@/lib/schedule-time';
 import { lessonKindLabel } from '@/lib/dashboard-format';
 import { LESSON_KIND_META, formatDayTitle } from '@/lib/schedule-cards';
 import { t, type Locale } from '@/lib/i18n';
+import {
+  enDisciplineName,
+  enPersonName,
+  enScheduleNote,
+} from '@/lib/en-demo-content';
 import { type IcsEventInput } from '@/lib/ics';
 import type { ScheduleEventRow } from '@/server/data/types';
 
@@ -119,31 +124,45 @@ export function toEventDetailsView(row: ScheduleEventRow, locale: Locale = 'ru')
     isCancelled,
     kindLabel: lessonKindLabel(row.kind, locale),
     stripeClass: LESSON_KIND_META[row.kind].stripe,
-    discipline: row.disciplineName,
+    // DIG-93 — демо-контент по локали (дисциплина, преподаватель, заметки).
+    discipline:
+      locale === 'en'
+        ? enDisciplineName({ code: row.disciplineCode, name: row.disciplineName })
+        : row.disciplineName,
     disciplineCode: row.disciplineCode,
     dateLabel: formatDayTitle(row.startsAt, locale),
     timeLabel: `${formatMoscowTime(row.startsAt)}–${formatMoscowTime(row.endsAt)}`,
     roomLabel: roomLabelOf(row.room, locale),
     buildingLabel: row.building ?? t(locale, DEFAULT_BUILDING_KEY),
     onlineUrl: row.onlineUrl ?? null,
-    teacherName: row.teacherName,
+    teacherName: locale === 'en' ? enPersonName(row.teacherName) : row.teacherName,
     teacherEmail: row.teacherEmail ?? null,
     teacherCardHref: DIRECTORY_HREF,
     mailtoHref: row.teacherEmail ? `mailto:${row.teacherEmail}` : null,
-    homework: row.homework ?? null,
-    materials: row.materials ?? null,
-    deaneryNote: isMoved || isCancelled ? null : (row.note ?? null),
+    homework: locale === 'en' ? enScheduleNote(row.homework) : (row.homework ?? null),
+    materials: locale === 'en' ? enScheduleNote(row.materials) : (row.materials ?? null),
+    deaneryNote:
+      isMoved || isCancelled
+        ? null
+        : (locale === 'en' ? enScheduleNote(row.note) : (row.note ?? null)),
     move: isMoved
       ? {
           wasLabel: wasParts.length > 0 ? wasParts.join(', ') : null,
           nowLabel: `${roomLabelOf(row.room, locale)}, ${formatMoscowTime(row.startsAt)}`,
-          reason: row.changeNote ?? null,
+          reason: locale === 'en' ? enScheduleNote(row.changeNote) : (row.changeNote ?? null),
           authorLabel: row.changeAuthor?.trim()
-            ? row.changeAuthor.trim()
+            ? locale === 'en'
+              ? enPersonName(row.changeAuthor.trim())
+              : row.changeAuthor.trim()
             : t(locale, 'schedule.author.deanery'),
         }
       : null,
-    cancel: isCancelled ? { reason: row.note ?? null, makeupLabel: row.changeNote ?? null } : null,
+    cancel: isCancelled
+      ? {
+          reason: locale === 'en' ? enScheduleNote(row.note) : (row.note ?? null),
+          makeupLabel: locale === 'en' ? enScheduleNote(row.changeNote) : (row.changeNote ?? null),
+        }
+      : null,
     icsHref: `/api/schedule/${encodeURIComponent(row.id)}/ics`,
     startsAt: row.startsAt,
     endsAt: row.endsAt,

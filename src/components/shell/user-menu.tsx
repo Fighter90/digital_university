@@ -6,6 +6,7 @@ import { LogOut, Settings, UserRound } from 'lucide-react';
 import { signOutAction } from '@/server/actions/auth';
 import type { ShellUser } from '@/lib/user';
 import { t, type Locale } from '@/lib/i18n';
+import { localizeInitials, localizePersonName, localizedGroup } from '@/lib/en-demo-content';
 
 // DIG-14: меню аватара (Профиль, Настройки, Выйти). Доступно с клавиатуры:
 // Enter открывает, фокус уходит на первый пункт, Escape закрывает и
@@ -39,11 +40,9 @@ export function UserMenu({ user, locale = 'ru' }: { user: ShellUser; locale?: Lo
     };
   }, [open]);
 
-  const initials = user.name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? '')
-    .join('');
+  // DIG-93: инициалы по локали — на EN латиница из EN-имени маппинга
+  // («Анна Смирнова» → «AS»), иначе из email-префикса; RU — как было.
+  const initials = localizeInitials(locale, user.name, user.email);
 
   return (
     <div className="relative" data-user-menu>
@@ -68,9 +67,11 @@ export function UserMenu({ user, locale = 'ru' }: { user: ShellUser; locale?: Lo
           className="absolute top-11 right-0 z-50 w-52 overflow-hidden rounded-xl border border-neutral-200 bg-white py-1 shadow-lg"
         >
           <div className="border-b border-neutral-100 px-3 py-2">
-            <p className="text-sm font-medium text-neutral-900">{user.name}</p>
+            <p className="text-sm font-medium text-neutral-900">
+              {localizePersonName(locale, user.name)}
+            </p>
             <p className="truncate text-xs text-neutral-500">
-              {user.group} · {user.email}
+              {localizedGroup(locale, user.group)} · {user.email}
             </p>
           </div>
           <Link

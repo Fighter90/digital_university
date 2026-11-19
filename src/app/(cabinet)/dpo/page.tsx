@@ -16,7 +16,7 @@ import { DpoProgramCard } from '@/components/dpo/dpo-program-card';
 import { DpoTabs } from '@/components/dpo/dpo-tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { resolveDpoTab } from '@/lib/dpo-tabs';
-import { enDpoDocTitle, enDpoProgram } from '@/lib/en-demo-content';
+import { enDpoDocTitle, enDpoProgram, enFacultyLabel } from '@/lib/en-demo-content';
 import { t } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
 import {
@@ -43,7 +43,20 @@ export async function generateMetadata() {
 function localizeProgram<T extends { program: { id: string } }>(view: T, locale: 'ru' | 'en'): T {
   if (locale !== 'en') return view;
   const en = enDpoProgram(view.program.id);
-  return en ? { ...view, program: { ...view.program, ...en } } : view;
+  return en
+    ? {
+        ...view,
+        program: {
+          ...view.program,
+          ...en,
+          // DIG-93 — тег факультета («ИТ» → «IT»); иначе RU-тег утекает
+          // в строку «Starts … · ИТ».
+          facultyTag: enFacultyLabel(
+            (view.program as { facultyTag?: string }).facultyTag ?? null,
+          ),
+        },
+      }
+    : view;
 }
 
 function localizeDocTitle(doc: { id: string; title: string }, locale: 'ru' | 'en'): string {

@@ -30,6 +30,10 @@ export const ru = {
   'menu.profile': 'Профиль',
   'menu.settings': 'Настройки',
   'menu.more': 'Ещё',
+  // DIG-93 — разделы вне таблицы i18n (раньше падали в RU-фолбэк nav-items).
+  'menu.finance': 'Финансы',
+  'menu.msp': 'МСП',
+  'menu.events': 'Мероприятия',
   'menu.staff': 'Сводка',
   'menu.staffRequests': 'Заявки',
   'menu.staffAppeals': 'Обращения',
@@ -1921,6 +1925,33 @@ export const ru = {
   'assistant.report.confirm': 'Да, сообщить',
   'assistant.report.sending': 'Отправляем…',
   'assistant.report.trigger': 'Сообщить о неверном ответе',
+
+  // ── DIG-93 — AI-гид кабинета (пилюля и панель) ────────────────────────────
+  'aiguide.pill': 'AI-гид',
+  'aiguide.pillAria': 'Открыть AI-гида',
+  'aiguide.panelAria': 'AI-гид по кабинету',
+  'aiguide.closeAria': 'Закрыть AI-гида',
+  'aiguide.welcome': 'Привет, {name}! Я — демо-гид кабинета. Могу провести экскурсию: ',
+  'aiguide.welcome.route': 'расписание → оценки → заявки → справки',
+  'aiguide.startTour': 'Начать экскурсию',
+  'aiguide.skip': 'Пропустить',
+  'aiguide.askMe': 'Спросите меня',
+  'aiguide.questionAria': 'Ваш вопрос гиду',
+  'aiguide.questionPlaceholder': 'Например: где мои справки?',
+  'aiguide.ask': 'Спросить',
+  'aiguide.stepOf': 'Экскурсия · шаг {step} из {total}',
+  'aiguide.openStep': 'Открыть «{title}»',
+  'aiguide.next': 'Дальше',
+  'aiguide.finish': 'Завершить экскурсию',
+  'aiguide.questionPrefix': 'Вопрос: «{question}»',
+  'aiguide.backToHints': 'Назад к подсказкам',
+  'aiguide.miss':
+    'Вопроса «{question}» пока нет в демо-сценариях гида — в прототипе я отвечаю только на базовые подсказки. Попробуйте одну из них:',
+  'aiguide.voice.start': 'Голосовой ввод',
+  'aiguide.voice.stop': 'Остановить запись',
+  // сроки учебного года в профиле
+  'profile.term.fall': 'осенний семестр',
+  'profile.term.spring': 'весенний семестр',
 } as const;
 
 export type RuDictionary = typeof ru;

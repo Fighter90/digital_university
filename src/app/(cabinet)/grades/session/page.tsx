@@ -65,7 +65,8 @@ async function SessionContent() {
 
   let data: SessionData;
   try {
-    data = await getSession(dataDb, ctx);
+    // DIG-93 — агрегат локализует вью по locale (шапка, статусы, имена).
+    data = await getSession(dataDb, ctx, new Date(), locale);
   } catch (error) {
     // не глотаем: без лога «Сессия не загрузилась» недиагностируемо
     console.error('[session] render failed', error);

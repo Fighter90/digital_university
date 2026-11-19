@@ -41,8 +41,11 @@ export const MAX_TICKET_BODY_LENGTH = 2000;
 
 /** Элемент списка обращений: тикет + последний ответ + точка непрочитанного. */
 export interface TicketListItem extends TicketRow {
-  /** Последнее сообщение чата (предпросмотр в списке); null — ещё нет. */
-  lastMessage: { authorRole: ActorRole; body: string; createdAt: Date } | null;
+  /**
+   * Последнее сообщение чата (предпросмотр в списке); null — ещё нет.
+   * DIG-93: id нужен EN-словарю сообщений сида (TICKET_MESSAGES_EN).
+   */
+  lastMessage: { id: string; authorRole: ActorRole; body: string; createdAt: Date } | null;
   /** Непрочитанные студентом ответы менеджера (точка в списке). */
   unreadStaffCount: number;
 }
@@ -116,7 +119,12 @@ export async function getDeaneryPage(db: DataDb, ctx: DataCtx): Promise<DeaneryP
     items.push({
       ...ticket,
       lastMessage: last
-        ? { authorRole: last.authorRole, body: last.body, createdAt: last.createdAt }
+        ? {
+            id: last.id,
+            authorRole: last.authorRole,
+            body: last.body,
+            createdAt: last.createdAt,
+          }
         : null,
       unreadStaffCount: messages.filter((m) => m.authorRole === 'STAFF' && !m.readAt).length,
     });

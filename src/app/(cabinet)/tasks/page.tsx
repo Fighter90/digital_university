@@ -49,7 +49,8 @@ async function TasksContent() {
 
   let data: TasksData;
   try {
-    data = await getTasks(dataDb, ctx);
+    // DIG-93 — агрегат локализует глаголы и демо-источники по locale.
+    data = await getTasks(dataDb, ctx, new Date(), locale);
   } catch (error) {
     // не глотаем: без лога «Задачи не загрузились» недиагностируемо
     console.error('[tasks] render failed', error);

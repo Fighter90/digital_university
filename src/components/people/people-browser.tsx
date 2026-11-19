@@ -29,6 +29,7 @@ import { Chip } from '@/components/ui/chip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FavoritePersonButton } from '@/components/people/favorite-person-button';
 import { riseDelayStyle } from '@/lib/motion';
+import { enDisciplineName, localizePersonName } from '@/lib/en-demo-content';
 
 export interface PeopleBrowserProps {
   people: PersonListEntry[];
@@ -277,14 +278,16 @@ function PersonListItem({
           program: null,
         } as never)
       : null;
-  const nameChunks = splitHighlight(person.fullName, query);
+  // DIG-93 — имя демо-персоны по локали (EN — транслит словаря).
+  const displayName = localizePersonName(locale, person.fullName);
+  const nameChunks = splitHighlight(displayName, query);
   const myDisciplines = showPersonal ? person.myDisciplines : [];
   const isGroupmate = person.kind === 'GROUPMATE';
 
   return (
     <article className="lift-hover press-scale relative h-full rounded-card border border-border bg-card p-4 shadow-soft transition-colors hover:border-muted-foreground/40">
       <div className="flex items-start gap-3">
-        <Avatar name={person.fullName} size="md" />
+        <Avatar name={displayName} size="md" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {isGroupmate ? (
@@ -323,7 +326,11 @@ function PersonListItem({
           {myDisciplines.length > 0 ? (
             <p className="mt-2 text-xs text-muted-foreground" data-testid="person-my-disciplines">
               <span className="font-semibold text-foreground">{t(locale, 'people.yourDisciplines')}</span>{' '}
-              {myDisciplines.join(', ')}
+              {myDisciplines
+                .map((discipline) =>
+                  locale === 'en' ? enDisciplineName(discipline) : discipline,
+                )
+                .join(', ')}
             </p>
           ) : null}
         </div>

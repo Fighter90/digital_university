@@ -1,5 +1,6 @@
 // DIG-19 — pure presentation helpers of the profile & settings screens.
 // No server imports: every function here is safe for client components.
+import { t, type Locale } from '@/lib/i18n';
 
 /**
  * «20231234» → «2023-12-••••34» — the student badge number is masked so the
@@ -18,13 +19,18 @@ export function maskStudentBadge(gradebookNumber: string): string {
 /**
  * Academic year + term for the profile card. Autumn term: August–December
  * (year N/N+1), spring term: January–July (year N-1/N).
+ * DIG-93 — срок по локали (EN «Fall semester» из словаря); дефолт 'ru' —
+ * прежние байт-в-байт строки.
  */
-export function currentAcademicPeriod(now: Date): { year: string; term: string } {
+export function currentAcademicPeriod(
+  now: Date,
+  locale: Locale = 'ru',
+): { year: string; term: string } {
   const y = now.getFullYear();
   const month = now.getMonth();
   return month >= 7
-    ? { year: `${y}/${y + 1}`, term: 'осенний семестр' }
-    : { year: `${y - 1}/${y}`, term: 'весенний семестр' };
+    ? { year: `${y}/${y + 1}`, term: t(locale, 'profile.term.fall') }
+    : { year: `${y - 1}/${y}`, term: t(locale, 'profile.term.spring') };
 }
 
 /**

@@ -30,7 +30,7 @@ import { FavoritePersonButton } from '@/components/people/favorite-person-button
 
 import { getLocale } from '@/lib/i18n/server';
 import { t } from '@/lib/i18n';
-import { enDisciplineName } from '@/lib/en-demo-content';
+import { enDisciplineName, localizePersonName } from '@/lib/en-demo-content';
 import { personEnFields } from '@/lib/people-catalog';
 
 /** DIG-89 — <title> страницы по локали. */
@@ -62,6 +62,8 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   const person = enFields
     ? {
         ...basePerson,
+        // DIG-93 — имя демо-персоны по локали (инициалы аватара — латиницей).
+        fullName: localizePersonName('en', basePerson.fullName),
         position: enFields.position,
         department: enFields.department,
         consultationHours: enFields.consultationHours ?? basePerson.consultationHours,
