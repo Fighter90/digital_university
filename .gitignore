@@ -62,3 +62,5 @@ node_modules
 # runtime lock каталог build-lock.mjs (DIG-55) — не мусорит рабочий старт
 
 # next.js build lock (артефакт локальной сборки, PID процесса).next-build.lock/
+video/
+docs/shots/en-audit.json
