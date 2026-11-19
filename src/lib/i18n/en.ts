@@ -588,6 +588,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'dashboard.events.empty.title': 'Events are coming soon',
   'dashboard.events.empty.desc':
     'This section is in the works — university events will appear here.',
+  'dashboard.section.events': 'Events',
+  'dashboard.events.all': 'All events',
 
   // Tasks widget
   'dashboard.tasks.countTitle': 'Open tasks',
@@ -870,11 +872,13 @@ export const en: Record<keyof RuDictionary, string> = {
   'loading.notifications': 'Loading notifications',
 
   // /notifications
-  'notif.subtitle': 'Cabinet events: classes, requests, deanery and payments. Only yours are visible.',
+  'notif.subtitle':
+    'Cabinet events: classes, requests, deanery and payments. Only yours are visible.',
   'notif.openSettings': 'Notification settings',
   'notif.markAllRead': 'Mark all as read',
   'notif.empty.title': 'No new notifications',
-  'notif.empty.desc': 'Events will appear here: class changes, request statuses, grades and payment deadlines.',
+  'notif.empty.desc':
+    'Events will appear here: class changes, request statuses, grades and payment deadlines.',
   'notif.filterEmpty': 'Nothing here yet',
   'notif.group.today': 'Today',
   'notif.group.yesterday': 'Yesterday',
@@ -909,7 +913,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'deanery.list.aria': 'Tickets',
   'deanery.list.title': 'My tickets',
   'deanery.list.emptyTitle': 'No tickets yet',
-  'deanery.list.emptyDesc': 'Create a ticket — your program manager will reply right here in the cabinet.',
+  'deanery.list.emptyDesc':
+    'Create a ticket — your program manager will reply right here in the cabinet.',
   'deanery.list.unreadAria': 'There is an unread reply',
   'deanery.backAll': '← All tickets',
   'deanery.detail.title': 'My tickets',
@@ -1020,7 +1025,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'finance.documents.desc': 'Demo copies: contracts, supplements, acts, receipts and invoices.',
   'finance.payouts.title': 'Payouts',
   'finance.payouts.emptyTitle': 'No payouts yet',
-  'finance.payouts.emptyDesc': 'Once a scholarship or financial aid is assigned, it will appear here.',
+  'finance.payouts.emptyDesc':
+    'Once a scholarship or financial aid is assigned, it will appear here.',
   'finance.actions.title': 'Actions',
   'finance.doc.CONTRACT': 'Contract',
   'finance.doc.AGREEMENT': 'Supplement',
@@ -1042,7 +1048,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'finance.funding.contract': 'Contract (self-paid)',
   'finance.funding.budget': 'State-funded',
   'finance.action.materialAid.label': 'Financial aid application',
-  'finance.action.materialAid.desc': 'One-time support from the university fund upon a student request',
+  'finance.action.materialAid.desc':
+    'One-time support from the university fund upon a student request',
   'finance.action.scholarshipCert.label': 'Scholarship amount certificate',
   'finance.action.scholarshipCert.desc':
     'For banks, social services and visa centers — with the amount and award period',
@@ -1093,11 +1100,13 @@ export const en: Record<keyof RuDictionary, string> = {
   'events.streamLink': 'stream link',
   'events.capacity': 'Capacity: {capacity} · {taken} taken',
   'events.about': 'About the event',
-  'events.toggleHint.cancel': 'Pressing again cancels the sign-up. The event is not added to the class schedule (prototype).',
+  'events.toggleHint.cancel':
+    'Pressing again cancels the sign-up. The event is not added to the class schedule (prototype).',
   'events.toggleHint.signup': 'Sign-up is free, your spot is reserved right away.',
   'events.friends.aria': 'Friends are not going',
   'events.friends.title': 'Friends are not going',
-  'events.friends.desc': 'The list of friends attending the event is a prototype stub: it stays empty in the demo.',
+  'events.friends.desc':
+    'The list of friends attending the event is a prototype stub: it stays empty in the demo.',
   'events.kind.LECTURE': 'Lecture',
   'events.kind.HACKATHON': 'Hackathon',
   'events.kind.CAREER': 'Career',
@@ -1127,7 +1136,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'news.subtitle':
     'By default — news of your group and faculty; deanery announcements are in the “Important” strip on top.',
   'news.empty.title': 'No news yet',
-  'news.empty.desc': 'No news for this tab and topic. Try another topic or the “Whole university” tab.',
+  'news.empty.desc':
+    'No news for this tab and topic. Try another topic or the “Whole university” tab.',
   'news.seeNotifications': 'Looking for updates about your requests and grades? Check',
   'news.seeNotifications.link': '“Notifications”',
   'news.backAll': 'All news',
@@ -1164,7 +1174,8 @@ export const en: Record<keyof RuDictionary, string> = {
     'Small and medium entrepreneurship: student project launches — vote for ideas, discuss and publish your own. All projects are fictional.',
   'msp.catalog.title': 'Project catalog',
   'msp.catalog.emptyTitle': 'The catalog is empty',
-  'msp.catalog.emptyDesc': 'Be the first: tell about your student project via the “Launch a project” button.',
+  'msp.catalog.emptyDesc':
+    'Be the first: tell about your student project via the “Launch a project” button.',
   'msp.vote.hint':
     'One vote per project: clicking “▲” again removes it. Comments and votes are for students, reading the catalog is open to everyone signed in.',
   'msp.backToCatalog': '← Back to the startup catalog',
@@ -1249,10 +1260,12 @@ export const en: Record<keyof RuDictionary, string> = {
   'people.loading.aria': 'Loading the directory',
 
   // /services
-  'services.subtitle': 'Deanery and university services in one place — only what is available to you as a student.',
+  'services.subtitle':
+    'Deanery and university services in one place — only what is available to you as a student.',
   'services.staffOnly.title': 'For students',
   'finance.staffOnly.title': 'Students only',
-  'services.staffOnly.desc': 'The catalog shows student study services: certificates, applications and due dates.',
+  'services.staffOnly.desc':
+    'The catalog shows student study services: certificates, applications and due dates.',
   'services.favorites.title': 'Favorites and frequently used',
   'services.favorites.emptyTitle': 'Nothing in favorites yet',
   'services.favorites.emptyDesc':
@@ -1290,7 +1303,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'profile.staffOnly.desc': 'Staff profiles are maintained in the deanery system.',
   'profile.unavailable.title': 'The profile is temporarily unavailable',
   'profile.unavailable.desc': 'Try refreshing the page later.',
-  'profile.mainDesc': 'The main data is maintained by the deanery — you can only verify it. You edit the contacts yourself.',
+  'profile.mainDesc':
+    'The main data is maintained by the deanery — you can only verify it. You edit the contacts yourself.',
   'profile.field.faculty': 'Faculty',
   'profile.field.program': 'Program',
   'profile.field.course': 'Year',
@@ -1299,7 +1313,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'profile.field.studyYear': 'Academic year',
   'profile.field.studentId': 'Student ID',
   'profile.contacts.title': 'Contacts',
-  'profile.contacts.desc': 'These toggles decide whether teachers can see your contacts in the cabinet.',
+  'profile.contacts.desc':
+    'These toggles decide whether teachers can see your contacts in the cabinet.',
   'profile.contacts.phone': 'Phone',
   'profile.contacts.emailVisible': 'Email visible to teachers',
   'profile.contacts.phoneVisible': 'Phone visible to teachers',
@@ -1324,7 +1339,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'profile.theme.DARK.label': 'Dark',
   'profile.theme.DARK.desc': 'Dark surfaces for evening shifts.',
   'profile.theme.aria': 'Color theme',
-  'profile.theme.applied': 'The theme applies to the whole cabinet instantly and is saved in settings.',
+  'profile.theme.applied':
+    'The theme applies to the whole cabinet instantly and is saved in settings.',
 
   // /settings
   'settings.staffOnly.title': 'For students',
@@ -1359,7 +1375,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'settings.mcpServers.desc':
     'Data sources of the digital assistant (Model Context Protocol). Servers and tokens are demo ones: no real keys are used and connecting grants no access to real services.',
   'settings.mcpGive.title': 'What each server provides',
-  'settings.mcpGive.desc': 'Each server is a separate data source for the assistant: trends, schedule, deanery API.',
+  'settings.mcpGive.desc':
+    'Each server is a separate data source for the assistant: trends, schedule, deanery API.',
   'settings.mcpHelp.title': 'Help: MCP',
   'settings.mcpHelp.desc':
     'How the connection works, how to handle tokens and what to do if something does not work.',
@@ -1376,7 +1393,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'settings.appearance.font.XLARGE': 'Extra large',
   'settings.appearance.language': 'Language',
   'settings.appearance.languageGroup': 'Interface language',
-  'settings.appearance.languageHint': 'English will arrive in a separate update — it cannot be selected yet.',
+  'settings.appearance.languageHint':
+    'English will arrive in a separate update — it cannot be selected yet.',
   'settings.appearance.font': 'Font size',
   'settings.appearance.fontGroup': 'Font size',
   'settings.appearance.fontHint': 'The size applies to the whole cabinet.',
@@ -1392,7 +1410,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'settings.password.saved': 'Password changed',
   'settings.password.submit': 'Change password',
   'settings.password.submitting': 'Changing…',
-  'settings.quiet.error': 'Check the window: “from” and “to” must be different times in HH:MM format.',
+  'settings.quiet.error':
+    'Check the window: “from” and “to” must be different times in HH:MM format.',
   'settings.quiet.desc': 'During the selected window notifications do not reach the cabinet feed.',
   'settings.quiet.enabledAria': 'Quiet hours enabled',
   'settings.quiet.from': 'from',
@@ -1411,20 +1430,24 @@ export const en: Record<keyof RuDictionary, string> = {
   'settings.sessions.signoutHere': 'Sign out on this device',
   'settings.sessions.signoutAll': 'Sign out everywhere',
   'settings.voice.card': 'Read-aloud and voice input',
-  'settings.voice.desc2': 'The “Listen to the day” button on the schedule and the AI-guide microphone.',
+  'settings.voice.desc2':
+    'The “Listen to the day” button on the schedule and the AI-guide microphone.',
   'settings.voice.aria': 'Read-aloud and voice input',
   'settings.voice.saved': 'Saved — voice features updated across the cabinet.',
   'settings.voice.saving': 'Saving…',
   'settings.voice.error': 'Could not save the setting. Please try again.',
-  'settings.voice.on': 'On: the schedule day can be read aloud and the assistant accepts dictation.',
-  'settings.voice.off': 'Off: the read-aloud button and the microphone are hidden across the cabinet.',
+  'settings.voice.on':
+    'On: the schedule day can be read aloud and the assistant accepts dictation.',
+  'settings.voice.off':
+    'Off: the read-aloud button and the microphone are hidden across the cabinet.',
   'settings.widgets.aria': 'Dashboard widgets',
   'settings.widgets.dragTitle': 'Drag to change the order',
   'settings.widgets.upAria': 'Move the “{label}” widget up',
   'settings.widgets.downAria': 'Move the “{label}” widget down',
   'settings.widgets.showAria': 'Show the “{label}” widget',
   'settings.widgets.preview': 'Dashboard preview',
-  'settings.widgets.previewDesc': 'This is how the widgets will sit on the dashboard: {count} of {total}.',
+  'settings.widgets.previewDesc':
+    'This is how the widgets will sit on the dashboard: {count} of {total}.',
   'settings.widgets.previewAria': 'Dashboard preview',
   'settings.widgets.saved': 'Saved — the dashboard already shows the new order.',
   'settings.widgets.saving': 'Saving…',
@@ -1444,7 +1467,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'settings.mcp.install.copyToken': 'Copy the demo token and paste it into your MCP client:',
   'settings.mcp.install.confirm': 'Confirm adding the server in your MCP client.',
   'settings.mcp.install.return': 'Come back here and press “Connect server”.',
-  'settings.mcp.install.demoToken': 'The token is a demo one (marked demo-) and grants no access to real services.',
+  'settings.mcp.install.demoToken':
+    'The token is a demo one (marked demo-) and grants no access to real services.',
   'settings.mcp.connectServer': 'Connect server',
   'settings.mcp.onSaved': 'Connected — the status is saved.',
   'settings.mcpServer.copied': 'Copied',
@@ -1469,7 +1493,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'settings.mcpServer.chatgpt.authHeader': 'Authorization: Bearer <token>',
   'settings.mcpServer.chatgpt.ask': 'Ask the assistant: “my schedule for today”.',
   'settings.mcpServer.claude.title': 'Claude connection',
-  'settings.mcpServer.claude.step1': 'Settings → Connectors → Add custom connector (or via the config below).',
+  'settings.mcpServer.claude.step1':
+    'Settings → Connectors → Add custom connector (or via the config below).',
   'settings.mcpServer.claude.paste': 'Paste the URL:',
   'settings.mcpServer.claude.ask': 'Restart the client and ask: “my grades”.',
   'settings.mcpServer.note':
@@ -1498,7 +1523,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'session.retakes.aria': 'Retakes',
   'session.retakes.title': 'Retakes',
   'session.signup.created': 'Request created',
-  'session.signup.createdDesc': 'The sign-up was passed to the deanery — the status is visible in “My requests”.',
+  'session.signup.createdDesc':
+    'The sign-up was passed to the deanery — the status is visible in “My requests”.',
   'session.signup.past': 'The retake has already taken place — sign-up is closed.',
   'session.signup.submit': 'Sign up',
   'session.signup.submitting': 'Signing up…',
@@ -1527,7 +1553,8 @@ export const en: Record<keyof RuDictionary, string> = {
     'The assessment plan is not set yet — the grade formula will appear once the deanery publishes the discipline composition.',
   'gradebook.formula.notGraded': 'not graded',
   'gradebook.formula.of100': '{value} out of 100',
-  'gradebook.formula.emptyGrades': 'No grades yet — individual papers, tests and the exam will appear here.',
+  'gradebook.formula.emptyGrades':
+    'No grades yet — individual papers, tests and the exam will appear here.',
   'gradebook.formula.retakeNote': 'a retake, not counted',
   'discipline.backGradebook': 'Gradebook',
   'discipline.noTeacher': 'No teacher assigned',
@@ -1662,15 +1689,20 @@ export const en: Record<keyof RuDictionary, string> = {
   // формы сотрудника
   'staff.appealForm.replyTitle': 'Reply to the student',
   'staff.appealTemplate.received.label': 'Accepted for processing',
-  'staff.appealTemplate.received.text': 'Your ticket has been accepted for processing. We will reply within one business day.',
+  'staff.appealTemplate.received.text':
+    'Your ticket has been accepted for processing. We will reply within one business day.',
   'staff.appealTemplate.invite-office.label': 'Invitation to the deanery',
-  'staff.appealTemplate.invite-office.text': 'Please visit the deanery (room 214) during working hours 10:00–16:00 with your gradebook.',
+  'staff.appealTemplate.invite-office.text':
+    'Please visit the deanery (room 214) during working hours 10:00–16:00 with your gradebook.',
   'staff.appealTemplate.need-docs.label': 'Documents needed',
-  'staff.appealTemplate.need-docs.text': 'Please attach scans of the documents to this chat so we can resolve the issue.',
+  'staff.appealTemplate.need-docs.text':
+    'Please attach scans of the documents to this chat so we can resolve the issue.',
   'staff.appealTemplate.in-progress.label': 'Forwarded to the office',
-  'staff.appealTemplate.in-progress.text': 'Your question has been forwarded to the responsible office. We will post the decision here.',
+  'staff.appealTemplate.in-progress.text':
+    'Your question has been forwarded to the responsible office. We will post the decision here.',
   'staff.appealTemplate.resolved-note.label': 'Issue resolved',
-  'staff.appealTemplate.resolved-note.text': 'The issue is resolved. If you need further help — write in this chat.',
+  'staff.appealTemplate.resolved-note.text':
+    'The issue is resolved. If you need further help — write in this chat.',
   'staff.appealForm.templatesAria': 'Reply templates',
   'staff.appealForm.replyLabel': 'Reply text',
   'staff.appealForm.replyPlaceholder': 'Type the reply or pick a template above',
@@ -1678,7 +1710,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'staff.appealForm.sent': 'The reply is sent — the student has been notified.',
   'staff.appealForm.resolveTitle': 'Is the issue resolved?',
   'staff.appealForm.noteLabel': 'Final note (optional)',
-  'staff.appealForm.notePlaceholder': 'For example: the credit is passed, the data updates by the end of the day',
+  'staff.appealForm.notePlaceholder':
+    'For example: the credit is passed, the data updates by the end of the day',
   'staff.appealForm.resolve': 'Resolved',
   'staff.announcement.hint':
     'The announcement will go to students of the {faculty} faculty or the selected group.',
@@ -1786,7 +1819,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'mcp.card.configTitle': 'JSON config for Claude Desktop / Cursor / any MCP client',
   'mcp.card.copied': 'Copied',
   'mcp.card.copy': 'Copy config',
-  'mcp.card.placeholderHint': 'The token in the config is the {placeholder} placeholder: replace it with yours from step 1.',
+  'mcp.card.placeholderHint':
+    'The token in the config is the {placeholder} placeholder: replace it with yours from step 1.',
 
   // ── DIG-88 — AI assistant: page, chat, panel, popup ──────────────────────
   'assistant.page.subtitle':
@@ -1832,14 +1866,17 @@ export const en: Record<keyof RuDictionary, string> = {
   'assistant.calc.targetAria': 'Target final score',
   'assistant.calc.custom': 'Custom target',
   'assistant.calc.customAria': 'Custom target final from 1 to 100',
-  'assistant.calc.ok': 'You need at least {score} out of {max} on the exam — then the final will not be below {target}.',
+  'assistant.calc.ok':
+    'You need at least {score} out of {max} on the exam — then the final will not be below {target}.',
   'assistant.calc.unreachable':
     'A final of {target} out of 100 is unreachable: even a perfect exam gives {best}. Try a lower target.',
   'assistant.calc.secured': 'The target is already secured: the final is not below {final}.',
-  'assistant.calc.examGraded': 'The exam is already graded at {score} out of {max}, final {final} — the target {target} is {verdict}.',
+  'assistant.calc.examGraded':
+    'The exam is already graded at {score} out of {max}, final {final} — the target {target} is {verdict}.',
   'assistant.calc.verdict.met': 'met',
   'assistant.calc.verdict.missed': 'not met',
-  'assistant.calc.noExam': 'The discipline plan has no exam element — estimating from the accumulated score.',
+  'assistant.calc.noExam':
+    'The discipline plan has no exam element — estimating from the accumulated score.',
   'assistant.order.meta': '{benefit} · ready in: {eta} · format: {format} · type: {type}',
   'assistant.order.lead': 'The request',
   'assistant.order.submitted': 'was submitted',
@@ -1849,7 +1886,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'assistant.order.sending': 'Sending…',
   'assistant.order.sendYes': 'Yes, send it',
   'assistant.cancel': 'Cancel',
-  'assistant.report.thanks': 'Thank you! The ticket is created — the reply will appear in “Deanery contact”.',
+  'assistant.report.thanks':
+    'Thank you! The ticket is created — the reply will appear in “Deanery contact”.',
   'assistant.report.confirmQ': 'Is the answer really wrong?',
   'assistant.report.confirm': 'Yes, report it',
   'assistant.report.sending': 'Sending…',

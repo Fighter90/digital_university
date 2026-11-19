@@ -4,14 +4,18 @@ import {
   CalendarClock,
   CalendarDays,
   FileText,
+  MapPin,
   MessagesSquare,
   Newspaper,
   PartyPopper,
   PenLine,
   Sparkles,
+  Video,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { t, type Locale } from '@/lib/i18n';
+import { localizedEvent } from '@/lib/en-demo-content';
+import { spotsLeftLabel } from '@/lib/events';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
@@ -32,6 +36,8 @@ import {
 import type {
   DashboardSection,
   DeadlineView,
+  EventView,
+  EventsSummary,
   ProgressView,
   RequestsView,
   TasksSummary,
@@ -616,18 +622,123 @@ export function RequestsSection({
   );
 }
 
-export function EventsSection({ locale = 'ru' }: { locale?: Locale }) {
+// DIG-76 — виджет «Мероприятия» главной: реальные ближайшие будущие события
+// из слоя данных (фасад events.ts, getDashboardEvents от now). Мини-карточка:
+// дата/время старта, название, место или «Онлайн», «Осталось N мест» и чип
+// «Записан» на событиях владельца сессии; ссылка «Все мероприятия» → /events.
+// Пусто (нет будущих событий) → честная заглушка «скоро появятся»; сбой
+// источника — изолированное состояние ошибки блока (как у соседних секций).
+const dashboardEventDay: Record<Locale, Intl.DateTimeFormat> = {
+  ru: new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }),
+  en: new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short' }),
+};
+// Время старта в цифрах одинаково для обеих локалей («18:30»), как на /events.
+const dashboardEventTime = new Intl.DateTimeFormat('ru-RU', {
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+/** Мини-карточка события виджета: вся карточка — ссылка на /events/<slug>. */
+function DashboardEventMini({ view, locale = 'ru' }: { view: EventView; locale?: Locale }) {
+  const { event, spotsLeft, registeredByMe } = view;
+  const full = spotsLeft === 0;
+  // DIG-89 — EN-рендер демо-события: титул/место из словаря по id.
+  const localized = locale === 'en' ? { ...event, ...localizedEvent('en', event) } : event;
   return (
-    <section aria-labelledby="dashboard-events-title">
+    <li>
+      <Link
+        href={`/events/${localized.slug}`}
+        data-testid={`dashboard-event-${localized.slug}`}
+        aria-label={localized.title}
+        className="lift-hover flex items-center gap-3 rounded-card border border-border bg-card p-4 shadow-soft hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
+      >
+        <span className="inline-flex w-16 shrink-0 flex-col items-center rounded-pill bg-accent-soft px-2 py-1.5 text-accent-ink">
+          <span className="whitespace-nowrap text-sm font-bold leading-none">
+            {dashboardEventDay[locale].format(event.startsAt)}
+          </span>
+          <span className="mt-1 text-xs font-semibold">
+            {dashboardEventTime.format(event.startsAt)}
+          </span>
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-neutral-900">
+              {localized.title}
+            </span>
+            {registeredByMe ? (
+              <span
+                data-testid={`dashboard-event-chip-${localized.slug}`}
+                className="rounded-pill border border-emerald-300 bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700"
+              >
+                {t(locale, 'events.registered')}
+              </span>
+            ) : null}
+          </span>
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            {localized.isOnline ? (
+              <span className="inline-flex items-center gap-1">
+                <Video className="size-3.5" aria-hidden="true" />
+                {t(locale, 'events.online')}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="size-3.5" aria-hidden="true" />
+                {localized.location}
+              </span>
+            )}
+            <span className={cn('font-medium', full && 'text-red-600')}>
+              {spotsLeftLabel(spotsLeft, locale)}
+            </span>
+          </span>
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+export function EventsSection({
+  events,
+  locale = 'ru',
+}: {
+  events: DashboardSection<EventsSummary>;
+  /** DIG-87 — локаль интерфейса (cookie du-locale, дефолт ru). */
+  locale?: Locale;
+}) {
+  return (
+    <section aria-labelledby="dashboard-events-title" data-testid="dashboard-events">
       <h2 id="dashboard-events-title" className="text-lg font-extrabold tracking-heading">
         {t(locale, 'dashboard.widget.events')}
       </h2>
-      <EmptyState
-        className="mt-3"
-        icon={CalendarDays}
-        title={t(locale, 'dashboard.events.empty.title')}
-        description={t(locale, 'dashboard.events.empty.desc')}
-      />
+      {!events.ok ? (
+        <SectionFailure
+          title={t(locale, 'dashboard.section.events')}
+          error={events.error}
+          locale={locale}
+        />
+      ) : events.value.items.length === 0 ? (
+        <EmptyState
+          className="mt-3"
+          icon={CalendarDays}
+          title={t(locale, 'dashboard.events.empty.title')}
+          description={t(locale, 'dashboard.events.empty.desc')}
+        />
+      ) : (
+        <>
+          <ul className="mt-3 flex flex-col gap-2" data-testid="dashboard-events-list">
+            {events.value.items.map((view) => (
+              <DashboardEventMini key={view.event.id} view={view} locale={locale} />
+            ))}
+          </ul>
+          <Link
+            data-testid="dashboard-events-all"
+            href="/events"
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-coral-700 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral-600"
+          >
+            {t(locale, 'dashboard.events.all')}
+            <span aria-hidden="true">→</span>
+          </Link>
+        </>
+      )}
     </section>
   );
 }

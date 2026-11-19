@@ -590,6 +590,8 @@ export const ru = {
   // виджет «Мероприятия»
   'dashboard.events.empty.title': 'Мероприятия скоро появятся',
   'dashboard.events.empty.desc': 'Раздел готовится — здесь будут события и мероприятия вуза.',
+  'dashboard.section.events': 'Мероприятия',
+  'dashboard.events.all': 'Все мероприятия',
 
   // виджет «Что от меня ждут»
   'dashboard.tasks.countTitle': 'Открытых задач',
@@ -873,7 +875,8 @@ export const ru = {
   'notif.openSettings': 'Настроить уведомления',
   'notif.markAllRead': 'Отметить все прочитанными',
   'notif.empty.title': 'Новых уведомлений нет',
-  'notif.empty.desc': 'Здесь появятся события: перенос пар, статусы заявок, оценки и дедлайны оплат.',
+  'notif.empty.desc':
+    'Здесь появятся события: перенос пар, статусы заявок, оценки и дедлайны оплат.',
   'notif.filterEmpty': 'Здесь пока пусто',
   'notif.group.today': 'Сегодня',
   'notif.group.yesterday': 'Вчера',
@@ -1016,10 +1019,12 @@ export const ru = {
   'finance.payment.duePrefix': 'до {date}',
   'finance.downloadReceipt': 'Скачать квитанцию',
   'finance.documents.title': 'Документы',
-  'finance.documents.desc': 'Демонстрационные копии: договоры, допсоглашения, акты, квитанции и счета.',
+  'finance.documents.desc':
+    'Демонстрационные копии: договоры, допсоглашения, акты, квитанции и счета.',
   'finance.payouts.title': 'Выплаты',
   'finance.payouts.emptyTitle': 'Выплат пока нет',
-  'finance.payouts.emptyDesc': 'Когда стипендия или материальная помощь будут назначены, они появятся здесь.',
+  'finance.payouts.emptyDesc':
+    'Когда стипендия или материальная помощь будут назначены, они появятся здесь.',
   'finance.actions.title': 'Действия',
   'finance.doc.CONTRACT': 'Договор',
   'finance.doc.AGREEMENT': 'Допсоглашение',
@@ -1092,7 +1097,8 @@ export const ru = {
   'events.streamLink': 'ссылка на трансляцию',
   'events.capacity': 'Вместимость: {capacity} · занято {taken}',
   'events.about': 'О мероприятии',
-  'events.toggleHint.cancel': 'Повторное нажатие отменяет запись. В расписание пар событие не добавляется (прототип).',
+  'events.toggleHint.cancel':
+    'Повторное нажатие отменяет запись. В расписание пар событие не добавляется (прототип).',
   'events.toggleHint.signup': 'Запись бесплатна, место закрепляется сразу.',
   'events.friends.aria': 'Друзья не пойдут',
   'events.friends.title': 'Друзья не пойдут',
@@ -1236,9 +1242,9 @@ export const ru = {
   'people.disciplines': 'Дисциплины',
   'people.disciplineYours': 'ваша',
   'people.upcoming': 'Ближайшие пары',
-  'people.upcoming.empty':
-    'Ближайших пар с этим преподавателем в расписании вашей группы нет.',
-  'people.disclaimer': 'Данные справочника вымышленные. Если контакты изменились, сообщите в деканат —',
+  'people.upcoming.empty': 'Ближайших пар с этим преподавателем в расписании вашей группы нет.',
+  'people.disclaimer':
+    'Данные справочника вымышленные. Если контакты изменились, сообщите в деканат —',
   'people.disclaimer.link': 'через обращение',
   'people.search.aria': 'Поиск по справочнику',
   'people.search.placeholder': 'ФИО, дисциплина или подразделение…',
@@ -1252,7 +1258,8 @@ export const ru = {
   'people.loading.aria': 'Загрузка справочника',
 
   // /services
-  'services.subtitle': 'Услуги деканата и вуза в одном месте — только то, что доступно вам как студенту.',
+  'services.subtitle':
+    'Услуги деканата и вуза в одном месте — только то, что доступно вам как студенту.',
   'services.staffOnly.title': 'Доступно студентам',
   'finance.staffOnly.title': 'Экран доступен студентам',
   'services.staffOnly.desc':
@@ -1294,7 +1301,8 @@ export const ru = {
   'profile.staffOnly.desc': 'Профиль сотрудника ведётся в системе деканата.',
   'profile.unavailable.title': 'Профиль временно недоступен',
   'profile.unavailable.desc': 'Попробуйте обновить страницу позже.',
-  'profile.mainDesc': 'Основные данные ведёт деканат — их можно только проверить. Контакты вы редактируете сами.',
+  'profile.mainDesc':
+    'Основные данные ведёт деканат — их можно только проверить. Контакты вы редактируете сами.',
   'profile.field.faculty': 'Факультет',
   'profile.field.program': 'Направление',
   'profile.field.course': 'Курс',
@@ -1303,7 +1311,8 @@ export const ru = {
   'profile.field.studyYear': 'Учебный год',
   'profile.field.studentId': 'Студенческий билет',
   'profile.contacts.title': 'Контакты',
-  'profile.contacts.desc': 'Переключатели решают, увидят ли преподаватели ваши контакты в кабинете.',
+  'profile.contacts.desc':
+    'Переключатели решают, увидят ли преподаватели ваши контакты в кабинете.',
   'profile.contacts.phone': 'Телефон',
   'profile.contacts.emailVisible': 'Email виден преподавателям',
   'profile.contacts.phoneVisible': 'Телефон виден преподавателям',
@@ -1537,7 +1546,8 @@ export const ru = {
     'План контроля ещё не задан — формула оценки появится, когда деканат опубликует состав дисциплины.',
   'gradebook.formula.notGraded': 'не оценено',
   'gradebook.formula.of100': '{value} из 100',
-  'gradebook.formula.emptyGrades': 'Оценок пока нет — здесь появятся отдельные работы, тесты и экзамен.',
+  'gradebook.formula.emptyGrades':
+    'Оценок пока нет — здесь появятся отдельные работы, тесты и экзамен.',
   'gradebook.formula.retakeNote': 'пересдача, не учитывается',
   'discipline.backGradebook': 'Зачётная книжка',
   'discipline.noTeacher': 'Преподаватель не указан',
@@ -1672,15 +1682,20 @@ export const ru = {
   // формы сотрудника
   'staff.appealForm.replyTitle': 'Ответить студенту',
   'staff.appealTemplate.received.label': 'Принято в работу',
-  'staff.appealTemplate.received.text': 'Ваше обращение принято в работу. Ответим в течение рабочего дня.',
+  'staff.appealTemplate.received.text':
+    'Ваше обращение принято в работу. Ответим в течение рабочего дня.',
   'staff.appealTemplate.invite-office.label': 'Приглашение в деканат',
-  'staff.appealTemplate.invite-office.text': 'Пожалуйста, подойдите в деканат (каб. 214) в рабочие часы 10:00–16:00 с зачётной книжкой.',
+  'staff.appealTemplate.invite-office.text':
+    'Пожалуйста, подойдите в деканат (каб. 214) в рабочие часы 10:00–16:00 с зачётной книжкой.',
   'staff.appealTemplate.need-docs.label': 'Нужны документы',
-  'staff.appealTemplate.need-docs.text': 'Для решения вопроса приложите, пожалуйста, сканы документов в этот чат.',
+  'staff.appealTemplate.need-docs.text':
+    'Для решения вопроса приложите, пожалуйста, сканы документов в этот чат.',
   'staff.appealTemplate.in-progress.label': 'Передано подразделению',
-  'staff.appealTemplate.in-progress.text': 'Ваш вопрос передан профильному подразделению. О решении сообщим здесь же.',
+  'staff.appealTemplate.in-progress.text':
+    'Ваш вопрос передан профильному подразделению. О решении сообщим здесь же.',
   'staff.appealTemplate.resolved-note.label': 'Вопрос решён',
-  'staff.appealTemplate.resolved-note.text': 'Вопрос решён. Если понадобится дополнительная помощь — напишите в этот чат.',
+  'staff.appealTemplate.resolved-note.text':
+    'Вопрос решён. Если понадобится дополнительная помощь — напишите в этот чат.',
   'staff.appealForm.templatesAria': 'Шаблоны ответов',
   'staff.appealForm.replyLabel': 'Текст ответа',
   'staff.appealForm.replyPlaceholder': 'Введите ответ или выберите шаблон выше',
@@ -1796,7 +1811,8 @@ export const ru = {
   'mcp.card.configTitle': 'JSON-конфиг для Claude Desktop / Cursor / любого MCP-клиента',
   'mcp.card.copied': 'Скопировано',
   'mcp.card.copy': 'Скопировать конфиг',
-  'mcp.card.placeholderHint': 'Токен в конфиге — плейсхолдер {placeholder}: подставьте свой из шага 1.',
+  'mcp.card.placeholderHint':
+    'Токен в конфиге — плейсхолдер {placeholder}: подставьте свой из шага 1.',
 
   // ── DIG-88 — AI-ассистент: страница, чат, панель, попап ──────────────────
   'assistant.page.subtitle':
@@ -1842,14 +1858,17 @@ export const ru = {
   'assistant.calc.targetAria': 'Целевой итог',
   'assistant.calc.custom': 'Своя цель',
   'assistant.calc.customAria': 'Свой целевой итог от 1 до 100',
-  'assistant.calc.ok': 'На экзамене нужно набрать не меньше {score} из {max} — тогда итог будет не ниже {target}.',
+  'assistant.calc.ok':
+    'На экзамене нужно набрать не меньше {score} из {max} — тогда итог будет не ниже {target}.',
   'assistant.calc.unreachable':
     'Итог {target} из 100 недостижим: даже идеальный экзамен даст итог {best}. Попробуйте цель пониже.',
   'assistant.calc.secured': 'Цель уже достигнута: итог не ниже {final}.',
-  'assistant.calc.examGraded': 'Экзамен уже сдан на {score} из {max}, итог {final} — цель {target} {verdict}.',
+  'assistant.calc.examGraded':
+    'Экзамен уже сдан на {score} из {max}, итог {final} — цель {target} {verdict}.',
   'assistant.calc.verdict.met': 'выполнена',
   'assistant.calc.verdict.missed': 'не достигнута',
-  'assistant.calc.noExam': 'В плане дисциплины нет экзаменационного элемента — считаю по накопленной.',
+  'assistant.calc.noExam':
+    'В плане дисциплины нет экзаменационного элемента — считаю по накопленной.',
   'assistant.order.meta': '{benefit} · готовность: {eta} · формат: {format} · тип: {type}',
   'assistant.order.lead': 'Заявка',
   'assistant.order.submitted': 'подана',

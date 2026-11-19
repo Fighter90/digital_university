@@ -57,6 +57,22 @@ test.describe('desktop 1440 — главная «Ваша неделя»', () =>
       page.getByRole('link', { name: /Заявки в работе/ }).and(page.locator('[href="/requests"]')),
     ).toBeVisible();
   });
+
+  test('DIG-76: виджет «Мероприятия» показывает реальные ближайшие события', async ({ page }) => {
+    await page.goto('/dashboard');
+    // С сидом (8 будущих событий) статической заглушки быть не должно.
+    const list = page.getByTestId('dashboard-events-list');
+    await expect(list).toBeVisible();
+    await expect(list.getByRole('listitem')).toHaveCount(3); // лимит виджета
+    // Мини-карточка ведёт на свою карточку события.
+    await expect(list.getByRole('listitem').first().getByRole('link')).toHaveAttribute(
+      'href',
+      /\/events\/.+/,
+    );
+    // Ссылка «Все мероприятия» ведёт в полный раздел.
+    await expect(page.getByTestId('dashboard-events-all')).toHaveAttribute('href', '/events');
+    await expect(page.getByText('Мероприятия скоро появятся')).toHaveCount(0);
+  });
 });
 
 test.describe('mobile 360 — главная одной колонкой', () => {
@@ -97,5 +113,11 @@ test.describe('mobile 360 — главная одной колонкой', () =>
     await page.goto('/dashboard');
     await page.getByRole('link', { name: /Средний балл/ }).click();
     await expect(page).toHaveURL(/\/grades$/);
+  });
+
+  test('DIG-76: виджет «Мероприятия» виден на 360 и ведёт в раздел', async ({ page }) => {
+    await page.goto('/dashboard');
+    await expect(page.getByTestId('dashboard-events-list')).toBeVisible();
+    await expect(page.getByTestId('dashboard-events-all')).toHaveAttribute('href', '/events');
   });
 });
