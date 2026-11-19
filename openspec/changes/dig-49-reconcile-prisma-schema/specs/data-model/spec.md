@@ -1,10 +1,10 @@
 # Delta: data-model
 
-## ADDED
+## ADDED Requirements
 
 ### Requirement: Объединённая схема — канон DIG-9 + сиды DIG-10 + auth DIG-11
 
-Схема `prisma/schema.prisma` валидна (`prisma validate`) и содержит модели
+Требование «Объединённая схема — канон DIG-9 + сиды DIG-10 + auth DIG-11» — обязательное (MUST): Схема `prisma/schema.prisma` валидна (`prisma validate`) и содержит модели
 канона (User, Session, Faculty, Program, Group, Student, Teacher, Discipline,
 DisciplineTeachers, Enrollment, Assessment, Grade, Exam, ScheduleEvent,
 StudentNote, RequestType, Request, RequestEvent, Notification,
@@ -26,7 +26,7 @@ ScheduleStatus; ExamKind дополнен RETAKE, NotificationKind — DEADLINE)
 
 ### Requirement: Пароли хранятся только в User
 
-Профили Student/Staff не содержат passwordHash. Seed создаёт User-строки
+Требование «Пароли хранятся только в User» — обязательное (MUST): Профили Student/Staff не содержат passwordHash. Seed создаёт User-строки
 (role STUDENT/STAFF) с bcrypt-хэшами из prisma/seed-data.ts и связывает
 профили с User (Student.userId, обязательный 1:1).
 
@@ -36,9 +36,11 @@ ScheduleStatus; ExamKind дополнен RETAKE, NotificationKind — DEADLINE)
 - THEN таблица User содержит 3 строки (2 STUDENT, 1 STAFF), Student/Staff
   не имеют колонки passwordHash, повторный сид идемпотентен.
 
-## MODIFIED
+## MODIFIED Requirements
 
 ### Requirement: Словари канона имеют приоритет над скалярами сидов
+
+Требование «Словари канона имеют приоритет над скалярами сидов» — обязательное (MUST):
 
 - RequestType — модель-словарь канона; скалярный тип заявки сидов переименован
   в enum RequestKind (CERTIFICATE|STATEMENT|PRACTICE|DORMITORY|OTHER).

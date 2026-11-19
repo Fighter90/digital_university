@@ -1,10 +1,10 @@
 # Delta: data-model
 
-## ADDED
+## ADDED Requirements
 
 ### Requirement: Модели предметной области в Prisma-схеме
 
-Схема `prisma/schema.prisma` описывает все сущности кабинета: доступ
+Требование «Модели предметной области в Prisma-схеме» — обязательное (MUST): Схема `prisma/schema.prisma` описывает все сущности кабинета: доступ
 (User, Session), структуру вуза (Faculty, Program, Group, Student, Teacher),
 учёбу (Discipline, Enrollment, Assessment, Grade, Exam, ScheduleEvent,
 StudentNote), заявки (RequestType, Request, RequestEvent), уведомления
@@ -19,7 +19,7 @@ StudentNote), заявки (RequestType, Request, RequestEvent), уведомл�
 
 ### Requirement: Единый словарь статусов заявки
 
-Статус заявки — перечисление `RequestStatus` ровно из 8 значений:
+Требование «Единый словарь статусов заявки» — обязательное (MUST): Статус заявки — перечисление `RequestStatus` ровно из 8 значений:
 `SUBMITTED` (Подана), `ACCEPTED` (Принята), `IN_PROGRESS` (В работе),
 `READY` (Готова), `ISSUED` (Выдана), `NEEDS_FIX` (Нужна доработка),
 `REJECTED` (Отклонена), `CANCELLED` (Отменена студентом). Синонимы запрещены.
@@ -31,7 +31,7 @@ StudentNote), заявки (RequestType, Request, RequestEvent), уведомл�
 
 ### Requirement: Номер заявки уникален и человекочитаем
 
-Поле `Request.number` уникально; формат `ЗД-<год>-<6 цифр>` (например
+Требование «Номер заявки уникален и человекочитаем» — обязательное (MUST): Поле `Request.number` уникально; формат `ЗД-<год>-<6 цифр>` (например
 `ЗД-2026-000123`) гарантируется CHECK-констрейнтом в миграции, значения
 последовательности берутся из `request_number_seq`.
 
@@ -42,7 +42,7 @@ StudentNote), заявки (RequestType, Request, RequestEvent), уведомл�
 
 ### Requirement: Индексы
 
-Каждое поле-внешний ключ проиндексировано; присутствуют композитные индексы
+Требование «Индексы» — обязательное (MUST): Каждое поле-внешний ключ проиндексировано; присутствуют композитные индексы
 `ScheduleEvent (groupId, startsAt)` и `Notification (userId, readAt)`.
 
 #### Scenario: Нет внешних ключей без индекса
@@ -53,7 +53,7 @@ StudentNote), заявки (RequestType, Request, RequestEvent), уведомл�
 
 ### Requirement: Полнотекстовый поиск по FAQ (russian)
 
-Миграция создаёт генерируемую колонку `FaqArticle.search`
+Требование «Полнотекстовый поиск по FAQ (russian)» — обязательное (MUST): Миграция создаёт генерируемую колонку `FaqArticle.search`
 (`setweight(to_tsvector('russian', title), 'A') || setweight(to_tsvector('russian', body), 'B')`,
 STORED) и GIN-индекс.
 
@@ -65,7 +65,7 @@ STORED) и GIN-индекс.
 
 ### Requirement: Оценки в диапазоне 0..10
 
-`Grade.value` ограничен CHECK-констрейнтом `value >= 0 AND value <= 10`.
+Требование «Оценки в диапазоне 0..10» — обязательное (MUST): `Grade.value` ограничен CHECK-констрейнтом `value >= 0 AND value <= 10`.
 
 #### Scenario: Оценка вне диапазона отклоняется
 
@@ -74,7 +74,7 @@ STORED) и GIN-индекс.
 
 ### Requirement: Миграция применяется на чистой БД
 
-Единая миграция `20261111000000_init` применяется командой
+Требование «Миграция применяется на чистой БД» — обязательное (MUST): Единая миграция `20261111000000_init` применяется командой
 `prisma migrate deploy` на пустой базе без ручных шагов.
 
 #### Scenario: Чистая база

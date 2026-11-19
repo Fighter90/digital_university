@@ -4,7 +4,7 @@
 
 ### Requirement: Инструментарий качества репозитория
 
-Проект ДОЛЖЕН предоставлять воспроизводимый каркас разработки: Next.js 15
+Проект ДОЛЖЕН (MUST) предоставлять воспроизводимый каркас разработки: Next.js 15
 App Router, TypeScript strict, ESLint, Prettier, Vitest, Playwright (профили
 desktop-1440 и mobile-360), Zod, husky+lint-staged, pnpm на Node 22.
 
@@ -16,7 +16,7 @@ desktop-1440 и mobile-360), Zod, husky+lint-staged, pnpm на Node 22.
 
 ### Requirement: Каркас маршрутов и плашка концепта
 
-Приложение ДОЛЖНО иметь route-группы из задачи: `(auth)/login`, `(cabinet)/…`,
+Приложение ДОЛЖНО (MUST) иметь route-группы из задачи: `(auth)/login`, `(cabinet)/…`,
 `api/…`, и глобальную плашку «Концепт для конкурса» на каждой странице.
 
 #### Scenario: плашка видна на любом маршруте
@@ -31,7 +31,7 @@ desktop-1440 и mobile-360), Zod, husky+lint-staged, pnpm на Node 22.
 
 ### Requirement: Открытость для жюри
 
-Репозиторий ДОЛЖЕН содержать лицензию MIT, THIRD_PARTY_LICENSES.md с
+Репозиторий ДОЛЖЕН (MUST) содержать лицензию MIT, THIRD_PARTY_LICENSES.md с
 разрешающими лицензиями всех новых зависимостей и README с плашкой
 «Концепт для конкурса» и запуском в 3 команды (pnpm).
 
