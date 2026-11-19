@@ -4,23 +4,22 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { navLabel, t, type Locale } from '@/lib/i18n';
+import { calendarDaysLeft, daysLeftLabel, formatLongDate } from '@/lib/dashboard-format';
 import { sectionsForRole, resolveActiveSection } from './nav-items';
 import { sectionIcon } from './nav-icons';
 import { UnreadBadge } from './unread-badge';
 
 // Ближайший дедлайн — вымышленные данные каркаса; реальные подключит задача
 // по расписанию/задачам (DIG-21+). Показывается только на полном меню (≥1024).
-// Срок считается динамически от текущей даты (BUG-06: было захардкожено «9 дней»).
-const DEADLINE_DUE = new Date(2026, 10, 20); // 20 ноября 2026
-const DEADLINE = {
-  title: 'Курсовая работа по базам данных',
-  due: `до ${DEADLINE_DUE.getDate()} ноября`,
-  get left(): string {
-    const days = Math.ceil((DEADLINE_DUE.getTime() - Date.now()) / 86_400_000);
-    const n = Math.max(days, 0);
-    return n === 1 ? 'остался 1 день' : n < 5 ? `осталось ${n} дня` : `осталось ${n} дней`;
-  },
-};
+// Срок считается динамически (BUG-06: было захардкожено «9 дней») той же
+// логикой, что карточка «Дедлайны» дашборда: разница календарных дней
+// (calendarDaysLeft) + общий daysLeftLabel. Дата задана в явной зоне
+// Europe/Moscow, поэтому SSR и гидрация дают одну строку при любом TZ.
+const DEADLINE_DUE = new Date('2026-11-20T00:00:00+03:00'); // 20 ноября 2026, МСК
+
+function deadlineDaysLeft(now: Date): number {
+  return Math.max(calendarDaysLeft(DEADLINE_DUE, now), 0);
+}
 
 // DIG-14: боковое меню. ≥1024 — полное меню 212 px, 768–1023 — иконочный
 // рельс (подпись в title/aria-label). Активный раздел — мягкий коралловый фон.
@@ -106,9 +105,11 @@ export function SideNav({
           <h2 className="text-[11px] font-semibold tracking-wide text-coral-700 uppercase">
             {t(locale, 'shell.deadlineTitle')}
           </h2>
-          <p className="mt-1 text-sm font-medium text-neutral-900">{DEADLINE.title}</p>
+          <p className="mt-1 text-sm font-medium text-neutral-900">
+            Курсовая работа по базам данных
+          </p>
           <p className="mt-0.5 text-xs text-neutral-600">
-            {DEADLINE.due} · {DEADLINE.left}
+            до {formatLongDate(DEADLINE_DUE)} · {daysLeftLabel(deadlineDaysLeft(new Date()))}
           </p>
         </div>
       )}
