@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Volume2 } from 'lucide-react';
 import { cn } from 'cn';
 
@@ -36,6 +36,9 @@ export interface ListenDayButtonProps {
 /** Сколько ждём onstart, прежде чем признать движок недоступным. */
 const WATCHDOG_MS = 1200;
 
+/** DIG-104: способность браузера статична за жизнь документа — подписка не нужна. */
+const subscribeToNothing = (): (() => void) => () => {};
+
 export function ListenDayButton({
   title,
   isToday,
@@ -50,6 +53,19 @@ export function ListenDayButton({
   const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
   const startedRef = useRef(false);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * DIG-104: доступность движка озвучки — внешняя «способность» браузера,
+   * читается через useSyncExternalStore: серверный снапшот всегда false,
+   * клиентский после гидрации — по наличию window.speechSynthesis.
+   * Проверка в рендере напрямую была server/client веткой (SSR → null,
+   * браузер → кнопка) и ломала гидрацию с React #418; вариант с setState
+   * в эффекте триггерит каскадный рендер (react-hooks lint).
+   */
+  const speechReady = useSyncExternalStore(
+    subscribeToNothing,
+    isSpeechSynthesisSupported,
+    () => false,
+  );
 
   const clearWatchdog = (): void => {
     if (watchdogRef.current !== null) {
@@ -68,8 +84,8 @@ export function ListenDayButton({
     };
   }, []);
 
-  // Настройка выключена или браузер без поддержки — функции нет.
-  if (!enabled || !isSpeechSynthesisSupported()) return null;
+  // Настройка выключена или движка нет (узнаётся после монтирования) — функции нет.
+  if (!enabled || !speechReady) return null;
 
   const showFallback = (): void => {
     clearWatchdog();

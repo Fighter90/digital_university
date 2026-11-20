@@ -47,7 +47,7 @@ function row(overrides: Partial<ScheduleEventRow> = {}): ScheduleEventRow {
 // ── DIG-24: карточки пары — ссылки на панель деталей (?event=<id>) ───────────
 
 describe('EventCard — ссылка на детали пары (DIG-24)', () => {
-  it('с href карточка целиком — ссылка с data-event-id и aria-меткой', () => {
+  it('с href карточка — stretched-ссылка деталей без вложенных якорей (DIG-104)', () => {
     render(
       <ul>
         <EventCard
@@ -56,13 +56,17 @@ describe('EventCard — ссылка на детали пары (DIG-24)', () =>
         />
       </ul>,
     );
+    // Карточка целиком кликабельна, но DOM-якорь деталей — пустой stretched-<a>:
+    // вложенные <a> — невалидный HTML и ломают гидрацию (React #418).
+    const card = screen.getByTestId('day-card-ev-1');
+    expect(card.tagName).toBe('LI');
     const link = screen.getByRole('link', { name: /Лекция, Информатика/ });
     expect(link).toHaveAttribute('data-event-id', 'ev-1');
     expect(link).toHaveAttribute('href', '/schedule?view=day&date=2026-11-11&event=ev-1');
-    expect(link).toHaveAttribute('data-testid', 'day-card-ev-1');
-    // весь состав карточки остаётся внутри ссылки
-    expect(link).toHaveTextContent('Информатика');
-    expect(link).toHaveTextContent('ауд. 301 · Петров Пётр Петрович');
+    // состав карточки остаётся внутри <li>, ссылки не вложены друг в друга
+    expect(card).toHaveTextContent('Информатика');
+    expect(card).toHaveTextContent('ауд. 301 · Петров Пётр Петрович');
+    expect(within(link).queryAllByRole('link').length).toBe(0);
   });
 
   it('без href карточка остаётся элементом списка (не ссылка)', () => {
@@ -106,7 +110,7 @@ describe('DayView — карточки ведут на панель детале
 });
 
 describe('MobileSchedule — карточки ведут на панель деталей (DIG-24)', () => {
-  it('вид «день»: карточка — ссылка с контекстом вида', () => {
+  it('вид «день»: карточка ведёт на панель деталей с контекстом вида', () => {
     render(
       <MobileSchedule
         mode="day"
@@ -116,8 +120,9 @@ describe('MobileSchedule — карточки ведут на панель де�
         eventQuery="view=day"
       />,
     );
-    const link = screen.getByTestId('day-card-ev-1');
-    expect(link.tagName).toBe('A');
+    const card = screen.getByTestId('day-card-ev-1');
+    expect(card.tagName).toBe('LI');
+    const link = within(card).getByRole('link', { name: /Лекция, Информатика/ });
     expect(link).toHaveAttribute('href', '/schedule?view=day&event=ev-1');
     expect(link).toHaveAttribute('data-event-id', 'ev-1');
   });
@@ -132,8 +137,9 @@ describe('MobileSchedule — карточки ведут на панель де�
         eventQuery="view=week"
       />,
     );
-    const link = screen.getByTestId('day-card-ev-1');
-    expect(link.tagName).toBe('A');
+    const card = screen.getByTestId('day-card-ev-1');
+    expect(card.tagName).toBe('LI');
+    const link = within(card).getByRole('link', { name: /Лекция, Информатика/ });
     expect(link).toHaveAttribute('href', '/schedule?view=week&event=ev-1');
     expect(link).toHaveAttribute('data-event-id', 'ev-1');
   });
