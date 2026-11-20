@@ -27,7 +27,7 @@ describe('база знаний: структура статей', () => {
     }
   });
 
-  it('категорий ровно 6 с метками из задачи', () => {
+  it('категорий ровно 7 с метками из задачи (DIG-112: + «Кабинет и разделы»)', () => {
     expect(FAQ_CATEGORY_ORDER).toEqual([
       'STUDY',
       'CERTIFICATES',
@@ -35,6 +35,7 @@ describe('база знаний: структура статей', () => {
       'DORMITORY',
       'TRANSFER',
       'IT',
+      'CABINET',
     ] satisfies FaqCategory[]);
     expect(Object.values(FAQ_CATEGORY_LABELS)).toEqual([
       'Учёба и сессия',
@@ -43,6 +44,7 @@ describe('база знаний: структура статей', () => {
       'Общежитие',
       'Перевод и восстановление',
       'IT и доступ',
+      'Кабинет и разделы',
     ]);
     for (const a of FAQ_ARTICLES) {
       expect(FAQ_CATEGORY_LABELS[a.category], `${a.id}: неизвестная категория`).toBeTruthy();
@@ -102,13 +104,21 @@ describe('база знаний: структура статей', () => {
 describe('searchFaqArticles — приёмка «стипендия»', () => {
   it('запрос «стипендия» возвращает статьи про стипендии', () => {
     const hits = searchFaqArticles('стипендия');
-    expect(hits.length).toBeGreaterThanOrEqual(3);
-    for (const a of hits) {
+    const scholarshipHits = hits.filter((a) => a.category === 'SCHOLARSHIPS');
+    expect(scholarshipHits.length).toBeGreaterThanOrEqual(3);
+    for (const a of scholarshipHits) {
       expect(a.category).toBe('SCHOLARSHIPS');
     }
-    const questions = hits.map((a) => a.question).join('\n');
+    const questions = scholarshipHits.map((a) => a.question).join('\n');
     expect(questions).toContain('Когда приходит стипендия?');
     expect(questions).toContain('Как получить повышенную стипендию?');
+    // DIG-112: стипендия упоминается и в статье про экран «Финансы» —
+    // посторонних категорий (кроме «Кабинет и разделы») в выдаче нет,
+    // а заголовочный буст держит статьи про стипендии сверху.
+    expect(hits[0]!.category).toBe('SCHOLARSHIPS');
+    expect(hits.every((a) => a.category === 'SCHOLARSHIPS' || a.category === 'CABINET')).toBe(
+      true,
+    );
   });
 
   it.each([
@@ -121,8 +131,13 @@ describe('searchFaqArticles — приёмка «стипендия»', () => {
     'СТИПЕНДИЯ',
   ])('словоформа «%s» находит статьи про стипендии', (query) => {
     const hits = searchFaqArticles(query);
-    expect(hits.length, `запрос «${query}»`).toBeGreaterThanOrEqual(3);
-    expect(hits.every((a) => a.category === 'SCHOLARSHIPS')).toBe(true);
+    expect(hits.filter((a) => a.category === 'SCHOLARSHIPS').length, `запрос «${query}»`).toBeGreaterThanOrEqual(3);
+    // DIG-112: допустимое постороннее попадание — только статья про экран
+    // «Финансы» (категория «Кабинет и разделы»); сверху — стипендии.
+    expect(hits[0]!.category).toBe('SCHOLARSHIPS');
+    expect(hits.every((a) => a.category === 'SCHOLARSHIPS' || a.category === 'CABINET')).toBe(
+      true,
+    );
   });
 
   it('совпадение в заголовке ранжируется выше совпадения в тексте', () => {

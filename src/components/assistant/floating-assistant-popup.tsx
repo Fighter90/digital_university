@@ -17,10 +17,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Dialog as BaseDialog } from '@base-ui/react/dialog';
 import { SendHorizonal, Sparkles, X } from 'lucide-react';
 
-import {
-  askFloatingAssistant,
-  type FloatingAssistantReply,
-} from '@/server/actions/floating-assistant';
+import { askFloatingAssistant } from '@/server/actions/floating-assistant';
+import { type FloatingAssistantReply } from '@/server/ai/floating-assistant';
 import { t, type Locale } from '@/lib/i18n';
 import { Icon } from '@/components/ui/icon';
 

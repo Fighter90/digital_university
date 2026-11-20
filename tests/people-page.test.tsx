@@ -116,8 +116,9 @@ describe('/people — студент', () => {
     const html = await renderPage();
     expect(html).toContain('Справочник');
     expect(html).toContain('data-testid="people-search"');
-    // DIG-102 — плейсхолдер поиска «ФИО, email или телефон» из словаря.
-    expect(html).toContain('ФИО, email или телефон…');
+    // DIG-102 — плейсхолдер поиска «ФИО, эл. почта или телефон» из словаря
+    // (DIG-111: «email» → «эл. почта», без латинских калек).
+    expect(html).toContain('ФИО, эл. почта или телефон…');
     expect(html).toContain('data-testid="people-filters"');
     expect(html).toContain('aria-label="Поиск по справочнику"');
     for (const label of ['Мои преподаватели', 'Мой деканат', 'Все', '★ Избранное']) {

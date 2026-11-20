@@ -8,6 +8,10 @@ RUN corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 COPY prisma/schema.prisma prisma/schema.prisma
-RUN pnpm install --frozen-lockfile && pnpm exec prisma generate
+RUN pnpm install --frozen-lockfile
 COPY . .
+# generate строго ПОСЛЕ COPY . .: rsync приносит gitignored src/generated
+# (снапшот клиента локальной машины) и затирает сгенерённое — иначе tools
+# работает по протухшему клиенту (seed: Unknown argument, напр. teacherEmail).
+RUN pnpm exec prisma generate
 CMD ["sleep", "infinity"]

@@ -44,6 +44,7 @@ endpoint, JSON-конфиги для клиентов, curl-сессия, при
 | [`docs/user-guide-ru.md`](docs/user-guide-ru.md) · [`docs/user-guide-en.md`](docs/user-guide-en.md) | **Руководство пользователя**: все экраны студента и сотрудника пошагово (RU/EN) |
 | [`docs/admin-guide-ru.md`](docs/admin-guide-ru.md) · [`docs/admin-guide-en.md`](docs/admin-guide-en.md) | **Руководство администратора**: секреты, деплой, сид, бэкап, инциденты (RU/EN) |
 | [`docs/accompanying-docs-ru.md`](docs/accompanying-docs-ru.md) · [`docs/accompanying-docs-en.md`](docs/accompanying-docs-en.md) | **Сопроводительная документация**: карта документов, глоссарий, non-goals (RU/EN) |
+| [`docs/wiki/`](docs/wiki/) | Вики для агентов: архитектура, карта экранов, модули, runbook, рой (что устарело — [`docs/REPORT-112.md`](docs/REPORT-112.md)) |
 | [`docs/sdd/SDD-GUIDE.md`](docs/sdd/SDD-GUIDE.md) | Spec-driven процесс (OpenSpec) |
 | [`CHANGELOG.md`](CHANGELOG.md) · [`docs/ai-log/`](docs/ai-log/) | Что и когда делал рой |
 
@@ -57,9 +58,13 @@ endpoint, JSON-конфиги для клиентов, curl-сессия, при
 | Заявки и справки (заказ онлайн, статусы) | DIG-29, DIG-30, DIG-31, DIG-32, DIG-33, DIG-47 | 08–11, 26 |
 | Уведомления и объявления | DIG-34, DIG-35, DIG-36 | 12–14 |
 
-Дополнительно: справочник, FAQ, обращения, предложения руководству, финансы,
-доп. образование, мероприятия, поиск ⌘K, **AI-ассистент кабинета**, кабинет
-сотрудника деканата. Полная карта — `docs/figma-screens.md`.
+Дополнительно: задачи и дедлайны, финансы, справочник, новости, МСП
+(студенческие стартапы), доп. образование, мероприятия, обращения и
+предложения руководству, FAQ и гайд «Как пользоваться кабинетом» — статья
+на каждый экран меню (DIG-112), поиск ⌘K, **AI-ассистент кабинета**,
+кабинет сотрудника деканата. Доступность — версия для слабовидящих
+(DIG-100); шеринг — «Поделиться» новостью и днём расписания, экспорт
+расписания MD/XLSX/PDF (DIG-101). Полная карта — `docs/figma-screens.md`.
 
 ## Стек
 
@@ -91,8 +96,9 @@ Caddy (авто-TLS в проде). Кабинет — http://localhost:3000, he
 [`docs/deploy.md`](docs/deploy.md).
 
 Проверки: `pnpm lint` · `pnpm typecheck` · `pnpm test` (Vitest unit + swarm) ·
-`pnpm e2e` (Playwright: desktop-1440 и mobile-360×800). БД (Prisma/PostgreSQL) и
-вход подключаются в следующих задачах — скаффолд работает без них.
+`pnpm e2e` (Playwright: desktop-1440 и mobile-360×800). Вход и БД работают:
+Postgres из `docker-compose`, миграции и сид — `pnpm db:migrate` и
+`pnpm db:seed` (см. «Тестовые аккаунты» ниже).
 
 ## Тестовые аккаунты (вымышленные)
 
