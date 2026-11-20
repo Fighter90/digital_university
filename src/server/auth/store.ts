@@ -9,6 +9,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@/generated/prisma';
 import { createMemoryAuthStore, createMemoryIpRateLimiter } from './memory-store';
+import { wrapIpRateLimiter } from './e2e-bypass';
 import { createPrismaAuthStore, type PrismaAuthClient } from './prisma-store';
 import { signIn, type SignInInput, type SignInResult } from './login';
 import type { AuthStore, IpRateLimiter } from './types';
@@ -62,13 +63,19 @@ export function createAppAuthStore(databaseUrl: string | undefined | null): AppA
     return {
       selection,
       store: createPrismaAuthStore(wired),
-      rateLimiter: createMemoryIpRateLimiter(),
+      // Round 3 DIG-48: обёртка с e2e-обходом (флаг ставит только webServer
+      // playwright; прод флаг не выставляет — brute-force guard не ослаблен).
+      rateLimiter: wrapIpRateLimiter(createMemoryIpRateLimiter()),
     };
   }
   // DIG-50: memory is allowed only outside production deployments — and it
   // must never be silent (this WARN is what was missing on ostrovok.store).
   console.warn(selection.warning);
-  return { selection, store: createMemoryAuthStore(), rateLimiter: createMemoryIpRateLimiter() };
+  return {
+    selection,
+    store: createMemoryAuthStore(),
+    rateLimiter: wrapIpRateLimiter(createMemoryIpRateLimiter()),
+  };
 }
 
 // Same globalThis rationale as the data-layer singleton: in dev, pages and
