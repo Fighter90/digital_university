@@ -82,6 +82,9 @@ async function sweep(page: import('@playwright/test').Page, role: string, routes
 }
 
 test('EN audit: no Cyrillic anywhere', async ({ page }) => {
+  // 31 маршрут × (goto + 1.8s пауза) + два логина — не влезает в дефолтные 30s
+  // (та же практика, что в zz-shots.spec.ts / zz-shots-ru-en.spec.ts).
+  test.setTimeout(240_000);
   await page
     .context()
     .addCookies([{ name: 'du-locale', value: 'en', domain: new URL(BASE).hostname, path: '/' }]);

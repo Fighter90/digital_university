@@ -1,0 +1,11 @@
+# DIG-108: MCP prod негативные проверки (curl, 2026-11-20T00:37:22Z)
+
+## 1. Без токена
+{"jsonrpc":"2.0","id":null,"error":{"code":-32001,"message":"Требуется персональный демо-токен: Authorization: Bearer <токен> (выпустите его во вкладке «Настройка MCP» кабинета)."}}
+[HTTP 401]
+www-authenticate: Bearer realm="digital-deanery-mcp"
+
+## 2. Неверный токен (invalid_token)
+{"jsonrpc":"2.0","id":null,"error":{"code":-32001,"message":"Требуется персональный демо-токен: Authorization: Bearer <токен> (выпустите его во вкладке «Настройка MCP» кабинета)."}}
+[HTTP 401]
+www-authenticate: Bearer realm="digital-deanery-mcp", error="invalid_token"

@@ -501,7 +501,7 @@ export const en: Record<keyof RuDictionary, string> = {
 
   // ── DIG-87 — EN localization part 1: dashboard ────────────────────────────
   'dashboard.hero.title': 'Your week',
-  'dashboard.greeting.night': 'Good night',
+  'dashboard.greeting.night': 'Good evening',
   'dashboard.greeting.morning': 'Good morning',
   'dashboard.greeting.day': 'Good afternoon',
   'dashboard.greeting.evening': 'Good evening',
@@ -542,7 +542,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'widgets.desc.deadlines': 'Upcoming credits, exams and retakes',
   'widgets.desc.tasks': 'Open tasks: revisions, deadlines, admissions and retakes',
   'widgets.desc.performance': 'GPA, credits and debts',
-  'widgets.desc.requests': 'Requests in work and ready for pick-up',
+  'widgets.desc.requests': 'Requests in progress and ready for pickup',
   'widgets.desc.news': 'Deanery announcements',
   'widgets.desc.events': 'University events and happenings',
   'widgets.label.today': 'Today',
@@ -1669,7 +1669,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'staff.home.avgHint': 'until the first specialist reply',
   'staff.home.overdue': 'Overdue',
   'staff.home.overdueHint': 'beyond the SLA deadline',
-  'staff.home.requests.title': 'Requests in work',
+  'staff.home.requests.title': 'Requests in progress',
   'staff.home.requests.submitted': 'Submitted, awaiting a reply',
   'staff.home.requests.inProgress': 'In work',
   'staff.home.requests.needsRevision': 'Needs revisions',
