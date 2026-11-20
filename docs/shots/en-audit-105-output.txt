@@ -1,0 +1,73 @@
+
+Running 2 tests using 2 workers
+
+✓ [public] / — 0 симв.
+✓ [public] / — 0 симв.
+✓ [student] /dashboard — 0 симв.
+✓ [student] /dashboard — 0 симв.
+✓ [student] /schedule — 0 симв.
+✓ [student] /schedule — 0 симв.
+✓ [student] /schedule?view=week — 0 симв.
+✓ [student] /schedule?view=week — 0 симв.
+✓ [student] /schedule?view=month — 0 симв.
+✓ [student] /schedule?view=month — 0 симв.
+✓ [student] /grades — 0 симв.
+✓ [student] /grades — 0 симв.
+✓ [student] /grades/gradebook — 0 симв.
+✓ [student] /grades/gradebook — 0 симв.
+✓ [student] /grades/session — 0 симв.
+✓ [student] /grades/session — 0 симв.
+✓ [student] /requests — 0 симв.
+✓ [student] /requests — 0 симв.
+✓ [student] /notifications — 0 симв.
+✓ [student] /notifications — 0 симв.
+✓ [student] /deanery — 0 симв.
+✓ [student] /deanery — 0 симв.
+✓ [student] /feedback — 0 симв.
+✓ [student] /feedback — 0 симв.
+✓ [student] /help — 0 симв.
+✓ [student] /help — 0 симв.
+✓ [student] /guide — 0 симв.
+✓ [student] /guide — 0 симв.
+✓ [student] /ai-assistant — 0 симв.
+✓ [student] /ai-assistant — 0 симв.
+✓ [student] /mcp — 0 симв.
+✓ [student] /mcp — 0 симв.
+✓ [student] /people — 0 симв.
+✓ [student] /people — 0 симв.
+✓ [student] /news — 0 симв.
+✓ [student] /news — 0 симв.
+✓ [student] /events — 0 симв.
+✓ [student] /events — 0 симв.
+✓ [student] /msp — 0 симв.
+✓ [student] /msp — 0 симв.
+✓ [student] /dpo — 0 симв.
+✓ [student] /dpo — 0 симв.
+✓ [student] /finance — 0 симв.
+✓ [student] /finance — 0 симв.
+✓ [student] /profile — 0 симв.
+✓ [student] /profile — 0 симв.
+✓ [student] /settings — 0 симв.
+✓ [student] /settings — 0 симв.
+✓ [student] /tasks — 0 симв.
+✓ [student] /tasks — 0 симв.
+✓ [student] /services — 0 симв.
+✓ [student] /services — 0 симв.
+✓ [student] /more — 0 симв.
+✓ [student] /more — 0 симв.
+✓ [staff] /staff — 0 симв.
+✓ [staff] /staff — 0 симв.
+✓ [staff] /staff/requests — 0 симв.
+✓ [staff] /staff/requests — 0 симв.
+✓ [staff] /staff/appeals — 0 симв.
+✓ [staff] /staff/appeals — 0 симв.
+✓ [staff] /staff/announcements — 0 симв.
+
+=== ИТОГ: 31/31 чисто; с кириллицей: 0 ===
+✓ [staff] /staff/announcements — 0 симв.
+
+=== ИТОГ: 31/31 чисто; с кириллицей: 0 ===
+  ✓  2 [mobile-360] › e2e/zz-en-audit.spec.ts:84:1 › EN audit: no Cyrillic anywhere (1.6m)
+  ✓  1 [desktop-1440] › e2e/zz-en-audit.spec.ts:84:1 › EN audit: no Cyrillic anywhere (1.6m)
+
+  2 passed (1.7m)
