@@ -21,7 +21,13 @@
 import type { Locale } from '@/lib/i18n';
 
 export type FaqCategory =
-  'STUDY' | 'CERTIFICATES' | 'SCHOLARSHIPS' | 'DORMITORY' | 'TRANSFER' | 'IT';
+  | 'STUDY'
+  | 'CERTIFICATES'
+  | 'SCHOLARSHIPS'
+  | 'DORMITORY'
+  | 'TRANSFER'
+  | 'IT'
+  | 'CABINET';
 
 export type FaqArticle = {
   id: string;
@@ -41,6 +47,8 @@ export const FAQ_CATEGORY_ORDER: FaqCategory[] = [
   'DORMITORY',
   'TRANSFER',
   'IT',
+  // DIG-112 — «максимальная полнота»: по статье на каждый экран кабинета.
+  'CABINET',
 ];
 
 export const FAQ_CATEGORY_LABELS: Record<FaqCategory, string> = {
@@ -50,6 +58,7 @@ export const FAQ_CATEGORY_LABELS: Record<FaqCategory, string> = {
   DORMITORY: 'Общежитие',
   TRANSFER: 'Перевод и восстановление',
   IT: 'IT и доступ',
+  CABINET: 'Кабинет и разделы',
 };
 
 /** Подсказки под большим полем «Найдите ответ» — каждая реально находит статьи. */
@@ -249,6 +258,170 @@ export const FAQ_ARTICLES: FaqArticle[] = [
     related: ['it-password', 'it-access'],
     cta: { label: 'Открыть инструкцию MCP', href: '/mcp' },
   },
+
+  // ── Кабинет и разделы (DIG-112 — по статье на каждый экран меню) ──
+  {
+    id: 'cab-dashboard',
+    category: 'CABINET',
+    question: 'Как устроена «Главная» кабинета?',
+    answer:
+      '«Главная» собирает неделю в один экран: сверху «Ваша неделя» с ближайшими парами и изменениями расписания, ниже — виджеты задач, заявок и уведомлений. Быстрые действия ведут в разделы: заказать справку, написать в деканат, открыть расписание.\n\nСостав и порядок виджетов настраиваются в «Настройках»: лишние плитки можно спрятать, важные — поднять выше. Настройки сохраняются в профиле и работают на телефоне и на компьютере.',
+    related: ['cab-tasks', 'cab-notifications'],
+    cta: { label: 'Открыть главную', href: '/dashboard' },
+  },
+  {
+    id: 'cab-tasks',
+    category: 'CABINET',
+    question: 'Как работать с задачами и дедлайнами?',
+    answer:
+      'Раздел «Задачи» собирает ваши задачи и дедлайны дисциплин: ближайшие сверху, просроченные выделены отдельно, чтобы не потерялись. Выполненную задачу отметьте галочкой — счётчик открытых задач рядом с пунктом меню уменьшится.\n\nНапоминания о дедлайнах приходят по выбранным каналам; каналы и тихие часы настраиваются в «Настройках → Уведомления».',
+    related: ['cab-dashboard', 'cab-notifications'],
+    cta: { label: 'Открыть задачи', href: '/tasks' },
+  },
+  {
+    id: 'cab-schedule',
+    category: 'CABINET',
+    question: 'Как найти пару и посмотреть детали занятия?',
+    answer:
+      'Расписание переключается видами «День / Неделя / Месяц»: на телефоне по умолчанию «Сегодня», на компьютере — неделя. Нажмите на пару — откроется панель деталей: время, аудитория, преподаватель, тип занятия; перенос и отмена отмечены особо.\n\nДля видов «День» и «Неделя» работает «Экспорт» — файл Markdown, Excel или PDF; в деталях пары есть «Поделиться» — безопасная публичная ссылка на день расписания.',
+    related: ['cab-grades', 'cab-events'],
+    cta: { label: 'Открыть расписание', href: '/schedule' },
+  },
+  {
+    id: 'cab-grades',
+    category: 'CABINET',
+    question: 'Где посмотреть оценки, зачётку и рейтинг группы?',
+    answer:
+      '«Успеваемость» открывается сводкой «как у меня дела»: средний балл, кредиты и место в группе. Баллы по заданиям, посещаемость и комментарии преподавателя — в зачётке, динамика по дисциплине — на её карточке.\n\nЭкран «Сессия» показывает экзамены и консультации с ICS-подпиской; «Рейтинг группы» — таблица студентов по среднему баллу и отметка «в N% лучших».',
+    related: ['study-attestation', 'cab-schedule'],
+    cta: { label: 'Открыть успеваемость', href: '/grades' },
+  },
+  {
+    id: 'cab-finance',
+    category: 'CABINET',
+    question: 'Где посмотреть стипендию, договоры и платежи?',
+    answer:
+      'Раздел «Финансы» собирает деньги студента в одном месте: форма обучения (бюджет или договор), стипендия с датой выплаты, задолженности и отметка «нет», если долгов нет.\n\nДоговоры и платежи — списком с номерами и статусами; PDF-документы становятся доступны после выпуска. Реальной оплаты в прототипе нет — все суммы вымышленные.',
+    related: ['schol-when', 'cab-requests'],
+    cta: { label: 'Открыть финансы', href: '/finance' },
+  },
+  {
+    id: 'cab-requests',
+    category: 'CABINET',
+    question: 'Как отследить статус заявки или справки?',
+    answer:
+      'Все заказы живут в разделе «Заявки и справки»: номер вида SR-2026-XXXXX виден в списке и в карточке, статус меняется по канону Подана → Принята → В работе → Готова → Выдана.\n\nО смене статуса приходит уведомление на выбранные каналы; готовую справку скачайте PDF из карточки — на документе QR-код проверки подлинности. Чужую заявку открыть нельзя: попытка фиксируется в журнале доступа.',
+    related: ['cert-online', 'cert-time'],
+    cta: { label: 'Открыть заявки', href: '/requests' },
+  },
+  {
+    id: 'cab-notifications',
+    category: 'CABINET',
+    question: 'Как настроить уведомления и тихие часы?',
+    answer:
+      'Центр уведомлений показывает события по дням: новые сверху, непрочитанные выделены, кнопка «Отметить все прочитанными» снимает отметки. Колокольчик в шапке — быстрый доступ к последним событиям из любого раздела.\n\nКаналы доставки — push, e-mail, Telegram — включаются по типам событий в «Настройках → Уведомления»; там же задаются тихие часы, чтобы сообщения не приходили ночью. Сервисные уведомления о безопасности приходят всегда.',
+    related: ['cab-settings', 'cab-tasks'],
+    cta: { label: 'Открыть уведомления', href: '/notifications' },
+  },
+  {
+    id: 'cab-deanery',
+    category: 'CABINET',
+    question: 'Как написать в деканат и получить ответ?',
+    answer:
+      'Раздел «Связь с деканатом»: выберите тему и напишите сообщение — обращение получит номер вида TS-2026-XXXXX. Переписка с менеджером идёт в чате карточки, история сохраняется, к сообщению можно приложить файлы.\n\nОтвет приходит уведомлением; по одному вопросу пишите в существующий чат, а не новым обращением — менеджер видит всю историю.',
+    related: ['study-absence', 'cab-feedback'],
+    cta: { label: 'Написать в деканат', href: '/deanery' },
+  },
+  {
+    id: 'cab-feedback',
+    category: 'CABINET',
+    question: 'Куда отправить предложение или жалобу?',
+    answer:
+      '«Обратная связь» — канал руководству: типы «Предложение», «Жалоба» и «Благодарность», адресаты — деканат, учебный офис, руководство программы или вуза.\n\nПо умолчанию адресат видит имя и группу; включите «Анонимно», и обращение не хранит связи с аккаунтом нигде. Ответ приходит в течение трёх рабочих дней, статусы: На рассмотрении → Отвечено → Решено.',
+    related: ['cab-deanery', 'cab-profile'],
+    cta: { label: 'Открыть обратную связь', href: '/feedback' },
+  },
+  {
+    id: 'cab-events',
+    category: 'CABINET',
+    question: 'Как записаться на мероприятие?',
+    answer:
+      'Афиша «Мероприятий» фильтруется чипами: «На этой неделе», «Карьера», «Онлайн». Нажмите «Записаться» на карточке — место закрепится; повторный клик отменяет запись.\n\nНа карточке видно «Осталось N мест» — счётчик по вместимости события; полное описание, дата и площадка или ссылка на трансляцию — на странице события.',
+    related: ['cab-msp', 'cab-dpo'],
+    cta: { label: 'Открыть мероприятия', href: '/events' },
+  },
+  {
+    id: 'cab-msp',
+    category: 'CABINET',
+    question: 'Как поддержать студенческий стартап в МСП?',
+    answer:
+      'Каталог «МСП» устроен как Product Hunt: лента студенческих проектов, кнопка «▲ Поддержать» — один голос на проект, повторный клик снимает голос. Блок «Запуск дня» — проект с наибольшим числом голосов.\n\nВ карточке запуска — описание, команда и комментарии; свою команду можно заявить кнопкой «Запустить проект». Все проекты вымышленные — это демо-каталог концепта.',
+    related: ['cab-events', 'cab-dpo'],
+    cta: { label: 'Открыть МСП', href: '/msp' },
+  },
+  {
+    id: 'cab-dpo',
+    category: 'CABINET',
+    question: 'Как записаться на программу дополнительного образования?',
+    answer:
+      'Каталог ДПО фильтруется по формату (онлайн, офлайн, гибрид), цене и длительности — чипы комбинируются. «Записаться» — и программа появится во вкладке «Мои программы» с полосой прогресса.\n\nВо вкладке «Документы» — договоры, акты, квитанции и сертификаты ваших программ; скачивание активно после выпуска программы.',
+    related: ['cab-events', 'cab-msp'],
+    cta: { label: 'Открыть ДПО', href: '/dpo' },
+  },
+  {
+    id: 'cab-people',
+    category: 'CABINET',
+    question: 'Как найти преподавателя и его контакты?',
+    answer:
+      '«Справочник» показывает «Моих преподавателей» — только тех, кто ведёт ваши дисциплины, с пометками предметов. Поиск ищет по имени, e-mail и телефону, а также по дисциплине: можно найти, кто ведёт нужный предмет.\n\nНа карточке преподавателя — контакты, время консультаций и «Ближайшие пары» с ним; любимых преподавателей можно отметить звёздочкой в «Избранном».',
+    related: ['cab-schedule', 'cab-deanery'],
+    cta: { label: 'Открыть справочник', href: '/people' },
+  },
+  {
+    id: 'cab-news',
+    category: 'CABINET',
+    question: 'Где читать новости и объявления вуза?',
+    answer:
+      'Лента «Новостей» показывает свежие публикации вуза: открытие новости помечает её «Прочитано», чтобы было видно, что вы уже читали.\n\nВ карточке новости — полный текст, дата и кнопка «Поделиться»: отправить в соцсети или скопировать ссылку — она откроет ту же страницу.',
+    related: ['cab-events', 'cab-notifications'],
+    cta: { label: 'Открыть новости', href: '/news' },
+  },
+  {
+    id: 'cab-profile',
+    category: 'CABINET',
+    question: 'Как изменить данные в профиле?',
+    answer:
+      'Профиль показывает ФИО, группу, факультет, университетскую почту и студенческий билет; часть реквизитов скрыта маской — данные студента меняет деканат, а не сам студент.\n\nНашли ошибку в данных? Кнопка на карточке профиля создаёт обращение в деканат с подставленными данными. Пароль и сессии меняются в «Настройках → Безопасность».',
+    related: ['cab-settings', 'it-password'],
+    cta: { label: 'Открыть профиль', href: '/profile' },
+  },
+  {
+    id: 'cab-settings',
+    category: 'CABINET',
+    question: 'Как настроить кабинет под себя?',
+    answer:
+      '«Настройки» собраны по вкладкам: «Уведомления» — каналы и тихие часы; «Безопасность» — смена пароля и активные сессии; «Вид» — тема, язык (русский или английский), размер шрифта и анимации; «Настройка MCP» — токен для внешнего ассистента. На главной вкладке — «Виджеты главной».\n\nНастройки применяются сразу и сохраняются в профиле, а не в браузере: они работают на любом устройстве после входа.',
+    related: ['cab-notifications', 'it-mcp-assistant'],
+    cta: { label: 'Открыть настройки', href: '/settings' },
+  },
+  {
+    id: 'cab-ai-assistant',
+    category: 'CABINET',
+    question: 'О чём можно спросить AI-ассистента?',
+    answer:
+      'Ассистент отвечает по вашим данным кабинета: расписание на сегодня и ближайшие дни, оценки, заявки, стипендия, задачи. Спросить можно текстом или голосом; в ответах — ссылки на разделы, чтобы перейти в один клик.\n\nАссистент подсказывает, но официальные действия оформляйте в своих разделах: заявки — в «Заявках», вопросы — в «Связи с деканатом». Внешнему ассистенту (Claude, ChatGPT) кабинет отдаёт данные по MCP — см. статью про подключение.',
+    related: ['it-mcp-assistant', 'cab-requests'],
+    cta: { label: 'Открыть ассистента', href: '/ai-assistant' },
+  },
+  {
+    id: 'cab-staff',
+    category: 'CABINET',
+    question: 'Как сотруднику работать с очередью заявок?',
+    answer:
+      'Кабинет сотрудника деканата: «Сводка» с цифрами дня, очередь «Заявок» факультета с SLA-подсветкой, «Обращения» студентов и «Объявления» факультету. Заявки идут по канону статусов, причина обязательна для «Нужна доработка» и «Отклонена».\n\nГотовые справки скачиваются PDF с QR-кодом проверки; обращения закрываются статусом «Решено» в чате карточки. Разделы /staff видны только роли «Сотрудник деканата» — студенту сервер отвечает 403.',
+    related: ['cab-requests', 'cab-deanery'],
+    cta: { label: 'Открыть кабинет сотрудника', href: '/staff' },
+  },
 ];
 
 export function getFaqArticle(id: string): FaqArticle | null {
@@ -381,6 +554,116 @@ export const FAQ_ARTICLES_EN_TEXT: Record<string, FaqArticleEnText> = {
       'MCP (Model Context Protocol) is an open protocol that lets assistants (Claude, ChatGPT, Cursor) securely read your cabinet data: today’s schedule, grades and unread notifications.\n\nIssue a personal token in the “MCP setup” tab, then on the “Connect your assistant (MCP)” page copy the ready JSON config and replace <YOUR_TOKEN> with your token. Access is read-only: the assistant sees only your data, and the token can be re-issued at any time.',
     ctaLabel: 'Open the MCP guide',
   },
+
+  // ── Cabinet and sections (DIG-112 — one article per menu screen) ──
+  'cab-dashboard': {
+    question: 'How is the cabinet dashboard arranged?',
+    answer:
+      'The dashboard packs the week into one screen: the top card is “Your week” with upcoming classes and schedule changes, below are widgets for tasks, requests and notifications. Quick actions lead to sections: order a certificate, write to the deanery, open the schedule.\n\nThe set and order of widgets are configured in “Settings”: hide the tiles you do not need and raise the important ones. Settings are saved in your profile and work on both phone and desktop.',
+    ctaLabel: 'Open the dashboard',
+  },
+  'cab-tasks': {
+    question: 'How do I work with tasks and deadlines?',
+    answer:
+      'The “Tasks” section collects your tasks and the discipline deadlines: the nearest ones on top, overdue ones highlighted separately so they do not get lost. Check off a completed task — the counter of open tasks next to the menu item goes down.\n\nDeadline reminders arrive over the channels you chose; the channels and quiet hours are configured in “Settings → Notifications”.',
+    ctaLabel: 'Open tasks',
+  },
+  'cab-schedule': {
+    question: 'How do I find a class and see its details?',
+    answer:
+      'The schedule switches between Day / Week / Month views: on a phone the default is “Today”, on a desktop — the week. Tap a class — the details panel opens: time, room, teacher, class type; a reschedule or a cancellation is marked separately.\n\nThe Day and Week views have “Export” — a Markdown, Excel or PDF file; the class details have “Share” — a safe public link to that schedule day.',
+    ctaLabel: 'Open the schedule',
+  },
+  'cab-grades': {
+    question: 'Where are my grades, the gradebook and the group rating?',
+    answer:
+      '“Grades” opens with the “how am I doing” summary: average grade, credits and standing in the group. Points per assignment, attendance and the teacher’s comments live in the gradebook; the dynamics of a discipline are on its card.\n\nThe “Session” screen shows exams and consultations with an ICS subscription; “Group rating” is a table of students by average grade with a “top N%” mark.',
+    ctaLabel: 'Open grades',
+  },
+  'cab-finance': {
+    question: 'Where are the scholarship, contracts and payments?',
+    answer:
+      'The “Finance” section collects a student’s money matters in one place: the study format (state-funded or contract), the scholarship with its payment date, debts or a “none” mark when there are no debts.\n\nContracts and payments are listed with numbers and statuses; PDF documents become available after issuance. There is no real payment in the prototype — all amounts are fictional.',
+    ctaLabel: 'Open finance',
+  },
+  'cab-requests': {
+    question: 'How do I track the status of a request or certificate?',
+    answer:
+      'All orders live in “Requests & certificates”: the number like SR-2026-XXXXX is visible in the list and on the card, and the status follows the canon Submitted → Accepted → In progress → Ready → Issued.\n\nA status change sends a notification over your chosen channels; download the ready certificate as a PDF from the card — the document carries a QR code for authenticity checks. Someone else’s request cannot be opened: the attempt is recorded in the access log.',
+    ctaLabel: 'Open requests',
+  },
+  'cab-notifications': {
+    question: 'How do I configure notifications and quiet hours?',
+    answer:
+      'The notifications center shows events grouped by day: new ones on top, unread highlighted, and the “Mark all as read” button clears the marks. The bell in the header is a quick way to see the latest events from any section.\n\nDelivery channels — push, email, Telegram — are enabled per event type in “Settings → Notifications”; quiet hours are set there too, so messages do not arrive at night. Security notifications always arrive.',
+    ctaLabel: 'Open notifications',
+  },
+  'cab-deanery': {
+    question: 'How do I write to the deanery and get a reply?',
+    answer:
+      'The “Messages to the deanery” section: pick a topic and write your message — the ticket gets a number like TS-2026-XXXXX. The conversation with the manager happens in the ticket chat, the history is kept, and you can attach files.\n\nThe reply arrives as a notification; for one question, write in the existing chat rather than a new ticket — the manager sees the whole history.',
+    ctaLabel: 'Write to the deanery',
+  },
+  'cab-feedback': {
+    question: 'Where do I send a suggestion or a complaint?',
+    answer:
+      '“Feedback” is the channel to the leadership: the types “Suggestion”, “Complaint” and “Thank-you”, and the recipients — the deanery, the academic office, the programme leadership or the university.\n\nBy default the recipient sees your name and group; turn on “Anonymous” and the message stores no link to your account anywhere. A reply arrives within three business days; statuses: Under review → Answered → Resolved.',
+    ctaLabel: 'Open feedback',
+  },
+  'cab-events': {
+    question: 'How do I sign up for an event?',
+    answer:
+      'The “Events” board is filtered by chips: “This week”, “Career”, “Online”. Click “Sign up” on a card — your spot is reserved; clicking again cancels it.\n\nThe card shows “N spots left” — counted from the event capacity; the full description, date and venue or stream link are on the event page.',
+    ctaLabel: 'Open events',
+  },
+  'cab-msp': {
+    question: 'How do I support a student startup in MSP?',
+    answer:
+      'The “MSP” catalog works like Product Hunt: a feed of student projects, a “▲ Support” button — one vote per project, clicking again removes the vote. The “Launch of the day” block is the project with the most votes.\n\nA launch card has the description, the team and comments; you can enter your own team with the “Launch a project” button. All projects are fictional — this is a demo catalog of the concept.',
+    ctaLabel: 'Open MSP',
+  },
+  'cab-dpo': {
+    question: 'How do I enroll in a continuing-education programme?',
+    answer:
+      'The continuing-education catalog is filtered by format (online, offline, hybrid), price and duration — the chips combine. Click “Enroll” and the programme appears in the “My programmes” tab with a progress bar.\n\nThe “Documents” tab has the contracts, acceptance certificates, receipts and certificates of your programmes; downloading unlocks after the programme graduates.',
+    ctaLabel: 'Open continuing education',
+  },
+  'cab-people': {
+    question: 'How do I find a teacher and their contacts?',
+    answer:
+      'The “Directory” shows “My teachers” — only those who teach your disciplines, with subject marks. Search matches the name, email and phone, as well as the discipline: you can find who teaches the subject you need.\n\nA teacher’s card has contacts, office hours and “Upcoming classes” with them; favourite teachers can be starred in “Favourites”.',
+    ctaLabel: 'Open the directory',
+  },
+  'cab-news': {
+    question: 'Where do I read university news and announcements?',
+    answer:
+      'The “News” feed shows fresh university publications: opening a news item marks it “Read”, so you can see what you have already read.\n\nA news card has the full text, the date and a “Share” button: post to social networks or copy the link — it opens the same page.',
+    ctaLabel: 'Open news',
+  },
+  'cab-profile': {
+    question: 'How do I change the details in my profile?',
+    answer:
+      'The profile shows your full name, group, faculty, university email and student ID card; some details are masked — a student’s data is changed by the deanery, not by the student.\n\nFound an error in your details? The button on the profile card creates a deanery ticket with your data prefilled. The password and sessions are managed in “Settings → Security”.',
+    ctaLabel: 'Open the profile',
+  },
+  'cab-settings': {
+    question: 'How do I set the cabinet up for myself?',
+    answer:
+      '“Settings” are grouped by tabs: “Notifications” — channels and quiet hours; “Security” — password change and active sessions; “Appearance” — theme, language (Russian or English), font size and animations; “MCP setup” — the token for an external assistant. The home tab has the dashboard widgets.\n\nSettings apply immediately and are saved in your profile, not in the browser: they work on any device after signing in.',
+    ctaLabel: 'Open settings',
+  },
+  'cab-ai-assistant': {
+    question: 'What can I ask the AI assistant about?',
+    answer:
+      'The assistant answers from your cabinet data: the schedule for today and the days ahead, grades, requests, the scholarship, tasks. You can ask by text or voice; answers include links to sections for a one-click jump.\n\nThe assistant gives hints, but official actions belong in their own sections: requests in “Requests”, questions in “Messages to the deanery”. An external assistant (Claude, ChatGPT) reads the cabinet over MCP — see the connection article.',
+    ctaLabel: 'Open the assistant',
+  },
+  'cab-staff': {
+    question: 'How does a staff member work with the request queue?',
+    answer:
+      'The deanery staff cabinet: the “Summary” with the day’s numbers, the faculty “Requests” queue with SLA highlighting, student “Appeals” and faculty “Announcements”. Requests follow the status canon, and a reason is required for “Needs revision” and “Rejected”.\n\nReady certificates download as PDF with a verification QR code; appeals are closed with the “Resolved” status in the card chat. The /staff sections are visible only to the deanery staff role — a student gets a 403 from the server.',
+    ctaLabel: 'Open the staff cabinet',
+  },
 };
 
 /** EN-метки категорий (RU-канон — FAQ_CATEGORY_LABELS выше). */
@@ -391,6 +674,7 @@ export const FAQ_CATEGORY_LABELS_EN: Record<FaqCategory, string> = {
   DORMITORY: 'Dormitory',
   TRANSFER: 'Transfer and reinstatement',
   IT: 'IT and access',
+  CABINET: 'Cabinet screens',
 };
 
 /** EN-подсказки популярного поиска (каждая реально находит EN-статьи). */

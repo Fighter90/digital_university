@@ -52,7 +52,7 @@ Interactive version: the `/mcp` page in the portal; a Help article at `/help` (R
 | [`docs/admin-guide-en.md`](docs/admin-guide-en.md) · [`docs/admin-guide-ru.md`](docs/admin-guide-ru.md) | **Administrator guide**: secrets, deploy, seed, backups, incidents (EN/RU) |
 | [`docs/accompanying-docs-en.md`](docs/accompanying-docs-en.md) · [`docs/accompanying-docs-ru.md`](docs/accompanying-docs-ru.md) | **Accompanying documentation**: the docs map, glossary, non-goals (EN/RU) |
 | [`docs/sdd/SDD-GUIDE.md`](docs/sdd/SDD-GUIDE.md) | Spec-driven process (OpenSpec) |
-| [`docs/wiki/`](docs/wiki/) | Wiki: architecture, swarm, modules guide, runbook |
+| [`docs/wiki/`](docs/wiki/) | Wiki: architecture, swarm, modules guide, runbook (staleness list: [`docs/REPORT-112.md`](docs/REPORT-112.md)) |
 | [`CHANGELOG.md`](CHANGELOG.md) · [`docs/ai-log/`](docs/ai-log/) | What the swarm did and when |
 
 ## Feature set
@@ -85,6 +85,22 @@ Interactive version: the `/mcp` page in the portal; a Help article at `/help` (R
   skeleton shimmer, bell swing — all disabled under `prefers-reduced-motion`.
 
 ## Mandatory core
+
+| Area | Linear tasks | Figma screens |
+|---|---|---|
+| Sign-in and profile | DIG-18, DIG-19, DIG-11 | 01, 22 |
+| Schedule (day/week/month, reschedules) | DIG-21–24 | 03–04 |
+| Grades (summary, gradebook, session) | DIG-25–28 | 05–07 |
+| Requests and certificates (online ordering, statuses) | DIG-29–33, DIG-47 | 08–11, 26 |
+| Notifications and announcements | DIG-34–36 | 12–14 |
+
+Beyond the core: tasks and deadlines, finance, directory, news, MSP
+(student startups), continuing education, campus events, deanery messages
+and the feedback channel, FAQ and the step-by-step guide — an article per
+menu screen (DIG-112), ⌘K search, the **cabinet AI assistant**, the deanery
+staff cabinet. Accessibility — the low-vision plain version (DIG-100);
+sharing — news and schedule-day «Share», schedule export to MD/XLSX/PDF
+(DIG-101).
 
 ## Tech stack
 
