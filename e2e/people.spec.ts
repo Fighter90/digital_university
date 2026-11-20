@@ -38,7 +38,7 @@ test.describe('DIG-37: справочник людей', () => {
 
     // Поиск по подразделению: «деканат» оставляет только сотрудников деканата.
     const search = page.getByTestId('people-search');
-    await expect(search).toHaveAttribute('placeholder', 'ФИО, email или телефон…');
+    await expect(search).toHaveAttribute('placeholder', 'ФИО, эл. почта или телефон…');
     await search.fill('деканат');
     const list = page.getByTestId('people-list');
     await expect(list.getByTestId(/^person-card-/)).toHaveCount(5);
