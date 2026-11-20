@@ -152,7 +152,14 @@ test.describe('DIG-106: переключатель Русский/English', () =
     test.skip(testInfo.project.name !== 'desktop-1440');
     await page
       .context()
-      .addCookies([{ name: 'du-locale', value: 'en', domain: 'localhost', path: '/' }]);
+      .addCookies([
+        {
+          name: 'du-locale',
+          value: 'en',
+          domain: new URL(testInfo.project.use.baseURL ?? 'http://localhost').hostname,
+          path: '/',
+        },
+      ]);
     await page.goto('/');
     await expectSections(page, EN);
   });
@@ -211,7 +218,14 @@ test.describe('DIG-106: скриншоты mobile 360', () => {
     test.skip(testInfo.project.name !== 'mobile-360');
     await page
       .context()
-      .addCookies([{ name: 'du-locale', value: 'en', domain: 'localhost', path: '/' }]);
+      .addCookies([
+        {
+          name: 'du-locale',
+          value: 'en',
+          domain: new URL(testInfo.project.use.baseURL ?? 'http://localhost').hostname,
+          path: '/',
+        },
+      ]);
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(EN.h1);
     await page.screenshot({
@@ -237,7 +251,14 @@ test.describe('DIG-107: plain-версия для слабовидящих', () 
     // и при этом plain достижим штатно: cookie → версия применяется
     await page
       .context()
-      .addCookies([{ name: 'du-a11y-version', value: 'plain', domain: 'localhost', path: '/' }]);
+      .addCookies([
+        {
+          name: 'du-a11y-version',
+          value: 'plain',
+          domain: new URL(testInfo.project.use.baseURL ?? 'http://localhost').hostname,
+          path: '/',
+        },
+      ]);
     await page.goto('/');
     await expect(page.locator('html')).toHaveClass(/a11y-plain/);
   });

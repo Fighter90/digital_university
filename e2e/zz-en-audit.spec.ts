@@ -112,7 +112,7 @@ test('EN audit: no Cyrillic anywhere', async ({ page }) => {
   await page.waitForTimeout(800);
   await page.locator('#login').fill('anna.smirnova');
   await page.locator('#password').fill('anna-demo-2026');
-  await page.locator('button[type="submit"]').click();
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await page.waitForTimeout(3500);
   await sweep(page, 'student', STUDENT_ROUTES);
 
@@ -125,7 +125,7 @@ test('EN audit: no Cyrillic anywhere', async ({ page }) => {
   await page.waitForTimeout(800);
   await page.locator('#login').fill('dean.kovaleva');
   await page.locator('#password').fill('dean-demo-2026');
-  await page.locator('button[type="submit"]').click();
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
   await page.waitForTimeout(3500);
   await sweep(page, 'staff', STAFF_ROUTES);
 
