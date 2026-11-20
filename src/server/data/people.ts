@@ -48,7 +48,7 @@ export interface PersonListEntry {
   position: string;
   department: string;
   email: string;
-  /** Телефон для поиска «ФИО, email или телефон»; у одногруппников null. */
+  /** Телефон для поиска «ФИО, эл. почта или телефон»; у одногруппников null. */
   phone: string | null;
   /** Все дисциплины преподавателя в вузе (для поиска и подписи). */
   disciplines: string[];

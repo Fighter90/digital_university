@@ -187,7 +187,8 @@ export async function listRequestTypesForForm(): Promise<
 export type RequestEmailState = { ok: true; email: string } | { ok: false; error: string } | null;
 
 /**
- * «Отправить на email» готового документа. Концепт-прототип: SMTP не
+ * «Отправить на почту» готового документа (DIG-111: без кальки «email»).
+ * Концепт-прототип: SMTP не
  * подключается, факт отправки фиксируется кабинетным уведомлением.
  * Владельца и готовность проверяет слой данных (IDOR-контракт).
  */

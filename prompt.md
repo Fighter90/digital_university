@@ -1,6 +1,5 @@
-DIG-112+113: Справка «максимальная полнота» (гайд по каждому экрану) + актуализация README/wiki/docs. Работай только в /tmp/dig-112.
-1. Справка /help (src/lib/help-content.ts, faq-kb-catalog.ts): пройди ВСЕ экраны кабинета (dashboard, schedule, grades, requests, notifications, deanery, feedback, events, msp, dpo, people, news, finance, profile, settings, tasks, ai-assistant, mcp, staff*) — у каждого должна быть статья: как пользоваться, частые вопросы. Дополни недостающие статьи RU+EN (паттерн DIG-88: двуязычные поля). Поиск по словоформам должен находить новые статьи.
-2. README.md/README.en.md: проверь актуальность (кол-во разделов, ссылки на docs/mcp.md, DIG-100 a11y, share/export — упоминались ли); обнови устаревшее.
-3. docs/wiki/ и docs/docx-описание: пометь в REPORT-112.md что устарело (не переписывай всё — список).
-4. Юнит-тест: справка содержит статью для каждого раздела меню; RU/EN паритет статей.
-5. DoD: gates green; коммит на pochtasergeia/dig-112-regress с DIG-112/113, push. НЕ PR.
+DIG-108+110: Регресс MCP-сервера (initialize → tools/list → tools/call) + Регресс заявок/обращений/кабинета сотрудника (сквозной сценарий). Работай только в /tmp/dig-108.
+1. MCP против прода https://ostrovok.store/api/mcp: без токена → 401/-32001 (curl); полный smoke с токеном — выпусти токен через локальный сид/функцию (src/server/data/mcp.ts: hashSha256) в ЛОКАЛЬНОЙ БД (не прод!), подними pnpm dev (localhost:3000, .env уже есть — поправь PORT) и прогони initialize/tools/list/tools/call (3 инструмента) локально; примеры ответов сверь с docs/mcp.md.
+2. Заявки/обращения/staff против прода: студент anna.smirnova (anna-demo-2026): создать заявку через мастер (/requests) — статус «Подана» появился; обращение через /feedback; сотрудник dean.kovaleva (dean-demo-2026): очередь /staff/requests — заявка видна, «Взять в работу» → статус; SLA-подсветка. Playwright-скрипт (EU_MSC TZ) со скриншотами в /tmp/dig-108/shots/.
+3. Дефекты: минимальные фиксы + тест; глобальные — REGRESSION-FINDINGS-108.md.
+4. DoD: MCP-smoke лог + скриншоты сценариев + отчёт; gates green; коммит на pochtasergeia/dig-108-regress с DIG-108/110, push. НЕ PR.
