@@ -1,5 +1,5 @@
-DIG-108+110: Регресс MCP-сервера (initialize → tools/list → tools/call) + Регресс заявок/обращений/кабинета сотрудника (сквозной сценарий). Работай только в /tmp/dig-108.
-1. MCP против прода https://ostrovok.store/api/mcp: без токена → 401/-32001 (curl); полный smoke с токеном — выпусти токен через локальный сид/функцию (src/server/data/mcp.ts: hashSha256) в ЛОКАЛЬНОЙ БД (не прод!), подними pnpm dev (localhost:3000, .env уже есть — поправь PORT) и прогони initialize/tools/list/tools/call (3 инструмента) локально; примеры ответов сверь с docs/mcp.md.
-2. Заявки/обращения/staff против прода: студент anna.smirnova (anna-demo-2026): создать заявку через мастер (/requests) — статус «Подана» появился; обращение через /feedback; сотрудник dean.kovaleva (dean-demo-2026): очередь /staff/requests — заявка видна, «Взять в работу» → статус; SLA-подсветка. Playwright-скрипт (EU_MSC TZ) со скриншотами в /tmp/dig-108/shots/.
-3. Дефекты: минимальные фиксы + тест; глобальные — REGRESSION-FINDINGS-108.md.
-4. DoD: MCP-smoke лог + скриншоты сценариев + отчёт; gates green; коммит на pochtasergeia/dig-108-regress с DIG-108/110, push. НЕ PR.
+DIG-104: Регресс RU — полный прогон кабинета студента (все экраны, desktop+mobile 360). Работай только в /tmp/dig-104.
+1. Против прода https://ostrovok.store: вход anna.smirnova/anna-demo-2026 (cookie без du-locale = RU). Playwright-скрипт (если браузера нет: npx playwright install chromium): все маршруты /dashboard /schedule(+views) /grades(+) /requests /notifications /deanery /feedback /help /guide /ai-assistant /mcp /people /news /events /msp /dpo /finance /profile /settings /tasks /services /more — скриншоты desktop 1440 и mobile 360 в /tmp/dig-104/shots/.
+2. Проверки: консоль без ошибок (page.on('console') errors), ссылки не 404, пустые состояния есть, мобильная вёрстка не ломается (360), даты в МСК.
+3. Дефекты: минимальные фиксы в src/ + юнит-тест; глобальные — REGRESSION-FINDINGS-104.md (что/где/серьёзность).
+4. DoD: скриншоты + отчёт; gates green (env готов, deps установлены); коммиты на ветке pochtasergeia/dig-104-regress с DIG-104, push. НЕ создавать PR.

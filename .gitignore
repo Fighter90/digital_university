@@ -64,3 +64,8 @@ node_modules
 # next.js build lock (артефакт локальной сборки, PID процесса).next-build.lock/
 video/
 docs/shots/en-audit.json
+
+# DIG-104 — артефакты регресса: приватный кэш браузеров и сырые скриншоты
+# (коммитьется только копия в docs/shots/dig-104/)
+/pw-browsers/
+/shots/

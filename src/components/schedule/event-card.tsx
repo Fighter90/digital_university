@@ -94,7 +94,7 @@ export function EventCard({
               <Link
                 href={teacherHref}
                 data-testid={`event-teacher-${event.id}`}
-                className="font-medium underline decoration-neutral-300 underline-offset-2 hover:text-coral-600 hover:decoration-coral-400"
+                className="pointer-events-auto relative z-20 font-medium underline decoration-neutral-300 underline-offset-2 hover:text-coral-600 hover:decoration-coral-400"
               >
                 {teacher}
               </Link>
@@ -143,24 +143,32 @@ export function EventCard({
     event.isMoved && 'hatch-rescheduled border-warning',
     event.isCancelled && 'opacity-70',
     compact && 'p-2.5',
-    href && 'lift-hover press-scale focus-visible:outline-accent',
     riseIndex !== undefined && 'animate-rise',
   );
   if (href) {
+    // DIG-104: карточка-ссылка — «stretched link»: пустой <a> растянут на всю
+    // карточку (absolute inset-0), контент лежит поверх с pointer-events-none,
+    // а интерактивные элементы (ссылка преподавателя) — pointer-events-auto.
+    // Прежняя разметка вкладывала <a> преподавателя внутрь <a>-карточки:
+    // невалидный HTML, парсер браузера переставлял дерево и гидрация падала
+    // с React #418 (регресс-прогон DIG-104, /schedule и ?view=day).
     return (
-      <li>
+      <li
+        data-testid={`day-card-${event.id}`}
+        data-status={event.status}
+        data-compact={compact ? 'true' : undefined}
+        className="relative lift-hover press-scale"
+        style={riseStyle}
+      >
         <a
           href={href}
-          data-testid={`day-card-${event.id}`}
           data-event-id={event.id}
-          data-status={event.status}
-          data-compact={compact ? 'true' : undefined}
           aria-label={event.ariaLabel}
-          className={cn(cardClasses, 'block')}
-          style={riseStyle}
-        >
+          className="absolute inset-0 z-0 rounded-card focus-visible:outline-accent"
+        />
+        <div className={cn(cardClasses, 'pointer-events-none relative z-10')}>
           {card}
-        </a>
+        </div>
       </li>
     );
   }
