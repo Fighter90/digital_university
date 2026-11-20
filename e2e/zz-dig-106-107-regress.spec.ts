@@ -92,10 +92,15 @@ test.describe('DIG-106: лендинг RU — секции и меню (1440)', 
     await page.goto('/');
     await expectSections(page, RU);
     await page.screenshot({ path: resolve(SHOTS, 'dig106-landing-ru-1440.png') });
-    await page.screenshot({ path: resolve(SHOTS, 'dig106-landing-ru-1440-full.png'), fullPage: true });
+    await page.screenshot({
+      path: resolve(SHOTS, 'dig106-landing-ru-1440-full.png'),
+      fullPage: true,
+    });
   });
 
-  test('меню: Личный кабинет→/dashboard, Справка→/help, якоря секций', async ({ page }, testInfo) => {
+  test('меню: Личный кабинет→/dashboard, Справка→/help, якоря секций', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-1440');
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'Возможности' });
@@ -114,7 +119,9 @@ test.describe('DIG-106: лендинг RU — секции и меню (1440)', 
 // ─── DIG-106: EN через переключатель (реальная смена контента) ──────────────
 
 test.describe('DIG-106: переключатель Русский/English', () => {
-  test('клик English меняет контент и cookie, клик Русский возвращает', async ({ page }, testInfo) => {
+  test('клик English меняет контент и cookie, клик Русский возвращает', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-1440');
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(RU.h1);
@@ -129,18 +136,23 @@ test.describe('DIG-106: переключатель Русский/English', () =
     await expect(page.getByRole('heading', { level: 1 })).toContainText(EN.h1);
     await expectSections(page, EN);
     await page.screenshot({ path: resolve(SHOTS, 'dig106-landing-en-1440.png') });
-    await page.screenshot({ path: resolve(SHOTS, 'dig106-landing-en-1440-full.png'), fullPage: true });
+    await page.screenshot({
+      path: resolve(SHOTS, 'dig106-landing-en-1440-full.png'),
+      fullPage: true,
+    });
 
     // назад в RU
     await page.getByTestId('locale-ru').click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText(RU.h1);
   });
 
-  test('EN также работает при выставленной cookie du-locale=en (deep-link)', async ({ page }, testInfo) => {
+  test('EN также работает при выставленной cookie du-locale=en (deep-link)', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-1440');
-    await page.context().addCookies([
-      { name: 'du-locale', value: 'en', domain: 'localhost', path: '/' },
-    ]);
+    await page
+      .context()
+      .addCookies([{ name: 'du-locale', value: 'en', domain: 'localhost', path: '/' }]);
     await page.goto('/');
     await expectSections(page, EN);
   });
@@ -149,7 +161,9 @@ test.describe('DIG-106: переключатель Русский/English', () =
 // ─── DIG-106: параллакс-орбы и плавающие карточки ───────────────────────────
 
 test.describe('DIG-106: декор лендинга', () => {
-  test('1440: параллакс-орбы есть и смещаются при прокрутке; плавающие карточки видимы', async ({ page }, testInfo) => {
+  test('1440: параллакс-орбы есть и смещаются при прокрутке; плавающие карточки видимы', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-1440');
     await page.goto('/');
     // орбы: 3 слоя с data-speed (градиентные пятна hero)
@@ -164,13 +178,13 @@ test.describe('DIG-106: декор лендинга', () => {
     // плавающие карточки hero — на ≥lg видимы, анимация float назначена
     const floats = page.locator('main .animate-float');
     await expect(floats.first()).toBeVisible();
-    const animation = await floats
-      .first()
-      .evaluate((el) => getComputedStyle(el).animationName);
+    const animation = await floats.first().evaluate((el) => getComputedStyle(el).animationName);
     expect(animation).not.toBe('none');
   });
 
-  test('360: плавающие карточки скрыты (декор ≥lg), горизонтального скролла нет', async ({ page }, testInfo) => {
+  test('360: плавающие карточки скрыты (декор ≥lg), горизонтального скролла нет', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360');
     await page.goto('/');
     await expect(page.locator('main .animate-float').first()).not.toBeVisible();
@@ -187,17 +201,23 @@ test.describe('DIG-106: скриншоты mobile 360', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(RU.h1);
     await expect(page.getByTestId('landing-feature')).toHaveCount(5);
-    await page.screenshot({ path: resolve(SHOTS, 'dig106-landing-ru-360-full.png'), fullPage: true });
+    await page.screenshot({
+      path: resolve(SHOTS, 'dig106-landing-ru-360-full.png'),
+      fullPage: true,
+    });
   });
 
   test('EN 360: секции EN, полный скриншот', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360');
-    await page.context().addCookies([
-      { name: 'du-locale', value: 'en', domain: 'localhost', path: '/' },
-    ]);
+    await page
+      .context()
+      .addCookies([{ name: 'du-locale', value: 'en', domain: 'localhost', path: '/' }]);
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText(EN.h1);
-    await page.screenshot({ path: resolve(SHOTS, 'dig106-landing-en-360-full.png'), fullPage: true });
+    await page.screenshot({
+      path: resolve(SHOTS, 'dig106-landing-en-360-full.png'),
+      fullPage: true,
+    });
   });
 });
 
@@ -207,25 +227,29 @@ test.describe('DIG-107: plain-версия для слабовидящих', () 
   // Спека DIG-100: включение — ссылкой над шапкой/в футере (cookie
   // du-a11y-version), НЕ тумблером в Настройках. Действие owner-scoped,
   // поэтому нужен демо-логин.
-  test('/?plain не является переключателем — включение только ссылкой (спека DIG-100)', async ({ page }, testInfo) => {
+  test('/?plain не является переключателем — включение только ссылкой (спека DIG-100)', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-1440');
     // query-параметр не предусмотрен спекой: страница остаётся обычной версией
     await page.goto('/?plain');
     await expect(page.locator('html')).not.toHaveClass(/a11y-plain/);
     // и при этом plain достижим штатно: cookie → версия применяется
-    await page.context().addCookies([
-      { name: 'du-a11y-version', value: 'plain', domain: 'localhost', path: '/' },
-    ]);
+    await page
+      .context()
+      .addCookies([{ name: 'du-a11y-version', value: 'plain', domain: 'localhost', path: '/' }]);
     await page.goto('/');
     await expect(page.locator('html')).toHaveClass(/a11y-plain/);
   });
 
-  test('ссылка над шапкой включает plain: белый фон/чёрный текст/≥20px/без анимаций', async ({ page }, testInfo) => {
+  test('ссылка над шапкой включает plain: белый фон/чёрный текст/≥20px/без анимаций', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-1440');
     await login(page);
     await page.goto('/');
-    // полоска НАД шапкой — до хедера в DOM
-    await page.getByTestId('a11y-version-strip').getByTestId('a11y-version-link').click();
+    // вход в plain — ссылка в футере (полоска над шапкой убрана, change remove-a11y-top-strip)
+    await page.getByTestId('a11y-version-footer').getByTestId('a11y-version-link').click();
     await expect(page.locator('html')).toHaveClass(/a11y-plain/, { timeout: 15_000 });
 
     const styles = await page.evaluate(() => {
@@ -249,7 +273,8 @@ test.describe('DIG-107: plain-версия для слабовидящих', () 
     expect(styles.serif).toContain('Georgia');
     // анимации выключены: плавающие карточки и reveal не двигаются
     const animations = await page.evaluate(() =>
-      Array.from(document.querySelectorAll<HTMLElement>('.animate-float, [data-reveal]')).slice(0, 8)
+      Array.from(document.querySelectorAll<HTMLElement>('.animate-float, [data-reveal]'))
+        .slice(0, 8)
         .map((el) => getComputedStyle(el).animationName),
     );
     for (const name of animations) expect(name === 'none' || name === '').toBeTruthy();
@@ -264,11 +289,13 @@ test.describe('DIG-107: plain-версия для слабовидящих', () 
     await expect(page.locator('html')).not.toHaveClass(/a11y-plain/, { timeout: 15_000 });
   });
 
-  test('360: plain действует без исключений, скролл не шире вьюпорта', async ({ page }, testInfo) => {
+  test('360: plain действует без исключений, скролл не шире вьюпорта', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-360');
     await login(page);
     await page.goto('/');
-    await page.getByTestId('a11y-version-strip').getByTestId('a11y-version-link').click();
+    await page.getByTestId('a11y-version-footer').getByTestId('a11y-version-link').click();
     await expect(page.locator('html')).toHaveClass(/a11y-plain/, { timeout: 15_000 });
     const styles = await page.evaluate(() => ({
       fontSize: getComputedStyle(document.documentElement).fontSize,
@@ -285,7 +312,9 @@ test.describe('DIG-107: plain-версия для слабовидящих', () 
 // ─── DIG-107: Настройки → Доступность (large-text/no-effects) ──────────────
 
 test.describe('DIG-107: Настройки → a11y-тумблеры', () => {
-  test('large-text и no-effects применяются и сохраняются после перезагрузки', async ({ page }, testInfo) => {
+  test('large-text и no-effects применяются и сохраняются после перезагрузки', async ({
+    page,
+  }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-1440');
     await login(page);
     await page.goto('/settings?tab=accessibility');
@@ -311,10 +340,16 @@ test.describe('DIG-107: Настройки → a11y-тумблеры', () => {
     await expect(page.locator('html')).toHaveClass(/a11y-no-effects/, { timeout: 15_000 });
     // параллакс-эффекты уважают режим: слои не смещаются
     await page.goto('/');
-    const before = await page.locator('[data-speed]').first().evaluate((el) => el.style.transform);
+    const before = await page
+      .locator('[data-speed]')
+      .first()
+      .evaluate((el) => el.style.transform);
     await page.mouse.wheel(0, 500);
     await page.waitForTimeout(600);
-    const after = await page.locator('[data-speed]').first().evaluate((el) => el.style.transform);
+    const after = await page
+      .locator('[data-speed]')
+      .first()
+      .evaluate((el) => el.style.transform);
     expect(after).toBe(before);
 
     await page.goto('/settings?tab=accessibility');
