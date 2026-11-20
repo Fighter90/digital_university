@@ -85,6 +85,8 @@ export const ru = {
   'shell.userMenuAria': 'Меню пользователя',
   'shell.logout': 'Выйти',
   'shell.deadlineTitle': 'Ближайший дедлайн',
+  // DIG-127: ручка изменения ширины левого меню (перетаскивание/стрелки)
+  'shell.navResizeAria': 'Изменить ширину меню: перетащите границу или стрелки ←/→',
 
   // ── переключатель языка ──────────────────────────────────────────────────
   'locale.switchAria': 'Язык интерфейса / Language',
@@ -413,7 +415,7 @@ export const ru = {
   'transcript.concept': 'Концепт для конкурса. Все данные вымышленные.',
   'transcript.student': 'Студент: {name}',
   'transcript.studentMissing': 'Студент: —',
-  'transcript.groupCourse': 'Группа: {group}   Курс: {course}',
+  'transcript.groupCourse': 'Группа: {group} Курс: {course}',
   'transcript.program': 'Программа: {program}',
   'transcript.gradebookNo': 'Номер зачётной книжки: {number}',
   'transcript.issueDate': 'Дата выдачи: {date}',
@@ -422,7 +424,7 @@ export const ru = {
   'transcript.col.credits': 'Кр',
   'transcript.col.final': 'Итог',
   'transcript.col.date': 'Дата',
-  'transcript.semesterLine': 'Средний балл семестра: {average}   Кредиты: {earned} из {total}',
+  'transcript.semesterLine': 'Средний балл семестра: {average} Кредиты: {earned} из {total}',
   'transcript.noGrades': 'Оценки в зачётной книжке отсутствуют.',
   'transcript.overallAverage': 'Средний балл за всё время: {average}',
   'transcript.creditsEarned': 'Кредиты набрано: {earned} из {required}',
@@ -465,7 +467,7 @@ export const ru = {
   'requests.fix.label': 'Что исправлено',
   'requests.fix.placeholder': 'Например: исправил ФИО латиницей, приложил скан',
   'requests.fix.success': 'Заявка отправлена повторно',
-  'requests.email.send': 'Отправить на email',
+  'requests.email.send': 'Отправить на почту',
   'requests.email.sending': 'Отправляем…',
   'requests.email.sentTo': 'Отправлено на {email}',
   'requests.copy': 'Копировать',
@@ -952,7 +954,7 @@ export const ru = {
   'notif.type.SYSTEM': 'Системные',
   'notif.type.DEADLINE': 'Дедлайны',
   'notif.channel.PUSH': 'В кабинете',
-  'notif.channel.EMAIL': 'Email',
+  'notif.channel.EMAIL': 'Почта',
   'notif.channel.TELEGRAM': 'Telegram',
   'notif.filter.ALL': 'Все',
   'notif.filter.UNREAD': 'Непрочитанные',
@@ -1104,7 +1106,7 @@ export const ru = {
   'finance.action.materialAid.desc': 'Единовременная поддержка из фонда вуза по заявлению студента',
   'finance.action.scholarshipCert.label': 'Справка о размере стипендии',
   'finance.action.scholarshipCert.desc':
-    'Для банка, соцзащиты и visa-центров — со суммой и сроком назначения',
+    'Для банка, соцзащиты и визовых центров — с суммой и сроком назначения',
   'finance.filter.empty.title': 'Таких документов нет',
   'finance.filter.empty.desc': 'В вашем наборе нет документов вида «{kind}».',
   'finance.download': 'Скачать',
@@ -1311,10 +1313,10 @@ export const ru = {
   'people.browser.empty.desc': 'Попробуйте другое имя, дисциплину или сбросьте фильтр.',
   'people.yourDisciplines': 'Ваши дисциплины:',
   'people.loading.aria': 'Загрузка справочника',
-  // DIG-102 — поиск «ФИО, email или телефон» и вкладка «★ Избранное»
-  'people.search.query.placeholder': 'ФИО, email или телефон…',
+  // DIG-102 — поиск «ФИО, эл. почта или телефон» и вкладка «★ Избранное»
+  'people.search.query.placeholder': 'ФИО, эл. почта или телефон…',
   'people.search.empty.title': 'Ничего не найдено',
-  'people.search.empty.desc': 'Проверьте ФИО, email или телефон и попробуйте ещё раз.',
+  'people.search.empty.desc': 'Проверьте ФИО, эл. почту или телефон и попробуйте ещё раз.',
   'people.filter.FAVORITES': '★ Избранное',
   'people.fav.title': '★ Избранное',
   'people.fav.cat.TEACHER': 'Преподаватели',
@@ -1385,7 +1387,7 @@ export const ru = {
   'profile.contacts.desc':
     'Переключатели решают, увидят ли преподаватели ваши контакты в кабинете.',
   'profile.contacts.phone': 'Телефон',
-  'profile.contacts.emailVisible': 'Email виден преподавателям',
+  'profile.contacts.emailVisible': 'Эл. почта видна преподавателям',
   'profile.contacts.phoneVisible': 'Телефон виден преподавателям',
   'profile.contacts.saved': 'Контакты сохранены',
   'profile.error.title': 'Данные неточны?',

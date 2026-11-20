@@ -508,7 +508,8 @@ export async function createRequestQuestionAppeal(
 export type SendDocumentByEmailResult = { ok: true; email: string } | { ok: false; error: string };
 
 /**
- * «Отправить на email» готового документа. Концепт: SMTP не подключается,
+ * «Отправить на почту» готового документа (DIG-111: без кальки «email»).
+ * Концепт: SMTP не подключается,
  * факт отправки фиксируется кабинетным уведомлением на email профиля
  * (адрес берётся из профиля владельца, никогда не из ввода). Только
  * студент-владелец, только мгновенный тип в READY/ISSUED.

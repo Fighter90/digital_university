@@ -440,6 +440,240 @@ export const GUIDE_SECTIONS: HelpSection[] = [
       },
     ],
   },
+  // ── DIG-112 — «максимальная полнота»: по разделу на каждый экран меню ────
+  {
+    id: 'dashboard',
+    title: 'Главная «Ваша неделя»',
+    href: '/dashboard',
+    summary: 'Сводка недели: ближайшие пары, дедлайны и быстрые действия — в одном экране.',
+    steps: [
+      {
+        text: 'Сверху — «Ваша неделя»: ближайшие пары и изменения расписания; ниже — виджеты задач, заявок и уведомлений.',
+        link: { href: '/dashboard', label: 'Открыть главную' },
+      },
+      {
+        text: 'Быстрые действия ведут в разделы: заказать справку, написать в деканат, открыть расписание.',
+      },
+      {
+        text: 'Состав и порядок виджетов главной настраиваются в «Настройки»: спрячьте лишнее, поднимите важное.',
+        link: { href: '/settings', label: 'Открыть настройки' },
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'Карточки-виджеты кликабельны: переход сразу к паре, задаче или уведомлению.',
+      },
+    ],
+  },
+  {
+    id: 'grades',
+    title: 'Успеваемость и зачётка',
+    href: '/grades',
+    summary: 'Сводка «как у меня дела», зачётка, карточки дисциплин, сессия и рейтинг группы.',
+    steps: [
+      {
+        text: 'Сводка показывает средний балл, кредиты и место в группе; баллы по заданиям — в зачётке.',
+        link: { href: '/grades', label: 'Открыть успеваемость' },
+      },
+      {
+        text: 'Зачётка раскрывается по дисциплинам: баллы за задания, посещаемость и комментарии преподавателя.',
+        link: { href: '/grades/gradebook', label: 'Открыть зачётку' },
+      },
+      {
+        text: '«Сессия»: экзамены и консультации; ICS-подписка добавит расписание экзаменов в ваш календарь.',
+        link: { href: '/grades/session', label: 'Открыть сессию' },
+      },
+      {
+        text: '«Рейтинг группы» — таблица студентов по среднему баллу и ваше место: «в N% лучших».',
+        link: { href: '/grades/rating', label: 'Открыть рейтинг группы' },
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'График динамики на карточке дисциплины показывает, как складывается итоговый балл.',
+      },
+    ],
+  },
+  {
+    id: 'notifications',
+    title: 'Уведомления',
+    href: '/notifications',
+    summary: 'Центр уведомлений: события по дням, панель колокольчика и тихие часы.',
+    steps: [
+      {
+        text: 'Лента сгруппирована по дням: новые события сверху, непрочитанные выделены; кнопка «Отметить все прочитанными» снимает отметки.',
+        link: { href: '/notifications', label: 'Открыть уведомления' },
+      },
+      {
+        text: 'Колокольчик в шапке — быстрый доступ к последним уведомлениям из любого раздела кабинета.',
+      },
+      {
+        text: 'Каналы доставки (push, e-mail, Telegram) и тихие часы настраиваются в «Настройки → Уведомления».',
+        link: { href: '/settings?tab=notifications', label: 'Открыть настройки уведомлений' },
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'Строки «Система» в матрице каналов нет: сервисные уведомления о безопасности приходят всегда.',
+      },
+    ],
+  },
+  {
+    id: 'news',
+    title: 'Новости и объявления',
+    href: '/news',
+    summary: 'Лента новостей вуза: чтение, отметка «Прочитано» и кнопка «Поделиться».',
+    steps: [
+      {
+        text: 'Лента показывает свежие новости и объявления вуза; открытие новости помечает её «Прочитано».',
+        link: { href: '/news', label: 'Открыть новости' },
+      },
+      {
+        text: 'В карточке новости — полный текст, дата и «Поделиться»: соцсети или копирование ссылки.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'Ссылкой на новость можно поделиться с однокурсниками — откроется та же страница.',
+      },
+    ],
+  },
+  {
+    id: 'profile',
+    title: 'Профиль',
+    href: '/profile',
+    summary: 'Личные данные, студенческий билет с маской и правка данных через деканат.',
+    steps: [
+      {
+        text: 'Профиль показывает ФИО, группу, факультет, университетскую почту и студенческий билет; часть реквизитов скрыта маской.',
+        link: { href: '/profile', label: 'Открыть профиль' },
+      },
+      {
+        text: 'Нашли ошибку в данных? Кнопка на карточке профиля создаёт обращение в деканат с подставленными данными.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'Пароль и активные сессии меняются не здесь, а в «Настройки → Безопасность».',
+      },
+    ],
+  },
+  {
+    id: 'help-faq',
+    title: 'Вопросы и ответы',
+    href: '/help',
+    summary: 'База знаний: поиск по словоформам, категории плитками и статьи с действиями.',
+    steps: [
+      {
+        text: 'Введите вопрос в поле «Найдите ответ»: поиск понимает словоформы — «стипендию» и «стипендиальный» находят статьи про стипендии.',
+        link: { href: '/help', label: 'Открыть вопросы и ответы' },
+      },
+      {
+        text: 'Категории плитками фильтруют статьи: учёба, справки, стипендии, общежитие, перевод, IT и разделы кабинета.',
+      },
+      {
+        text: 'В статье отметьте «Полезно? Да / Нет», воспользуйтесь кнопкой действия и загляните в связанные статьи.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'Последовательная инструкция по каждому экрану — в «Справке» рядом: гайд «Как пользоваться кабинетом».',
+      },
+    ],
+  },
+  {
+    id: 'staff',
+    title: 'Сотрудникам: сводка деканата',
+    href: '/staff',
+    summary: 'Дежурная сводка: заявки за день, среднее время обработки и просрочки.',
+    steps: [
+      {
+        text: 'Сводка показывает цифры дня по вашему факультету: поступившие заявки, среднее время обработки, просроченные.',
+        link: { href: '/staff', label: 'Открыть сводку' },
+      },
+      {
+        text: 'Карточки сводки ведут в разделы сотрудника: очередь заявок, обращения, объявления.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'Разделы /staff доступны только роли «Сотрудник деканата»: студенту сервер отвечает 403.',
+      },
+    ],
+  },
+  {
+    id: 'staff-requests',
+    title: 'Сотрудникам: очередь заявок',
+    href: '/staff/requests',
+    summary: 'Заявки факультета с SLA-подсветкой и каноническими переходами статусов.',
+    steps: [
+      {
+        text: 'Очередь показывает заявки вашего факультета: горящие и просроченные по SLA подсвечены, фильтры — по статусу.',
+        link: { href: '/staff/requests', label: 'Открыть очередь заявок' },
+      },
+      {
+        text: 'В карточке заявки — данные студента, история и допустимые переходы статуса; причина обязательна для «Нужна доработка» и «Отклонена».',
+      },
+      {
+        text: 'Готовую справку скачайте PDF: на документе QR-код проверки подлинности для /verify.',
+      },
+    ],
+    callouts: [
+      { kind: 'tip', text: 'Канон статусов: Подана → Принята → В работе → Готова → Выдана.' },
+    ],
+  },
+  {
+    id: 'staff-appeals',
+    title: 'Сотрудникам: обращения',
+    href: '/staff/appeals',
+    summary: 'Обращения студентов факультета: чат, шаблоны ответов, статус «Решено».',
+    steps: [
+      {
+        text: 'Список обращений факультета: темы, статусы и последние сообщения; откройте карточку — чат со студентом.',
+      },
+      {
+        text: 'Отвечайте в чате: шаблоны закрывают типовые вопросы, история сохраняется по номеру TS-.',
+        link: { href: '/staff/appeals', label: 'Открыть обращения' },
+      },
+      {
+        text: 'Когда вопрос закрыт, переведите обращение в статус «Решено» — студент получит уведомление.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'Ответ по одному вопросу — в существующем чате, а не новым обращением.',
+      },
+    ],
+  },
+  {
+    id: 'staff-announcements',
+    title: 'Сотрудникам: объявления',
+    href: '/staff/announcements',
+    summary: 'Публикация объявлений факультету или группе с живым предпросмотром.',
+    steps: [
+      {
+        text: 'Заполните заголовок, текст и аудиторию — факультет или конкретная группа (группа проверяется на принадлежность факультету).',
+        link: { href: '/staff/announcements', label: 'Открыть объявления' },
+      },
+      {
+        text: 'Живой предпросмотр показывает, как объявление увидит студент; опубликованные — списком ниже.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'Объявление увидят только студенты выбранной аудитории: проверьте группу перед публикацией.',
+      },
+    ],
+  },
 ];
 
 /**
@@ -867,6 +1101,240 @@ const GUIDE_SECTIONS_EN: HelpSection[] = [
       {
         kind: 'warning',
         text: 'MCP access is read-only: the assistant sees only your data and cannot change anything. The token is personal — re-issue it if it falls into the wrong hands.',
+      },
+    ],
+  },
+  // ── DIG-112 — «maximum completeness»: one section per cabinet menu screen ─
+  {
+    id: 'dashboard',
+    title: 'Dashboard: “Your week”',
+    href: '/dashboard',
+    summary: 'The week at a glance: upcoming classes, deadlines and quick actions on one screen.',
+    steps: [
+      {
+        text: 'The top card is “Your week”: upcoming classes and schedule changes; below are widgets for tasks, requests and notifications.',
+        link: { href: '/dashboard', label: 'Open the dashboard' },
+      },
+      {
+        text: 'Quick actions lead to sections: order a certificate, write to the deanery, open the schedule.',
+      },
+      {
+        text: 'The set and order of the dashboard widgets are configured in “Settings”: hide the noise, raise what matters.',
+        link: { href: '/settings', label: 'Open settings' },
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'Widget cards are clickable: jump straight to a class, a task or a notification.',
+      },
+    ],
+  },
+  {
+    id: 'grades',
+    title: 'Grades and the gradebook',
+    href: '/grades',
+    summary: 'The “how am I doing” summary, the gradebook, discipline cards, the session and the group rating.',
+    steps: [
+      {
+        text: 'The summary shows your average grade, credits and standing in the group; per-assignment points live in the gradebook.',
+        link: { href: '/grades', label: 'Open grades' },
+      },
+      {
+        text: 'The gradebook expands per discipline: task points, attendance and the teacher’s comments.',
+        link: { href: '/grades/gradebook', label: 'Open the gradebook' },
+      },
+      {
+        text: '“Session”: exams and consultations; the ICS subscription adds the exam schedule to your calendar.',
+        link: { href: '/grades/session', label: 'Open the session page' },
+      },
+      {
+        text: '“Group rating” — a table of students by average grade and your place: “top N%”.',
+        link: { href: '/grades/rating', label: 'Open the group rating' },
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'The dynamics chart on a discipline card shows how the final grade is coming together.',
+      },
+    ],
+  },
+  {
+    id: 'notifications',
+    title: 'Notifications',
+    href: '/notifications',
+    summary: 'The notifications center: events grouped by day, the bell panel and quiet hours.',
+    steps: [
+      {
+        text: 'The feed is grouped by day: new events on top, unread ones highlighted; the “Mark all as read” button clears the marks.',
+        link: { href: '/notifications', label: 'Open notifications' },
+      },
+      {
+        text: 'The bell in the header is a quick way to see the latest notifications from any cabinet section.',
+      },
+      {
+        text: 'Delivery channels (push, email, Telegram) and quiet hours are configured in “Settings → Notifications”.',
+        link: { href: '/settings?tab=notifications', label: 'Open notification settings' },
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'There is no “System” row in the channel matrix: security notifications always arrive.',
+      },
+    ],
+  },
+  {
+    id: 'news',
+    title: 'News and announcements',
+    href: '/news',
+    summary: 'The university news feed: reading, the “Read” mark and the “Share” button.',
+    steps: [
+      {
+        text: 'The feed shows fresh university news and announcements; opening a news item marks it “Read”.',
+        link: { href: '/news', label: 'Open news' },
+      },
+      {
+        text: 'A news card has the full text, the date and “Share”: social networks or copying the link.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'You can share a news link with your groupmates — it opens the same page.',
+      },
+    ],
+  },
+  {
+    id: 'profile',
+    title: 'Profile',
+    href: '/profile',
+    summary: 'Personal details, the student ID card with masked fields, and data fixes via the deanery.',
+    steps: [
+      {
+        text: 'The profile shows your full name, group, faculty, university email and student ID card; some details are masked.',
+        link: { href: '/profile', label: 'Open the profile' },
+      },
+      {
+        text: 'Found an error in your details? The button on the profile card creates a deanery ticket with your data prefilled.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'The password and active sessions are managed in “Settings → Security”, not here.',
+      },
+    ],
+  },
+  {
+    id: 'help-faq',
+    title: 'Questions and answers',
+    href: '/help',
+    summary: 'The knowledge base: word-form search, category tiles and articles with actions.',
+    steps: [
+      {
+        text: 'Type your question into the “Find the answer” field: the search understands word forms — “scholarship” and “scholarships” find the scholarship articles.',
+        link: { href: '/help', label: 'Open questions and answers' },
+      },
+      {
+        text: 'Category tiles filter the articles: studies, certificates, scholarships, dormitory, transfer, IT and the cabinet sections.',
+      },
+      {
+        text: 'In an article, rate “Was this helpful? Yes / No”, use the action button and check the related articles.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'A step-by-step tour of every screen lives next door in the guide: “How to use the cabinet”.',
+      },
+    ],
+  },
+  {
+    id: 'staff',
+    title: 'For staff: the deanery summary',
+    href: '/staff',
+    summary: 'The duty summary: requests today, the average processing time and overdue items.',
+    steps: [
+      {
+        text: 'The summary shows the day’s numbers for your faculty: incoming requests, the average processing time, overdue ones.',
+        link: { href: '/staff', label: 'Open the summary' },
+      },
+      {
+        text: 'Summary cards lead to the staff sections: the request queue, appeals, announcements.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'The /staff sections are visible only to the deanery staff role: a student gets a 403 from the server.',
+      },
+    ],
+  },
+  {
+    id: 'staff-requests',
+    title: 'For staff: the request queue',
+    href: '/staff/requests',
+    summary: 'Faculty requests with SLA highlighting and canonical status transitions.',
+    steps: [
+      {
+        text: 'The queue shows the requests of your faculty: SLA-hot and overdue ones are highlighted, with filters by status.',
+        link: { href: '/staff/requests', label: 'Open the request queue' },
+      },
+      {
+        text: 'A request card shows the student’s details, the history and the allowed status transitions; a reason is required for “Needs revision” and “Rejected”.',
+      },
+      {
+        text: 'Download the ready certificate as a PDF: the document carries a QR code for verification at /verify.',
+      },
+    ],
+    callouts: [
+      { kind: 'tip', text: 'The status canon: Submitted → Accepted → In progress → Ready → Issued.' },
+    ],
+  },
+  {
+    id: 'staff-appeals',
+    title: 'For staff: appeals',
+    href: '/staff/appeals',
+    summary: 'Student appeals of your faculty: chat, reply templates and the “Resolved” status.',
+    steps: [
+      {
+        text: 'The list of faculty appeals: topics, statuses and the latest messages; open a card — that is the chat with the student.',
+      },
+      {
+        text: 'Reply in the chat: templates cover typical questions, and the history is kept by the TS- number.',
+        link: { href: '/staff/appeals', label: 'Open appeals' },
+      },
+      {
+        text: 'When the issue is closed, move the appeal to “Resolved” — the student gets a notification.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'tip',
+        text: 'Answer one question in the existing chat, not in a new ticket.',
+      },
+    ],
+  },
+  {
+    id: 'staff-announcements',
+    title: 'For staff: announcements',
+    href: '/staff/announcements',
+    summary: 'Publishing announcements to a faculty or a group with a live preview.',
+    steps: [
+      {
+        text: 'Fill in the title, the text and the audience — the faculty or a specific group (the group is checked against the faculty).',
+        link: { href: '/staff/announcements', label: 'Open announcements' },
+      },
+      {
+        text: 'The live preview shows what a student will see; published announcements are listed below.',
+      },
+    ],
+    callouts: [
+      {
+        kind: 'warning',
+        text: 'Only students of the chosen audience will see the announcement: double-check the group before publishing.',
       },
     ],
   },

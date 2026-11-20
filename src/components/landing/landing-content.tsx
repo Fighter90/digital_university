@@ -262,9 +262,8 @@ export function LandingContent({ locale, plain = false }: { locale: Locale; plai
   const c = COPY[locale];
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
-      {/* DIG-100 — полоска «Версия для слабовидящих» НАД шапкой лендинга
-          (в plain-режиме — обратная ссылка «Обычная версия» там же). */}
-      <A11yVersionLink locale={locale} variant="strip" plain={plain} next="/" />
+      {/* remove-a11y-top-strip: полоска «Версия для слабовидящих» над шапкой
+          лендинга убрана по решению владельца; вход в plain-режим — в футере. */}
       {/* Шапка лендинга (DIG-90: sticky, blur): меню + переключатель языка + вход */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">

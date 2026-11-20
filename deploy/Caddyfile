@@ -19,10 +19,9 @@
 }
 
 # www.ostrovok.store: в зоне TimeWeb есть скрытая парковочная A-запись
-# (194.87.250.170) — API её не отдаёт, из-за неё LE secondary validation
-# иногда падает. Пока запись не удалена в панели, www-блок не включаем:
-# основной адрес сдачи — https://ostrovok.store (см. docs/deploy.md).
-# Включить после удаления парковочной записи:
-# {$SITE_ADDRESS_WWW::81} {
-# 	redir https://{$SITE_ADDRESS}{uri} permanent
-# }
+# (194.87.250.170) — API её не отдаёт. DIG-125: блок включён — Caddy получает
+# сертификат www (LE через наш IP; чужой 443 unreachable, LE это прощает)
+# и редиректит на канонический apex.
+{$SITE_ADDRESS_WWW::81} {
+	redir https://{$SITE_ADDRESS}{uri} permanent
+}

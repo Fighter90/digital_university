@@ -83,9 +83,8 @@ export function Shell({
         {t(locale, 'shell.skipToContent')}
       </a>
 
-      {/* DIG-100: полоска «Версия для слабовидящих» НАД шапкой кабинета
-          (в plain-режиме — обратная ссылка «Обычная версия» там же). */}
-      <A11yVersionLink locale={locale} variant="strip" plain={a11yPlain} next={pathname} />
+      {/* remove-a11y-top-strip: полоска «Версия для слабовидящих» над шапкой
+          убрана по решению владельца; вход в plain-режим — ссылка в футере. */}
 
       <TopBar
         user={user}

@@ -30,7 +30,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'menu.more': 'More',
   // DIG-93 — разделы вне таблицы i18n (раньше падали в RU-фолбэк nav-items).
   'menu.finance': 'Finance',
-  'menu.msp': 'Startups',
+  'menu.msp': 'SME',
   'menu.events': 'Events',
   'menu.staff': 'Overview',
   'menu.staffRequests': 'Requests',
@@ -84,6 +84,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'shell.userMenuAria': 'User menu',
   'shell.logout': 'Sign out',
   'shell.deadlineTitle': 'Next deadline',
+  // DIG-127: draggable sidebar width handle (drag / arrow keys)
+  'shell.navResizeAria': 'Resize menu width: drag the border or use arrow keys',
 
   // ── language switch ──────────────────────────────────────────────────────
   'locale.switchAria': 'Interface language / Язык интерфейса',
@@ -172,7 +174,7 @@ export const en: Record<keyof RuDictionary, string> = {
   // ── empty states ─────────────────────────────────────────────────────────
   'empty.requestsTitle': 'No requests yet',
   'empty.requestsDesc':
-    'Order a certificate or write a statement — the request will appear here with its ready-by date.',
+    'Order a certificate or write an application — the request will appear here with its ready-by date.',
   'empty.requestsStaffTitle': 'Student requests',
   'empty.requestsStaffDesc':
     'This section shows a student’s requests: it stays empty for staff. Staff reads are recorded in the access log.',
@@ -244,7 +246,7 @@ export const en: Record<keyof RuDictionary, string> = {
 
   // ── DIG-42 — continuing education (/dpo) ─────────────────────────────────
   'title.dpo': 'Continuing education',
-  'menu.dpo': 'Extra education',
+  'menu.dpo': 'Continuing education',
   'dpo.subtitle':
     'Courses and professional training: catalog, your enrollments and documents. All data is fictional; no real admissions in the prototype.',
   'dpo.tabs.aria': 'Continuing education sections',
@@ -412,7 +414,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'transcript.concept': 'Concept entry for the hackathon. All data is fictional.',
   'transcript.student': 'Student: {name}',
   'transcript.studentMissing': 'Student: —',
-  'transcript.groupCourse': 'Group: {group}   Year: {course}',
+  'transcript.groupCourse': 'Group: {group} Year: {course}',
   'transcript.program': 'Program: {program}',
   'transcript.gradebookNo': 'Gradebook number: {number}',
   'transcript.issueDate': 'Issue date: {date}',
@@ -421,7 +423,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'transcript.col.credits': 'Cr',
   'transcript.col.final': 'Final',
   'transcript.col.date': 'Date',
-  'transcript.semesterLine': 'Semester average: {average}   Credits: {earned} of {total}',
+  'transcript.semesterLine': 'Semester average: {average} Credits: {earned} of {total}',
   'transcript.noGrades': 'No grades in the gradebook.',
   'transcript.overallAverage': 'Overall GPA: {average}',
   'transcript.creditsEarned': 'Credits earned: {earned} of {required}',
@@ -432,7 +434,7 @@ export const en: Record<keyof RuDictionary, string> = {
 
   // ── DIG-84 — request card (/requests/[number]) ────────────────────────────
   'requests.subtitle':
-    'Certificates and statements in one place: you always see where each request is and what is expected next.',
+    'Certificates and applications in one place: you always see where each request is and what is expected next.',
   'requests.backAll': '← All requests',
   'requests.submittedPrefix': 'submitted',
   'requests.resultTitle': 'Result',
@@ -501,7 +503,7 @@ export const en: Record<keyof RuDictionary, string> = {
 
   // ── DIG-87 — EN localization part 1: dashboard ────────────────────────────
   'dashboard.hero.title': 'Your week',
-  'dashboard.greeting.night': 'Good night',
+  'dashboard.greeting.night': 'Good evening',
   'dashboard.greeting.morning': 'Good morning',
   'dashboard.greeting.day': 'Good afternoon',
   'dashboard.greeting.evening': 'Good evening',
@@ -542,7 +544,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'widgets.desc.deadlines': 'Upcoming credits, exams and retakes',
   'widgets.desc.tasks': 'Open tasks: revisions, deadlines, admissions and retakes',
   'widgets.desc.performance': 'GPA, credits and debts',
-  'widgets.desc.requests': 'Requests in work and ready for pick-up',
+  'widgets.desc.requests': 'Requests in progress and ready for pickup',
   'widgets.desc.news': 'Deanery announcements',
   'widgets.desc.events': 'University events and happenings',
   'widgets.label.today': 'Today',
@@ -1103,7 +1105,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'finance.funding.budget': 'State-funded',
   'finance.action.materialAid.label': 'Financial aid application',
   'finance.action.materialAid.desc':
-    'One-time support from the university fund upon a student request',
+    'One-time support from the university fund upon a student application',
   'finance.action.scholarshipCert.label': 'Scholarship amount certificate',
   'finance.action.scholarshipCert.desc':
     'For banks, social services and visa centers — with the amount and award period',
@@ -1669,7 +1671,7 @@ export const en: Record<keyof RuDictionary, string> = {
   'staff.home.avgHint': 'until the first specialist reply',
   'staff.home.overdue': 'Overdue',
   'staff.home.overdueHint': 'beyond the SLA deadline',
-  'staff.home.requests.title': 'Requests in work',
+  'staff.home.requests.title': 'Requests in progress',
   'staff.home.requests.submitted': 'Submitted, awaiting a reply',
   'staff.home.requests.inProgress': 'In work',
   'staff.home.requests.needsRevision': 'Needs revisions',
