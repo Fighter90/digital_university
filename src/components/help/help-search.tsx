@@ -59,14 +59,14 @@ function Toc({ sections }: { sections: HelpSection[] }) {
       {sections.map((section) => {
         const Icon = sectionIconFor(section.id);
         return (
-          <li key={section.id}>
+          <li key={section.id} className="min-w-0">
             <a
               href={`#${section.id}`}
               data-testid={`guide-toc-${section.id}`}
-              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2"
+              className="flex min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-neutral-700 transition-colors hover:bg-muted focus-visible:outline-2"
             >
               <Icon className="size-4 shrink-0 text-neutral-500" aria-hidden="true" />
-              <span className="truncate">{section.title}</span>
+              <span className="min-w-0 flex-1 truncate">{section.title}</span>
             </a>
           </li>
         );
@@ -133,7 +133,7 @@ export function HelpSearch({
           {/* Десктоп ≥1024: постоянная колонка оглавления. */}
           <nav
             aria-label={t(locale, 'guide.tocAria')}
-            className="hidden rounded-card border border-border bg-card p-3 shadow-soft lg:block"
+            className="hidden min-w-0 overflow-hidden rounded-card border border-border bg-card p-3 shadow-soft lg:block"
           >
             <p className="text-sm font-extrabold tracking-heading">{t(locale, 'guide.toc')}</p>
             <div className="mt-2">
