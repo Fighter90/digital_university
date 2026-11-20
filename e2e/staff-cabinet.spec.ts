@@ -301,9 +301,13 @@ test('канон «ЗД-…»: очередь → «Взять в работу»
   await expect(canonicalForm.getByRole('button', { name: 'Взять в работу' })).toHaveCount(0);
 
   // Студент моментально видит «В работе» на своей карточке ЗД-… .
+  // Вход — на список заявок, карточка открывается навигацией: кириллический
+  // номер (ЗД-…) в `?next=` форма входа не пропускает (Location-заголовок
+  // допускает только ASCII), а прямая ссылка в кабинете — штатный путь.
   const annaContext = await browser.newContext();
   const anna = await annaContext.newPage();
-  await signIn(anna, ANNA.login, ANNA.password, `/requests/${canonicalNumber}`);
+  await signIn(anna, ANNA.login, ANNA.password, '/requests');
+  await anna.goto(`/requests/${encodeURIComponent(canonicalNumber)}`);
   await expect(anna.getByTestId('request-status-pill')).toContainText('В работе');
 
   await staffContext.close();
