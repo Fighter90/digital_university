@@ -463,6 +463,115 @@ export async function listCanonicalRequestEvents(
   return db.listCanonicalRequestEvents(requestId);
 }
 
+// ── DIG-126: кабинет сотрудника (faculty-scoped, как staff-workflow) ─────────
+
+/**
+ * Канонические заявки студентов факультета сотрудника — для единой очереди
+ * /staff/requests. Сотруднику без факультета (и студенту) — [] + аудит
+ * ROLE_MISMATCH; скоуп факультета берётся из ctx, никогда из ввода.
+ */
+export async function listCanonicalRequestsForStaff(
+  db: DataDb,
+  ctx: DataCtx,
+): Promise<CanonicalRequestRow[]> {
+  if (ctx.role !== 'STAFF' || ctx.faculty === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: RESOURCE,
+      resourceRef: 'staff-list',
+      reason: 'ROLE_MISMATCH',
+    });
+    return [];
+  }
+  return db.listCanonicalRequestsByFaculty(ctx.faculty);
+}
+
+/** Результат staff-перехода по публичному номеру ЗД-…. */
+export type StaffCanonicalActionResult =
+  | { kind: 'ok'; request: CanonicalRequestRow }
+  | { kind: 'error'; code: 'NOT_FOUND' | 'NOT_ALLOWED'; message: string };
+
+/**
+ * «Взять в работу» канонической заявки из очереди сотрудника (DIG-126).
+ * Машина DIG-30 не имеет прямого перехода SUBMITTED → IN_PROGRESS, поэтому
+ * действие выполняет ЛЕГАЛЬНУЮ цепочку SUBMITTED → ACCEPTED → IN_PROGRESS
+ * (из ACCEPTED — один шаг): каждое звено пишется машиной переходов —
+ * отдельное событие истории и уведомление студенту. Чужой факультет и
+ * несуществующий номер — одинаковый NOT_FOUND (попытка — в аудите,
+ * проверка внутри getCanonicalRequestByNumber), не-конвейерный статус —
+ * NOT_ALLOWED.
+ */
+export async function takeCanonicalRequestInProgress(
+  db: DataDb,
+  ctx: DataCtx,
+  number: string,
+  options: { now?: Date } = {},
+): Promise<StaffCanonicalActionResult> {
+  const now = options.now ?? new Date();
+  const request = await getCanonicalRequestByNumber(db, ctx, number);
+  if (!request) {
+    return { kind: 'error', code: 'NOT_FOUND', message: 'Заявка не найдена' };
+  }
+  const firstTo: CanonicalRequestStatus | null =
+    request.status === 'SUBMITTED' ? 'ACCEPTED' : request.status === 'ACCEPTED' ? 'IN_PROGRESS' : null;
+  if (firstTo === null) {
+    return { kind: 'error', code: 'NOT_ALLOWED', message: 'Заявка уже в работе или закрыта' };
+  }
+  const first = await transitionCanonicalRequest(db, ctx, {
+    requestId: request.id,
+    to: firstTo,
+    comment: null,
+    now,
+  });
+  if (first.kind === 'error') {
+    return {
+      kind: 'error',
+      code: first.code === 'NOT_FOUND' ? 'NOT_FOUND' : 'NOT_ALLOWED',
+      message: first.message,
+    };
+  }
+  if (firstTo === 'IN_PROGRESS') return { kind: 'ok', request: first.request };
+  const second = await transitionCanonicalRequest(db, ctx, {
+    requestId: request.id,
+    to: 'IN_PROGRESS',
+    comment: null,
+    now,
+  });
+  if (second.kind === 'error') {
+    return { kind: 'error', code: 'NOT_ALLOWED', message: second.message };
+  }
+  return { kind: 'ok', request: second.request };
+}
+
+/**
+ * Смена статуса канонической заявки из карточки сотрудника (DIG-126):
+ * resolve по публичному номеру с проверкой факультета (owner-scope,
+ * чужой — NOT_FOUND без оракула), дальше — машина переходов DIG-30
+ * (transitionCanonicalRequest: валидация перехода, причина, событие,
+ * уведомление владельцу).
+ */
+export async function staffTransitionCanonicalRequest(
+  db: DataDb,
+  ctx: DataCtx,
+  input: {
+    number: string;
+    to: CanonicalRequestStatus;
+    comment?: string | null;
+    now?: Date;
+  },
+): Promise<TransitionCanonicalRequestResult> {
+  const request = await getCanonicalRequestByNumber(db, ctx, input.number);
+  if (!request) {
+    return err('NOT_FOUND', 'Заявка не найдена');
+  }
+  return transitionCanonicalRequest(db, ctx, {
+    requestId: request.id,
+    to: input.to,
+    comment: input.comment ?? null,
+    now: input.now,
+  });
+}
+
 // Реэкспорт меток для будущего UI (экранная задача переиспользует).
 export { CANONICAL_REQUEST_STATUS_LABELS };
 

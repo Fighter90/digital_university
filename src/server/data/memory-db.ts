@@ -417,6 +417,17 @@ export function createMemoryDataDb(): MemoryDataDb {
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
         .map(clone);
     },
+    // DIG-126 — канонические заявки факультета (очередь сотрудника, как
+    // listRequestsByFaculty для легаси: сквозь владельцев факультета).
+    async listCanonicalRequestsByFaculty(faculty) {
+      const facultyStudentIds = new Set(
+        students.filter((s) => s.faculty === faculty).map((s) => s.id),
+      );
+      return canonicalRequests
+        .filter((r) => facultyStudentIds.has(r.studentId))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .map(clone);
+    },
     async insertCanonicalRequest(row, event) {
       if (by(canonicalRequests, 'number', row.number)) {
         // UNIQUE «number» из миграции DIG-9: дубль номера — сбой хранения.

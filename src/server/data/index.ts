@@ -201,7 +201,9 @@ export {
   createStaffAnnouncement,
   getStaffAppealThread,
   getStaffAppeals,
+  getStaffCanonicalRequestDetail,
   getStaffQueue,
+  getStaffQueueUnified,
   getStaffRequestDetail,
   getStaffSummaryData,
   listFacultyGroups,
@@ -212,10 +214,14 @@ export type {
   StaffAppealItem,
   StaffAppealThread,
   StaffAnnouncementResult,
+  StaffCanonicalRequestDetail,
   StaffQueueItem,
+  StaffQueueKind,
   StaffRequestDetail,
   StaffStatusChangeResult,
   StaffSummaryData,
+  StaffUnifiedQueueItem,
+  StaffUnifiedRequestRow,
 } from './staff-workflow';
 export { getDashboard } from './dashboard';
 export { getTasks, getTasksSummary, groupTasks, markTaskDone } from './tasks';
@@ -318,8 +324,11 @@ export {
 export {
   REQUEST_DUPLICATE_WINDOW_MS,
   listCanonicalRequestTypes,
+  listCanonicalRequestsForStaff,
   createCanonicalRequest,
   transitionCanonicalRequest,
+  staffTransitionCanonicalRequest,
+  takeCanonicalRequestInProgress,
   getCanonicalRequestByNumber,
   getCanonicalRequestById,
   listCanonicalRequestsByStudent,
@@ -333,6 +342,7 @@ export type {
   CreateCanonicalRequestResult,
   TransitionCanonicalRequestInput,
   TransitionCanonicalRequestResult,
+  StaffCanonicalActionResult,
   SendDocumentByEmailResult,
 } from './canonical-requests';
 export type {

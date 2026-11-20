@@ -16,9 +16,12 @@ import {
   normalizeRequestNumber,
   requireDataCtx,
   resolveStaffAppeal,
+  staffTransitionCanonicalRequest,
+  takeCanonicalRequestInProgress,
 } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { isReasonValid, requiresReason } from '@/lib/staff-transitions';
+import { CANONICAL_REQUEST_STATUSES } from '@/lib/request-machine';
 import type { RequestStatus } from '@/server/data/types';
 
 export type StaffActionState = { ok: boolean; error?: string } | null;
@@ -84,6 +87,73 @@ export async function changeStatusAction(
   });
   if (!result.ok) {
     return { ok: false, error: STATUS_CHANGE_ERRORS[result.error] ?? 'Не удалось изменить статус' };
+  }
+
+  revalidatePath('/staff/requests');
+  revalidatePath(`/staff/requests/${number}`);
+  revalidatePath('/staff');
+  return { ok: true };
+}
+
+/**
+ * «Взять в работу» канонической заявки (ЗД-…) прямо из очереди (DIG-126):
+ * легальная цепочка машины DIG-30 SUBMITTED → ACCEPTED → IN_PROGRESS
+ * (из ACCEPTED — один шаг). Скоуп факультета и аудит — в слое данных;
+ * при ошибке строка остаётся в очереди (кнопка видна, как у легаси).
+ */
+export async function takeCanonicalInProgressAction(formData: FormData): Promise<void> {
+  const ctx = await requireDataCtx('/staff/requests');
+  if (ctx.role !== 'STAFF') return;
+  const number = String(formData.get('number') ?? '').trim();
+  if (!number) return;
+
+  const result = await takeCanonicalRequestInProgress(dataDb, ctx, number, { now: new Date() });
+  if (result.kind === 'ok') {
+    revalidatePath('/staff/requests');
+    revalidatePath(`/staff/requests/${number}`);
+    revalidatePath('/staff');
+  }
+}
+
+/**
+ * Смена статуса канонической заявки кнопкой карточки (DIG-126): только
+ * легальные переходы машины DIG-30 (allowedRequestTransitions для STAFF
+ * на клиенте, повторная проверка в слое данных), «Доработка»/«Отказ»
+ * с обязательной причиной (минимум 4 символа — правило канона).
+ */
+export async function changeCanonicalStatusAction(
+  _prev: StaffActionState,
+  formData: FormData,
+): Promise<StaffActionState> {
+  void _prev; // useActionState fixes the (state, payload) signature
+  const ctx = await requireDataCtx('/staff/requests');
+  if (ctx.role !== 'STAFF') {
+    return { ok: false, error: 'Раздел доступен только сотрудникам деканата' };
+  }
+
+  const number = String(formData.get('number') ?? '').trim();
+  const to = String(formData.get('to') ?? '');
+  const reason = String(formData.get('reason') ?? '').trim();
+
+  const target = CANONICAL_REQUEST_STATUSES.find((status) => status === to);
+  if (!number || !target) {
+    return { ok: false, error: 'Неизвестное действие' };
+  }
+
+  const result = await staffTransitionCanonicalRequest(dataDb, ctx, {
+    number,
+    to: target,
+    comment: reason.length > 0 ? reason : null,
+    now: new Date(),
+  });
+  if (result.kind === 'error') {
+    const error =
+      result.code === 'REASON_REQUIRED'
+        ? result.message
+        : result.code === 'NOT_FOUND'
+          ? 'Заявка недоступна (нет или чужой факультет)'
+          : 'Этот переход недоступен для текущего статуса заявки';
+    return { ok: false, error };
   }
 
   revalidatePath('/staff/requests');

@@ -37,6 +37,7 @@ vi.mock('@/server/data', () => ({
   requireDataCtx: vi.fn(async () => dataState.ctx),
   getStaffSummaryData: vi.fn(async () => dataState.summary),
   getStaffQueue: vi.fn(async () => dataState.queue),
+  getStaffQueueUnified: vi.fn(async () => dataState.queue),
   getStaffAppeals: vi.fn(async () => dataState.appeals),
   listStaffAnnouncements: vi.fn(async () => dataState.announcements),
   listFacultyGroups: vi.fn(async () => dataState.groups),
@@ -48,7 +49,7 @@ import StaffAppealsPage from '@/app/(cabinet)/staff/(dashboard)/appeals/page';
 import StaffAnnouncementsPage from '@/app/(cabinet)/staff/(dashboard)/announcements/page';
 import { AssistantChat } from '@/components/assistant/assistant-chat';
 import type { AssistantContext } from '@/lib/assistant-engine';
-import type { AppealRow, AnnouncementRow, ServiceRequestRow, StudentRow } from '@/server/data/types';
+import type { AppealRow, AnnouncementRow, StudentRow } from '@/server/data/types';
 
 const CYRILLIC = /[А-Яа-яЁё]/;
 
@@ -106,28 +107,54 @@ const anna: StudentRow = {
   gradebookNumber: '20231234',
 };
 
-/** Четыре заявки сида Анны из очереди сотрудника факультета «ИТ». */
-function seedQueue(): Array<{ request: ServiceRequestRow; student: StudentRow }> {
+/** Четыре заявки сида Анны из очереди сотрудника факультета «ИТ» (единая
+ * очередь DIG-126: легаси «SR-…» + канон «ЗД-…» со SLA-дедлайном строки). */
+function seedQueue(): Array<{ request: Record<string, unknown>; student: StudentRow }> {
   const request = (
     id: string,
     number: string,
-    type: ServiceRequestRow['type'],
+    type: string,
     title: string,
-    status: ServiceRequestRow['status'],
+    status: string,
     assignee: string | null,
     daysAgo: number,
-  ): ServiceRequestRow => ({
-    id,
+  ): Record<string, unknown> => {
+    const createdAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+    return {
+      id,
+      studentId: 'st-anna',
+      number,
+      type,
+      title,
+      status,
+      assignee,
+      resultNote: null,
+      createdAt,
+      updatedAt: new Date(),
+      // Контракт единой очереди DIG-126: мир строки + готовый SLA-дедлайн.
+      kind: 'legacy',
+      typeCode: null,
+      typeName: null,
+      slaDeadline: new Date(createdAt.getTime() + 3 * 24 * 60 * 60 * 1000),
+    };
+  };
+  // Канон «ЗД-…» (DIG-30) в очереди сотрудника: SLA из etaDays РАБОЧИМИ днями.
+  const canonical = {
+    id: 'creq-anna-3',
+    number: 'ЗД-2026-000003',
+    type: 'STATEMENT',
+    title: 'Справка об обучении · для военкомата',
+    status: 'NEEDS_FIX',
     studentId: 'st-anna',
-    number,
-    type,
-    title,
-    status,
-    assignee,
+    assignee: null,
     resultNote: null,
-    createdAt: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-  });
+    kind: 'canonical',
+    typeCode: 'CERT_ENROLLMENT',
+    typeName: 'Справка об обучении',
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    slaDeadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+  };
   return [
     {
       request: request(
@@ -177,6 +204,7 @@ function seedQueue(): Array<{ request: ServiceRequestRow; student: StudentRow }>
       ),
       student: anna,
     },
+    { request: canonical, student: anna },
   ];
 }
 
@@ -246,6 +274,10 @@ describe('DIG-124: /staff — EN без кириллицы', () => {
     expect(html).toContain('Discipline credit transfer application');
     expect(html).toContain('Enrollment certificate for the tax office');
     expect(html).toContain('Dormitory residence application');
+    // Канон «ЗД-…» (DIG-126): название по словарю, номер транслитом, пилюля EN.
+    expect(html).toContain('Enrollment certificate · for the military office');
+    expect(html).toContain('ZD-2026-000003');
+    expect(html).toContain('Wizard request');
     // Люди и группы.
     expect(html).toContain('Anna Smirnova');
     expect(html).toContain('PI-21');
