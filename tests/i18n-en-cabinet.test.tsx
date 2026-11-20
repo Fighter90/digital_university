@@ -223,7 +223,7 @@ describe('DIG-93: EN-словарь и навигационные подписи
   it('меню-подписи новых разделов (/finance /msp /events) на EN латиницей', () => {
     // RU-фолбэк — прежние подписи nav-items (байт-в-байт RU не меняется).
     expect(navLabel('en', '/finance', 'Финансы')).toBe('Finance');
-    expect(navLabel('en', '/msp', 'МСП')).toBe('Startups');
+    expect(navLabel('en', '/msp', 'МСП')).toBe('SME');
     expect(navLabel('en', '/events', 'Мероприятия')).toBe('Events');
     // RU — как есть.
     expect(navLabel('ru', '/finance', 'Финансы')).toBe('Финансы');
