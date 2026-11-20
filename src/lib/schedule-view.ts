@@ -40,6 +40,7 @@ import {
   type SemesterBounds,
 } from '@/lib/schedule-time';
 import { capitalizeFirst, lessonKindLabel, LESSON_KIND_LABELS } from '@/lib/dashboard-format';
+import { enDisciplineName } from '@/lib/en-demo-content';
 import { t, type Locale } from '@/lib/i18n';
 import type { ScheduleEventRow, ScheduleKind, ScheduleStatus } from '@/server/data/types';
 
@@ -293,6 +294,12 @@ export function toScheduleEventViews(
       : isCancelled
         ? t(locale, 'schedule.aria.cancelled')
         : '';
+    // DIG-109 — регресс EN: в aria-имени дисциплина локализуется наравне с
+    // остальной подписью; `discipline` в модели остаётся каноническим.
+    const displayDiscipline =
+      locale === 'en'
+        ? enDisciplineName({ code: row.disciplineCode, name: row.disciplineName })
+        : row.disciplineName;
     const previousParts = [
       previousRoom ? t(locale, 'schedule.room.was', { room: previousRoom }) : null,
       previousStartsAt ? formatMoscowTime(previousStartsAt) : null,
@@ -324,7 +331,10 @@ export function toScheduleEventViews(
           : null,
       changeNote: row.changeNote ?? null,
       note: row.note ?? null,
-      ariaLabel: `${kindLabel}, ${row.disciplineName}, ${timeLabel}, ${roomLabel}${suffix}`,
+      // DIG-109 — регресс EN: aria-имя звучит на языке интерфейса
+      // (дисциплина локализуется, как и остальной текст подписи);
+      // каноническое имя в модели не меняется — с ним работают фильтры.
+      ariaLabel: `${kindLabel}, ${displayDiscipline}, ${timeLabel}, ${roomLabel}${suffix}`,
     };
   });
 }

@@ -1,5 +1,5 @@
-DIG-104: Регресс RU — полный прогон кабинета студента (все экраны, desktop+mobile 360). Работай только в /tmp/dig-104.
-1. Против прода https://ostrovok.store: вход anna.smirnova/anna-demo-2026 (cookie без du-locale = RU). Playwright-скрипт (если браузера нет: npx playwright install chromium): все маршруты /dashboard /schedule(+views) /grades(+) /requests /notifications /deanery /feedback /help /guide /ai-assistant /mcp /people /news /events /msp /dpo /finance /profile /settings /tasks /services /more — скриншоты desktop 1440 и mobile 360 в /tmp/dig-104/shots/.
-2. Проверки: консоль без ошибок (page.on('console') errors), ссылки не 404, пустые состояния есть, мобильная вёрстка не ломается (360), даты в МСК.
-3. Дефекты: минимальные фиксы в src/ + юнит-тест; глобальные — REGRESSION-FINDINGS-104.md (что/где/серьёзность).
-4. DoD: скриншоты + отчёт; gates green (env готов, deps установлены); коммиты на ветке pochtasergeia/dig-104-regress с DIG-104, push. НЕ создавать PR.
+DIG-109: Регресс календаря/расписания: сетка (день/неделя/месяц), детали пары (боковая панель), таймзона МСК (BUG-02 регресс), переносы/отмены, ICS-подписка, экспорт (MD/XLSX/PDF роуты из DIG-101), «Синхронизировать» с откликом (BUG-17), «Прослушать день» (BUG-18). Работай только в /tmp/dig-109.
+1. Против прода + юниты: расписание anna.smirnova (anna-demo-2026), cookie du-locale=en тоже прогони (EN-лейблы).
+2. Проверь: время пар в МСК на всех видах; детали пары (аудитория/преподаватель/описание); карточки переноса «было» только при изменении времени (BUG-14); экспорт-файлы скачиваются и валидны (MD читаем, XLSX открывается).
+3. Дефекты: минимальные фиксы + тест; глобальные — REGRESSION-FINDINGS-109.md.
+4. DoD: отчёт + скриншоты; gates green; коммит на pochtasergeia/dig-109-regress с DIG-109, push. НЕ PR.

@@ -1,0 +1,146 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Digital Deanery//Session Export//RU
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Цифровой деканат · ПИ-21
+BEGIN:VEVENT
+UID:exam-exm-pi21-6@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261115T090000
+DTEND:20261115T103000
+SUMMARY:Пересдача: Дискретная математика
+LOCATION:ауд. 212
+DESCRIPTION:Пересдача экзамена (закрыто)
+END:VEVENT
+BEGIN:VEVENT
+UID:exam-exm-pi21-5@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261117T090000
+DTEND:20261117T103000
+SUMMARY:Пересдача: Программирование
+LOCATION:ауд. 405
+DESCRIPTION:Пересдача лабораторных
+END:VEVENT
+BEGIN:VEVENT
+UID:lesson-sch-pi21-1@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261120T100000
+DTEND:20261120T113000
+SUMMARY:Лекция: Информатика
+LOCATION:ауд. 301
+DESCRIPTION:Преподаватель: Петров Пётр Петрович
+END:VEVENT
+BEGIN:VEVENT
+UID:lesson-sch-pi21-4@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261120T120000
+DTEND:20261120T133000
+SUMMARY:Лабораторная: Программирование
+LOCATION:ауд. 305
+DESCRIPTION:Преподаватель: Иванова Ирина Игоревна. Перенос: ауд. 214 → 305.
+  Причина: Аудитория 214 занята факультетским мероприятием. Пара перенесена
+  в ауд. 305
+END:VEVENT
+BEGIN:VEVENT
+UID:lesson-sch-pi21-5@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261120T140000
+DTEND:20261120T153000
+SUMMARY:Отменена: Физика
+LOCATION:ауд. 212
+DESCRIPTION:Преподаватель: Соколов Сергей Сергеевич. Причина: Занятие будет
+  восполнено 20 ноября\, ауд. 212. Лаборатория закрыта
+END:VEVENT
+BEGIN:VEVENT
+UID:lesson-sch-pi21-6@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261120T154000
+DTEND:20261120T171000
+SUMMARY:Семинар: История
+LOCATION:Онлайн
+DESCRIPTION:Преподаватель: Орлов Олег Олегович
+END:VEVENT
+BEGIN:VEVENT
+UID:lesson-sch-pi21-2@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261121T120000
+DTEND:20261121T133000
+SUMMARY:Лабораторная: Программирование
+LOCATION:ауд. 405
+DESCRIPTION:Преподаватель: Иванова Ирина Игоревна. Перенос: ауд. 310 → 405.
+  Причина: В ауд. 310 монтируют новое оборудование. Перенесено из ауд. 310
+END:VEVENT
+BEGIN:VEVENT
+UID:lesson-sch-pi21-consult-db@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261121T160000
+DTEND:20261121T173000
+SUMMARY:Консультация: Базы данных
+LOCATION:ауд. 212
+DESCRIPTION:Преподаватель: Соколов Сергей Сергеевич. Перед зачётом «Защита 
+ проекта»
+END:VEVENT
+BEGIN:VEVENT
+UID:exam-exm-pi21-3@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261122T104000
+DTEND:20261122T121000
+SUMMARY:Зачёт: Базы данных
+LOCATION:ауд. 212
+DESCRIPTION:Защита проекта — дедлайн сдачи работы
+END:VEVENT
+BEGIN:VEVENT
+UID:lesson-sch-pi21-3@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261122T140000
+DTEND:20261122T153000
+SUMMARY:Практика: Базы данных
+LOCATION:ауд. 212
+DESCRIPTION:Преподаватель: Соколов Сергей Сергеевич
+END:VEVENT
+BEGIN:VEVENT
+UID:exam-exm-pi21-4@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261127T090000
+DTEND:20261127T103000
+SUMMARY:Пересдача: Информатика
+LOCATION:ауд. 305
+DESCRIPTION:Пересдача коллоквиума
+END:VEVENT
+BEGIN:VEVENT
+UID:lesson-sch-pi21-consult-prog@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261128T120000
+DTEND:20261128T133000
+SUMMARY:Консультация: Программирование
+LOCATION:ауд. 405
+DESCRIPTION:Преподаватель: Иванова Ирина Игоревна. Перед зачётом
+END:VEVENT
+BEGIN:VEVENT
+UID:exam-exm-pi21-2@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261129T120000
+DTEND:20261129T133000
+SUMMARY:Зачёт: Программирование
+LOCATION:ауд. 405
+DESCRIPTION:Допуск: все лабораторные сданы
+END:VEVENT
+BEGIN:VEVENT
+UID:lesson-sch-pi21-consult-info@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261201T100000
+DTEND:20261201T113000
+SUMMARY:Консультация: Информатика
+LOCATION:ауд. 301
+DESCRIPTION:Преподаватель: Петров Пётр Петрович. Перед экзаменом
+END:VEVENT
+BEGIN:VEVENT
+UID:exam-exm-pi21-1@digital-deanery
+DTSTAMP:20261120T053149
+DTSTART:20261202T100000
+DTEND:20261202T113000
+SUMMARY:Экзамен: Базы данных
+LOCATION:ауд. 301
+END:VEVENT
+END:VCALENDAR

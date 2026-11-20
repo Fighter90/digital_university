@@ -609,7 +609,15 @@ export function WeekView({
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}
-        title={selected?.discipline ?? ''}
+        // DIG-109 — регресс EN: заголовок панели локализуется так же, как
+        // блок пары и содержимое панели (EventDetailsPanel делает то же).
+        title={
+          selected
+            ? locale === 'en'
+              ? enDisciplineName(selected.discipline)
+              : selected.discipline
+            : ''
+        }
         description={
           selected ? `${lessonKindLabel(selected.kind, locale)} · ${selected.timeLabel}` : undefined
         }

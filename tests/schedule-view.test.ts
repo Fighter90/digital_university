@@ -377,3 +377,15 @@ describe('miniCalendarCells: месяц недели целыми строкам
     expect(mini.cells.length).toBe(35);
   });
 });
+
+// DIG-109 — регресс EN против прода: видимый текст блока локализован, а
+// aria-имя оставалось с каноническим RU-именем дисциплины. Aria обязан
+// звучать на языке интерфейса; каноническое имя в модели не меняется
+// (фильтры и «Синхронизировать» сравнивают именно его).
+describe('toScheduleEventViews — EN (DIG-109)', () => {
+  it('в aria-имени EN дисциплина — EN-имя, аудитория — Room', () => {
+    const views = toScheduleEventViews([ev('a', '2026-11-11', 10, 0, 11, 30)], 'en');
+    expect(views[0]?.ariaLabel).toBe('Seminar, Calculus, 10:00–11:30, Room 305');
+    expect(views[0]?.discipline).toBe('Математический анализ');
+  });
+});
