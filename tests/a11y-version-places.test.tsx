@@ -1,8 +1,9 @@
-// DIG-100 — места ссылки «Версия для слабовидящих»: полоска НАД шапкой
-// (кабинет Shell и шапка лендинга) и ссылка со значком Eye в футере
-// (лендинг + Shell). В plain-режиме — обратная ссылка «Обычная версия»
-// в тех же местах. Тексты — из словаря (RU/EN), значение для action —
-// в hidden-поле формы (version=plain|off), работает без JavaScript.
+// CHANGE remove-a11y-top-strip — по решению владельца полоска «Версия для
+// слабовидящих» НАД шапкой убрана с сайта (лендинг и кабинет Shell). Вход в
+// plain-режим остался: ссылка со значком Eye в футере (лендинг + Shell), в
+// plain-режиме — обратная ссылка «Обычная версия» там же. Тексты — из
+// словаря (RU/EN), значение для action — в hidden-поле (version=plain|off),
+// работает без JavaScript.
 // @vitest-environment jsdom
 import * as React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -25,8 +26,7 @@ vi.mock('@/server/actions/a11y', () => ({
   toggleA11yVersion: state.toggleAction,
 }));
 
-// Каркас Shell: тяжёлые дети — стабы (цель теста — полоска и футер).
-// TopBar рендерит настоящий <header>: проверяем, что полоска НАД шапкой.
+// Каркас Shell: тяжёлые дети — стабы (цель теста — отсутствие полоски, футер).
 vi.mock('@/components/shell/top-bar', () => ({
   TopBar: () => <header data-testid="top-bar-stub" />,
 }));
@@ -65,71 +65,58 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-/** Полоска в DOM идёт раньше шапки (document order). */
-function expectStripBeforeHeader(strip: HTMLElement, header: HTMLElement): void {
-  const preceding = strip.compareDocumentPosition(header);
-  expect(Boolean(preceding & Node.DOCUMENT_POSITION_FOLLOWING), 'полоска раньше шапки').toBe(true);
-}
-
-describe('DIG-100: Shell кабинета — полоска над шапкой и футер', () => {
-  it('полоска «Версия для слабовидящих» стоит НАД шапкой, hidden version=plain', () => {
+describe('remove-a11y-top-strip: полоски над шапкой больше нет', () => {
+  it('Shell кабинета: полоска удалена, шапка первая', () => {
     const { container } = render(<Shell {...shellProps} locale="ru" />);
 
-    const strip = screen.getByTestId('a11y-version-strip');
-    expectStripBeforeHeader(strip, screen.getByTestId('top-bar-stub'));
-
-    const link = within(strip).getByRole('button', { name: 'Версия для слабовидящих' });
-    expect(link).toBeVisible();
-    expect(within(strip).getByDisplayValue('plain')).toHaveAttribute('name', 'version');
-    // возврат после входа — на текущий раздел кабинета
-    expect(within(strip).getByDisplayValue('/dashboard')).toHaveAttribute('name', 'next');
+    expect(screen.queryByTestId('a11y-version-strip')).not.toBeInTheDocument();
+    expect(screen.getByTestId('top-bar-stub')).toBeVisible();
     expect(container).toBeTruthy();
   });
 
-  it('в plain-режиме полоска предлагает «Обычная версия» с version=off', () => {
-    render(<Shell {...shellProps} locale="ru" a11yPlain />);
-    const strip = screen.getByTestId('a11y-version-strip');
-    expect(within(strip).getByRole('button', { name: 'Обычная версия' })).toBeVisible();
-    expect(within(strip).getByDisplayValue('off')).toHaveAttribute('name', 'version');
-  });
+  it('лендинг: полоска удалена, шапка первая', () => {
+    const { container } = render(<LandingContent locale="ru" />);
 
-  it('в футере кабинета — та же ссылка со значком Eye', () => {
-    render(<Shell {...shellProps} locale="ru" />);
-    const footer = screen.getByTestId('a11y-version-footer');
-    expect(within(footer).getByRole('button', { name: /Версия для слабовидящих/ })).toBeVisible();
-    // значок lucide Eye рядом с текстом
-    expect(within(footer).getByTestId('a11y-version-eye')).toBeInTheDocument();
+    expect(screen.queryByTestId('a11y-version-strip')).not.toBeInTheDocument();
+    expect(container.querySelector('header'), 'шапка лендинга отрисована').toBeTruthy();
   });
 });
 
-describe('DIG-100: лендинг — полоска над шапкой и футер', () => {
-  it('полоска «Версия для слабовидящих» стоит НАД шапкой лендинга', () => {
-    const { container } = render(<LandingContent locale="ru" />);
-
-    const strip = screen.getByTestId('a11y-version-strip');
-    const header = container.querySelector('header');
-    expect(header, 'шапка лендинга отрисована').toBeTruthy();
-    expectStripBeforeHeader(strip, header as HTMLElement);
-    expect(within(strip).getByRole('button', { name: 'Версия для слабовидящих' })).toBeVisible();
-    expect(within(strip).getByDisplayValue('/')).toHaveAttribute('name', 'next');
+describe('remove-a11y-top-strip: вход в plain-режим остался в футере', () => {
+  it('футер кабинета — ссылка со значком Eye, hidden version=plain, next=текущий раздел', () => {
+    render(<Shell {...shellProps} locale="ru" />);
+    const footer = screen.getByTestId('a11y-version-footer');
+    const link = within(footer).getByRole('button', { name: /Версия для слабовидящих/ });
+    expect(link).toBeVisible();
+    expect(within(footer).getByTestId('a11y-version-eye')).toBeInTheDocument();
+    expect(within(footer).getByDisplayValue('plain')).toHaveAttribute('name', 'version');
+    expect(within(footer).getByDisplayValue('/dashboard')).toHaveAttribute('name', 'next');
   });
 
-  it('в футере лендинга — та же ссылка со значком Eye', () => {
+  it('в plain-режиме футер кабинета предлагает «Обычная версия» с version=off', () => {
+    render(<Shell {...shellProps} locale="ru" a11yPlain />);
+    const footer = screen.getByTestId('a11y-version-footer');
+    expect(within(footer).getByRole('button', { name: 'Обычная версия' })).toBeVisible();
+    expect(within(footer).getByDisplayValue('off')).toHaveAttribute('name', 'version');
+  });
+
+  it('футер лендинга — ссылка со значком Eye внутри <footer>', () => {
     const { container } = render(<LandingContent locale="ru" />);
     const footer = screen.getByTestId('a11y-version-footer');
     expect(within(footer).getByRole('button', { name: /Версия для слабовидящих/ })).toBeVisible();
     expect(within(footer).getByTestId('a11y-version-eye')).toBeInTheDocument();
     const landingFooter = container.querySelector('footer');
     expect(landingFooter?.contains(footer), 'ссылка внутри футера лендинга').toBe(true);
+    expect(within(footer).getByDisplayValue('/')).toHaveAttribute('name', 'next');
   });
 
-  it('EN: «Accessibility version», в plain — «Standard version»', () => {
+  it('EN: «Accessibility version» в футере, в plain — «Standard version»', () => {
     render(<LandingContent locale="en" />);
-    const strip = screen.getByTestId('a11y-version-strip');
-    expect(within(strip).getByRole('button', { name: 'Accessibility version' })).toBeVisible();
+    const footer = screen.getByTestId('a11y-version-footer');
+    expect(within(footer).getByRole('button', { name: 'Accessibility version' })).toBeVisible();
     cleanup();
     render(<LandingContent locale="en" plain />);
-    const stripPlain = screen.getByTestId('a11y-version-strip');
-    expect(within(stripPlain).getByRole('button', { name: 'Standard version' })).toBeVisible();
+    const footerPlain = screen.getByTestId('a11y-version-footer');
+    expect(within(footerPlain).getByRole('button', { name: 'Standard version' })).toBeVisible();
   });
 });
