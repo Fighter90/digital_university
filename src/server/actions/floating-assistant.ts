@@ -15,8 +15,6 @@ import {
 import { requireDataCtx } from '@/server/data';
 import { getLocale } from '@/lib/i18n/server';
 
-export type { FloatingAssistantReply };
-
 /**
  * Вопрос студента попап-чату на FAB. Ответ — текст по справке кабинета
  * (режим ai) или подсказка из справки с пометкой демо-режима (fallback).

@@ -143,7 +143,7 @@ describe('DIG-84 — transcript-pdf: EN-локаль', () => {
     expect(text).toContain('Discipline');
     expect(text).toContain('Fall semester 2026/27');
     expect(text).toContain('Exam');
-    expect(text).toContain('Semester average: 30.82   Credits: 0 of 18');
+    expect(text).toContain('Semester average: 30.82 Credits: 0 of 18');
     expect(text).toContain('Overall GPA: 81.22');
     expect(text).toContain('Credits earned: 9 of 240');
     expect(text).toContain('Verification code: ABCD-EFGH-JKLM-NPQR');

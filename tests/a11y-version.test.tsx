@@ -1,7 +1,8 @@
 // DIG-100 — «Версия для слабовидящих» (plain-режим, отдельная ссылка).
 // Контракт: cookie du-a11y-version ('plain' | 'off') → класс a11y-plain на
 // <html> (root layout, server-side до первой отрисовки), server action
-// toggleA11yVersion (owner-scoped, как setA11y DIG-86), CSS-слой в самом
+// toggleA11yVersion (DIG-128: без сессии, как setLocale — ссылка стоит
+// в футере публичного лендинга и /login), CSS-слой в самом
 // конце globals.css (белый фон, чёрный текст, синие подчёркнутые ссылки,
 // serif ≥20px, линейная колонка, без анимаций/теней/градиентов, мобайл 360px),
 // plain перекрывает режимы DIG-86 и prefers-reduced-motion (включает их),
@@ -54,8 +55,9 @@ describe('DIG-100: cookie du-a11y-version — контракт', () => {
 
 // ── server action toggleA11yVersion ────────────────────────────────────────
 
-// Action: owner-scoped (requireDataCtx — как setA11y DIG-86), cookie пишет
-// сам action; next/headers и next/cache — моки с записывающей банкой.
+// Action: DIG-128 — БЕЗ сессии (как setLocale, DIG-106): версия интерфейса —
+// предпочтение самого браузера; ссылка стоит в футере публичного лендинга
+// и /login. Cookie пишет сам action; next/headers и next/cache — моки.
 const state = vi.hoisted(() => ({
   jar: new Map<string, string>(),
   sets: [] as Array<{ name: string; value: string }>,
@@ -100,8 +102,9 @@ describe('DIG-100: server action toggleA11yVersion', () => {
     await toggleA11yVersion(fd);
 
     expect(state.sets).toContainEqual({ name: 'du-a11y-version', value: 'plain' });
-    // владелец-скоуп: сессия проверена до записи cookie (IDOR невозможен)
-    expect(state.requireDataCtx).toHaveBeenCalled();
+    // DIG-128: action работает БЕЗ сессии — слабовидящий аноним включает
+    // версию с лендинга и /login; guard не вызывается (иначе редирект).
+    expect(state.requireDataCtx).not.toHaveBeenCalled();
     expect(vi.mocked(revalidatePath)).toHaveBeenCalledWith('/', 'layout');
   });
 

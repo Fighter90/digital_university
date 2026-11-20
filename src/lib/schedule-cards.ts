@@ -43,6 +43,7 @@ import {
   pluralRu,
 } from '@/lib/dashboard-format';
 import { t, type Locale } from '@/lib/i18n';
+import { enDisciplineName } from '@/lib/en-demo-content';
 import type { ScheduleEventRow, ScheduleKind, ScheduleStatus } from '@/server/data/types';
 
 // ── Виды расписания и параметры URL ──────────────────────────────────────────
@@ -133,6 +134,13 @@ export function toScheduleEventCards(
       : isCancelled
         ? t(locale, 'schedule.aria.cancelled')
         : '';
+    // DIG-109 — регресс EN: aria-имя карточки дня/мобильного вида локализует
+    // дисциплину наравне с остальной подписью; `discipline` в модели —
+    // каноническое имя (на него завязаны фильтры и серверные данные).
+    const displayDiscipline =
+      locale === 'en'
+        ? enDisciplineName({ code: row.disciplineCode, name: row.disciplineName })
+        : row.disciplineName;
     return {
       id: row.id,
       dateKey: moscowDateKey(row.startsAt),
@@ -157,7 +165,7 @@ export function toScheduleEventCards(
         : null,
       note: row.note ?? null,
       changeNote: row.changeNote ?? null,
-      ariaLabel: `${kindLabel}, ${row.disciplineName}, ${timeLabel}, ${roomLabel}${suffix}`,
+      ariaLabel: `${kindLabel}, ${displayDiscipline}, ${timeLabel}, ${roomLabel}${suffix}`,
     };
   });
 }

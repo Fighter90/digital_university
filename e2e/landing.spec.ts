@@ -17,7 +17,7 @@ test.describe('лендинг «/» — рендер без авторизаци
 
   test('пять карточек преимуществ с иконками', async ({ page }) => {
     await page.goto('/');
-    for (const title of ['Расписание', 'Оценки', 'Заявки', 'Справки с QR', 'AI-ассистент']) {
+    for (const title of ['Расписание', 'Оценки', 'Заявки', 'Справки с проверкой подлинности', 'AI-ассистент']) {
       const card = page.getByTestId('landing-feature').filter({ hasText: title });
       await expect(card).toBeVisible();
       await expect(card.locator('svg').first()).toBeVisible();

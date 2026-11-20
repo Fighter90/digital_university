@@ -8,7 +8,8 @@ import { decodeQrMatrix } from '../tests/helpers/qr-decode';
 // степпер, срок, «Ведёт»), форма исправления, параметры и вложения,
 // таймлайн истории с «МСК», блок готового документа, чужой «ЗД-…» → 404.
 // Илья — мутации: исправление доработки (возврат в работу + событие),
-// отмена, «Задать вопрос», «Отправить на email». Мутации статуса живут
+// отмена, «Задать вопрос», «Отправить на почту» (DIG-111: без кальки
+// «email»). Мутации статуса живут
 // только на seeded-заявках Ильи и только в проекте desktop-1440 (один
 // воркер), чтобы гонки параллельных проектов не ломали друг друга;
 // мобильный 360 px полностью покрывают read-only сценарии и юнит-тесты
@@ -189,7 +190,7 @@ test('публичная страница /verify открывает ввод к
   await expect(page).toHaveURL(/\/verify\/ABCD-EFGH-JKLM-NPQR-STUV-WXYZ-2345-6777$/);
 });
 
-test('«Отправить на email» фиксирует отправку на адрес профиля', async ({ page }) => {
+test('«Отправить на почту» фиксирует отправку на адрес профиля', async ({ page }) => {
   await signIn(page, 'ilya.petrov', 'ilya-demo-2026', `/requests/${ILYA_READY}`);
   await page.getByTestId('request-email-send').click();
   await expect(page.getByTestId('request-email-success')).toContainText('ilya.petrov@example.edu');

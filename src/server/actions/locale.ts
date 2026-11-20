@@ -1,25 +1,24 @@
 // DIG-69 — server action переключения языка кабинета (RU/EN).
 //
-// Локаль — cookie du-locale у ВЛАДЕЛЬЦА сессии: действие owner-scoped
-// (requireDataCtx строит контекст из живой сессии, IDOR невозможен) и не
-// трогает data-слой (cookie достаточно для прототипа, поле locale в
-// StudentSettingsRow не добавляем).
+// Локаль — ПРЕДПОЧТЕНИЕ ИНТЕРФЕЙСА самого посетителя: cookie du-locale
+// достаточно для прототипа (поле locale в StudentSettingsRow не добавляем),
+// data-слой действие не трогает. Действие доступно и БЕЗ сессии: переключатель
+// стоит в шапке ПУБЛИЧНОГО лендинга (DIG-90/DIG-106 — аноним обязан уметь
+// сменить язык, а не выпадать на /login). Значение — whitelist ru/en; запись
+// идёт только в cookie самого запрашивающего браузера (httpOnly, lax) —
+// читать/писать чужие данные действие не может, IDOR невозможен.
 //
-// Форма-переключатель работает и без JS: кнопки с name="locale" отдают
-// значение обычным POST на текущий URL. revalidatePath('/', 'layout')
+// Форма-переключатель работает и без JavaScript: кнопки с name="locale"
+// отдают значение обычным POST на текущий URL. revalidatePath('/', 'layout')
 // перерисовывает каркас и страницы с новой локалью.
 'use server';
 
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
-import { requireDataCtx } from '@/server/data';
 import { isLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE, type Locale } from '@/lib/i18n';
 
 export async function setLocale(formData: FormData): Promise<void> {
-  // Владелец-скоуп: анонимный посетитель не переключает язык кабинета.
-  await requireDataCtx('/settings');
-
   const raw = formData.get('locale');
   const locale: Locale | null = isLocale(raw) ? raw : null;
   if (!locale) return; // битое значение — молча ничего не меняем
