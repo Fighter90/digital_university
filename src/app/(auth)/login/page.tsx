@@ -8,6 +8,8 @@ import { BookOpen, CheckCircle2, FileText } from 'lucide-react';
 import { BrandLogo } from '@/components/brand/logo';
 import { Illustration } from '@/components/ui/illustration';
 import { LoginForm } from '@/components/auth/login-form';
+import { A11yVersionLink } from '@/components/a11y/version-link';
+import { isA11yPlain } from '@/lib/a11y/server';
 import { getAuthSession } from '@/server/auth/session';
 import { ensureAppData } from '@/server/data';
 import { safeNextPath } from '@/lib/route-guard';
@@ -33,6 +35,9 @@ export default async function LoginPage({
   // DIG-55: выход завершается редиректом сюда с ?signedOut=1 — показываем
   // вежливый статус (role="status"), что сессия действительно закрыта.
   const signedOut = params.signedOut === '1';
+  // DIG-128: состояние версии для слабовидящих — cookie du-a11y-version
+  // (root layout ставит класс a11y-plain на <html> до первой отрисовки).
+  const a11yPlain = await isA11yPlain();
 
   return (
     <main className="flex min-h-screen flex-1 flex-col md:flex-row">
@@ -129,6 +134,12 @@ export default async function LoginPage({
           {/* DIG-85 (BUG-19): статус «Вы вышли…» отдаётся форме LoginForm —
               при ошибке входа она чистит signedOut из адреса и прячет статус. */}
           <LoginForm next={next} signedOutNotice={signedOut} />
+          {/* DIG-128: ссылка версии для слабовидящих и на экране входа —
+              слабовидящий может прийти прямо сюда (закладка, ссылка из
+              письма); после входа вернёт в кабинет (next=/dashboard). */}
+          <div className="mt-6 border-t border-neutral-200 pt-3 text-center">
+            <A11yVersionLink locale="ru" variant="footer" plain={a11yPlain} next="/dashboard" />
+          </div>
         </div>
       </section>
     </main>
