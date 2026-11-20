@@ -127,7 +127,7 @@
     <span class="sub">https://ostrovok.store · мобильный от 360 px · RU/EN</span></p>
     <p class="sub" style="margin-top: 28pt;">Описание процесса создания · собрано ИИ-агентами под контролем оператора<br>
     Ноябрь 2026 · ред. 2 (закрыт чек-лист задания: инструменты, промпты, скриншоты, защита) · прототип работает до 28.11.2026</p>
-    <p class="small" style="margin-top: 40pt;">Источники документа: журнал агентов <code>docs/ai-log/</code> (77 циклов), задачи Linear (команда DIG),
+    <p class="small" style="margin-top: 40pt;">Источники документа: журнал агентов <code>docs/ai-log/</code> (77 файлов циклов), задачи Linear (команда DIG),
     PR-описания (<span class="nowrap">.task-board</span>), история git. Все цитаты промптов и вердиктов — дословные.</p>
   </div>
   <div class="foot"><span>Концепт для конкурса · данные вымышленные</span><span>стр. 1</span></div>
@@ -399,7 +399,9 @@ no text, no letters, no watermark.</div>
 Ревью: <span class="r">RETURN×3</span> (конкретика: <span class="r">инфра-файлы в скоупе, day(6)→day(7),
 «Долги»→/schedule, .hero-glow, timeLabel, фрейм «02», STAFF-ветка, скелетон-тест</span>) → <span class="g">ACCEPT</span>
 Инцидент: машина дважды убивала процессы (pressure-kill), executor'ы работали интерливингом;
-работа спасалась из дерева (salvage-коммиты ecfe95e, 39253ac).
+работа спасалась из дерева — salvage-коммиты <code>ecfe95e</code>, <code>39253ac</code>.
+Они сохранились как объекты git, но после reflog-restore в историю веток не входят
+(висячие): в <code>git log</code> их нет, проверить — <code>git cat-file -p ecfe95e</code>.</span>
 Урок: <span class="y">ревью читает и УСТАРЕВШИЙ дифф, если ему его подсунуть —
 свежий дифф регенерируется перед каждым раундом.</span></div>
     <p>Четыре раунда диалога «замечания с файлами и строками → исправления» — и дифф дошёл до ACCEPT.</p>
@@ -484,7 +486,7 @@ reviewer (<span class="r">3 раунда: RETURN×2</span> — инфра-зам
       <div class="stat"><div class="n">125</div><div class="l">задач в Linear (DIG-1…125)</div></div>
       <div class="stat"><div class="n">100</div><div class="l">задач закрыто (Done)</div></div>
       <div class="stat"><div class="n">83</div><div class="l">PR слито через рой агентов</div></div>
-      <div class="stat"><div class="n">77</div><div class="l">циклов в журнале docs/ai-log</div></div>
+      <div class="stat"><div class="n">77</div><div class="l">файлов циклов в журнале docs/ai-log</div></div>
     </div>
     <div class="stats">
       <div class="stat"><div class="n">20+</div><div class="l">разделов кабинета</div></div>
@@ -503,8 +505,11 @@ reviewer (<span class="r">3 раунда: RETURN×2</span> — инфра-зам
     <b>Исходный код:</b> публичный GitHub-репозиторий · <b>работает до 28.11.2026.</b></p>
 
     <div class="note">
-      <b>Где проверить каждое утверждение:</b> журнал циклов — <code>docs/ai-log/*.md</code> (77 записей-циклов);
-      промпты иллюстраций — <code>docs/ai-log/assets.md</code>; схема роя — <code>docs/ai-process.md</code>
+      <b>Где проверить каждое утверждение:</b> журнал циклов — <code>docs/ai-log/</code>
+      (81 запись в каталоге = 77 файлов циклов + README, _TEMPLATE.md, assets.md и
+      assets-src/ — они не циклы); salvage-коммиты из секции 5.1 — <code>git cat-file -p ecfe95e</code>
+      (висячие объекты, в истории веток не входят); промпты иллюстраций — <code>docs/ai-log/assets.md</code>;
+      схема роя — <code>docs/ai-process.md</code>
       и <code>scripts/swarm/README.md</code>; деплой и инциденты — <code>docs/wiki/RUNBOOK.md</code>;
       QA по брифу — <code>docs/qa/2026-11-20-brief-compliance.md</code>; история git — публичный репозиторий.
     </div>

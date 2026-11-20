@@ -4,8 +4,7 @@
 
 ### Requirement: PDF-описание процесса соответствует чек-листу задания
 
-Требование «PDF-описание процесса соответствует чек-листу задания» —
-обязательное (MUST): В `docs/submission/digital-deanery-process.pdf` есть
+`docs/submission/digital-deanery-process.pdf` ДОЛЖЕН (MUST) содержать
 восемь секций: (1) проблема студента и почему такие разделы — с честной
 пометкой, что опрос однокурсников не проводился (DIG-17 отменена), и
 описанием альтернативной проработки (сценарии, справка/база знаний,
@@ -17,8 +16,8 @@
 выдержки из `docs/ai-log/` и git-истории; (6) вход, хранение данных и защита
 простыми словами (argon2id, `__Host-`cookie, owner-scope/IDOR, .env,
 rate-limit); (7) этапы, проделанные вручную; (8) проверяемые цифры проекта
-со ссылками на источники. В документе нет утверждения, что опрос студентов
-проводился, если он не проводился.
+со ссылками на источники. В документе НЕ ДОЛЖНО (MUST NOT) быть утверждения,
+что опрос студентов проводился, если он не проводился.
 
 #### Scenario: Жюри проверяет пункт «опрос однокурсников»
 
@@ -36,17 +35,42 @@ rate-limit); (7) этапы, проделанные вручную; (8) пров
   squash-регрессия PR #82 с коммитом bcffd8a; OOM-kill DIG-50)
 * AND для каждого случая указан урок/механика, которой система это ловит
 
+#### Scenario: Жюри проверяет salvage-коммиты из секции 5.1
+
+* WHEN жюри выполняет `git cat-file -p ecfe95e` в публичном репозитории
+* THEN команда возвращает коммит (объекты ecfe95e и 39253ac существуют)
+* AND документ явно квалифицирует их как висячие объекты после
+  reflog-restore: в `git log` веток их нет, способ проверки указан в PDF
+
+#### Scenario: Жюри пересчитывает цифру «77 циклов»
+
+* WHEN жюри выполняет `ls docs/ai-log/`
+* THEN документ объясняет формулу подсчёта: общее число записей каталога
+  (81) = файлов циклов (77) + README, _TEMPLATE.md, assets.md и
+  assets-src/ — служебные записи не являются циклами
+* AND статистика на странице «Цифры проекта» называет то же число, что
+  даёт формула, и тест `tests/submission-pdf-facts.test.ts` это прибивает
+
+#### Scenario: Заявленное число страниц совпадает с реальным
+
+* WHEN жюри проверяет заявление «11 стр.» (COMMENT.md, SUBMISSION.md)
+  по числу объектов `/Type /Page` в PDF
+* THEN реальное число страниц равно 11
+* AND проверки через `mdls`/Spotlight не используются как источник правды
+  (устаревающий индекс — это и споткнуло ревью)
+
 ### Requirement: PDF собирается воспроизводимо из репозитория
 
-Требование «PDF собирается воспроизводимо из репозитория» — обязательное
-(MUST): PDF `docs/submission/digital-deanery-process.pdf` имеет исходник
-`docs/submission/process.html` и сборщик `docs/submission/build-pdf.mjs`
-(Playwright Chromium, A4, print-background), запускаемый командой
-`node docs/submission/build-pdf.mjs` из корня репозитория. Шрифт Inter
-(OFL) лежит в `docs/submission/fonts/`. Скриншоты берутся из
+PDF `docs/submission/digital-deanery-process.pdf` ДОЛЖЕН (MUST) иметь
+исходник `docs/submission/process.html` и сборщик
+`docs/submission/build-pdf.mjs` (Playwright Chromium, A4, print-background),
+запускаемый командой `node docs/submission/build-pdf.mjs` из корня
+репозитория. Шрифт Inter (OFL) ДОЛЖЕН (MUST) лежать в
+`docs/submission/fonts/`. Скриншоты ДОЛЖНЫ (MUST) браться из
 `docs/design/screenshots/` и `docs/shots/` — бинарные ассеты не
-дублируются. Сопутствующие описания PDF в `docs/SUBMISSION.md` и
-`docs/submission/COMMENT.md` соответствуют фактическому содержимому.
+дублируются. Описания PDF в `docs/SUBMISSION.md` и
+`docs/submission/COMMENT.md` ДОЛЖНЫ (MUST) соответствовать фактическому
+содержимому.
 
 #### Scenario: Пересборка PDF из исходника
 
