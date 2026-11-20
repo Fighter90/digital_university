@@ -30,7 +30,14 @@ export default defineConfig({
         // сервер стартует с ПУСТЫМ ключом, action отвечает детерминированным
         // fallback-режимом (подсказка из справки). Ключ из локального .env
         // в прогон e2e не попадает.
-        env: { ...process.env, OPENROUTER_API_KEY: '' },
+        env: {
+          ...process.env,
+          OPENROUTER_API_KEY: '',
+          // Round 3 DIG-48: полный e2e делает ~189 логинов с одного IP за окно
+          // 30/15 мин — без флага лимитер режет хвост прогона (10/10 staff-cabinet).
+          // Флаг живёт ТОЛЬКО в этом e2e-сервере; прод не выставляет его.
+          E2E_RATE_LIMIT_BYPASS: '1',
+        },
         // DIG-12 (round 2): e2e must verify the PRODUCTION contract. In
         // `next dev` (Turbopack) a notFound() page streams the not-found UI with
         // an HTTP 200 (dev-only artifact, flaky between runs), while the built
