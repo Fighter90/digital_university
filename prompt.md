@@ -1,14 +1,6 @@
-DIG-124: EN — кабинет сотрудника без кириллицы + приветствие ассистента. ЦЕЛЬ: EN-аудит (cookie du-locale=en, поиск [А-Яа-яЁё] в body.innerText) на проде даёт: /staff — «ИТ» (2), /staff/requests — 189 (названия заявок сида, имена «Анна», слово «дисциплины»), /staff/appeals — 94 (темы обращений «Вопрос по зачёту по физкультуре»), /staff/announcements — 89 (объявления «Собрание группы ПИ-21…», «Завтра», «ауд.»), /ai-assistant — 4 («Hello, Анна!»). Добей эти пять до нуля.
-
-Контекст: Next.js 15 + TS, локаль du-locale (getLocale), EN-паттерн — src/lib/en-demo-content.ts (FACULTY_EN/GROUP_EN словари, enFacultyLabel/enGroupLabel/enPersonName; request-карточки уже локализуются localizeRequestCardTitle). Staff-страницы: src/app/(cabinet)/staff/* + компоненты (staff queue/appeals/announcements). Assistant-приветствие: src/server/data/assistant.ts (getAssistantContext, firstNameOf) + src/components/assistant/assistant-chat.tsx (greetingMessage, уже импортирует enPersonName).
-
-Что делаем:
-1. FACULTY_EN: добавить сид-факультет «ИТ» → 'IT' (и другие сид-значения, проверь prisma/seed-data.ts).
-2. Staff queue: EN-маппинги названий заявок сида (request type titles — проверь, как карточка рендерит title: если title из requests-сида RU — добавь requestTitleEn словарь в en-demo-content и локализуй в staff view/сериализаторе). Имена людей → enPersonName/localizePersonName. Слово «дисциплины» в подписи → словарный ключ.
-3. Appeals: EN-маппинг тем обращений сида + имена.
-4. Announcements: EN-маппинг заголовков/текста объявлений сида; «Завтра»/«ауд.» — словарные подписи времени/места (или уже есть — проверь).
-5. Assistant greeting: в AssistantContext добавь fullName (полное ФИО студента/сотрудника), в greetingMessage на EN: enPersonName(fullName) → первое слово = displayName («Anna»); RU — как было. Обнови типы и моки тестов.
-6. Юнит-тест «no Cyrillic on EN»: рендер staff сводки/очереди/appeals/announcements + greetingMessage EN с сид-данными — ноль кириллицы (red-first).
-
-Запреты: RU-рендер байт-в-байт; scripts/swarm/ не трогать; owner-scope не ослаблять.
-Готово: тесты зелёные; node scripts/swarm/gates.mjs → GATES_SUMMARY: green (env готов, deps установлены); коммиты на ветке pochtasergeia/dig-124-en-staff-clean с DIG-124, push на origin. НЕ создавать PR — сводит оператор. Работай только в /tmp/dig-124.
+DIG-112+113: Справка «максимальная полнота» (гайд по каждому экрану) + актуализация README/wiki/docs. Работай только в /tmp/dig-112.
+1. Справка /help (src/lib/help-content.ts, faq-kb-catalog.ts): пройди ВСЕ экраны кабинета (dashboard, schedule, grades, requests, notifications, deanery, feedback, events, msp, dpo, people, news, finance, profile, settings, tasks, ai-assistant, mcp, staff*) — у каждого должна быть статья: как пользоваться, частые вопросы. Дополни недостающие статьи RU+EN (паттерн DIG-88: двуязычные поля). Поиск по словоформам должен находить новые статьи.
+2. README.md/README.en.md: проверь актуальность (кол-во разделов, ссылки на docs/mcp.md, DIG-100 a11y, share/export — упоминались ли); обнови устаревшее.
+3. docs/wiki/ и docs/docx-описание: пометь в REPORT-112.md что устарело (не переписывай всё — список).
+4. Юнит-тест: справка содержит статью для каждого раздела меню; RU/EN паритет статей.
+5. DoD: gates green; коммит на pochtasergeia/dig-112-regress с DIG-112/113, push. НЕ PR.
