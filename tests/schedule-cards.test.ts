@@ -426,3 +426,13 @@ describe('buildViewHref', () => {
     );
   });
 });
+
+// DIG-109 — регресс EN против прода: aria-имя карточки дня/мобильного вида
+// обязано локализовать дисциплину вместе с остальными частями подписи.
+describe('toScheduleEventCards — EN (DIG-109)', () => {
+  it('в aria-имени EN дисциплина — EN-имя; модель хранит каноническое имя', () => {
+    const card = toScheduleEventCards([row()], 'en')[0]!;
+    expect(card.ariaLabel).toBe('Lecture, Computer Science, 10:00–11:30, Room 301');
+    expect(card.discipline).toBe('Информатика');
+  });
+});

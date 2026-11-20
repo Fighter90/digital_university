@@ -114,6 +114,63 @@ function renderWeek() {
 const lesson = () =>
   screen.getByRole('button', { name: 'Лекция, Информатика, 10:00–11:30, ауд. 301' });
 
+/** EN-виды пар (DIG-109): тот же ряд, собранный с locale="en". */
+const enViews = toScheduleEventViews(
+  [
+    row(),
+    row({
+      id: 'ev-2',
+      disciplineName: 'Математический анализ',
+      kind: 'SEMINAR',
+      startsAt: fromMoscowWallClock(2026, 11, 10, 12, 0),
+      endsAt: fromMoscowWallClock(2026, 11, 10, 13, 30),
+      date: fromMoscowWallClock(2026, 11, 10, 12, 0),
+    }),
+  ],
+  'en',
+);
+
+function weekDaysEn(): WeekDayColumnData[] {
+  const base = [
+    { dateKey: '2026-11-09', weekdayShort: 'Mon', dayNumber: 9, isToday: true },
+    { dateKey: '2026-11-10', weekdayShort: 'Tue', dayNumber: 10, isToday: false },
+    { dateKey: '2026-11-11', weekdayShort: 'Wed', dayNumber: 11, isToday: false },
+    { dateKey: '2026-11-12', weekdayShort: 'Thu', dayNumber: 12, isToday: false },
+    { dateKey: '2026-11-13', weekdayShort: 'Fri', dayNumber: 13, isToday: false },
+    { dateKey: '2026-11-14', weekdayShort: 'Sat', dayNumber: 14, isToday: false },
+    { dateKey: '2026-11-15', weekdayShort: 'Sun', dayNumber: 15, isToday: false },
+  ] as const;
+  return base.map((day) => ({
+    ...day,
+    events: enViews.filter((event) => event.dateKey === day.dateKey),
+  }));
+}
+
+function renderWeekEn() {
+  return render(
+    <WeekView
+      weekKey="2026-W46"
+      weekLabel="November 9–15, 2026"
+      semesterLabel="Fall semester 2026/27"
+      prevWeekKey="2026-W45"
+      nextWeekKey="2026-W47"
+      todayWeekKey="2026-W46"
+      todayKey="2026-11-09"
+      days={weekDaysEn()}
+      mini={{
+        monthLabel: 'November 2026',
+        weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        cells: [],
+      }}
+      kindCounts={FILTER_KIND_ORDER.map((kind) => ({ kind, count: 0 }))}
+      teachers={[]}
+      currentQuery=""
+      keepViewParam={false}
+      locale="en"
+    />,
+  );
+}
+
 /** Синтетический wheel-иверт с нужными полями (jsdom не знает WheelEvent). */
 function dispatchWheel(
   element: Element,
@@ -273,5 +330,21 @@ describe('WeekView — отклик кнопки «Синхронизирова�
     fireEvent.click(screen.getByRole('button', { name: 'Синхронизировать' }));
     expect(routerRefresh).toHaveBeenCalled();
     await screen.findByText('Расписание обновлено', { selector: '[data-testid="sync-status"]' });
+  });
+});
+
+// DIG-109 — регресс EN (cookie du-locale=en) против прода: заголовок боковой
+// панели деталей пары оставался каноническим RU-именем дисциплины, тогда как
+// блок пары и содержимое панели локализованы. Заголовок панели обязан
+// локализоваться так же, как EventDetailsPanel (toEventDetailsView).
+describe('WeekView — EN-локализация заголовка деталей пары (DIG-109)', () => {
+  it('при locale="en" заголовок панели — EN-имя дисциплины, не каноническое RU', () => {
+    renderWeekEn();
+    const enLesson = screen.getByRole('button', {
+      name: 'Lecture, Computer Science, 10:00–11:30, Room 301',
+    });
+    fireEvent.click(enLesson);
+    expect(screen.getByRole('dialog', { name: 'Computer Science' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Информатика' })).not.toBeInTheDocument();
   });
 });
