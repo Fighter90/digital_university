@@ -1,0 +1,521 @@
+<!doctype html>
+<!--
+  Исходник PDF «Описание процесса создания» (docs/submission/digital-deanery-process.pdf).
+  Сборка: node docs/submission/build-pdf.mjs (Playwright Chromium, A4, print-background).
+  Шрифт Inter (OFL) — docs/submission/fonts/. Скриншоты — docs/design/screenshots/ и docs/shots/.
+  Задача DIG-122: чек-лист брифа закрыт полностью (проблема/опрос — честно, инструменты,
+  промпты, скриншоты ВКЛЮЧАЯ неудачные варианты, защита простыми словами, ручные этапы).
+-->
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    src: url('fonts/inter-cyrillic.woff2') format('woff2');
+    unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    src: url('fonts/inter-latin.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    src: url('fonts/inter-cyrillic-ext.woff2') format('woff2');
+    unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+  }
+  @font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    src: url('fonts/inter-latin-ext.woff2') format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF;
+  }
+  :root {
+    --ink: #0f172a;
+    --muted: #64748b;
+    --accent: #2563eb;
+    --coral: #e7645a;
+    --line: #e2e8f0;
+    --soft: #f1f5f9;
+    --code-bg: #0f172a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, 'Segoe UI', Arial, sans-serif;
+    color: var(--ink);
+    font-size: 10.2pt;
+    line-height: 1.5;
+  }
+  .page { position: relative; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  .foot {
+    position: absolute;
+    bottom: 26px; left: 40px; right: 40px;
+    display: flex; justify-content: space-between;
+    font-size: 7.6pt; color: var(--muted);
+    border-top: 1px solid var(--line); padding-top: 6px;
+  }
+  .wrap { padding: 42px 40px 64px; }
+
+  h1 { font-size: 26pt; margin: 0 0 6pt; letter-spacing: -0.3pt; }
+  h1 .en { color: var(--ink); } h1 .ru { color: var(--accent); }
+  h2 {
+    font-size: 15pt; color: var(--accent); margin: 0 0 9pt;
+    border-bottom: 2.5px solid var(--accent); padding-bottom: 5pt; letter-spacing: -0.2pt;
+  }
+  h3 { font-size: 11.5pt; margin: 12pt 0 5pt; }
+  p { margin: 0 0 6pt; }
+  ul { margin: 0 0 7pt; padding-left: 16pt; }
+  li { margin-bottom: 4pt; }
+  b { font-weight: 700; }
+  .sub { color: var(--muted); font-size: 10pt; }
+  .small { font-size: 8.6pt; color: var(--muted); }
+  .nowrap { white-space: nowrap; }
+  .concept {
+    display: inline-block; background: #fef9c3; color: #92400e;
+    border: 1px solid #fde68a; border-radius: 999px;
+    font-size: 8pt; font-weight: 600; padding: 3px 12px; margin-bottom: 12pt;
+  }
+  .note {
+    background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid var(--accent);
+    border-radius: 8px; padding: 7pt 10pt; margin: 7pt 0; font-size: 9.3pt;
+  }
+  .note.honest { background: #fff7ed; border-color: #fed7aa; border-left-color: #ea580c; }
+  code, .mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 8.6pt; }
+  code { background: var(--soft); border-radius: 4px; padding: 0 4px; }
+  .term {
+    background: var(--code-bg); color: #e2e8f0; border-radius: 8px;
+    padding: 7pt 10pt; font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 8pt; line-height: 1.45; white-space: pre-wrap; margin: 5pt 0 4pt;
+  }
+  .term .g { color: #86efac; } .term .r { color: #fca5a5; } .term .y { color: #fde047; }
+  .caption { font-size: 8.4pt; color: var(--muted); margin: 3pt 0 8pt; }
+
+  table.tools { width: 100%; border-collapse: collapse; font-size: 8.8pt; }
+  table.tools th, table.tools td { border: 1px solid var(--line); padding: 4pt 7pt; vertical-align: top; text-align: left; }
+  table.tools th { background: #eff6ff; font-weight: 700; font-size: 8.8pt; }
+  table.tools td:first-child { width: 27%; font-weight: 600; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9pt 10pt; align-items: end; }
+  figure { margin: 0; text-align: center; }
+  figure img { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; display: block; margin: 0 auto; }
+  figure.phone img { height: 108mm; width: auto; }
+  figcaption { font-size: 8.2pt; color: var(--muted); margin-top: 3pt; text-align: left; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8pt; margin: 8pt 0; }
+  .stat { background: #eff6ff; border-radius: 10px; text-align: center; padding: 10pt 4pt; }
+  .stat .n { font-size: 19pt; font-weight: 800; color: var(--accent); }
+  .stat .l { font-size: 8pt; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ СТРАНИЦА 1 · ТИТУЛ ═══════════ -->
+<section class="page">
+  <div class="wrap" style="padding-top: 150px; text-align: center;">
+    <div class="concept">Концепт для конкурса «Цифровой деканат будущего» · данные вымышленные</div>
+    <h1><span class="en">Digital Deanery</span> <span class="ru">· Цифровой деканат</span></h1>
+    <p>Личный кабинет студента: учёба, документы, связь с деканатом — всё в одном окне<br>
+    <span class="sub">https://ostrovok.store · мобильный от 360 px · RU/EN</span></p>
+    <p class="sub" style="margin-top: 28pt;">Описание процесса создания · собрано ИИ-агентами под контролем оператора<br>
+    Ноябрь 2026 · ред. 2 (закрыт чек-лист задания: инструменты, промпты, скриншоты, защита) · прототип работает до 28.11.2026</p>
+    <p class="small" style="margin-top: 40pt;">Источники документа: журнал агентов <code>docs/ai-log/</code> (77 циклов), задачи Linear (команда DIG),
+    PR-описания (<span class="nowrap">.task-board</span>), история git. Все цитаты промптов и вердиктов — дословные.</p>
+  </div>
+  <div class="foot"><span>Концепт для конкурса · данные вымышленные</span><span>стр. 1</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 2 · ПРОБЛЕМА (честно про опрос) ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h2>1. Какую проблему решает кабинет и почему такие разделы</h2>
+    <p>Учебная жизнь студента разорвана между сервисами: расписание — на сайте вуза, оценки — в отдельной системе,
+    справки — только через очередь в деканате, объявления тонут в чатах и почте. С телефона всё это особенно неудобно.</p>
+
+    <div class="note honest">
+      <b>Честно об опросе.</b> Опрос однокурсников <b>не проводился</b>: задача DIG-17 (анкета на 15–30 ответов,
+      Яндекс-формы) была <b>отменена 16.11.2026</b> — до дедлайна подачи не оставалось времени на сбор ответов.
+      Никаких выдуманных «мы спросили студентов» здесь нет. Вместо анкеты ядро разделов выведено из
+      <b>типовых сценариев дня студента</b> и проверено другими каналами — подробнее ниже.
+    </div>
+
+    <p><b>Альтернативная проработка вместо опроса:</b></p>
+    <ul>
+      <li><b>Сценарии вместо анкеты.</b> Из «разорванности» выведены четыре частотных запроса-сценария и
+      стали ядром навигации: «что у меня <b>сегодня</b>» → расписание и дашборд; «<b>как мои дела</b> с учёбой» →
+      успеваемость и зачётка; «<b>нужна справка</b>» → онлайн-мастер заявки с PDF и QR-проверкой; «<b>что изменилось</b>» →
+      уведомления. Каждый сценарий закреплён e2e-тестом и проверяется QA-регрессом.</li>
+      <li><b>Справка и база знаний.</b> Разделы «Помощь» (поиск по словоформам), «Вопросы и ответы» и «Гид по кабинету»
+      отвечают на вопросы, которые обычно выясняют опросом: что делает каждая кнопка, куда падать за документом.
+      Оценка «полезно / не полезно» на статьях FAQ — встроенный мини-опрос внутри продукта.</li>
+      <li><b>Доступность как проверка понимания.</b> Режим «Крупный текст и без эффектов» для слабовидящих
+      (plain-версия без стилей), мобильная вёрстка от 360 px, честные пустые состояния с пояснениями —
+      интерфейс проверяется «а понятно ли без объяснений».</li>
+      <li><b>Ограничение зафиксировано:</b> гипотезы о сценариях не валидированы анкетой реальных студентов —
+      это первое, что стоит сделать после конкурса.</li>
+    </ul>
+
+    <p>Поэтому кабинет — один экран, где собрано: <b>Расписание</b> (день/неделя/месяц, переносы и отмены);
+    <b>Успеваемость</b> (баллы, зачётка, сессия, сводка «как у меня дела» с AI-динамикой); <b>Заявки и справки</b>
+    (онлайн-мастер, канонические статусы, PDF с QR-кодом проверки на <code>/verify</code>); <b>Уведомления</b>
+    (объявления, дедлайны, каналы); <b>Связь с деканатом</b> (обращения с чатом, для сотрудника — очередь с SLA);
+    <b>сверх ядра:</b> AI-ассистент по данным студента, MCP-сервер деканата, мероприятия, студенческие стартапы,
+    ДПО, финансы, люди, голосовой ввод, EN-версия, кабинет сотрудника. Принцип — «нужное за пару касаний»:
+    единый Shell-каркас, поиск ⌘K, скелетоны загрузки.</p>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 2</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 3 · ИНСТРУМЕНТЫ ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h2>2. Полный перечень ИИ-инструментов, IDE и сервисов</h2>
+    <table class="tools">
+      <tr><th>Инструмент</th><th>Роль в проекте — для чего именно</th></tr>
+      <tr><td><b>OpenCode</b> (CLI-агент executor, модель GLM-5.3-flash)</td>
+          <td>Основная разработка кода: постановщик пишет промпт-задачу, агент читает репозиторий, пишет код и тесты red-first, openspec-изменения, прогоняет гейты, открывает PR.</td></tr>
+      <tr><td><b>Роевой конвейер на OpenCode</b> (<code>scripts/swarm/</code>)</td>
+          <td>Автопилот: supervisor → orchestrator берёт задачу Linear → executor → гейты (lint/typecheck/test/build, без LLM) → reviewer-агент (свежий контекст) → security-агент → documenter → squash-PR → Linear Done. Оператор сводит спорные решения.</td></tr>
+      <tr><td><b>GLM-5.3-flash</b> (Z.ai)</td>
+          <td>Модель всех агентов: код, ревью, security, документация, EN-перевод.</td></tr>
+      <tr><td><b>Higgsfield</b> (MCP-генерация изображений; модели Recraft V4.1 Flash, Z Image)</td>
+          <td><b>Дизайн и иллюстрации:</b> 6 векторных иллюстраций пустых состояний и hero экрана входа (WebP ≤ 25 КБ), OG-превью 1200×630, обложка PDF-описания, стилевая проба логотипа (<code>z_image</code>) — промпты сохранены в <code>docs/ai-log/assets.md</code>.</td></tr>
+      <tr><td><b>sharp</b> + SVG</td>
+          <td>Текстовые оверлеи поверх сгенерированного арта: OG-превью и обложка PDF (заголовок, плашка).</td></tr>
+      <tr><td><b>Linear</b> + Linear MCP</td>
+          <td>Бэклог: 125 задач (DIG-1…125), 100 закрыто (Done), 10 отменено. Статусы меняет оркестратор, оператор ставит задачи «текстом требования».</td></tr>
+      <tr><td><b>Playwright</b> (MCP/CLI)</td>
+          <td>e2e-регресс «роль × язык», скриншоты для документации (64 шт. RU/EN в docs/shots), запись видео-сценариев, EN-аудит кириллицы, регресс прода, печать этого PDF.</td></tr>
+      <tr><td><b>Context7 MCP</b></td>
+          <td>Актуальная документация Next.js 15 / Prisma / Tailwind при постановке задач — устаревшие API ловятся до кода.</td></tr>
+      <tr><td><b>GitHub</b> + gh CLI</td>
+          <td>Ветки, PR (83 слито), squash-merge, ревью-комментарии агентов, публичный репозиторий для жюри.</td></tr>
+      <tr><td><b>Timeweb Cloud API</b></td>
+          <td>Хостинг прод-сервера в РФ (без VPN), включение/перезагрузка сервера из агента при инцидентах.</td></tr>
+      <tr><td><b>Docker Compose</b> + Caddy</td>
+          <td>Прод: app/db/caddy, health-check, TLS (Let's Encrypt).</td></tr>
+      <tr><td><b>ffmpeg</b> + macOS say (TTS)</td>
+          <td>Видео-демонстрация RU/EN 1080p: склейка сцен, озвучка (Milena/Samantha), титры-плашки. Длительности проверены ffprobe (RU 3:00, EN 1:25).</td></tr>
+      <tr><td><b>pptxgenjs</b></td>
+          <td>Генерация презентации проекта.</td></tr>
+      <tr><td><b>Figma</b></td>
+          <td>Референс-макеты экранов (дизайн-токены DIG-13: Inter, палитра, радиусы, тени).</td></tr>
+      <tr><td><b>Стек прототипа</b></td>
+          <td>Next.js 15 (App Router, RSC, Server Actions), TypeScript, Prisma + PostgreSQL, Tailwind CSS + дизайн-токены, сессии на <code>__Host-</code>cookie, argon2id, lucide-react, Vitest + Playwright.</td></tr>
+    </table>
+    <p class="small">IDE агентов — OpenCode (CLI); человек работает в обычном редакторе и терминале. Все LLM-роли — одна модель GLM-5.3,
+    независимость ревью обеспечивается свежим контекстом, а не разными моделями.</p>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 3</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 4 · ПРОМПТЫ 3.1–3.3 ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h2>3. Ключевые промпты и диалоги (привязка к этапам и функциям)</h2>
+
+    <h3>3.1. Этап «постановка задачи» — экран «Мероприятия» (регресс-баг DIG-76)</h3>
+    <div class="term">ЗАДАЧА: DIG-76 — Виджет «Мероприятия» на главной показывает «скоро появятся», хотя /events работает.
+Что делаем:
+* EventsSection → показывает 2-3 ближайших будущих события из data-слоя (listEventsByRange от now):
+  карточка-мини (дата, название, место/онлайн, «Осталось мест»), ссылка «Все мероприятия» → /events.
+* Пустое состояние: если будущих событий нет — текущая заглушка остаётся как честный empty-state.
+* Плашка «Записан» на событиях, на которые студент записан.
+* i18n RU/EN; юнит-тест рендера с сидом (2 ближайших события) и пустого состояния.
+Ограничения: Owner-scope; DoD: gates green → PR.</div>
+    <p>Формат «ЗАДАЧА / Что делаем / Ограничения / DoD» выработан эмпирически: агент перестаёт «додумывать»
+    требования и возвращает дифф по контракту. Полные диалоги — в журнале <code>docs/ai-log/</code> и тредах Linear.</p>
+
+    <h3>3.2. Этап «ревью» — fresh-context агент судит дифф (чек-лист ревьюера)</h3>
+    <div class="term">Ты — РЕВЬЮЕР. Ты судишь изменение, которое НЕ писал… Ревью без финальной
+строки-вердикта считается RETURN.
+1. Корректность: задача реально реализована? Логические ошибки, мёртвый код.
+2. Тесты: поведенческие изменения сопровождаются тестами (red-first), не тавтология?
+3. Радиус поражения: всё ли в рамках задачи? Регрессии безопасности (заголовки,
+   санитайзеры, rate-limit, проверка владельца/IDOR) — автоматический RETURN.
+4. Конвенции репо: App Router, server actions с проверкой сессии, токены дизайна,
+   вымышленные данные, плашка «Концепт для конкурса», 360 px.
+5. Честность: коммит-сообщение не приписывает диффу того, чего в нём нет.</div>
+
+    <h3>3.3. Этап «security-гейт» — независимая проверка</h3>
+    <div class="term">ЧЕК-ЛИСТ БЕЗОПАСНОСТИ (каждый пункт — PASS/FAIL/N-A с обоснованием):
+1. IDOR: все запросы фильтруют данные по владельцу сессии (session.user.id)
+   или осознанной роли сотрудника? Чужую заявку не открыть подстановкой id?
+2. Секреты: в диффе нет ключей/паролей/токенов; .env.example — только имена.
+3. ПДн: все данные вымышленные?  4. Пароли: только хэши (bcrypt/argon2)?
+5. Бренд: нет логотипов вуза; плашка «Концепт для конкурса» не удалена.
+6. Вход: rate limit не ослаблен; сессии инвалидируются.
+7. Внедрение: нет dangerouslySetInnerHTML; SQL только через Prisma.</div>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 4</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 5 · ПРОМПТЫ 3.4–3.6 ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h3 style="margin-top: 0;">3.4. Механика «fail-closed» — диалоги, а не вера</h3>
+    <p>Оркестратор (обычный Node, без LLM) не доверяет агентам на слово: ревью без строки <code>VERDICT:</code>
+    трактуется как <b>RETURN</b>, security без <code>SECURITY_VERDICT</code> — как <b>FAIL</b>; красные гейты
+    возвращают исполнителю хвост вывода тестов; максимум 3 раунда. Если ревьюер «забыл» вердикт — запускается
+    отдельный VERDICT CLERK: «Называет ли анализ блокирующие дефекты? Печатай РОВНО одну строку:
+    VERDICT: ACCEPT или VERDICT: RETURN».</p>
+
+    <h3>3.5. Этап «дизайн» — иллюстрации Higgsfield (промпт hero входа; все промпты — <code>docs/ai-log/assets.md</code>)</h3>
+    <div class="term">Login hero illustration for a university student portal desktop screen: a cozy
+student desk with an open laptop showing a simple schedule grid, floating
+rounded UI cards around it — a calendar card, a grade card with a star, a
+document card with a green checkmark — and a small potted plant. Soft coral
+gradient background from #FFD9D1 to #FEBFB4, coral #E7645A and blue #2563EB
+palette, flat vector illustration, matte solid colors, soft rounded shapes,
+no text, no letters, no watermark.</div>
+    <p>Единый стиль-суффикс (палитра DIG-13, «flat vector, no text») добавлялся ко всем 6 иллюстрациям —
+    серия вышла согласованной без дизайнера. Результат того самого промпта — hero-иллюстрация
+    экрана входа в продакшене:</p>
+    <figure>
+      <img src="../../public/illustrations/login-hero.webp" alt="Иллюстрация hero входа — результат промпта Higgsfield" style="max-height: 42mm;">
+      <figcaption>public/illustrations/login-hero.webp — сгенерировано через Higgsfield (Recraft V4.1 Flash), 25 КБ.</figcaption>
+    </figure>
+
+    <h3>3.6. Крупные фичи — диалог вместо одного промпта</h3>
+    <p>EN-локализация (DIG-87…93) шла тремя частями с авто-аудитом: агент-переводчик → Playwright-аудит
+    «кириллица на EN» по всем маршрутам → список остатков новой задачей → следующий агент. Аналогично
+    P0-регресс: 20 багов из чек-листа → отдельные задачи с фиксами и тестами red-first.</p>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 5</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 6 · РАННИЕ МАКЕТЫ + МАСТЕР ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h2>4. Скриншоты ключевых шагов — от первой идеи до кабинета</h2>
+    <h3>4.1. Ранние макеты (дизайн-система, Figma-референсы → токены DIG-13)</h3>
+    <div class="grid2">
+      <figure>
+        <img src="../design/screenshots/design-full-desktop-1440.png" alt="Ранний макет: лендинг и вход, десктоп 1440">
+        <figcaption>Первая цельная версия каркаса: лендинг + вход, десктоп 1440.</figcaption>
+      </figure>
+      <figure class="phone">
+        <img src="../design/screenshots/design-full-mobile-360.png" alt="Ранний макет: мобильный 360">
+        <figcaption>Тот же каркас на 360 px — мобильность заложена с первого макета.</figcaption>
+      </figure>
+    </div>
+    <h3>4.2. Мастер заявки — итерации (был неудачный вариант — разбит на шаги)</h3>
+    <div class="grid2">
+      <figure>
+        <img src="../design/screenshots/dig-31-wizard-step1-desktop-1440.png" alt="Мастер заявки, шаг 1, десктоп">
+        <figcaption>Шаг 1 — выбор типа и формы (мастер «Шаг 1 из 3»). Прежний опыт «одной длинной
+        формы на всё» был неудобен — заменён мастером из трёх шагов (задача DIG-31).</figcaption>
+      </figure>
+      <figure>
+        <img src="../design/screenshots/dig-31-wizard-step2-desktop-1440.png" alt="Мастер заявки, шаг 2, десктоп">
+        <figcaption>Шаг 2 — параметры: данные из профиля подставлены автоматически, вводить заново не нужно
+        (подтверждение — шаг 3). Макет 1440; на 360 px мастер открывается полноэкранным листом.</figcaption>
+      </figure>
+    </div>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 6</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 7 · ГОТОВЫЙ КАБИНЕТ RU ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h3 style="margin-top: 0;">4.3. Готовый кабинет (RU, прод)</h3>
+    <div class="grid2">
+      <figure>
+        <img src="../shots/ru/landing.png" alt="Лендинг RU">
+        <figcaption>Лендинг.</figcaption>
+      </figure>
+      <figure>
+        <img src="../shots/ru/dashboard.png" alt="Дашборд RU">
+        <figcaption>Главная «Ваша неделя»: сегодня, дедлайны, прогресс.</figcaption>
+      </figure>
+      <figure>
+        <img src="../shots/ru/schedule-week.png" alt="Расписание RU">
+        <figcaption>Расписание на неделю.</figcaption>
+      </figure>
+      <figure>
+        <img src="../shots/ru/grades.png" alt="Успеваемость RU">
+        <figcaption>Успеваемость и «как у меня дела».</figcaption>
+      </figure>
+      <figure>
+        <img src="../shots/ru/requests.png" alt="Заявки RU">
+        <figcaption>Заявки и справки.</figcaption>
+      </figure>
+      <figure>
+        <img src="../shots/ru/assistant.png" alt="AI-ассистент RU">
+        <figcaption>AI-ассистент по данным студента.</figcaption>
+      </figure>
+    </div>
+    <p class="caption">Лендинг, главная, расписание/успеваемость, заявки, AI-ассистент — «всё в одном окне».</p>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 7</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 8 · EN ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h3 style="margin-top: 0;">4.4. EN-версия (прод)</h3>
+    <div class="grid2">
+      <figure>
+        <img src="../shots/en/landing.png" alt="Лендинг EN">
+        <figcaption>Лендинг EN — ноль кириллицы (контент вымышленного вуза переведён задачами DIG-87…93).</figcaption>
+      </figure>
+      <figure>
+        <img src="../shots/en/dashboard.png" alt="Дашборд EN">
+        <figcaption>Главная EN.</figcaption>
+      </figure>
+      <figure>
+        <img src="../shots/en/grades.png" alt="Успеваемость EN">
+        <figcaption>Успеваемость EN.</figcaption>
+      </figure>
+      <figure>
+        <img src="../shots/en/events.png" alt="Мероприятия EN">
+        <figcaption>Мероприятия EN.</figcaption>
+      </figure>
+    </div>
+    <p class="caption">EN-интерфейс: лендинг, главная, успеваемость, мероприятия. Проверка — Playwright-аудит
+    «кириллица на EN» по всем маршрутам.</p>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 8</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 9 · НЕУДАЧНЫЕ ВАРИАНТЫ ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h2>5. Работа с ошибками ИИ — неудачные варианты и спасение</h2>
+    <p>Честная история — не только зелёные гейты. Четыре реальные неудачи из журналов (<code>docs/ai-log/</code>, git)
+    и то, как система их ловила. Панели — дословные выдержки, воспроизведённые типографикой.</p>
+
+    <h3>5.1. Ревью RETURN×3: ревьюер «не даёт смержить» (DIG-20, главная)</h3>
+    <div class="term"><span class="y">docs/ai-log/2026-11-11-dig-20.md</span>
+Ревью: <span class="r">RETURN×3</span> (конкретика: <span class="r">инфра-файлы в скоупе, day(6)→day(7),
+«Долги»→/schedule, .hero-glow, timeLabel, фрейм «02», STAFF-ветка, скелетон-тест</span>) → <span class="g">ACCEPT</span>
+Инцидент: машина дважды убивала процессы (pressure-kill), executor'ы работали интерливингом;
+работа спасалась из дерева (salvage-коммиты ecfe95e, 39253ac).
+Урок: <span class="y">ревью читает и УСТАРЕВШИЙ дифф, если ему его подсунуть —
+свежий дифф регенерируется перед каждым раундом.</span></div>
+    <p>Четыре раунда диалога «замечания с файлами и строками → исправления» — и дифф дошёл до ACCEPT.</p>
+
+    <h3>5.2. Красные гейты: нестабильный e2e нашёл гонку кук (DIG-77)</h3>
+    <div class="term"><span class="y">docs/ai-log/2026-11-19-dig-77.md</span>
+e2e падал нестабильно: после «Выйти» в браузере иногда оставалась живая кука сессии.
+Диагностика по CDP-трейсу показала гонку — <span class="r">prefetch-ответ роутера применялся
+ПОСЛЕ куки-очистки и «воскрешал» куку</span>. Рой исключил speculative prefetch из
+продления кук в middleware и закрепил контракт юнит- и e2e-тестами.</div>
+    <p>Красный тест — сигнал, а не помеха: нестабильность оказалась багом безопасности. Схожие ловушки
+    из runbook: TZ-флейк «20↔21 ноября» на полночи МСК (фикстура детерминирована), rate-limit модели GLM 5h
+    (оркестратор: cooldown + повторы).</p>
+
+    <h3>5.3. Squash-регрессия PR #82: merge прошёл, а файлы — нет</h3>
+    <div class="term"><span class="y">$ git log --oneline -3</span>
+bcffd8a <span class="r">fix: восстановление после squash-регрессии PR #82</span>
+        (93/100/102/103 файлы вернулись из c2a331a, фичи DIG-101 сохранены патчем)
+        + EN-приветствие ассистента по локали
+f010348 DIG-101: Поделиться в соцсетях + экспорт расписания PDF/XLSX/MD (#82)
+c2a331a DIG-100: Версия для слабовидящих (#81)
+<span class="y">$ git show bcffd8a --stat | tail -1</span>
+        <span class="r">54 files changed, 825 insertions(+), 438 deletions(-)</span></div>
+    <p>Squash-merge ветки с устаревшей базой прошёл без конфликтов, но рабочее дерево осталось неполным:
+    свежесмерженные файлы фич DIG-93/100/102/103 потерялись. Оператор заметил при вычитке, вернул файлы
+    из состояния <code>c2a331a</code> (PR #81) и пересохранил фичи DIG-101 патчем. <b>Урок:</b> после squash —
+    контрольный diff дерева против предыдущего main до деплоя.</p>
+
+    <h3>5.4. Инфраструктура: OOM-kill убивал executor'а (DIG-50)</h3>
+    <div class="term"><span class="y">docs/ai-log/2026-11-11-dig-50.md</span>
+Агенты: executor (<span class="r">убит OOM-kill'ем машины, работа спасена из дерева</span>) → gates →
+reviewer (<span class="r">3 раунда: RETURN×2</span> — инфра-замусоривание скоупа) → security PASS.
+История: студент не мог войти на прод — приложение жило на memory-сторе.
+Итог: Prisma-стор по DATABASE_URL, e2e на ostrovok.store: <span class="g">чужие заявки отдают 404</span>.
+Урок: <span class="y">reflog-rescue</span> — потерянные коммиты задачи находятся по номеру DIG-XX
+и подбираются cherry-pick'ом; лок-файл умершего процесса переиспользуется.</div>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 9</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 10 · ЗАЩИТА + РУЧНЫЕ ЭТАПЫ ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h2>6. Вход, хранение данных и защита — простыми словами</h2>
+    <ul>
+      <li><b>Вход.</b> Логин и пароль; пароль никогда не хранится открыто — только <b>argon2id-хэш</b>
+      (библиотека <code>@node-rs/argon2</code>). Даже при вводе несуществующего логина система делает такую же
+      «пустую» проверку, чтобы нельзя было перебором узнавать логины.</li>
+      <li><b>Сессия.</b> После входа выдаётся <code>__Host-session</code>-кука (строгие флаги, только HTTPS,
+      только этот домен). «Выйти» стирает куку у пользователя; middleware не «продлевает» куку на фоновых
+      prefetch-запросах — эту гонку нашли регрессом и закрыли тестом (DIG-77).</li>
+      <li><b>Чужие данные недостижимы.</b> Каждый запрос строит «скоуп» владельца: экран, API и даже
+      MCP-инструменты читают только данные своей сессии. Подстановка чужого номера заявки или чужого id
+      даёт «не найдено» (404) — проверено живым входом двух студентов на проде. Закреплено тестами доступа
+      (access-control / staff-access / settings-security) и security-агентом на каждый PR.</li>
+      <li><b>Ключи.</b> Секреты живут в <code>.env</code> на сервере (в git не попадают, есть
+      <code>.env.example</code> только с именами переменных). MCP-токены студентов хранятся только как
+      SHA-256-хэш; выпуск токена — самим студентом в Настройках.</li>
+      <li><b>Перебор.</b> Вход и <code>/verify</code> ограничены rate-limit'ом по IP.</li>
+      <li><b>Данные вымышлены.</b> Все ФИО, группы, оценки и события — сид вымышленного вуза; подключений
+      к реальным системам нет. На каждой странице — плашка «Концепт для конкурса».</li>
+    </ul>
+
+    <h2 style="margin-top: 13pt;">7. Этапы, проделанные вручную</h2>
+    <ul>
+      <li><b>Продукт и требования:</b> какие разделы нужны, что выкидываем; написание задач Linear «текстом требования» (125 задач); сведение спорных ревью/security-вердиктов агентов — редактирует промпт или дифф.</li>
+      <li><b>Деплой на прод вручную:</b> worktree → rsync на сервер → docker build → recreate → миграции → health-check <code>https://ostrovok.store/api/health</code> (сценарий — <code>docs/wiki/RUNBOOK.md</code>). <code>--exclude .env</code> обязателен: серверные секреты не перетираются.</li>
+      <li><b>Сид демо-данных и регресс прода:</b> идемпотентный wipe &amp; rebuild, Playwright-краулер по 138 поверхностям, живой вход тремя аккаунтами.</li>
+      <li><b>Управление сервером хостинга</b> при инцидентах (Timeweb API), DNS.</li>
+      <li><b>Видео:</b> сценарии записаны Playwright, финальная сборка и озвучка — ffmpeg; загрузка роликов на хостинг из РФ и вставка ссылок — шаг человека (до 22.11 23:59 МСК).</li>
+      <li><b>Сборка этого PDF-описания</b> (<code>docs/submission/build-pdf.mjs</code>: HTML → Playwright Chromium → A4) и финальная вычитка.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 10</span></div>
+</section>
+
+<!-- ═══════════ СТРАНИЦА 11 · ЦИФРЫ ═══════════ -->
+<section class="page">
+  <div class="wrap">
+    <h2>8. Цифры проекта</h2>
+    <div class="stats">
+      <div class="stat"><div class="n">125</div><div class="l">задач в Linear (DIG-1…125)</div></div>
+      <div class="stat"><div class="n">100</div><div class="l">задач закрыто (Done)</div></div>
+      <div class="stat"><div class="n">83</div><div class="l">PR слито через рой агентов</div></div>
+      <div class="stat"><div class="n">77</div><div class="l">циклов в журнале docs/ai-log</div></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n">20+</div><div class="l">разделов кабинета</div></div>
+      <div class="stat"><div class="n">2</div><div class="l">языка интерфейса (RU/EN)</div></div>
+      <div class="stat"><div class="n">64</div><div class="l">скриншотов документации RU/EN</div></div>
+      <div class="stat"><div class="n">360</div><div class="l">px — минимальная ширина вёрстки</div></div>
+    </div>
+
+    <p style="margin-top: 10pt;"><b>Тестовые аккаунты для жюри</b> (данные вымышленные, чипы на экране входа):
+    студент 1 — <code>anna.smirnova</code> / <code>anna-demo-2026</code>,
+    студент 2 — <code>ilya.petrov</code> / <code>ilya-demo-2026</code> (данные студентов разделены:
+    чужая заявка даёт 404), сотрудник деканата — <code>dean.kovaleva</code> / <code>dean-demo-2026</code>
+    (кабинет <code>/staff</code>).</p>
+
+    <p><b>Прототип:</b> https://ostrovok.store (из РФ без VPN) ·
+    <b>Исходный код:</b> публичный GitHub-репозиторий · <b>работает до 28.11.2026.</b></p>
+
+    <div class="note">
+      <b>Где проверить каждое утверждение:</b> журнал циклов — <code>docs/ai-log/*.md</code> (77 записей-циклов);
+      промпты иллюстраций — <code>docs/ai-log/assets.md</code>; схема роя — <code>docs/ai-process.md</code>
+      и <code>scripts/swarm/README.md</code>; деплой и инциденты — <code>docs/wiki/RUNBOOK.md</code>;
+      QA по брифу — <code>docs/qa/2026-11-20-brief-compliance.md</code>; история git — публичный репозиторий.
+    </div>
+
+    <p class="small" style="margin-top: 18pt;">Концепт для конкурса «Цифровой деканат будущего». Все данные вымышленные,
+    подключений к реальным системам вуза нет. Документ собран ИИ-агентами (OpenCode + GLM-5.3-flash)
+    под контролем оператора; иллюстрации бренда — Higgsfield (Recraft V4.1 Flash / Z Image), промпты —
+    в <code>docs/ai-log/assets.md</code>. Шрифт Inter (OFL).</p>
+  </div>
+  <div class="foot"><span>Digital Deanery · описание процесса</span><span>стр. 11</span></div>
+</section>
+
+</body>
+</html>
