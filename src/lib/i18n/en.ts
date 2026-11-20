@@ -84,6 +84,8 @@ export const en: Record<keyof RuDictionary, string> = {
   'shell.userMenuAria': 'User menu',
   'shell.logout': 'Sign out',
   'shell.deadlineTitle': 'Next deadline',
+  // DIG-127: draggable sidebar width handle (drag / arrow keys)
+  'shell.navResizeAria': 'Resize menu width: drag the border or use arrow keys',
 
   // ── language switch ──────────────────────────────────────────────────────
   'locale.switchAria': 'Interface language / Язык интерфейса',

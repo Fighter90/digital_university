@@ -40,6 +40,25 @@ vi.mock('@/components/assistant/floating-assistant-popup', () => ({
   FloatingAssistantPopup: () => null,
 }));
 
+// DIG-128 — LoginPage (серверный компонент): тяжёлые зависимости — стабы.
+const loginState = vi.hoisted(() => ({
+  a11yPlain: false,
+}));
+vi.mock('@/server/auth/session', () => ({
+  getAuthSession: vi.fn(async () => null), // аноним — экран входа виден
+}));
+vi.mock('@/server/data', () => ({
+  ensureAppData: vi.fn(async () => undefined),
+}));
+vi.mock('@/lib/a11y/server', () => ({
+  isA11yPlain: vi.fn(async () => loginState.a11yPlain),
+}));
+vi.mock('@/components/auth/login-form', () => ({
+  LoginForm: () => <form data-testid="login-form-stub" />,
+}));
+vi.mock('@/components/brand/logo', () => ({ BrandLogo: () => <div /> }));
+vi.mock('@/components/ui/illustration', () => ({ Illustration: () => <div /> }));
+
 import { Shell } from '@/components/shell/shell';
 import { LandingContent } from '@/components/landing/landing-content';
 
@@ -118,5 +137,43 @@ describe('remove-a11y-top-strip: вход в plain-режим остался в 
     render(<LandingContent locale="en" plain />);
     const footerPlain = screen.getByTestId('a11y-version-footer');
     expect(within(footerPlain).getByRole('button', { name: 'Standard version' })).toBeVisible();
+  });
+});
+
+// DIG-128 — на /login ссылка версии тоже нужна: слабовидящий пользователь
+// может оказаться прямо на экране входа (закладка, ссылка из письма) —
+// без версии там он не сможет её ни включить, ни прочитать форму.
+// LoginPage — асинхронный серверный компонент: пререндерим в HTML
+// (паттерн tests/dashboard-page.test.tsx) и проверяем разметку.
+describe('DIG-128: экран входа — ссылка версии для слабовидящих', () => {
+  async function renderLogin(): Promise<string> {
+    const { default: LoginPage } = await import('@/app/(auth)/login/page');
+    const { prerenderToNodeStream } = await import('react-dom/static');
+    const { createElement } = await import('react');
+    const { prelude } = await prerenderToNodeStream(
+      createElement(LoginPage, { searchParams: Promise.resolve({}) }),
+    );
+    let html = '';
+    for await (const chunk of prelude) html += String(chunk);
+    return html;
+  }
+
+  it('на /login есть ссылка со значком Eye, hidden version=plain, next=/dashboard', async () => {
+    loginState.a11yPlain = false;
+    const html = await renderLogin();
+    expect(html).toContain('data-testid="a11y-version-footer"');
+    expect(html).toContain('Версия для слабовидящих');
+    expect(html).toContain('a11y-version-eye');
+    expect(html).toContain('name="version" value="plain"');
+    expect(html).toContain('name="next" value="/dashboard"');
+    loginState.a11yPlain = false;
+  });
+
+  it('plain-режим: на /login предлагается «Обычная версия» с version=off', async () => {
+    loginState.a11yPlain = true;
+    const html = await renderLogin();
+    expect(html).toContain('Обычная версия');
+    expect(html).toContain('name="version" value="off"');
+    loginState.a11yPlain = false;
   });
 });
