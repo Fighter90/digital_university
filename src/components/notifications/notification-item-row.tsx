@@ -65,7 +65,7 @@ export function NotificationItemRow({
 }: NotificationItemRowProps) {
   const category = CATEGORY[type];
   const Icon = category.icon;
-  const time = formatNotificationTime(createdAt, new Date());
+  const time = formatNotificationTime(createdAt, new Date(), locale);
   const compact = variant === 'compact';
   // DIG-89 — EN: кириллические номера заявок в заголовке транслитерируются
   // («ЗД-2026-000123» → «ZD-2026-000123»); RU — заголовок без изменений.
