@@ -258,6 +258,82 @@ test('объявления: предпросмотр при вводе, публ
   await expect(page.getByTestId('staff-announcements-list')).toContainText('группа ПИ-21');
 });
 
+// ── DIG-126: канон «ЗД-…» в кабинете сотрудника (дефект D1 FINDINGS-108) ─────
+
+test('канон «ЗД-…»: очередь → «Взять в работу» → студент видит «В работе»', async ({
+  browser,
+}, testInfo) => {
+  // Мутация общего состояния сервера: mobile-проект читает (см. выше).
+  test.skip(testInfo.project.name === 'mobile-360', 'мутации — только в desktop-проекте');
+  const staffContext = await browser.newContext();
+  const staff = await staffContext.newPage();
+  await signIn(staff, STAFF.login, STAFF.password, '/staff/requests');
+
+  // Заявка мастера (канон DIG-30) видна сотруднику в ЕДИНОЙ очереди:
+  // пилюля «Заявка мастера» + номер ЗД-… (это и есть регресс D1).
+  const row = staff.locator('li[data-kind="canonical"]', { hasText: 'Дубликат диплома' }).first();
+  await expect(row).toBeVisible();
+  const href = await row.getByRole('link').getAttribute('href');
+  expect(href).toMatch(/^\/staff\/requests\/ЗД-\d{4}-\d{6}$/);
+  const canonicalNumber = href!.split('/').pop()!;
+
+  // «Взять в работу»: легальная цепочка SUBMITTED → ACCEPTED → IN_PROGRESS.
+  const takeForm = row.locator('[data-testid^="take-"]');
+  await takeForm
+    .getByRole('button', { name: 'Взять в работу' })
+    .click({ timeout: 10_000 })
+    .catch(() => {});
+  await expect(row.getByText('В работе')).toBeVisible();
+
+  // Карточка канона: параметры, история, машина переходов (из IN_PROGRESS —
+  // «Готова к выдаче»/доработка/отказ; прямого перескока нет).
+  await staff.getByRole('link', { name: 'Дубликат диплома · утрата оригинала' }).click();
+  const card = staff.locator('main');
+  await expect(
+    card.getByRole('heading', { name: 'Дубликат диплома · утрата оригинала' }),
+  ).toBeVisible();
+  await expect(card.getByTestId('staff-canonical-params')).toBeVisible();
+  const canonicalForm = card.getByTestId('canonical-status-form');
+  await expect(canonicalForm).toBeVisible();
+  // Из IN_PROGRESS машина DIG-30 разрешает: READY («Готова к выдаче»),
+  // доработку и отказ; «Взять в работу» (перескок) — нет.
+  await expect(canonicalForm.getByRole('button', { name: 'Заявка готова к выдаче' })).toHaveCount(1);
+  await expect(canonicalForm.getByRole('button', { name: 'Взять в работу' })).toHaveCount(0);
+
+  // Студент моментально видит «В работе» на своей карточке ЗД-… .
+  // Вход — на список заявок, карточка открывается навигацией: кириллический
+  // номер (ЗД-…) в `?next=` форма входа не пропускает (Location-заголовок
+  // допускает только ASCII), а прямая ссылка в кабинете — штатный путь.
+  const annaContext = await browser.newContext();
+  const anna = await annaContext.newPage();
+  await signIn(anna, ANNA.login, ANNA.password, '/requests');
+  await anna.goto(`/requests/${encodeURIComponent(canonicalNumber)}`);
+  await expect(anna.getByTestId('request-status-pill')).toContainText('В работе');
+
+  await staffContext.close();
+  await annaContext.close();
+});
+
+test('канон чужого факультета не виден в очереди и карточка отвечает 404', async ({
+  browser,
+}) => {
+  // Заявка Ильи (факультет «ЭК») существует в каноне (сид DIG-33), но
+  // сотруднику «ИТ» она недоступна: в очереди её нет, карточка — единый 404.
+  const staffContext = await browser.newContext();
+  const staff = await staffContext.newPage();
+  await signIn(staff, STAFF.login, STAFF.password, '/staff/requests');
+  await expect(staff.getByTestId('staff-queue')).toBeVisible();
+  // Канон Ильи: «Заявление на академический отпуск · весенний семестр» (ЭК).
+  await expect(staff.getByText('Заявление на академический отпуск')).toHaveCount(0);
+
+  const res = await staff.goto('/staff/requests/ЗД-2026-000005');
+  expect(res?.status()).toBe(404);
+  await expect(
+    staff.getByRole('heading', { level: 1, name: 'Страница не найдена' }),
+  ).toBeVisible();
+  await staffContext.close();
+});
+
 // ── Mobile 360: только чтение (мутации — в desktop, чтобы не гонять стейт) ──
 
 test('мобильный 360: студенту 403, сотруднику — кабинет с таб-баром деканата', async ({

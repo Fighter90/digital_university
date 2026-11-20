@@ -111,3 +111,78 @@ export function filterQueue<T extends ServiceRequestRow>(
     }
   });
 }
+
+// ── Единая очередь (DIG-126): канон «ЗД-…» + легаси «ЗС/SR-…» ────────────────
+//
+// Канонический мир DIG-30 живёт в той же очереди сотрудника: дедлайн —
+// etaDays типа РАБОЧИМИ днями (request-sla.slaReadyDate), открытые статусы
+// шире легаси-набора (ACCEPTED и NEEDS_FIX канона тоже ждут действий).
+
+/** Статусы открытой очереди (канон + легаси): заявка ещё ждёт действий. */
+export const QUEUE_OPEN_STATUSES: RequestStatus[] = [
+  'SUBMITTED',
+  'ACCEPTED',
+  'IN_PROGRESS',
+  'NEEDS_FIX',
+  'NEEDS_REVISION',
+];
+
+export function isQueueStatusOpen(status: RequestStatus): boolean {
+  return QUEUE_OPEN_STATUSES.includes(status);
+}
+
+/** Что SLA-функциям единой очереди нужно от строки поверх статуса. */
+export interface UnifiedQueueSlaRow {
+  status: RequestStatus;
+  /** Готовый дедлайн SLA строки (канон: рабочие дни; легаси: календарные). */
+  slaDeadline: Date;
+}
+
+/** Часов до дедлайна строки; отрицательное — просрочка. */
+export function unifiedSlaHoursLeft(row: UnifiedQueueSlaRow, now: Date): number {
+  return (row.slaDeadline.getTime() - now.getTime()) / (60 * 60 * 1000);
+}
+
+/** Просрочена по SLA: открытый статус и дедлайн в прошлом. */
+export function isQueueRowOverdue(row: UnifiedQueueSlaRow, now: Date): boolean {
+  return isQueueStatusOpen(row.status) && row.slaDeadline.getTime() < now.getTime();
+}
+
+/** Строка единой очереди с классом типа (нужен фильтру «по типу»). */
+export interface UnifiedQueueFilterRow extends UnifiedQueueSlaRow {
+  type: RequestType;
+}
+
+/** Фильтры очереди (тип + срок) для строк единой очереди — семантика filterQueue. */
+export function filterUnifiedQueue<T extends UnifiedQueueFilterRow>(
+  rows: readonly T[],
+  filters: QueueFilters,
+  now: Date,
+): T[] {
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(startOfToday);
+  endOfToday.setDate(endOfToday.getDate() + 1);
+  const weekEnd = new Date(now);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  return rows.filter((row) => {
+    if (filters.type !== 'all' && row.type !== filters.type) return false;
+    switch (filters.due) {
+      case 'overdue':
+        return isQueueRowOverdue(row, now);
+      case 'today': {
+        if (!isQueueStatusOpen(row.status)) return false;
+        return (
+          row.slaDeadline >= startOfToday &&
+          row.slaDeadline < endOfToday
+        );
+      }
+      case 'week':
+        if (!isQueueStatusOpen(row.status)) return false;
+        return row.slaDeadline.getTime() > now.getTime() && row.slaDeadline <= weekEnd;
+      default:
+        return true;
+    }
+  });
+}

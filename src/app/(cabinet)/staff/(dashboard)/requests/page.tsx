@@ -1,13 +1,22 @@
 // DIG-48 — «Очередь заявок» (/staff/requests): заявки студентов факультета
 // по статусам, фильтры по типу и сроку (GET-форма, работает без JS),
 // подсветка просроченных по SLA и быстрое «Взять в работу». Скоуп —
-// getStaffQueue (staff-workflow), фильтрация — чистая filterQueue.
+// getStaffQueueUnified (staff-workflow), фильтрация — чистая filterUnifiedQueue.
+// DIG-126 — очередь ЕДИНАЯ для двух миров: канонические заявки мастера
+// (ЗД-…, DIG-30) рядом с легаси (ЗС/SR-…, легаси не ломается); SLA канона —
+// etaDays типа РАБОЧИМИ днями; «Взять в работу» канона — легальная цепочка
+// SUBMITTED → ACCEPTED → IN_PROGRESS (takeCanonicalInProgressAction).
 // DIG-89 — интерфейс по локали (cookie du-locale): RU — байт-в-байт прежний.
 import Link from 'next/link';
-import { requireDataCtx, getStaffQueue } from '@/server/data';
+import { requireDataCtx, getStaffQueueUnified } from '@/server/data';
 import { dataDb } from '@/server/data/db';
 import { RequestStatusBadge } from '@/components/request-status-badge';
-import { REQUEST_TYPE_LABELS, formatRequestDate, requestTypeLabel } from '@/lib/request-labels';
+import {
+  REQUEST_TYPE_LABELS,
+  canonicalTypeLabel,
+  formatRequestDate,
+  requestTypeLabel,
+} from '@/lib/request-labels';
 import {
   localizedFaculty,
   localizedGroup,
@@ -16,16 +25,18 @@ import {
 } from '@/lib/en-demo-content';
 import {
   REQUEST_SLA_DAYS,
-  filterQueue,
-  isSlaOverdue,
+  filterUnifiedQueue,
+  isQueueRowOverdue,
+  isQueueStatusOpen,
   parseQueueDueFilter,
   parseQueueTypeFilter,
-  slaDeadline,
-  slaHoursLeft,
+  unifiedSlaHoursLeft,
   type QueueDueFilter,
 } from '@/lib/staff-sla';
+import { requestNumberLabel } from '@/lib/requests-view';
 import type { RequestStatus, RequestType } from '@/server/data/types';
-import { takeInProgressAction } from '@/server/actions/staff';
+import type { StaffUnifiedQueueItem, StaffUnifiedRequestRow } from '@/server/data/staff-workflow';
+import { takeCanonicalInProgressAction, takeInProgressAction } from '@/server/actions/staff';
 import { transitionActionLabel } from '@/lib/staff-transitions';
 import { t, type Locale, type TranslationKey } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n/server';
@@ -62,14 +73,10 @@ function statusGroupLabel(locale: Locale, status: RequestStatus): string {
   return t(locale, `staff.group.${status}` as TranslationKey);
 }
 
-function slaChip(
-  request: { number: string; type: RequestType; createdAt: Date; status: RequestStatus },
-  now: Date,
-  locale: Locale,
-) {
-  if (!['SUBMITTED', 'IN_PROGRESS', 'NEEDS_REVISION'].includes(request.status)) return null;
-  const hours = slaHoursLeft(request, now);
-  if (isSlaOverdue(request, now)) {
+function slaChip(request: StaffUnifiedRequestRow, now: Date, locale: Locale) {
+  if (!isQueueStatusOpen(request.status)) return null;
+  const hours = unifiedSlaHoursLeft(request, now);
+  if (isQueueRowOverdue(request, now)) {
     const days = Math.max(1, Math.ceil(-hours / 24));
     return (
       <span
@@ -87,10 +94,47 @@ function slaChip(
       </span>
     );
   }
+  // «В сроке»: легаси — плановые дни типа, канон — дни до SLA-дедлайна
+  // (etaDays в рабочих днях, канон DIG-30).
+  const termDays =
+    request.kind === 'legacy'
+      ? REQUEST_SLA_DAYS[request.type]
+      : Math.max(1, Math.ceil(hours / 24));
   return (
     <span className="inline-flex items-center rounded-pill bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
-      {t(locale, 'staff.queue.inTerm', { days: REQUEST_SLA_DAYS[request.type] })}
+      {t(locale, 'staff.queue.inTerm', { days: termDays })}
     </span>
+  );
+}
+
+/** Подпись типа строки: канон — словарь типов DIG-30, легаси — класс типа. */
+function rowTypeLabel(request: StaffUnifiedRequestRow, locale: Locale): string {
+  return request.kind === 'canonical'
+    ? canonicalTypeLabel(locale, request.typeCode!, request.typeName!)
+    : requestTypeLabel(request.type, locale);
+}
+
+/** «Взять в работу» из очереди: легаси — свой action, канон — цепочка машины. */
+function takeForm(item: StaffUnifiedQueueItem, locale: Locale) {
+  const { request } = item;
+  const isLegacySubmitted = request.kind === 'legacy' && request.status === 'SUBMITTED';
+  const isCanonicalTake =
+    request.kind === 'canonical' && (request.status === 'SUBMITTED' || request.status === 'ACCEPTED');
+  if (!isLegacySubmitted && !isCanonicalTake) return null;
+  return (
+    <form
+      action={isLegacySubmitted ? takeInProgressAction : takeCanonicalInProgressAction}
+      data-testid={`take-${request.number}`}
+    >
+      <input type="hidden" name="number" value={request.number} />
+      <input type="hidden" name="to" value="IN_PROGRESS" />
+      <button
+        type="submit"
+        className="shrink-0 rounded-button bg-coral-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
+      >
+        {transitionActionLabel(locale, 'IN_PROGRESS')}
+      </button>
+    </form>
   );
 }
 
@@ -104,9 +148,9 @@ export default async function StaffQueuePage({
   const filters = { type: parseQueueTypeFilter(params.type), due: parseQueueDueFilter(params.due) };
   const now = new Date();
 
-  const queue = await getStaffQueue(dataDb, ctx);
+  const queue = await getStaffQueueUnified(dataDb, ctx);
   const visibleIds = new Set(
-    filterQueue(
+    filterUnifiedQueue(
       queue.map((item) => item.request),
       filters,
       now,
@@ -196,12 +240,13 @@ export default async function StaffQueuePage({
                   {group.length} · {groupLabel}
                 </h2>
                 <ul className="flex flex-col gap-2">
-                  {group.map(({ request, student }) => {
-                    const overdue = isSlaOverdue(request, now);
-                    const deadline = slaDeadline(request);
+                  {group.map((item) => {
+                    const { request, student } = item;
+                    const overdue = isQueueRowOverdue(request, now);
                     return (
                       <li
                         key={request.id}
+                        data-kind={request.kind}
                         className={`rounded-2xl border p-4 transition-colors ${
                           overdue
                             ? 'border-red-200 bg-red-50/60'
@@ -212,9 +257,17 @@ export default async function StaffQueuePage({
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-mono text-xs text-neutral-500">
-                                {request.number}
+                                {requestNumberLabel(request.number, locale)}
                               </span>
                               <RequestStatusBadge status={request.status} locale={locale} />
+                              {request.kind === 'canonical' && (
+                                <span
+                                  data-testid="queue-kind-canonical"
+                                  className="inline-flex items-center rounded-pill bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700"
+                                >
+                                  {t(locale, 'staff.queue.canonicalPill')}
+                                </span>
+                              )}
                               {slaChip(request, now, locale)}
                             </div>
                             <Link
@@ -226,13 +279,13 @@ export default async function StaffQueuePage({
                             <p className="mt-0.5 text-xs text-neutral-600">
                               {localizePersonName(locale, student.fullName)} ·{' '}
                               {localizedGroup(locale, student.groupName)} ·{' '}
-                              {requestTypeLabel(request.type, locale)} ·{' '}
+                              {rowTypeLabel(request, locale)} ·{' '}
                               {t(locale, 'staff.queue.submitted')}{' '}
                               {formatRequestDate(request.createdAt, locale)}
                             </p>
                             <p className="text-xs text-neutral-500">
                               {t(locale, 'staff.queue.slaDeadline', {
-                                date: formatRequestDate(deadline, locale),
+                                date: formatRequestDate(request.slaDeadline, locale),
                               })}
                               {request.assignee
                                 ? t(locale, 'staff.queue.assignee', {
@@ -242,21 +295,7 @@ export default async function StaffQueuePage({
                             </p>
                           </div>
 
-                          {request.status === 'SUBMITTED' && (
-                            <form
-                              action={takeInProgressAction}
-                              data-testid={`take-${request.number}`}
-                            >
-                              <input type="hidden" name="number" value={request.number} />
-                              <input type="hidden" name="to" value="IN_PROGRESS" />
-                              <button
-                                type="submit"
-                                className="shrink-0 rounded-button bg-coral-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-coral-500 focus-visible:outline-2 focus-visible:outline-coral-600"
-                              >
-                                {transitionActionLabel(locale, 'IN_PROGRESS')}
-                              </button>
-                            </form>
-                          )}
+                          {takeForm(item, locale)}
                         </div>
                       </li>
                     );

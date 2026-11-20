@@ -189,6 +189,12 @@ export interface DataDb {
   ): Promise<CanonicalRequestRow | null>;
   listCanonicalRequestsByStudent(studentId: string): Promise<CanonicalRequestRow[]>;
   listCanonicalRequestEvents(requestId: string): Promise<CanonicalRequestEventRow[]>;
+  /**
+   * DIG-126 — канонические заявки студентов факультета (очередь сотрудника).
+   * Порядок — по свежести подачи; скоуп факультета проверяет сервис
+   * (listCanonicalRequestsForStaff), адаптеру факультет приходит из ctx.
+   */
+  listCanonicalRequestsByFaculty(faculty: string): Promise<CanonicalRequestRow[]>;
 
   /**
    * Атомарное создание: строка заявки + первое событие («Подана» /

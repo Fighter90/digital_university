@@ -17,7 +17,7 @@
 // делает зону видимой пользователю.
 
 import { CANONICAL_REQUEST_STATUS_LABELS } from '@/lib/request-machine';
-import { t } from '@/lib/i18n';
+import { dictionaries, t } from '@/lib/i18n';
 import type { RequestStatus, RequestType } from '@/server/data/types';
 
 /** Пояс пользователя прототипа — единый для всех экранов заявок. */
@@ -45,6 +45,43 @@ export const REQUEST_TYPE_LABELS: Record<RequestType, string> = {
 export function requestTypeLabel(type: RequestType, locale: 'ru' | 'en' = 'ru'): string {
   if (locale === 'en') return t('en', `staff.type.${type}` as const);
   return REQUEST_TYPE_LABELS[type];
+}
+
+// ── DIG-126 — канонические типы (словарь DIG-30) в очереди сотрудника ────────
+
+/**
+ * Канонический typeCode → класс легаси-типа: класс нужен фильтру очереди
+ * «по типу» и SLA-фолбэку (когда у типа нет etaDays). Коды словаря DIG-30
+ * («CERT_ENROLLMENT», «ACADEMIC_LEAVE», «MATERIAL_AID»…) — префиксные.
+ */
+export function canonicalQueueType(typeCode: string): RequestType {
+  if (
+    typeCode.startsWith('CERT') ||
+    typeCode.startsWith('GRADES') ||
+    typeCode.startsWith('SCHOLARSHIP') ||
+    typeCode.startsWith('DIPLOMA')
+  ) {
+    return 'CERTIFICATE';
+  }
+  if (typeCode.startsWith('DORM')) return 'DORMITORY';
+  if (typeCode.startsWith('PRACTICE')) return 'PRACTICE';
+  return 'STATEMENT';
+}
+
+/**
+ * Подпись типа канона по локали: RU — имя типа словаря (typeName строки,
+ * демо-контент); EN — ключ staff.canonicalType.<CODE>, без ключа —
+ * класс типа (EN никогда не показывает кириллицу).
+ */
+export function canonicalTypeLabel(
+  locale: 'ru' | 'en',
+  typeCode: string,
+  typeName: string,
+): string {
+  if (locale !== 'en') return typeName;
+  const key = `staff.canonicalType.${typeCode}` as import('@/lib/i18n').TranslationKey;
+  const text = (dictionaries.en as Record<string, string>)[key];
+  return text ?? requestTypeLabel(canonicalQueueType(typeCode), 'en');
 }
 
 export const REQUEST_STATUS_TONES: Record<RequestStatus, string> = {

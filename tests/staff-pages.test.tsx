@@ -75,8 +75,9 @@ function event(overrides: Partial<RequestEventRow> = {}): RequestEventRow {
 
 const state = vi.hoisted(() => ({
   ctx: null as unknown,
-  queue: [] as Array<{ request: ServiceRequestRow; student: StudentRow }>,
+  queue: [] as Array<{ request: unknown; student: unknown }>,
   detail: null as unknown,
+  canonicalDetail: null as unknown,
   appeals: [] as Array<{ appeal: AppealRow; student: StudentRow; lastAt: Date }>,
   thread: null as unknown,
   announcements: [] as AnnouncementRow[],
@@ -90,7 +91,10 @@ vi.mock('@/server/data', () => ({
   requireDataCtx: vi.fn(async () => state.ctx),
   getStaffSummaryData: vi.fn(async () => state.summary),
   getStaffQueue: vi.fn(async () => state.queue),
+  getStaffQueueUnified: vi.fn(async () => state.queue),
   getStaffRequestDetail: vi.fn(async () => state.detail),
+  getStaffCanonicalRequestDetail: vi.fn(async () => state.canonicalDetail),
+  isValidCanonicalRequestNumber: (value: string) => /^ЗД-\d{4}-\d{6}$/.test(value),
   getStaffAppeals: vi.fn(async () => state.appeals),
   getStaffAppealThread: vi.fn(async () => state.thread),
   listStaffAnnouncements: vi.fn(async () => state.announcements),
@@ -100,6 +104,8 @@ vi.mock('@/server/data', () => ({
   answerStaffAppeal: vi.fn(),
   resolveStaffAppeal: vi.fn(),
   createStaffAnnouncement: vi.fn(),
+  staffTransitionCanonicalRequest: vi.fn(),
+  takeCanonicalRequestInProgress: vi.fn(),
 }));
 
 import StaffSummaryPage from '@/app/(cabinet)/staff/(dashboard)/page';
@@ -232,6 +238,33 @@ function initState() {
 initState();
 // ── Очередь /staff/requests ─────────────────────────────────────────────────
 
+import { slaDeadline } from '@/lib/staff-sla';
+import type { StaffUnifiedQueueItem, StaffUnifiedRequestRow } from '@/server/data/staff-workflow';
+
+type QueueRow = Omit<StaffUnifiedRequestRow, 'slaDeadline' | 'kind'> & {
+  slaDeadline?: Date;
+  kind?: StaffUnifiedRequestRow['kind'];
+};
+
+/** Легаси-строка → единая очередь (kind/slaDeadline — контракт DIG-126). */
+function unified(
+  request: ServiceRequestRow,
+  overrides: Partial<QueueRow> = {},
+): StaffUnifiedQueueItem {
+  const slaDeadlineAt = overrides.slaDeadline ?? slaDeadline(request);
+  return {
+    request: {
+      ...request,
+      kind: 'legacy',
+      typeCode: null,
+      typeName: null,
+      slaDeadline: slaDeadlineAt,
+      ...overrides,
+    } as StaffUnifiedRequestRow,
+    student: anna,
+  };
+}
+
 function queueFixture() {
   const overdue = request(); // CERTIFICATE от 10-го, SLA 3 дн → просрочена 13-го
   const fresh = request({
@@ -244,9 +277,23 @@ function queueFixture() {
     // Свежая заявка: создана «сейчас» — не просрочена ни в какой день прогона.
     createdAt: new Date(),
   });
+  // Канон «ЗД-…» (DIG-126): заявка мастера в той же очереди, SUBMITTED.
+  const canonical = request({
+    id: 'creq-anna-1',
+    number: 'ЗД-2026-000002',
+    type: 'STATEMENT',
+    title: 'Дубликат диплома · утрата оригинала',
+    status: 'SUBMITTED',
+  });
   return [
-    { request: overdue, student: anna },
-    { request: fresh, student: anna },
+    unified(overdue),
+    unified(fresh),
+    unified(canonical, {
+      kind: 'canonical' as const,
+      typeCode: 'DIPLOMA_COPY',
+      typeName: 'Дубликат диплома',
+      slaDeadline: new Date(canonical.createdAt.getTime() + 5 * 24 * 60 * 60 * 1000),
+    }),
   ];
 }
 
@@ -306,6 +353,22 @@ describe('страница /staff/requests — очередь', () => {
       searchParams: Promise.resolve({}),
     });
     expect(html).toContain('Заявок по фильтру нет');
+  });
+
+  it('канон «ЗД-…» (DIG-126) в общей очереди: пилюля мастера и «Взять в работу»', async () => {
+    state.queue = queueFixture();
+    const html = await renderPage(StaffQueuePage, {
+      searchParams: Promise.resolve({}),
+    });
+    // Канон-строка рядом с легаси: номер ЗД-, пилюля, тип словаря DIG-30.
+    expect(html).toContain('data-kind="canonical"');
+    expect(html).toContain('ЗД-2026-000002');
+    expect(html).toContain('Заявка мастера');
+    expect(html).toContain('Дубликат диплома');
+    // «Взять в работу» канона — отдельный action, тот же контракт формы.
+    const form = html.match(/<form[^>]*data-testid="take-ЗД-2026-000002"[\s\S]*?<\/form>/)![0];
+    expect(form).toContain('name="number" value="ЗД-2026-000002"');
+    expect(form).toContain('Взять в работу');
   });
 });
 
@@ -376,6 +439,127 @@ describe('страница карточки сотрудника', () => {
     state.detail = null;
     await expect(
       renderPage(StaffRequestCardPage, { params: Promise.resolve({ number: 'SR-2026-XXXXX' }) }),
+    ).rejects.toThrow();
+  });
+});
+
+// ── Карточка канона «ЗД-…» (DIG-126) ─────────────────────────────────────────
+
+function canonicalDetailFixture() {
+  const createdAt = new Date('2026-11-10T10:00:00');
+  return {
+    request: {
+      id: 'creq-anna-1',
+      number: 'ЗД-2026-000002',
+      studentId: 'st-anna',
+      typeCode: 'DIPLOMA_COPY',
+      typeName: 'Дубликат диплома',
+      title: 'Дубликат диплома · утрата оригинала',
+      params: {
+        reason: 'утрата оригинала',
+        wizard: JSON.stringify({
+          destination: 'Деканат',
+          language: 'RU',
+          copies: 2,
+          delivery: 'PICKUP',
+          comment: '',
+          attachments: [{ name: 'scan-zayavlenie.pdf', size: 2048 }],
+        }),
+      },
+      status: 'SUBMITTED' as const,
+      createdAt,
+      updatedAt: createdAt,
+    },
+    student: anna,
+    events: [
+      {
+        id: 'cev-1',
+        requestId: 'creq-anna-1',
+        actorUserId: 'auth-anna',
+        actorRole: 'STUDENT' as const,
+        actorName: 'Анна Ковалёва',
+        fromStatus: null,
+        toStatus: 'SUBMITTED' as const,
+        comment: null,
+        createdAt,
+      },
+    ],
+    type: {
+      id: 'crt-diploma',
+      code: 'DIPLOMA_COPY',
+      name: 'Дубликат диплома',
+      etaDays: 5,
+      format: 'PAPER' as const,
+      isInstant: false,
+      formSchema: {
+        keyField: 'reason',
+        fields: [
+          { key: 'reason', label: 'Причина', type: 'text', required: true, maxLength: 200 },
+        ],
+      },
+    },
+    contacts: { email: anna.email, phone: null },
+  };
+}
+
+describe('карточка канонической заявки сотрудника (ЗД-…, DIG-126)', () => {
+  it('данные канона: студент, параметры формы, мета мастера, история', async () => {
+    state.canonicalDetail = canonicalDetailFixture();
+    const html = await renderPage(StaffRequestCardPage, {
+      params: Promise.resolve({ number: 'ЗД-2026-000002' }),
+    });
+    expect(html).toContain('Дубликат диплома · утрата оригинала');
+    expect(html).toContain('Анна Ковалёва');
+    // Параметры: поля JSON-схемы + мета мастера + вложения.
+    const params = html.match(
+      /data-testid="staff-canonical-params"[\s\S]*?<\/dl>/,
+    )![0];
+    expect(params).toContain('Причина');
+    expect(params).toContain('утрата оригинала');
+    expect(params).toContain('Куда предоставляется');
+    expect(html).toContain('scan-zayavlenie.pdf');
+    // История канона — таймлайн с событием подачи.
+    expect(html).toContain('Подана');
+  });
+
+  it('легальные переходы машины DIG-30 для SUBMITTED: принять/доработка/отказ', async () => {
+    state.canonicalDetail = canonicalDetailFixture();
+    const html = await renderPage(StaffRequestCardPage, {
+      params: Promise.resolve({ number: 'ЗД-2026-000002' }),
+    });
+    const form = html.match(
+      /<form[^>]*data-testid="canonical-status-form"[\s\S]*?<\/form>/,
+    )![0];
+    expect(form).toContain('name="number" value="ЗД-2026-000002"');
+    // Прямого SUBMITTED → IN_PROGRESS нет (только через «Принять»).
+    expect(form).toContain('value="ACCEPTED"');
+    expect(form).toContain('Принять');
+    expect(form).toContain('value="NEEDS_FIX"');
+    expect(form).toContain('value="REJECTED"');
+    expect(form).not.toContain('value="IN_PROGRESS"');
+    expect(form).not.toContain('value="ISSUED"');
+    // Причина доработки/отказа обязательна (textarea required).
+    expect(form).toMatch(/<textarea[^>]*name="reason"[\s\S]*?required/);
+  });
+
+  it('терминальный статус канона — формы переходов нет', async () => {
+    state.canonicalDetail = {
+      ...canonicalDetailFixture(),
+      request: {
+        ...canonicalDetailFixture().request,
+        status: 'ISSUED' as const,
+      },
+    };
+    const html = await renderPage(StaffRequestCardPage, {
+      params: Promise.resolve({ number: 'ЗД-2026-000002' }),
+    });
+    expect(html).not.toContain('data-testid="canonical-status-form"');
+  });
+
+  it('чужой/несуществующий номер канона — notFound', async () => {
+    state.canonicalDetail = null;
+    await expect(
+      renderPage(StaffRequestCardPage, { params: Promise.resolve({ number: 'ЗД-2026-999999' }) }),
     ).rejects.toThrow();
   });
 });

@@ -13,16 +13,28 @@ import {
   requiresReason,
   TRANSITION_ACTION_TITLES,
 } from '@/lib/staff-transitions';
+import { canonicalQueueType } from '@/lib/request-labels';
+import { slaReadyDate } from '@/lib/request-sla';
+import { slaDeadline as calendarSlaDeadline } from '@/lib/staff-sla';
 import { normalizeRequestNumber } from './request-number';
 import { normalizeSettings } from './profile';
 import { denyAccess } from './access';
+import {
+  getCanonicalRequestByNumber,
+  listCanonicalRequestsForStaff,
+} from './canonical-requests';
 import type { DataDb, StaffNotificationInput } from './port';
 import type {
   AnnouncementRow,
   AppealMessageRow,
   AppealRow,
+  CanonicalRequestEventRow,
+  CanonicalRequestRow,
+  CanonicalRequestTypeRow,
   DataCtx,
   RequestEventRow,
+  RequestStatus,
+  RequestType,
   ServiceRequestRow,
   StudentRow,
 } from './types';
@@ -112,6 +124,178 @@ export async function getStaffQueue(db: DataDb, ctx: DataCtx): Promise<StaffQueu
       return student ? { request, student } : null;
     })
     .filter((item): item is StaffQueueItem => item !== null);
+}
+
+// ── Единая очередь (DIG-126): легаси «ЗС/SR-…» + канон «ЗД-…» ────────────────
+
+/** Мир строки очереди: канон DIG-30 или легаси-сид DIG-10. */
+export type StaffQueueKind = 'canonical' | 'legacy';
+
+/**
+ * Строка единой очереди /staff/requests: канон (ЗД-…) спроецирован на
+ * форму легаси-строки, обе мири сосуществуют (легаси не ломается).
+ * Дедлайн SLA считается при сборке: канон — etaDays типа РАБОЧИМИ днями
+ * (request-sla), легаси — календарными днями по классу типа.
+ */
+export interface StaffUnifiedRequestRow {
+  id: string;
+  number: string;
+  kind: StaffQueueKind;
+  /** Класс типа — фильтр очереди «по типу» и SLA-фолбэк (канон: из typeCode). */
+  type: RequestType;
+  /** Код типа словаря DIG-30 («DIPLOMA_COPY»…); null у легаси. */
+  typeCode: string | null;
+  /** Имя типа словаря («Дубликат диплома»); null у легаси. */
+  typeName: string | null;
+  title: string;
+  status: RequestStatus;
+  studentId: string;
+  /** У канона исполнителя нет (поля легаси-сиды) — всегда null. */
+  assignee: string | null;
+  /** Причина доработки/отказа канона живёт в событиях — здесь null. */
+  resultNote: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  /** Дедлайн SLA строки (см. kind). */
+  slaDeadline: Date;
+}
+
+export interface StaffUnifiedQueueItem {
+  request: StaffUnifiedRequestRow;
+  student: StudentRow;
+}
+
+/**
+ * Очередь заявок факультета ОБЕИХ миров (DIG-126): легаси через
+ * getStaffQueue-семантику, канон через listCanonicalRequestsForStaff —
+ * оба чтения скоуплены факультетом из ctx с аудитом отказа.
+ */
+export async function getStaffQueueUnified(
+  db: DataDb,
+  ctx: DataCtx,
+): Promise<StaffUnifiedQueueItem[]> {
+  const faculty = staffFacultyOf(ctx);
+  if (faculty === null) {
+    await auditRequestDenial(db, ctx, 'staff-queue', 'ROLE_MISMATCH');
+    return [];
+  }
+  const [legacy, canonical, students, types] = await Promise.all([
+    db.listRequestsByFaculty(faculty),
+    listCanonicalRequestsForStaff(db, ctx),
+    db.listStudentsByFaculty(faculty),
+    db.listCanonicalRequestTypes(),
+  ]);
+  const etaByCode = new Map(types.map((type) => [type.code, type.etaDays]));
+  const studentById = new Map(students.map((student) => [student.id, student]));
+
+  const items: StaffUnifiedQueueItem[] = [];
+  for (const request of legacy) {
+    const student = studentById.get(request.studentId);
+    if (!student) continue;
+    items.push({
+      request: {
+        id: request.id,
+        number: request.number,
+        kind: 'legacy',
+        type: request.type,
+        typeCode: null,
+        typeName: null,
+        title: request.title,
+        status: request.status,
+        studentId: request.studentId,
+        assignee: request.assignee,
+        resultNote: request.resultNote,
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+        slaDeadline: calendarSlaDeadline(request),
+      },
+      student,
+    });
+  }
+  for (const request of canonical) {
+    const student = studentById.get(request.studentId);
+    if (!student) continue;
+    const type = canonicalQueueType(request.typeCode);
+    const etaDays = etaByCode.get(request.typeCode) ?? null;
+    items.push({
+      request: {
+        id: request.id,
+        number: request.number,
+        kind: 'canonical',
+        type,
+        typeCode: request.typeCode,
+        typeName: request.typeName,
+        title: request.title,
+        status: request.status,
+        studentId: request.studentId,
+        assignee: null,
+        resultNote: null,
+        createdAt: request.createdAt,
+        updatedAt: request.updatedAt,
+        // SLA канона — etaDays РАБОЧИМИ днями; тип без etaDays — фолбэк
+        // на календарные дни класса типа (легаси-семантика).
+        slaDeadline:
+          slaReadyDate(request.createdAt, etaDays) ??
+          calendarSlaDeadline({ type, createdAt: request.createdAt }),
+      },
+      student,
+    });
+  }
+  return items.sort((a, b) => b.request.createdAt.getTime() - a.request.createdAt.getTime());
+}
+
+/** Полная карточка КАНОНИЧЕСКОЙ заявки сотрудника (DIG-126). */
+export interface StaffCanonicalRequestDetail {
+  request: CanonicalRequestRow;
+  student: StudentRow;
+  events: CanonicalRequestEventRow[];
+  /** Тип словаря DIG-30 (etaDays, JSON-схема формы); null — тип удалён. */
+  type: CanonicalRequestTypeRow | null;
+  /** Контакты с учётом разрешений студента (видимость для сотрудников). */
+  contacts: { email: string | null; phone: string | null };
+}
+
+/**
+ * Карточка канонической заявки ЗД-… для сотрудника: скоуп факультета и
+ * аудит отказа — внутри canonical-requests (чужой и несуществующий
+ * номер — одинаковый null, без оракула существования). Роль STAFF
+ * обязательна: студент получает null + аудит ROLE_MISMATCH.
+ */
+export async function getStaffCanonicalRequestDetail(
+  db: DataDb,
+  ctx: DataCtx,
+  rawNumber: string,
+): Promise<StaffCanonicalRequestDetail | null> {
+  const number = normalizeRequestNumber(rawNumber);
+  if (ctx.role !== 'STAFF' || ctx.faculty === null) {
+    await denyAccess(db, {
+      ctx,
+      resourceType: 'canonical-request',
+      resourceRef: number,
+      reason: 'ROLE_MISMATCH',
+    });
+    return null;
+  }
+  const request = await getCanonicalRequestByNumber(db, ctx, number);
+  if (!request) return null;
+  const owner = await db.findStudentById(request.studentId);
+  if (!owner) return null; // fail closed: нет профиля — нет данных
+  const [events, type, settingsRaw] = await Promise.all([
+    db.listCanonicalRequestEvents(request.id),
+    db.findCanonicalRequestTypeByCode(request.typeCode),
+    db.findSettingsByStudent(owner.id),
+  ]);
+  const settings = normalizeSettings(settingsRaw);
+  return {
+    request,
+    student: owner,
+    events: events ?? [],
+    type,
+    contacts: {
+      email: settings?.emailVisibleToStaff === true ? owner.email : null,
+      phone: settings?.phoneVisibleToStaff === true ? (settings.phone ?? null) : null,
+    },
+  };
 }
 
 /**
