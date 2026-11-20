@@ -1,16 +1,37 @@
 # Руководство администратора (RU)
 
-> Для администратора стенда «Цифровой деканат» (https://ostrovok.store): развёртывание, секреты, эксплуатация, диагностика, резервное копирование, безопасность.
+> Для администратора стенда «Цифровой деканат» (https://ostrovok.store): развёртывание, секреты, эксплуатация, диагностика, резервное копирование, безопасность, MCP-токены.
+>
+> **Концепт для конкурса** — прототип на вымышленных данных; прод-стенд нужен для демонстрации жюри. Каждая глава построена одинаково: **назначение**, **пошаговая процедура**, **проверка результата**.
+
+## Оглавление
+
+1. [Инфраструктура](#1-инфраструктура)
+2. [Секреты (.env)](#2-секреты-env)
+3. [Деплой (rsync + docker compose)](#3-деплой-rsync--docker-compose)
+4. [Миграции и сид](#4-миграции-и-сид)
+5. [Эксплуатация: рестарт, логи, health](#5-эксплуатация-рестарт-логи-health)
+6. [Резервное копирование и восстановление](#6-резервное-копирование-и-восстановление)
+7. [MCP-токены](#7-mcp-токены)
+8. [Безопасность эксплуатации](#8-безопасность-эксплуатации)
+9. [Инциденты и диагностика](#9-инциденты-и-диагностика)
+10. [Мониторинг](#10-мониторинг)
+11. [Обновление стенда](#11-обновление-стенда)
+12. [Ограничения прототипа](#12-ограничения-прототипа)
 
 ## 1. Инфраструктура
 
+**Назначение.** Понять, из чего состоит стенд и где что лежит — перед любыми действиями.
+
 | Параметр | Значение |
 |---|---|
-| Хостинг | Timeweb Cloud VM (Ubuntu, 1 vCPU / 889 МБ RAM + swap 2G, Docker 29 + Compose 2.40) |
+| Хостинг | Timeweb Cloud VM «Digital University» (id 9566609), Ubuntu, 1 vCPU / 889 МБ RAM + swap 2G, Docker 29 + Compose 2.40 |
 | Домен | https://ostrovok.store (A-записи на сервер, TLS — Caddy auto-HTTPS, HTTP-01) |
 | Каталог | `/opt/digital-university` |
 | Ключ доступа | `~/.ssh/dig_deploy` (переменная `DIG_DEPLOY_KEY`); **адрес сервера и ключи не публикуются в репозитории** — экспортируйте `DIG_SERVER_HOST` / `DIG_SERVER_USER` |
 | Контейнеры | `app` (Next.js standalone, health `/api/health`), `db` (PostgreSQL 16, только 127.0.0.1), `caddy` (TLS + reverse proxy), `tools` (профиль: полный node_modules + pnpm для миграций/сида) |
+
+Детали топологии и DNS-записей — `docs/deploy.md` (канонический источник).
 
 ### 1.1. Переменные окружения (`/opt/digital-university/.env`, chmod 600)
 
@@ -25,92 +46,201 @@
 **Инцидент из практики:** отсутствие `AUTH_SECRET` в серверном `.env` сделало кабинет сотрудника недоступным (403 по fail-closed) — найдено регрессом staff-cabinet, зафиксировано здесь. Фикс: добавить переменную, `up -d --force-recreate`.
 
 ### 1.2. Доступ к DNS
-Домен ostrovok.store управляется через Timeweb Cloud API (`PATCH/POST https://api.timeweb.cloud/api/v1/domains/ostrovok.store/dns-records`); токен — в `TIMEWEB_API_KEY` (окружение, не в репозитории). A-записи домена и www смотрят на сервер; MX/TXT не трогаются.
 
-## 2. Деплой (ручная процедура)
+Домен ostrovok.store управляется через Timeweb Cloud API (`PATCH/POST https://api.timeweb.cloud/api/v1/domains/ostrovok.store/dns-records`, домен id 25218071); токен — в `TIMEWEB_API_KEY` (окружение, не в репозиторий). A-записи домена и www смотрят на сервер; MX/TXT не трогаются.
 
-```bash
-git worktree add /tmp/deploy origin/main          # чистое состояние
-cd /tmp/deploy
-rsync -az --delete \
-  --exclude .git --exclude node_modules --exclude .next --exclude .env \
-  --exclude .task-board --exclude test-results --exclude playwright-report \
-  ./ "$DIG_SERVER_USER@$DIG_SERVER_HOST:/opt/digital-university/" \
-  -e "ssh -i ~/.ssh/dig_deploy -o IdentitiesOnly=yes"
+## 2. Секреты (.env)
 
-ssh … "cd /opt/digital-university && \
-  docker compose -f deploy/docker-compose.yml build app"        # 3–15 мин
+**Назначение.** Все секреты стенда живут только в серверном `.env`; репозиторий содержит только `.env.example` с именами переменных без значений.
 
-ssh … "… up -d --force-recreate app"                            # пересоздать контейнер
+**Пошагово: как создать/обновить секрет.**
 
-ssh … "… --profile tools run --rm tools sh -c \
-  'pnpm exec prisma migrate deploy'"                            # миграции (если есть)
-```
+1. Подключитесь к серверу: `ssh -i ~/.ssh/dig_deploy "$DIG_SERVER_USER@$DIG_SERVER_HOST"`.
+2. Откройте файл: `nano /opt/digital-university/.env` (права должны быть `chmod 600`).
+3. Сгенерируйте при необходимости `AUTH_SECRET`: `openssl rand -base64 32`.
+4. Внесите/измените переменную (см. таблицу 1.1), сохраните файл.
+5. Примените изменения: `docker compose -f deploy/docker-compose.yml up -d --force-recreate app` — env_file читается **при создании** контейнера, поэтому пересоздание обязательно.
+6. Проверьте health: `curl https://ostrovok.store/api/health` → `{"ok":true,"authStore":"prisma"}`.
 
-**Контроль:** `curl https://ostrovok.store/api/health` → `{"ok":true,"authStore":"prisma"}`; далее smoke-обход ключевых страниц (`/login` 200, кабинет-роуты 307 на /login?next=…).
+**Проверка:** `git grep` по репозиторию не находит значений секретов; `ssh … "ls -l /opt/digital-university/.env"` показывает `-rw-------` (600).
+
+**Правила.**
+
+- Никогда не rsync-те локальный `.env` на сервер — флаг `--exclude .env` в rsync обязателен.
+- Ключи (Timeweb/SSH/OpenRouter) — только переменные окружения рабочей машины; не попадают в код, логи и коммиты.
+- Вращение `AUTH_SECRET` безопасно: инвалиддирует только role-hint-куки (пользователи перелогинятся), session-токены от секрета не зависят.
+
+## 3. Деплой (rsync + docker compose)
+
+**Назначение.** Ручная процедура выката текущего состояния репозитория на прод-стенд: чистое дерево → rsync → build → пересоздание контейнера → миграции → health.
+
+**Пошагово (полный цикл):**
+
+1. Создайте чистое дерево: `git worktree add /tmp/deploy origin/main && cd /tmp/deploy` (работа из чистого состояния — защита от «мусорного» дерева).
+2. Синхронизируйте файлы на сервер (`.env` исключён — серверные секреты не перетираются):
+
+   ```bash
+   rsync -az --delete \
+     --exclude .git --exclude node_modules --exclude .next --exclude .env \
+     --exclude .task-board --exclude test-results --exclude playwright-report \
+     ./ "$DIG_SERVER_USER@$DIG_SERVER_HOST:/opt/digital-university/" \
+     -e "ssh -i ~/.ssh/dig_deploy -o IdentitiesOnly=yes"
+   ```
+
+3. Соберите образ (3–15 мин; под нагрузкой 10–15 — запускайте в фоне с логом `> /tmp/prod-build.log 2>&1`):
+
+   ```bash
+   ssh … "cd /opt/digital-university && \
+     docker compose -f deploy/docker-compose.yml build app"
+   ```
+
+4. Пересоздайте контейнер: `ssh … "… up -d --force-recreate app"`.
+5. Примените миграции, если есть (раздел 4).
+6. Проверьте health: `curl https://ostrovok.store/api/health` → `{"ok":true,"authStore":"prisma"}`.
+7. Smoke-обход: `/login` 200; кабинет-роуты отдают 307 на `/login?next=…` без сессии.
+
+**Проверка:** health зелёный; логин студента ведёт на /dashboard; логин сотрудника — на /staff.
 
 **Важные правила:**
+
 - `--exclude .env` в rsync **обязателен** — серверные секреты не перетираются.
 - `rsync --delete` удаляет на сервере всё, чего нет локально — не деплойте из «мусорного» дерева.
-- Build под нагрузкой может идти 10–15 минут; запускайте в фоне с логом (`> /tmp/prod-build.log 2>&1`).
+- Build под нагрузкой может идти 10–15 минут; запускайте в фоне с логом.
 - После правок `.env` — обязателен `up -d --force-recreate` (env_file читается при создании контейнера).
 
-## 3. Миграции и сид
+## 4. Миграции и сид
 
-```bash
-# миграции (схема)
-ssh … "… --profile tools run --rm tools sh -c 'pnpm exec prisma migrate deploy'"
+**Назначение.** Схема БД применяется миграциями Prisma; демо-данные пересоздаются идемпотентным сидом (wipe & rebuild).
 
-# сид демо-данных (идемпотентный wipe & rebuild)
-ssh … "… --profile tools run --rm tools sh -c \
-  'echo \"DATABASE_URL=\$DATABASE_URL\" > /app/.env && pnpm db:seed'"
-```
+**Пошагово — миграции:**
 
-- Миграции: `prisma/migrations/*` применяются по порядку; статус — `migrate deploy` пишет «No pending migrations».
-- **Сид** пересоздаёт вымышленные данные (студенты, расписание, оценки, заявки, обращения, справки, стартапы МСП, мероприятия, ДПО, уведомления) и демо-пользователей с паролями жюри. Идемпотентен: можно запускать многократно. Внимание: wipe & rebuild — пользовательские данные сессии удаляются; входить заново.
-- Prisma-конфиг читает `.env` **файл** в cwd — поэтому внутри tools-контейнера сначала `echo "DATABASE_URL=$DATABASE_URL" > /app/.env`.
+1. Запустите tools-контейнер (профиль `tools` содержит полный node_modules + pnpm):
 
-## 4. Эксплуатация
+   ```bash
+   ssh … "… --profile tools run --rm tools sh -c 'pnpm exec prisma migrate deploy'"
+   ```
+
+2. Миграции `prisma/migrations/*` применяются по порядку; чистый статус — «No pending migrations».
+
+**Пошагово — сид демо-данных:**
+
+1. Выполните:
+
+   ```bash
+   ssh … "… --profile tools run --rm tools sh -c \
+     'echo \"DATABASE_URL=\$DATABASE_URL\" > /app/.env && pnpm db:seed'"
+   ```
+
+2. Сид пересоздаёт вымышленные данные: студенты, расписание, оценки, заявки, обращения, справки, стартапы МСП, мероприятия, ДПО, уведомления и демо-пользователей с паролями жюри.
+3. Сид идемпотентен (wipe & rebuild) — можно запускать многократно. **Внимание:** пользовательские данные и сессии удаляются; всем нужно входить заново.
+
+**Проверка:** логин `anna.smirnova` проходит; /dashboard отдаёт данные сида; «No pending migrations» в выводе migrate deploy.
+
+**Нюанс:** Prisma-конфиг читает `.env` **файл** в cwd — поэтому внутри tools-контейнера сначала `echo "DATABASE_URL=$DATABASE_URL" > /app/.env`.
+
+## 5. Эксплуатация: рестарт, логи, health
+
+**Назначение.** Ежедневные операции: перезапуск контейнеров, чтение логов, проверка живости, память и диск.
 
 | Задача | Команда/действие |
 |---|---|
 | Логи app | `ssh … "cd /opt/… && docker compose -f deploy/docker-compose.yml logs app --since 30m"` |
 | Рестарт app | `… up -d --force-recreate app` |
+| Рестарт всей стопки | `… down && … up -d` (кратковременный простой) |
 | Health | `curl https://ostrovok.store/api/health` → `{"ok":true,"authStore":"prisma"}` |
 | Память | `docker stats` (RAM 889 МБ + swap 2G; следить за build'ами — возможен OOM) |
 | Место | `docker system df`; чистка — `docker image prune` |
 | Пересборка без кэша | `build --no-cache` (10–20 мин; запускать в фоне с логом) |
 
-## 5. Резервное копирование и восстановление
+**Пошагово — штатный рестарт app:**
 
-### 5.1. Бэкап БД
-```bash
-ssh … "cd /opt/digital-university && \
-  docker compose -f deploy/docker-compose.yml exec -T db \
-  pg_dump -U university university" > backup-$(date +%F).sql
-```
-Храните минимум 7 дней (рекомендация прототипа). Бэкап содержит вымышленные данные и хэши паролей демо-аккаунтов — не секретен, но не публикуйте.
+1. `ssh … "cd /opt/digital-university && docker compose -f deploy/docker-compose.yml up -d --force-recreate app"`.
+2. Через 5–10 сек — health-проверка (п. 2 выше).
+3. Если health не зелёный — смотрите логи (`logs app --since 5m`) и раздел 9.
 
-### 5.2. Восстановление
-```bash
-cat backup-YYYY-MM-DD.sql | ssh … "cd /opt/… && docker compose -f deploy/docker-compose.yml exec -T db \
-  psql -U university -d university"
-```
-После восстановления — `up -d --force-recreate app` и health-проверка.
+## 6. Резервное копирование и восстановление
 
-### 5.3. Секреты
-Восстанавливаются из этого руководства (раздел 1.1): `AUTH_SECRET` — `openssl rand -base64 32`; `OPENROUTER_API_KEY` — из личного кабинета OpenRouter; пароль БД — из серверного `.env` (последняя известная копия).
+**Назначение.** Защита от потери данных: ежедневный pg_dump БД и проверенная процедура восстановления.
 
-## 6. Безопасность эксплуатации
+### 6.1. Бэкап БД (пошагово)
+
+1. Снимите дамп:
+
+   ```bash
+   ssh … "cd /opt/digital-university && \
+     docker compose -f deploy/docker-compose.yml exec -T db \
+     pg_dump -U university university" > backup-$(date +%F).sql
+   ```
+
+2. Убедитесь, что файл не пустой и содержит `COPY`/`INSERT`-секции (`head -50 backup-YYYY-MM-DD.sql`).
+3. Храните минимум 7 дней (рекомендация прототипа); настройте cron на рабочей машине для ежедневного съёма.
+
+Бэкап содержит вымышленные данные и хэши паролей демо-аккаунтов — не секретен, но не публикуйте.
+
+### 6.2. Восстановление (пошагово)
+
+1. Разверните дамп в БД:
+
+   ```bash
+   cat backup-YYYY-MM-DD.sql | ssh … "cd /opt/… && docker compose -f deploy/docker-compose.yml exec -T db \
+     psql -U university -d university"
+   ```
+
+2. Пересоздайте app: `up -d --force-recreate app`.
+3. Проверьте health и логин демо-аккаунта.
+
+### 6.3. Секреты (восстановление)
+
+Восстанавливаются из этого руководства (раздел 2): `AUTH_SECRET` — `openssl rand -base64 32`; `OPENROUTER_API_KEY` — из личного кабинета OpenRouter; пароль БД — из серверного `.env` (последняя известная копия).
+
+## 7. MCP-токены
+
+**Назначение.** Персональные токены для подключения кабинета к внешним AI-ассистентам (Claude, Cursor, Codex и др.) через MCP-сервер стенда. Полный референс — `docs/mcp.md`.
+
+**Как это устроено:**
+
+- Endpoint: `https://ostrovok.store/api/mcp` — Streamable HTTP (JSON-RPC 2.0, MCP `2025-06-18`), аутентификация `Authorization: Bearer <токен>`.
+- Токен персональный: формат `demo-mcp-<43 символа base64url>`, 24 случайных байта (192 бита энтропии).
+- В хранилище попадает **только SHA-256-хэш** (тот же примитив, что у cookie-сессий); plaintext показывается владельцу **ровно один раз** после выпуска; в настройках виден только превью (`demo-mcp-…XXXX`).
+- Каждый вызов скоуплен владельцем токена (IDOR исключён по построению); сервер — **read-only**: записей нет.
+
+**Пошагово — выпуск токена пользователем:**
+
+1. Войти в кабинет (например, демо-аккаунтом `anna.smirnova`).
+2. **Настройки → вкладка «Настройка MCP»**.
+3. «Выпустить токен» — скопировать значение (больше оно показано не будет).
+4. Скопировать готовый JSON-конфиг для своего клиента прямо со страницы (кнопки под каждый клиент).
+5. Подключить (Claude Code): `claude mcp add --transport http deanery https://ostrovok.store/api/mcp --header "Authorization: Bearer <ТОКЕН>"`; проверка — `/mcp` в сессии показывает connected.
+
+**Пошагово — отзыв/перевыпуск:**
+
+1. Пользователь: та же вкладка — кнопка перевыпуска (`rotateOwnMcpToken`): старый хэш удаляется, новый показывается один раз.
+2. Администратор при инциденте: отозвать все токены разом можно пересозданием записей в БД (поле хэша студента) или перевыпуском на стороне каждого пользователя; сессии кабинета MCP-токенами не управляются.
+
+**Проверка:** запрос без токена возвращает `401` с JSON-RPC-ошибкой `-32001` и `WWW-Authenticate: Bearer realm="digital-deanery-mcp"`; с токеном — `tools/list` отдаёт инструменты чтения (расписание, оценки, уведомления).
+
+## 8. Безопасность эксплуатации
+
+**Назначение.** Постоянные правила, которые нельзя нарушать при любых операциях.
 
 - Postgres bind **127.0.0.1** — снаружи БД недоступна; не добавляйте `0.0.0.0` в ports.
 - Серверный `.env` chmod 600; никогда не rsync-те локальный `.env` на сервер (ключ `--exclude .env` обязателен).
 - `AUTH_SECRET` вращается стандартно: смена инвалидирует только role-hint куки (пользователи перелогинятся); session-токены не зависят от секрета.
-- Аудит отказов — таблица `AuditLog` (OWNERSHIP_DENIED / OUTSIDE_FACULTY / ROLE_MISMATCH / NOT_FOUND): просмотр аномалий — `SELECT reason, count(*) FROM "AuditLog" GROUP BY 1 ORDER BY 2 DESC LIMIT 10;`.
+- Аудит отказов — таблица `AuditLog` (OWNERSHIP_DENIED / OUTSIDE_FACULTY / ROLE_MISMATCH / NOT_FOUND): просмотр аномалий —
+
+  ```sql
+  SELECT reason, count(*) FROM "AuditLog" GROUP BY 1 ORDER BY 2 DESC LIMIT 10;
+  ```
+
 - Ключи AI (`OPENROUTER_API_KEY`) не логируются; grep-аудит репозитория по реальному префиксу ключей OpenRouter — пуст.
+- MCP-токены: только SHA-256 в БД, plaintext нигде не сохраняется (см. раздел 7).
 - Репозиторий: удаляйте смерженные ветки; SHA голов — в `docs/BRANCHES-ARCHIVE.md`.
 
-## 7. Диагностика типовых инцидентов
+## 9. Инциденты и диагностика
+
+**Назначение.** Типовые симптомы, причины и первые действия; сценарии с Timeweb Cloud API и рестартами.
+
+### 9.1. Матрица симптомов
 
 | Симптом | Причина | Действие |
 |---|---|---|
@@ -120,22 +250,47 @@ cat backup-YYYY-MM-DD.sql | ssh … "cd /opt/… && docker compose -f deploy/doc
 | build на проде «exit code 1» | конкуренция за .next-build.lock / OOM | строить последовательно; `docker compose build app` в фоне с логом; следить за swap |
 | vitest test=fail на «ноябрь 20/21» | TZ-флейк полуночи МСК | устранён детерминированной фикстурой (2099-10-20); не реинтродуцировать Date.now()-фикстуры без полудня |
 | «Executable doesn't exist» в Playwright | обновился Playwright | `npx playwright install chromium` на машине оператора |
+| `/api/health` недоступен, контейнер жив | упал upstream/роут | `docker compose logs app --since 10m`; рестарт `up -d --force-recreate app` |
+| Сервер не отвечает по SSH и 443 | хост/гипервизор Timeweb | сценарий 9.2 (Timeweb Cloud API / панель) |
+| Сайт отдаёт ошибку DNS/сертификата | проблема DNS-записей | сценарий 9.3 (Timeweb DNS API) |
 
-## 8. Мониторинг
+### 9.2. Инцидент «хост недоступен» — Timeweb Cloud (пошагово)
+
+1. Подтвердите масштаб: `ssh` недоступен, `curl https://ostrovok.store/api/health` — таймаут с разных сетей.
+2. Откройте панель Timeweb Cloud (Серверы → «Digital University», id 9566609) и проверьте статус VM и графики CPU/RAM.
+3. Перезапустите VM: **панель → «Перезапустить»**, либо через Timeweb Cloud API с токеном `TIMEWEB_API_KEY` (управление серверами `api.timeweb.cloud/api/v1/servers/…`); в крайнем случае — «Выключить → Включить».
+4. После подъёма: `ssh` → `docker compose -f deploy/docker-compose.yml ps` — все контейнеры `Up`; при необходимости `up -d` (compose перезапустит упавшие).
+5. Health: `curl https://ostrovok.store/api/health` → `{"ok":true,…}`; smoke-обход ключевых страниц (раздел 11, п. 3).
+6. Если VM не поднимается — тикет в поддержку Timeweb с id сервера; после восстановления БД проверить свежесть дампа (раздел 6).
+
+### 9.3. Инцидент DNS — Timeweb DNS API (пошагово)
+
+1. Проверьте разрешение: `dig ostrovok.store A +short` — должна вернуться A-запись сервера.
+2. Если записи сбились — через API: `PATCH/POST https://api.timeweb.cloud/api/v1/domains/ostrovok.store/dns-records` (домен id 25218071, токен `TIMEWEB_API_KEY`); A-записи домена и www — на адрес сервера, MX/TXT не трогать.
+3. Дождитесь TTL; повторите `dig` и health-проверку.
+4. Инцидент с TLS: Caddy обновит сертификат автоматически после починки DNS; при необходимости рестарт `caddy` (`up -d --force-recreate caddy`).
+
+**Общий порядок любого инцидента:** фиксация симптома → health/логи → минимальное действие (рестарт контейнера) → эскалация (VM через Timeweb) → восстановление из бэкапа (крайний случай) → запись в `docs/ai-log`/заметки.
+
+## 10. Мониторинг
+
+**Назначение.** Узнать о проблеме раньше пользователя.
 
 - **Health-check** `/api/health` — базовая живость (используется Caddy/upstream и e2e).
 - Внешний мониторинг (UptimeRobot/Better Stack) — настроить на `/api/health` с интервалом 5 мин.
 - Логи: `docker compose logs app` (stdout/stderr Next.js); системный журнал — `journalctl -u docker`.
-- Аномалии аудита — см. раздел 6 (AuditLog).
+- Аномалии аудита — см. раздел 8 (AuditLog).
 
-## 9. Обновление стенда
+## 11. Обновление стенда
+
+**Назначение.** Регулярный цикл «что войдёт → выкатить → проверить».
 
 1. `git fetch origin && git log origin/main -3` — что войдёт.
-2. Деплой по разделу 2 (rsync → build → up → migrate → health).
+2. Деплой по разделу 3 (rsync → build → up → migrate → health).
 3. Быстрый smoke: `/login` 200; логин студента → /dashboard; логин сотрудника → /staff; `/verify/несуществующий` → честная 404.
 4. Полный регресс — `docs/wiki/Регресс-QA-ru` (матрица «роли × языки»).
 
-## 10. Ограничения прототипа
+## 12. Ограничения прототипа
 
 - Доменные данные — в памяти процесса (memory-db): рестарт сбрасывает к сиду; Prisma покрывает auth и будет расширен (DIG-10/50).
 - Единый сервер без горизонтального масштабирования; для нескольких инстансов потребуется внешний Postgres и общий .next-кэш.
