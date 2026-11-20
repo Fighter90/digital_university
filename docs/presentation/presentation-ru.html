@@ -1,0 +1,79 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .slide { width: 1280px; height: 720px; position: relative; overflow: hidden;
+           background: #fff; page-break-after: always; padding: 34px 46px 44px; }
+  .kick { color: #2563eb; font-weight: 700; font-size: 13px; letter-spacing: 2px; }
+  .ttl { color: #0f172a; font-weight: 700; font-size: 33px; margin: 4px 0 10px; }
+  .grad { height: 6px; width: 250px; background: linear-gradient(90deg,#2563eb,#1d4ed8); border-radius: 3px; }
+  .grad.wide { width: 300px; height: 8px; }
+  .hdr { position: relative; }
+  .pill { position: absolute; top: 2px; right: 0; border: 1.5px solid #2563eb; color: #1d4ed8;
+          background: #eff6ff; font-weight: 700; font-size: 12px; padding: 7px 18px; border-radius: 999px; }
+  .foot { position: absolute; left: 46px; right: 46px; bottom: 18px; display: flex;
+          justify-content: space-between; color: #94a3b8; font-size: 11px; }
+  .foot b.acc { color: #1d4ed8; }
+  .twocol { display: flex; gap: 28px; margin-top: 22px; align-items: flex-start; }
+  .bl { color: #0f172a; font-size: 18px; line-height: 1.45; padding-left: 22px; width: 470px; }
+  .bl li { margin-bottom: 14px; }
+  .bl.wide { width: auto; font-size: 16.5px; }
+  .bl.big { width: auto; flex: 1; font-size: 20px; }
+  .shot { border: 1.5px solid #d5dbe3; border-radius: 10px; padding: 5px; background: #fff; }
+  .shot img { width: 100%; display: block; border-radius: 5px; }
+  .twocol .shot { width: 585px; }
+  .shot.portrait { width: 240px; margin: 0 auto; }
+  .gridshots { display: flex; gap: 28px; margin-top: 20px; }
+  .gridshots .shot { width: 575px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 24px; }
+  .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; }
+  .card .ch { color: #1d4ed8; font-weight: 700; font-size: 18px; margin-bottom: 6px; }
+  .card .cb { color: #475569; font-size: 14.5px; line-height: 1.35; }
+  .card.slim { padding: 12px 18px; margin-bottom: 16px; }
+  .card.slim .ch { font-size: 16px; margin-bottom: 3px; }
+  .card.slim .cb { font-size: 13px; }
+  .stack { width: 470px; }
+  .rcol { flex: 1; }
+  .cap { text-align: center; color: #475569; font-size: 12.5px; margin-top: 8px; }
+  .punch { margin-top: 26px; background: #eff6ff; border: 1px solid #2563eb; border-radius: 12px;
+           padding: 16px 24px; color: #0f172a; font-weight: 700; font-size: 18px; }
+  .title-slide { padding-top: 60px; }
+  .topgrad { position: absolute; top: 0; left: 0; right: 0; height: 12px; background: linear-gradient(90deg,#2563eb,#1d4ed8); }
+  .twocol.title-row {}
+  .title-slide .twocol { margin-top: 0; }
+  .tleft { width: 620px; padding-top: 46px; }
+  .tleft h1 { font-size: 58px; color: #0f172a; margin: 12px 0 16px; }
+  .tleft .sub { color: #475569; font-size: 20px; line-height: 1.4; margin-top: 22px; }
+  .urlchip { display: inline-block; margin-top: 28px; border: 1.5px solid #2563eb; color: #1d4ed8;
+             background: #eff6ff; font-weight: 700; font-size: 17px; padding: 10px 26px; border-radius: 999px; }
+  .tleft .note { color: #94a3b8; font-size: 13.5px; margin-top: 22px; line-height: 1.4; }
+  .title-shot { width: 500px; margin-top: 40px; }
+  .pipe { display: flex; align-items: center; gap: 10px; margin-top: 42px; }
+  .pstep { flex: 1; border: 1px solid #2563eb; background: #eff6ff; color: #0f172a;
+           font-weight: 700; font-size: 13.5px; text-align: center; padding: 20px 6px; border-radius: 10px; }
+  .pstep.last { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+  .parrow { color: #2563eb; font-size: 20px; font-weight: 700; }
+  .stats { display: flex; gap: 30px; margin-top: 34px; }
+  .stat { flex: 1; background: #eff6ff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 22px; }
+  .sn { color: #2563eb; font-weight: 700; font-size: 36px; }
+  .sl { color: #475569; font-size: 13.5px; margin-top: 2px; }
+  .rows { margin-top: 26px; display: flex; flex-direction: column; gap: 12px; }
+  .row { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+         padding: 13px 22px; display: flex; gap: 26px; font-size: 15.5px; }
+  .rk { color: #0f172a; font-weight: 700; width: 210px; }
+  .rv { color: #1d4ed8; }
+</style></head><body><section class="slide title-slide"><div class="topgrad"></div><div class="twocol"><div class="tleft"><div class="kick">КОНЦЕПТ ДЛЯ КОНКУРСА · 2026</div><h1>Цифровой деканат</h1><div class="grad wide"></div><p class="sub">Digital Deanery — личный кабинет студента: всё об учёбе в одном окне</p><div class="urlchip">https://ostrovok.store</div><p class="note">Прототип, не официальный сервис вуза. Все данные вымышленные.</p></div><div class="shot title-shot"><img src="../shots/ru/landing.png"></div></div><div class="foot"><b class="acc">Концепт для конкурса</b></div></section>
+<section class="slide"><div class="hdr"><div class="kick">ПРОБЛЕМА</div><div class="ttl">Учёба разорвана по сервисам</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="grid2"><div class="card"><div class="ch">Расписание</div><div class="cb">в одном приложении, переносы теряются</div></div><div class="card"><div class="ch">Оценки и зачётка</div><div class="cb">в другом месте, без общей картины</div></div><div class="card"><div class="ch">Заявки и справки</div><div class="cb">только лично, в часы приёма</div></div><div class="card"><div class="ch">Объявления</div><div class="cb">в чатах и на сайте, всё вперемешку</div></div></div><div class="punch">Студент ищет информацию вместо учёбы, деканат десятки раз отвечает на одно и то же.</div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>2 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">РЕШЕНИЕ</div><div class="ttl">«Всё в одном окне»</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="twocol"><ul class="bl"><li>Один вход: расписание, оценки, заявки, справки, уведомления, обращения</li><li>Телефон (от 360 px) и компьютер (1440 px) — один и тот же кабинет</li><li>Плашка «Концепт для конкурса» на каждом экране, данные вымышленные</li></ul><div class="shot "><img src="../shots/ru/dashboard.png"></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>3 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">ЯДРО · 1/4</div><div class="ttl">Расписание: день, неделя, месяц</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="twocol"><ul class="bl"><li>Переносы, отмены и окна видны сразу, «Сегодня» — на главной</li><li>Экспорт расписания в PDF / XLSX / Markdown</li></ul><div class="shot "><img src="../shots/ru/schedule-week.png"></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>4 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">ЯДРО · 2/4</div><div class="ttl">Успеваемость + AI-подсказки</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="twocol"><ul class="bl"><li>Зачётка, сессия и «как у меня дела»: средний балл, кредиты, долги</li><li>AI объясняет, что подтянуть и какие дедлайны близко</li></ul><div class="shot "><img src="../shots/ru/grades.png"></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>5 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">ЯДРО · 3/4</div><div class="ttl">Заявки и справки с QR-проверкой</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><ul class="bl wide"><li>Заявка онлайн: справка, перезачёт, практика — статус виден всегда</li><li>Справка с QR-кодом: подлинность проверяется по ссылке</li></ul><div class="gridshots"><div class="shot "><img src="../shots/ru/requests.png"></div><div class="shot "><img src="../shots/ru/request-card.png"></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>6 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">ЯДРО · 4/4</div><div class="ttl">Уведомления и объявления</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="twocol"><ul class="bl"><li>Персональные уведомления и новости деканата — в одном списке</li><li>Непрочитанные видны на главной — ничего не теряется</li></ul><div class="shot "><img src="../shots/ru/notifications.png"></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>7 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">СВЕРХ ЯДРА</div><div class="ttl">События, МСП, ДПО, финансы, люди</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="twocol"><ul class="bl"><li>Мероприятия и доп. образование (ДПО) с записью в один клик</li><li>Финансы, справочник, «люди деканата», поиск ⌘K</li></ul><div class="shot "><img src="../shots/ru/msp.png"></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>8 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">AI + MCP</div><div class="ttl">AI-ассистент и MCP-сервер деканата</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><ul class="bl wide"><li>Ассистент отвечает по данным студента: расписание, оценки, дедлайны</li><li>Настоящий MCP-сервер: Claude / Cursor / Codex по личному токену, только чтение</li></ul><div class="gridshots"><div class="shot "><img src="../shots/ru/assistant.png"></div><div class="shot "><img src="../shots/ru/settings-mcp.png"></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>9 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">ДЕКАНАТ</div><div class="ttl">Кабинет сотрудника</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="twocol"><ul class="bl"><li>Очередь заявок, согласование справок, объявления — рабочее место деканата</li><li>Сотрудник видит статус каждой заявки и отвечает студенту</li></ul><div class="shot "><img src="../shots/ru/staff-queue.png"></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>10 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">БЕЗОПАСНОСТЬ</div><div class="ttl">Безопасность по умолчанию</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="twocol"><div class="stack"><div class="card slim"><div class="ch">argon2id</div><div class="cb">пароли — только хэши, открытых паролей нет</div></div><div class="card slim"><div class="ch">__Host-cookie</div><div class="cb">сессия — защищённая cookie с строгими флагами</div></div><div class="card slim"><div class="ch">Owner-scope</div><div class="cb">чужие данные недоступны: IDOR-тесты на каждый роут</div></div><div class="card slim"><div class="ch">Rate-limit</div><div class="cb">вход ограничен, секреты — только в окружении</div></div></div><div class="rcol"><div class="shot "><img src="../shots/ru/verify.png"></div><div class="cap">Проверка подлинности справки по QR</div></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>11 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">ПРОЦЕСС</div><div class="ttl">Как это построено: рой ИИ-агентов</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="pipe"><div class="pstep">Задача в Linear</div><div class="parrow">→</div><div class="pstep">executor</div><div class="parrow">→</div><div class="pstep">гейты: lint · типы · тесты</div><div class="parrow">→</div><div class="pstep">ревью</div><div class="parrow">→</div><div class="pstep">security</div><div class="parrow">→</div><div class="pstep last">PR → merge</div></div><div class="stats"><div class="stat"><div class="sn">95+</div><div class="sl">задач Linear прошёл рой</div></div><div class="stat"><div class="sn">80+</div><div class="sl">PR с гейтами и ревью</div></div><div class="stat"><div class="sn">1</div><div class="sl">человек ставит задачи и принимает merge</div></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>12 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">ЯЗЫКИ И ДОСТУПНОСТЬ</div><div class="ttl">RU / EN и доступность</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="twocol"><ul class="bl big"><li>Интерфейс и документация — на русском и английском</li><li>Plain-версия для слабовидящих: крупный текст, без стилей</li><li>Мобильный 360 px и десктоп 1440 px — один и тот же Shell</li></ul><div class="shot portrait"><img src="../design/screenshots/design-full-mobile-360.png"></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>13 / 14</span></div></section>
+<section class="slide"><div class="hdr"><div class="kick">ИТОГИ</div><div class="ttl">Цифры и ссылки</div><div class="grad"></div><div class="pill">Концепт для конкурса</div></div><div class="stats"><div class="stat"><div class="sn">95+</div><div class="sl">задач Linear</div></div><div class="stat"><div class="sn">80+</div><div class="sl">PR</div></div><div class="stat"><div class="sn">2</div><div class="sl">языка интерфейса</div></div></div><div class="rows"><div class="row"><span class="rk">Работает</span><span class="rv">https://ostrovok.store — до 28.11.2026</span></div><div class="row"><span class="rk">Аккаунты жюри</span><span class="rv">anna.smirnova · ilya.petrov · dean.kovaleva (пароли — в README)</span></div><div class="row"><span class="rk">Код</span><span class="rv">github.com/Fighter90/digital_university</span></div><div class="row"><span class="rk">MCP-сервер</span><span class="rv">ostrovok.store/api/mcp — для любого MCP-ассистента</span></div></div><div class="foot"><span>Цифровой деканат · ostrovok.store</span><span>14 / 14</span></div></section></body></html>
