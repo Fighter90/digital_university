@@ -162,13 +162,30 @@ export function groupNotificationsByDay(
   return groups.filter((g) => g.items.length > 0);
 }
 
-/** Время строки: сегодня и вчера — HH:MM, ранее — DD.MM (обе метки — по Москве). */
-export function formatNotificationTime(createdAt: string | Date, now: Date): string {
+/** Время строки: сегодня и вчера — HH:MM, ранее — DD.MM (обе метки — по Москве).
+ * DIG-105: EN — старые даты в естественном формате «Nov 18» (месяц коротко,
+ * день), RU-канон DD.MM байт-в-байт; зона явная — Europe/Moscow. */
+export function formatNotificationTime(
+  createdAt: string | Date,
+  now: Date,
+  locale: Locale = 'ru',
+): string {
   const created = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
   const p = moscowParts(created);
   const hhmm = `${pad2(p.hour)}:${pad2(p.minute)}`;
   if (calendarDaysBetween(created, now) <= 1) return hhmm;
+  if (locale === 'en') {
+    return EN_DAY_FORMATTER.format(created);
+  }
   return `${pad2(p.day)}.${pad2(p.month)}`;
 }
+
+// Явная зона — SSR и гидрация дают одну строку при любом TZ процесса
+// (конвенция DIG-79, см. msk-timezone.test.ts).
+const EN_DAY_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Europe/Moscow',
+  month: 'short',
+  day: 'numeric',
+});
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
